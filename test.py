@@ -28,10 +28,12 @@ def multiple_replace(string, *key_values):
 parser = argparse.ArgumentParser(description='OpenModelica library testing tool')
 parser.add_argument('configs', nargs='*')
 parser.add_argument('--branch', default='master')
+parser.add_argument('--output', default='')
 
 args = parser.parse_args()
 configs = args.configs
 branch = args.branch
+result_location = args.output
 
 if configs == []:
   print("Error: Expected at least one configuration file to start the library test")
@@ -93,7 +95,7 @@ for (library,conf) in configs:
   lastChange=(librarySourceFile[:-3]+".last_change") if not librarySourceFile.endswith("package.mo") else (os.path.dirname(librarySourceFile)+".last_change")
   if os.path.exists(lastChange):
     conf["libraryLastChange"] = " %s (revision %s)" % (conf["libraryVersionRevision"],"\n".join(open(lastChange).readlines()).strip())
-  res=omc.sendExpression('{c for c guard isExperiment(c) and not regexBool(typeNameString(x), "^Modelica_Synchronous\\.WorkInProgress") in getClassNames(%s , recursive=true)}' % library)
+  res=omc.sendExpression('{c for c guard isExperiment(c) and not regexBool(typeNameString(x), "^Modelica_Synchronous\\.WorkInProgress") in getClassNames(%s, recursive=true)}' % library)
   libName=library+"_"+conf["libraryVersion"]+(("_" + conf["configExtraName"]) if conf.has_key("configExtraName") else "")
   stats_by_libname[libName] = {"conf":conf, "stats":[]}
   tests = tests + [(r,library,libName,libName+"_"+r,conf) for r in res]
@@ -224,8 +226,28 @@ def is_non_zero_file(fpath):
 
 htmltpl=open("library.html.tpl").read()
 for libname in sorted(stats_by_libname.keys()):
+  filesList = open(libname + ".files", "w")
+  filesList.write("/files/\n")
+  filesList.write("/%s.html\n" % libname)
   conf = stats_by_libname[libname]["conf"]
   stats = stats_by_libname[libname]["stats"]
+  for s in stats:
+    filename_prefix = "files/%s_%s" % (s[2],s[1])
+    if is_non_zero_file(filename_prefix+".sim"):
+      filesList.write("/%s.sim\n" % filename_prefix)
+    if is_non_zero_file(filename_prefix+".err"):
+      filesList.write("/%s.err\n" % filename_prefix)
+    if len(s[3]["diff"]["vars"])>0:
+      filesList.write("/%s.diff.html\n" % filename_prefix)
+    for v in s[3]["diff"]["vars"]:
+      filesList.write("/%s.diff.%s.csv\n" % (filename_prefix, v))
+      filesList.write("/%s.diff.%s.html\n" % (filename_prefix, v))
+  filesList.close()
+  if result_location != "":
+    cmd = ["rsync", "-a", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", "%s/%s" % (result_location, s[2])]
+    if 0 != call(cmd):
+      print("Error: Failed to rsync files: %s" % cmd)
+      sys.exit(1)
   testsHTML = "\n".join(['<tr><td>%s%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td></tr>\n' %
     (lambda filename_prefix:
       (
