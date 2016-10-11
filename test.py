@@ -141,14 +141,14 @@ def runScript(c):
 conn = sqlite3.connect('sqlite3.db')
 cursor = conn.cursor()
 # BOOLEAN NOT NULL CHECK (verify IN (0,1) AND builds IN (0,1) AND simulates IN (0,1))
-cursor.execute('''CREATE TABLE if not exists %s
+cursor.execute('''CREATE TABLE if not exists [%s]
              (date integer NOT NULL, libname text NOT NULL, model text NOT NULL, exectime real NOT NULL,
              frontend real NOT NULL, backend real NOT NULL, simcode real NOT NULL, templates real NOT NULL, compile real NOT NULL, simulate real NOT NULL,
              verify real NOT NULL, verifyfail integer NOT NULL, verifytotal integer NOT NULL, finalphase integer NOT NULL)''' % branch)
 
 def expectedExec(c):
   (model,lib,libName,name,data) = c
-  cursor.execute("SELECT exectime FROM %s WHERE libname = ? AND model = ? ORDER BY date DESC LIMIT 1" % branch, (libName,model))
+  cursor.execute("SELECT exectime FROM [%s] WHERE libname = ? AND model = ? ORDER BY date DESC LIMIT 1" % branch, (libName,model))
   v = cursor.fetchone()
   return (v or (0.0,))[0]
 
@@ -199,7 +199,7 @@ for key in stats.keys():
     data["phase"]
   )
   # print values
-  cursor.execute("INSERT INTO %s VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)" % branch, values)
+  cursor.execute("INSERT INTO [%s] VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)" % branch, values)
 conn.commit()
 conn.close()
 
