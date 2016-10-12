@@ -35,6 +35,9 @@ configs = args.configs
 branch = args.branch
 result_location = args.output
 
+if result_location != "":
+  os.makedirs(result_location)
+
 if configs == []:
   print("Error: Expected at least one configuration file to start the library test")
   sys.exit(1)
@@ -227,8 +230,9 @@ def is_non_zero_file(fpath):
 htmltpl=open("library.html.tpl").read()
 for libname in sorted(stats_by_libname.keys()):
   filesList = open(libname + ".files", "w")
-  filesList.write("/files/\n")
+  filesList.write("/\n" % libname)
   filesList.write("/%s.html\n" % libname)
+  filesList.write("/files/\n")
   conf = stats_by_libname[libname]["conf"]
   stats = stats_by_libname[libname]["stats"]
   for s in stats:
@@ -246,6 +250,9 @@ for libname in sorted(stats_by_libname.keys()):
   filesList.close()
   if result_location != "":
     cmd = ["rsync", "-a", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", "%s/%s" % (result_location, s[2])]
+    if 0 != call(cmd):
+      print("Error: Failed to rsync files: %s" % cmd)
+      sys.exit(1)
     if 0 != call(cmd):
       print("Error: Failed to rsync files: %s" % cmd)
       sys.exit(1)
