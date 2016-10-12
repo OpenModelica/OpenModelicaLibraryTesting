@@ -35,7 +35,7 @@ configs = args.configs
 branch = args.branch
 result_location = args.output
 
-if result_location != "":
+if result_location != "" and not os.path.exists(result_location):
   os.makedirs(result_location)
 
 if configs == []:
