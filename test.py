@@ -248,14 +248,6 @@ for libname in sorted(stats_by_libname.keys()):
       filesList.write("/%s.diff.%s.csv\n" % (filename_prefix, v))
       filesList.write("/%s.diff.%s.html\n" % (filename_prefix, v))
   filesList.close()
-  if result_location != "":
-    cmd = ["rsync", "-a", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", "%s/%s" % (result_location, s[2])]
-    if 0 != call(cmd):
-      print("Error: Failed to rsync files: %s" % cmd)
-      sys.exit(1)
-    if 0 != call(cmd):
-      print("Error: Failed to rsync files: %s" % cmd)
-      sys.exit(1)
   testsHTML = "\n".join(['<tr><td>%s%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td></tr>\n' %
     (lambda filename_prefix:
       (
@@ -310,6 +302,11 @@ for libname in sorted(stats_by_libname.keys()):
     (u"#testsHTML#", testsHTML)
   )
   open("%s.html" % libname, "w").write(multiple_replace(htmltpl, *replacements))
+  if result_location != "":
+    cmd = ["rsync", "-a", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", "%s/%s" % (result_location, s[2])]
+    if 0 != call(cmd):
+      print("Error: Failed to rsync files: %s" % cmd)
+      sys.exit(1)
 
 #json.dump(new_stats, open(".db","w"))
 
