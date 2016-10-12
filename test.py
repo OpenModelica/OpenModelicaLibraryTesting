@@ -237,9 +237,10 @@ for libname in sorted(stats_by_libname.keys()):
       filesList.write("/%s.sim\n" % filename_prefix)
     if is_non_zero_file(filename_prefix+".err"):
       filesList.write("/%s.err\n" % filename_prefix)
-    if len(s[3]["diff"]["vars"])>0:
+    variables = (s[3]["diff"] or {}).get("vars") or []
+    if len(variables)>0:
       filesList.write("/%s.diff.html\n" % filename_prefix)
-    for v in s[3]["diff"]["vars"]:
+    for v in variables:
       filesList.write("/%s.diff.%s.csv\n" % (filename_prefix, v))
       filesList.write("/%s.diff.%s.html\n" % (filename_prefix, v))
   filesList.close()
