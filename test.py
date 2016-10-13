@@ -267,7 +267,7 @@ def is_non_zero_file(fpath):
     return os.path.isfile(fpath) and os.path.getsize(fpath) > 0
 
 htmltpl=open("library.html.tpl").read()
-for libname in sorted(stats_by_libname.keys()):
+for libname in stats_by_libname.keys():
   filesList = open(libname + ".files", "w")
   filesList.write("/\n")
   filesList.write("/%s.html\n" % libname)
@@ -280,7 +280,7 @@ for libname in sorted(stats_by_libname.keys()):
       filesList.write("/%s.sim\n" % filename_prefix)
     if is_non_zero_file(filename_prefix+".err"):
       filesList.write("/%s.err\n" % filename_prefix)
-    variables = (s[3]["diff"] or {}).get("vars") or []
+    variables = (s[3].get("diff") or {}).get("vars") or []
     if len(variables)>0:
       filesList.write("/%s.diff.html\n" % filename_prefix)
     for v in variables:
