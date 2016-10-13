@@ -274,7 +274,7 @@ for libname in sorted(stats_by_libname.keys()):
   filesList.write("/files/\n")
   conf = stats_by_libname[libname]["conf"]
   stats = stats_by_libname[libname]["stats"]
-  for s in stats:
+  for s in sorted(stats, key=lambda s: s[1]):
     filename_prefix = "files/%s_%s" % (s[2],s[1])
     if is_non_zero_file(filename_prefix+".sim"):
       filesList.write("/%s.sim\n" % filename_prefix)
