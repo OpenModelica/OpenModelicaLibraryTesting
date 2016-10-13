@@ -15,6 +15,7 @@ import argparse
 import sqlite3
 import datetime
 import psutil, subprocess, threading
+from subprocess import call
 
 def runCommand(cmd, timeout):
   process = [None]
