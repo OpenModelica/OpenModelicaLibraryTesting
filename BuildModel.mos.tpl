@@ -91,7 +91,7 @@ buildRes := res[1] <> "";
 
 OpenModelica.Scripting.Internal.Time.timerTick(OpenModelica.Scripting.Internal.Time.RT_CLOCK_USER_RESERVED);
 simRes  := if not buildRes then false else 0 == system("./#fileName# #simFlags# "+emit_protected+" > "+simFile+" 2>&1");
-timeSim := OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_USER_RESERVED);
+timeSim := if buildRes then OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_USER_RESERVED) else 0;
 
 resFile := "#fileName#_res." + outputFormat;
 system("sed -i '300,$ d' '" + simFile + "'"); // Only keep the top 300 lines
