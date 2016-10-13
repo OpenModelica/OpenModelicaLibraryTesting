@@ -9,12 +9,47 @@ import sys
 import os
 import re
 from joblib import Parallel, delayed
-from subprocess import call
 import time
 import simplejson as json
 import argparse
 import sqlite3
 import datetime
+import psutil, subprocess, threading
+
+def runCommand(cmd, timeout):
+  process = [None]
+  def target():
+    process[0] = subprocess.Popen(cmd, shell=True)
+    process[0].communicate()
+
+  thread = threading.Thread(target=target)
+  thread.start()
+  thread.join(timeout)
+
+  if thread.is_alive():
+    parent = psutil.Process(process[0].pid)
+    killedSome = False
+    for child in parent.children(recursive=True):
+      if child.name() != "omc":
+        print "Timeout, killing %s: %s" % (cmd.split(" ")[-1], child.name())
+        child.kill()
+        killedSome = True
+    if killedSome:
+      thread.join(min(10, timeout))
+    if thread.is_alive():
+      for child in parent.children(recursive=True):
+        try:
+          print "Timeout, killing %s: %s" % (cmd.split(" ")[-1], child.name())
+          child.kill()
+        except:
+          pass
+      try:
+        process[0].terminate()
+      except:
+        pass
+    thread.join()
+
+  return process[0].returncode
 
 def multiple_replacer(*key_values):
     replace_dict = dict(key_values)
@@ -126,12 +161,12 @@ for (modelName,library,libName,name,conf) in tests:
   )
   open(name + ".mos", "w").write(multiple_replace(template, *replacements))
 
-def runScript(c):
+def runScript(c, timeout):
   j = "files/%s.stat.json" % c
   if os.path.exists(j):
     os.remove(j)
   start=time.time()
-  call([omc_exe, "-n=1", "%s.mos" % c])
+  runCommand("%s -n=1 %s.mos" % (omc_exe, c), timeout=timeout)
   execTime=time.time()-start
   if os.path.exists(j):
     data=json.load(open(j))
@@ -161,7 +196,7 @@ cmd_res=[0]
 start=time.time()
 start_as_time=time.localtime()
 testRunStartTimeAsEpoch = int(start)
-cmd_res=Parallel(n_jobs=4)(delayed(runScript)(name) for (model,lib,libName,name,data) in tests)
+cmd_res=Parallel(n_jobs=4)(delayed(runScript)(name, 1.1*data["ulimitOmc"]+1.1*data["ulimitExe"]) for (model,lib,libName,name,data) in tests)
 stop=time.time()
 print("Execution time: %.2f" % (stop-start))
 
@@ -199,7 +234,7 @@ for key in stats.keys():
     (data.get("diff") or {}).get("time") or 0.0,
     len((data.get("diff") or {}).get("vars") or []),
     (data.get("diff") or {}).get("numCompared") or 0,
-    data["phase"]
+    data.get("phase") or 0
   )
   # print values
   cursor.execute("INSERT INTO [%s] VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)" % branch, values)
@@ -230,7 +265,7 @@ def is_non_zero_file(fpath):
 htmltpl=open("library.html.tpl").read()
 for libname in sorted(stats_by_libname.keys()):
   filesList = open(libname + ".files", "w")
-  filesList.write("/\n" % libname)
+  filesList.write("/\n")
   filesList.write("/%s.html\n" % libname)
   filesList.write("/files/\n")
   conf = stats_by_libname[libname]["conf"]
