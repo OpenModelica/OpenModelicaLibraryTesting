@@ -64,11 +64,14 @@ parser = argparse.ArgumentParser(description='OpenModelica library testing tool'
 parser.add_argument('configs', nargs='*')
 parser.add_argument('--branch', default='master')
 parser.add_argument('--output', default='')
+parser.add_argument('-n', default=psutil.cpu_count(logical=False))
 
 args = parser.parse_args()
 configs = args.configs
 branch = args.branch
 result_location = args.output
+n_jobs = args.n
+print("branch: %s, n_jobs: %d" % (branch, n_jobs))
 
 if result_location != "" and not os.path.exists(result_location):
   os.makedirs(result_location)
@@ -196,7 +199,7 @@ cmd_res=[0]
 start=time.time()
 start_as_time=time.localtime()
 testRunStartTimeAsEpoch = int(start)
-cmd_res=Parallel(n_jobs=4)(delayed(runScript)(name, 1.1*data["ulimitOmc"]+1.1*data["ulimitExe"]) for (model,lib,libName,name,data) in tests)
+cmd_res=Parallel(n_jobs=n_jobs)(delayed(runScript)(name, 1.1*data["ulimitOmc"]+1.1*data["ulimitExe"]) for (model,lib,libName,name,data) in tests)
 stop=time.time()
 print("Execution time: %.2f" % (stop-start))
 
