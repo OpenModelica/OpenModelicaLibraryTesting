@@ -274,7 +274,7 @@ for libname in stats_by_libname.keys():
   filesList.write("/files/\n")
   conf = stats_by_libname[libname]["conf"]
   stats = stats_by_libname[libname]["stats"]
-  for s in sorted(stats, key=lambda s: s[1]):
+  for s in stats:
     filename_prefix = "files/%s_%s" % (s[2],s[1])
     if is_non_zero_file(filename_prefix+".sim"):
       filesList.write("/%s.sim\n" % filename_prefix)
@@ -310,7 +310,7 @@ for libname in stats_by_libname.keys():
       checkPhase(s[3]["phase"], 5),
       friendlyStr(s[3].get("build") or 0)
     ))(filename_prefix="files/%s_%s" % (s[2], s[1]))
-    for s in stats])
+    for s in sorted(stats, key=lambda s: s[1])])
   numSucceeded = [len(stats)] + [sum(1 if s[3]["phase"]>=i else 0 for s in stats) for i in range(1,8)]
   replacements = (
     (u"#omcVersion#", cgi.escape(omc_version)),
