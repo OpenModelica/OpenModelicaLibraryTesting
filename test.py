@@ -297,13 +297,13 @@ for libname in stats_by_libname.keys():
       filesList.write("/%s.diff.%s.html\n" % (filename_prefix, v))
   filesList.close()
   testsHTML = "\n".join(['<tr><td>%s%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td></tr>\n' %
-    (lambda filename_prefix:
+    (lambda filename_prefix, diff:
       (
       ('<a href="%s">%s</a>' % (filename_prefix + ".err", cgi.escape(s[1]))) if is_non_zero_file(filename_prefix + ".err") else cgi.escape(s[1]),
       (' (<a href="%s">sim</a>)' % (filename_prefix + ".sim")) if is_non_zero_file(filename_prefix + ".sim") else "",
       checkPhase(s[3]["phase"], 7) if s[3]["phase"]>=6 else "#FFFFFF",
-      ("%s (%d verified)" % (friendlyStr(s[3]["diff"]["time"]), s[3]["diff"]["numCompared"])) if s[3]["phase"]>=7 else ("&nbsp;" if s[3]["diff"] is None else
-      ('%s (<a href="%s.diff.html">%d/%d failed</a>)' % (friendlyStr(s[3]["diff"]["time"]), filename_prefix, len(s[3]["diff"]["vars"]), s[3]["diff"]["numCompared"]))),
+      ("%s (%d verified)" % (friendlyStr(diff.get("time")), diff.get("numCompared"))) if s[3]["phase"]>=7 else ("&nbsp;" if diff is None else
+      ('%s (<a href="%s.diff.html">%d/%d failed</a>)' % (friendlyStr(diff.get("time")), filename_prefix, len(diff.get("vars")), diff.get("numCompared")))),
       checkPhase(s[3]["phase"], 6),
       friendlyStr(s[3].get("sim") or 0),
       checkPhase(s[3]["phase"], 5),
@@ -318,7 +318,7 @@ for libname in stats_by_libname.keys():
       friendlyStr(s[3].get("templates") or 0),
       checkPhase(s[3]["phase"], 5),
       friendlyStr(s[3].get("build") or 0)
-    ))(filename_prefix="files/%s_%s" % (s[2], s[1]))
+    ))(filename_prefix="files/%s_%s" % (s[2], s[1]), diff=s[3].get("diff"))
     for s in sorted(stats, key=lambda s: s[1])])
   numSucceeded = [len(stats)] + [sum(1 if s[3]["phase"]>=i else 0 for s in stats) for i in range(1,8)]
   replacements = (
