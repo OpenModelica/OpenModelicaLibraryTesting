@@ -177,7 +177,7 @@ def runScript(c, timeout):
     data["exectime"] = execTime
     json.dump(data, open(j,"w"))
   else:
-    data = {"exectime":execTime}
+    data = {"exectime":execTime,"phase":0}
     json.dump(data, open(j,"w"))
 
 conn = sqlite3.connect('sqlite3.db')
@@ -296,19 +296,19 @@ for libname in stats_by_libname.keys():
       ("%s (%d verified)" % (friendlyStr(s[3]["diff"]["time"]), s[3]["diff"]["numCompared"])) if s[3]["phase"]>=7 else ("&nbsp;" if s[3]["diff"] is None else
       ('%s (<a href="%s.diff.html">%d/%d failed</a>)' % (friendlyStr(s[3]["diff"]["time"]), filename_prefix, len(s[3]["diff"]["vars"]), s[3]["diff"]["numCompared"]))),
       checkPhase(s[3]["phase"], 6),
-      friendlyStr(s[3]["sim"] or 0),
+      friendlyStr(s[3].get("sim") or 0),
       checkPhase(s[3]["phase"], 5),
-      friendlyStr(sum(s[3][x] or 0.0 for x in ["frontend","backend","simcode","templates","build"])),
+      friendlyStr(sum(s[3].get(x) or 0.0 for x in ["frontend","backend","simcode","templates","build"])),
       checkPhase(s[3]["phase"], 1),
-      friendlyStr(s[3]["frontend"] or 0),
+      friendlyStr(s[3].get("frontend") or 0),
       checkPhase(s[3]["phase"], 2),
-      friendlyStr(s[3]["backend"] or 0),
+      friendlyStr(s[3].get("backend") or 0),
       checkPhase(s[3]["phase"], 3),
-      friendlyStr(s[3]["simcode"] or 0),
+      friendlyStr(s[3].get("simcode") or 0),
       checkPhase(s[3]["phase"], 4),
-      friendlyStr(s[3]["templates"] or 0),
+      friendlyStr(s[3].get("templates") or 0),
       checkPhase(s[3]["phase"], 5),
-      friendlyStr(s[3]["build"] or 0)
+      friendlyStr(s[3].get("build") or 0)
     ))(filename_prefix="files/%s_%s" % (s[2], s[1]))
     for s in stats])
   numSucceeded = [len(stats)] + [sum(1 if s[3]["phase"]>=i else 0 for s in stats) for i in range(1,8)]
