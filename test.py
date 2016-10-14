@@ -109,7 +109,7 @@ omhome=omc.sendExpression('getInstallationDirectoryPath()')
 omc_exe=os.path.join(omhome,"bin","omc")
 omc_version=omc.sendExpression('getVersion()')
 dygraphs=os.path.join(omhome,"share","doc","omc","testmodels","dygraph-combined.js")
-print(omc_exe,dygraphs)
+print(omc_exe,omc_version,dygraphs)
 
 # Create mos-files
 
