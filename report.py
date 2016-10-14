@@ -47,13 +47,19 @@ for lib in sorted(libs.keys()):
   entries += "</table>\n"
   # print(sorted(list(libs[lib])))
 
-branches_lines = [("<tr><td>%s</td><td>%s</td><td>%s</td></tr>\n" % (cgi.escape(branch), cgi.escape(dates_str[branch]), friendlyStr(
+nummodels = sum(len(l) for l in libs.values())
+branches_lines = [("<tr><td>%s</td><td>%s</td><td>%s</td><td%s>%d</td></tr>\n" % (cgi.escape(branch), cgi.escape(dates_str[branch]), friendlyStr(
   cursor.execute("SELECT SUM(exectime) FROM [%s] WHERE date=?" % branch, (dates[branch],)).fetchone()[0]
-))) for branch in branches]
+),
+  " class=\"warning\"" if nummodels!=cursor.execute("SELECT COUNT(*) FROM [%s] WHERE date=?" % branch, (dates[branch],)).fetchone()[0] else "",
+  cursor.execute("SELECT COUNT(*) FROM [%s] WHERE date=?" % branch, (dates[branch],)).fetchone()[0]
+)) for branch in branches]
 template = open("overview.html.tpl").read()
 replacements = (
   (u"#title#", "OpenModelica Library Testing Overview"),
   (u"#branches#", "\n".join(branches_lines)),
+  (u"#numlibs#", str(len(libs))),
+  (u"#nummodels#", str(nummodels)),
   (u"#entries#", entries)
 )
 open("overview.html", "w").write(multiple_replace(template, *replacements))
