@@ -16,6 +16,7 @@ import sqlite3
 import datetime
 import psutil, subprocess, threading
 from subprocess import call
+from monotonic import monotonic
 
 def runCommand(cmd, timeout):
   process = [None]
@@ -169,9 +170,9 @@ def runScript(c, timeout):
   j = "files/%s.stat.json" % c
   if os.path.exists(j):
     os.remove(j)
-  start=time.time()
+  start=monotonic()
   runCommand("%s -n=1 %s.mos" % (omc_exe, c), timeout=timeout)
-  execTime=time.time()-start
+  execTime=monotonic()-start
   if os.path.exists(j):
     data=json.load(open(j))
     data["exectime"] = execTime
@@ -197,11 +198,11 @@ def expectedExec(c):
 tests=sorted(tests, key=lambda c: expectedExec(c), reverse=True)
 
 cmd_res=[0]
-start=time.time()
+start=monotonic()
 start_as_time=time.localtime()
 testRunStartTimeAsEpoch = int(start)
 cmd_res=Parallel(n_jobs=n_jobs)(delayed(runScript)(name, 1.1*data["ulimitOmc"]+1.1*data["ulimitExe"]) for (model,lib,libName,name,data) in tests)
-stop=time.time()
+stop=monotonic()
 print("Execution time: %.2f" % (stop-start))
 
 #if max(cmd_res) > 0:
