@@ -13,7 +13,7 @@
 </table>
 <h2>Tested branches</h2>
 <table>
-<tr><th>Branch</th><th>Build time</th><th>Execution time</th><th>Number of models</th></tr>
+<tr><th>Branch</th><th>Version</th><th>Build time</th><th>Execution time</th><th>Number of models</th></tr>
 #branches#
 </table>
 #entries#

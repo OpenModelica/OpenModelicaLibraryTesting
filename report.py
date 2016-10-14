@@ -29,9 +29,21 @@ for branch in branches:
 
 entries = ""
 
+def checkEqual(iterator):
+   return len(set(iterator)) <= 1
+
 for lib in sorted(libs.keys()):
   models = libs[lib]
   entries += "<h3>%s</h3>\n" % lib
+  entries += "<table>\n"
+  entries += "<tr><th>&nbsp;</th>%s</tr>\n" % "".join(["<th>%s</th>" % branch for branch in branches])
+  entries += "<tr><td>Version</td>"
+  branches_versions = [(cursor.execute("SELECT libversion FROM [libversion] WHERE date=? AND libname=? AND branch=?", (dates[branch],lib,branch)).fetchone() or ["unknown"])[0] for branch in branches]
+  all_equal = checkEqual(branches_versions)
+  for ver in branches_versions:
+    entries += "<td%s>%s</td>" % (' class="warning"' if not all_equal else "", ver)
+  entries += "</tr>\n"
+  entries += "</table>\n"
   entries += "<table>\n"
   entries += entryhead
   for branch in branches:
@@ -48,7 +60,9 @@ for lib in sorted(libs.keys()):
   # print(sorted(list(libs[lib])))
 
 nummodels = sum(len(l) for l in libs.values())
-branches_lines = [("<tr><td>%s</td><td>%s</td><td>%s</td><td%s>%d</td></tr>\n" % (cgi.escape(branch), cgi.escape(dates_str[branch]), friendlyStr(
+branches_lines = [("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td%s>%d</td></tr>\n" % (cgi.escape(branch), cgi.escape(
+  (cursor.execute("SELECT omcversion FROM [omcversion] WHERE date=? AND branch=?", (dates[branch],branch)).fetchone() or ["unknown"])[0]
+  ), cgi.escape(dates_str[branch]), friendlyStr(
   cursor.execute("SELECT SUM(exectime) FROM [%s] WHERE date=?" % branch, (dates[branch],)).fetchone()[0]
 ),
   " class=\"warning\"" if nummodels!=cursor.execute("SELECT COUNT(*) FROM [%s] WHERE date=?" % branch, (dates[branch],)).fetchone()[0] else "",

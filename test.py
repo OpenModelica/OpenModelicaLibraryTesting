@@ -182,6 +182,11 @@ cursor.execute('''CREATE TABLE if not exists [%s]
              frontend real NOT NULL, backend real NOT NULL, simcode real NOT NULL, templates real NOT NULL, compile real NOT NULL, simulate real NOT NULL,
              verify real NOT NULL, verifyfail integer NOT NULL, verifytotal integer NOT NULL, finalphase integer NOT NULL)''' % branch)
 
+# Table to lookup from a run (date, branch) to omcversion used
+cursor.execute("CREATE TABLE if not exists [omcversion] (date integer NOT NULL, branch text NOT NULL, omcversion text NOT NULL)")
+# Table to lookup from a run (date, branch) which library versions were used
+cursor.execute("CREATE TABLE if not exists [libversion] (date integer NOT NULL, branch text NOT NULL, libname text NOT NULL, libversion text NOT NULL)")
+
 def expectedExec(c):
   (model,lib,libName,name,data) = c
   cursor.execute("SELECT exectime FROM [%s] WHERE libname = ? AND model = ? ORDER BY date DESC LIMIT 1" % branch, (libName,model))
@@ -190,10 +195,11 @@ def expectedExec(c):
 
 tests=sorted(tests, key=lambda c: expectedExec(c), reverse=True)
 
+print("Starting execution of %d tests" % len(tests))
 cmd_res=[0]
 start=monotonic()
 start_as_time=time.localtime()
-testRunStartTimeAsEpoch = int(start)
+testRunStartTimeAsEpoch = int(time.time())
 cmd_res=Parallel(n_jobs=n_jobs)(delayed(runScript)(name, 1.1*data["ulimitOmc"]+1.1*data["ulimitExe"]) for (model,lib,libName,name,data) in tests)
 stop=monotonic()
 print("Execution time: %.2f" % (stop-start))
@@ -237,6 +243,9 @@ for key in stats.keys():
   )
   # print values
   cursor.execute("INSERT INTO [%s] VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)" % branch, values)
+for libname in stats_by_libname.keys():
+  cursor.execute("INSERT INTO [libversion] VALUES (?,?,?,?)", (testRunStartTimeAsEpoch, branch, libname, stats_by_libname[libname]["conf"]["libraryVersionRevision"]))
+cursor.execute("INSERT INTO [omcversion] VALUES (?,?,?)", (testRunStartTimeAsEpoch, branch, omc_version))
 conn.commit()
 conn.close()
 
