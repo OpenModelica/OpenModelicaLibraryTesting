@@ -113,11 +113,26 @@ print(omc_exe,omc_version,dygraphs)
 
 # Create mos-files
 
+conn = sqlite3.connect('sqlite3.db')
+cursor = conn.cursor()
+
+# BOOLEAN NOT NULL CHECK (verify IN (0,1) AND builds IN (0,1) AND simulates IN (0,1))
+cursor.execute('''CREATE TABLE if not exists [%s]
+             (date integer NOT NULL, libname text NOT NULL, model text NOT NULL, exectime real NOT NULL,
+             frontend real NOT NULL, backend real NOT NULL, simcode real NOT NULL, templates real NOT NULL, compile real NOT NULL, simulate real NOT NULL,
+             verify real NOT NULL, verifyfail integer NOT NULL, verifytotal integer NOT NULL, finalphase integer NOT NULL)''' % branch)
+
+# Table to lookup from a run (date, branch) to omcversion used
+cursor.execute("CREATE TABLE if not exists [omcversion] (date integer NOT NULL, branch text NOT NULL, omcversion text NOT NULL)")
+# Table to lookup from a run (date, branch) which library versions were used
+cursor.execute("CREATE TABLE if not exists [libversion] (date integer NOT NULL, branch text NOT NULL, libname text NOT NULL, libversion text NOT NULL)")
+
 if not omc.sendExpression('setCommandLineOptions("-g=MetaModelica")'):
   print("Failed to set MetaModelica grammar")
   sys.exit(1)
 
 stats_by_libname = {}
+skipped_libs = {}
 tests=[]
 for (library,conf) in configs:
   omc.sendExpression('clear()')
@@ -132,8 +147,13 @@ for (library,conf) in configs:
     conf["libraryLastChange"] = " %s (revision %s)" % (conf["libraryVersionRevision"],"\n".join(open(lastChange).readlines()).strip())
   res=omc.sendExpression('{c for c guard isExperiment(c) and not regexBool(typeNameString(x), "^Modelica_Synchronous\\.WorkInProgress") in getClassNames(%s, recursive=true)}' % library)
   libName=library+"_"+conf["libraryVersion"]+(("_" + conf["configExtraName"]) if conf.has_key("configExtraName") else "")
-  stats_by_libname[libName] = {"conf":conf, "stats":[]}
-  tests = tests + [(r,library,libName,libName+"_"+r,conf) for r in res]
+  v = cursor.execute("SELECT date FROM [libversion] NATURAL JOIN [omcversion] WHERE libversion=? AND libname=? AND branch=? AND omcversion=? ORDER BY date DESC LIMIT 1", (conf["libraryLastChange"],libName,branch,omc_version)).fetchone()
+  if v is None:
+    stats_by_libname[libName] = {"conf":conf, "stats":[]}
+    tests = tests + [(r,library,libName,libName+"_"+r,conf) for r in res]
+  else:
+    print("Skipping %s as we already have results for it" % libName)
+    skipped_libs[libName] = v[0]
 
 template = open("BuildModel.mos.tpl").read()
 
@@ -173,19 +193,6 @@ def runScript(c, timeout):
   else:
     data = {"exectime":execTime,"phase":0}
     json.dump(data, open(j,"w"))
-
-conn = sqlite3.connect('sqlite3.db')
-cursor = conn.cursor()
-# BOOLEAN NOT NULL CHECK (verify IN (0,1) AND builds IN (0,1) AND simulates IN (0,1))
-cursor.execute('''CREATE TABLE if not exists [%s]
-             (date integer NOT NULL, libname text NOT NULL, model text NOT NULL, exectime real NOT NULL,
-             frontend real NOT NULL, backend real NOT NULL, simcode real NOT NULL, templates real NOT NULL, compile real NOT NULL, simulate real NOT NULL,
-             verify real NOT NULL, verifyfail integer NOT NULL, verifytotal integer NOT NULL, finalphase integer NOT NULL)''' % branch)
-
-# Table to lookup from a run (date, branch) to omcversion used
-cursor.execute("CREATE TABLE if not exists [omcversion] (date integer NOT NULL, branch text NOT NULL, omcversion text NOT NULL)")
-# Table to lookup from a run (date, branch) which library versions were used
-cursor.execute("CREATE TABLE if not exists [libversion] (date integer NOT NULL, branch text NOT NULL, libname text NOT NULL, libversion text NOT NULL)")
 
 def expectedExec(c):
   (model,lib,libName,name,data) = c
@@ -244,8 +251,12 @@ for key in stats.keys():
   # print values
   cursor.execute("INSERT INTO [%s] VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)" % branch, values)
 for libname in stats_by_libname.keys():
-  cursor.execute("INSERT INTO [libversion] VALUES (?,?,?,?)", (testRunStartTimeAsEpoch, branch, libname, stats_by_libname[libname]["conf"]["libraryVersionRevision"]))
+  cursor.execute("INSERT INTO [libversion] VALUES (?,?,?,?)", (testRunStartTimeAsEpoch, branch, libname, stats_by_libname[libname]["conf"]["libraryLastChange"]))
 cursor.execute("INSERT INTO [omcversion] VALUES (?,?,?)", (testRunStartTimeAsEpoch, branch, omc_version))
+for libname in skipped_libs.keys():
+  values = (testRunStartTimeAsEpoch, skipped_libs[libname], libname)
+  cursor.execute("UPDATE [libversion] SET date = ? WHERE date = ? AND libname = ? AND branch = ?", (testRunStartTimeAsEpoch, skipped_libs[libname], libname, branch))
+  cursor.execute("UPDATE [%s] SET date = ? WHERE date = ? AND libname = ?" % branch, values)
 conn.commit()
 conn.close()
 
