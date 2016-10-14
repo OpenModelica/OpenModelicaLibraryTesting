@@ -17,6 +17,7 @@ import datetime
 import psutil, subprocess, threading
 from subprocess import call
 from monotonic import monotonic
+from omcommon import friendlyStr, multiple_replace
 
 def runCommand(cmd, timeout):
   process = [None]
@@ -52,15 +53,6 @@ def runCommand(cmd, timeout):
     thread.join()
 
   return process[0].returncode
-
-def multiple_replacer(*key_values):
-    replace_dict = dict(key_values)
-    replacement_function = lambda match: replace_dict[match.group(0)]
-    pattern = re.compile("|".join([re.escape(k) for k, v in key_values]), re.M)
-    return lambda string: pattern.sub(replacement_function, string)
-
-def multiple_replace(string, *key_values):
-    return multiple_replacer(*key_values)(string)
 
 parser = argparse.ArgumentParser(description='OpenModelica library testing tool')
 parser.add_argument('configs', nargs='*')
@@ -173,6 +165,7 @@ def runScript(c, timeout):
   start=monotonic()
   runCommand("%s -n=1 %s.mos" % (omc_exe, c), timeout=timeout)
   execTime=monotonic()-start
+  assert(execTime >= 0.0)
   if os.path.exists(j):
     data=json.load(open(j))
     data["exectime"] = execTime
@@ -204,6 +197,7 @@ testRunStartTimeAsEpoch = int(start)
 cmd_res=Parallel(n_jobs=n_jobs)(delayed(runScript)(name, 1.1*data["ulimitOmc"]+1.1*data["ulimitExe"]) for (model,lib,libName,name,data) in tests)
 stop=monotonic()
 print("Execution time: %.2f" % (stop-start))
+assert(stop-start >= 0.0)
 
 #if max(cmd_res) > 0:
 #  raise Exception("A command failed with exit status")
@@ -245,12 +239,6 @@ for key in stats.keys():
   cursor.execute("INSERT INTO [%s] VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)" % branch, values)
 conn.commit()
 conn.close()
-
-def friendlyStr(f):
-  if f>60:
-    return cgi.escape(str(datetime.timedelta(seconds=int(f))))
-  else:
-    return cgi.escape("%.2f" % f)
 
 def checkNumSucceeded(numSucceeded, n):
   if numSucceeded[n]==numSucceeded[n-1]:
