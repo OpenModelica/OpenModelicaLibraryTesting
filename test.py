@@ -257,8 +257,6 @@ for libname in skipped_libs.keys():
   values = (testRunStartTimeAsEpoch, skipped_libs[libname], libname)
   cursor.execute("UPDATE [libversion] SET date = ? WHERE date = ? AND libname = ? AND branch = ?", (testRunStartTimeAsEpoch, skipped_libs[libname], libname, branch))
   cursor.execute("UPDATE [%s] SET date = ? WHERE date = ? AND libname = ?" % branch, values)
-conn.commit()
-conn.close()
 
 def checkNumSucceeded(numSucceeded, n):
   if numSucceeded[n]==numSucceeded[n-1]:
@@ -356,9 +354,6 @@ for libname in stats_by_libname.keys():
       print("Error: Failed to rsync files: %s" % cmd)
       sys.exit(1)
 
-#json.dump(new_stats, open(".db","w"))
-
-# Upload omc directory to build slaves
-
-
-# Run jobs on slaves in parallel
+# Do not commit until we have generated and uploaded the reports
+conn.commit()
+conn.close()
