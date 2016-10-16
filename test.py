@@ -127,18 +127,21 @@ cursor.execute("CREATE TABLE if not exists [omcversion] (date integer NOT NULL, 
 # Table to lookup from a run (date, branch) which library versions were used
 cursor.execute("CREATE TABLE if not exists [libversion] (date integer NOT NULL, branch text NOT NULL, libname text NOT NULL, libversion text NOT NULL)")
 
-if not omc.sendExpression('setCommandLineOptions("-g=MetaModelica")'):
-  print("Failed to set MetaModelica grammar")
-  sys.exit(1)
-
 stats_by_libname = {}
 skipped_libs = {}
 tests=[]
 for (library,conf) in configs:
+  if not omc.sendExpression('setCommandLineOptions("-g=Modelica")'):
+    print("Failed to set MetaModelica grammar")
+    sys.exit(1)
   omc.sendExpression('clear()')
   if not omc.sendExpression('loadModel(%s,{"%s"})' % (library,conf["libraryVersion"])):
     print("Failed to load library: " + omc.sendExpression('getErrorString()'))
     sys.exit(1)
+  if not omc.sendExpression('setCommandLineOptions("-g=MetaModelica")'):
+    print("Failed to set MetaModelica grammar")
+    sys.exit(1)
+
   conf["libraryVersionRevision"]=omc.sendExpression('getVersion(%s)' % library)
   conf["libraryLastChange"]="" # TODO: FIXME
   librarySourceFile=omc.sendExpression('getSourceFile(%s)' % library)
