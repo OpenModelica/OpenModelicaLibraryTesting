@@ -136,7 +136,10 @@ for (library,conf) in configs:
     sys.exit(1)
   omc.sendExpression('clear()')
   if not omc.sendExpression('loadModel(%s,{"%s"})' % (library,conf["libraryVersion"])):
-    print("Failed to load library: " + omc.sendExpression('getErrorString()'))
+    try:
+      print("Failed to load library %s %s: %s" + (library,conf["libraryVersion"],omc.sendExpression('getErrorString()')))
+    except:
+      print("Failed to load library %s %s. getErrorString() failed..." + (library,conf["libraryVersion"]))
     sys.exit(1)
   if not omc.sendExpression('setCommandLineOptions("-g=MetaModelica")'):
     print("Failed to set MetaModelica grammar")
