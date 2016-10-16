@@ -146,7 +146,7 @@ for (library,conf) in configs:
   if os.path.exists(lastChange):
     conf["libraryLastChange"] = " %s (revision %s)" % (conf["libraryVersionRevision"],"\n".join(open(lastChange).readlines()).strip())
   res=omc.sendExpression('{c for c guard isExperiment(c) and not regexBool(typeNameString(x), "^Modelica_Synchronous\\.WorkInProgress") in getClassNames(%s, recursive=true)}' % library)
-  libName=library+"_"+conf["libraryVersion"]+(("_" + conf["configExtraName"]) if conf.has_key("configExtraName") else "")
+  libName=library+("_"+conf["libraryVersion"] if conf["libraryVersion"]!="default" else "")+(("_" + conf["configExtraName"]) if conf.has_key("configExtraName") else "")
   v = cursor.execute("SELECT date,libversion,libname,branch,omcversion FROM [libversion] NATURAL JOIN [omcversion] WHERE libversion=? AND libname=? AND branch=? AND omcversion=? ORDER BY date DESC LIMIT 1", (conf["libraryLastChange"],libName,branch,omc_version)).fetchone()
   if v is None:
     stats_by_libname[libName] = {"conf":conf, "stats":[]}
