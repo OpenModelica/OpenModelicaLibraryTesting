@@ -127,6 +127,11 @@ cursor.execute("CREATE TABLE if not exists [omcversion] (date integer NOT NULL, 
 # Table to lookup from a run (date, branch) which library versions were used
 cursor.execute("CREATE TABLE if not exists [libversion] (date integer NOT NULL, branch text NOT NULL, libname text NOT NULL, libversion text NOT NULL)")
 
+user_version = cursor.execute("PRAGMA user_version").fetchone()[0]
+
+# Set user_version to the current schema
+cursor.execute("PRAGMA user_version=1")
+
 stats_by_libname = {}
 skipped_libs = {}
 tests=[]
