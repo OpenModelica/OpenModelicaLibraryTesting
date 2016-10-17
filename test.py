@@ -171,7 +171,7 @@ for (modelName,library,libName,name,conf) in tests:
     (u"#modelName#", modelName),
     (u"#fileName#", name),
     (u"#customCommands#", conf["customCommands"]),
-    (u"#modelVersion#", conf["libraryVersionRevision"]),
+    (u"#modelVersion#", conf["libraryVersion"]),
     (u"#ulimitOmc#", str(conf["ulimitOmc"])),
     (u"#default_tolerance#", str(conf["default_tolerance"])),
     (u"#reference_reltol#", str(conf["reference_reltol"])),
