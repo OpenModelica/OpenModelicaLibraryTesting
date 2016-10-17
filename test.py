@@ -93,6 +93,8 @@ setIndexReductionMethod("dynamicStateSelection");
   data["ulimitMemory"] = data.get("ulimitMemory") or 16000000 # ~16GB memory at most
   data["extraSimFlags"] = data.get("extraSimFlags") or "" # no extra sim flags
   data["libraryVersion"] = data.get("libraryVersion") or "default"
+  data["alarmFlag"] = data.get("alarmFlag") or "-alarm"
+  data["abortSlowSimulation"] = data.get("abortSlowSimulation") or "-abortSlowSimulation"
   return (data["library"],data)
 
 def readConfig(c):
@@ -183,7 +185,7 @@ for (library,conf) in configs:
 template = open("BuildModel.mos.tpl").read()
 
 for (modelName,library,libName,name,conf) in tests:
-  simFlags="-abortSlowSimulation -alarm=%d %s" % (conf["ulimitExe"],conf["extraSimFlags"])
+  simFlags="%s %s=%d %s" % (conf["abortSlowSimulation"],conf["alarmFlag"],conf["ulimitExe"],conf["extraSimFlags"])
   replacements = (
     (u"#logFile#", "/tmp/OpenModelicaLibraryTesting.log"),
     (u"#library#", library),
