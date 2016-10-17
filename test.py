@@ -7,7 +7,7 @@
 import cgi
 import sys
 import os
-import re
+import re, glob
 from joblib import Parallel, delayed
 import time
 import simplejson as json
@@ -20,7 +20,7 @@ from subprocess import call
 from monotonic import monotonic
 from omcommon import friendlyStr, multiple_replace
 
-def runCommand(cmd, timeout):
+def runCommand(cmd, prefix, timeout):
   process = [None]
   def target():
     process[0] = subprocess.Popen(cmd, shell=True)
@@ -52,6 +52,22 @@ def runCommand(cmd, timeout):
       except:
         pass
     thread.join()
+
+  try:
+    lines = open("%s.tmpfiles" % prefix).readlines()
+  except:
+    lines = []
+  for suffix in ["_*.o","_*.so","_*.h","_*.c","_*.cpp",".mos","",".c",".cpp","_info.json","_*.xml","_*.tmpfiles"]:
+    for f in glob.glob(prefix+suffix):
+      lines.append(f)
+    for f in glob.glob("OM"+prefix+suffix):
+      lines.append(f)
+  for line in lines:
+    try:
+      os.unlink(line.strip())
+    except:
+      pass
+      #print("Failed to unlink: %s" % line.strip())
 
   return process[0].returncode
 
@@ -210,7 +226,7 @@ def runScript(c, timeout):
   if os.path.exists(j):
     os.remove(j)
   start=monotonic()
-  runCommand("%s -n=1 %s.mos" % (omc_exe, c), timeout=timeout)
+  runCommand("%s -n=1 %s.mos" % (omc_exe, c), prefix=c, timeout=timeout)
   execTime=monotonic()-start
   assert(execTime >= 0.0)
   if os.path.exists(j):
@@ -247,17 +263,6 @@ for k in sorted(stats.keys(), key=lambda c: stats[c][3]["exectime"], reverse=Tru
   print("%s: exectime %.2f" % (k, stats[k][3]["exectime"]))
 
 for key in stats.keys():
-  #new_stats[key] = stats[key][2]
-  try:
-    lines = open("%s.tmpfiles" % key).readlines()
-  except:
-    lines = []
-  for line in lines:
-    try:
-      os.unlink(line.strip())
-    except:
-      pass
-      #print("Failed to unlink: %s" % line.strip())
   (name,model,libname,data)=stats[key]
   stats_by_libname[libname]["stats"].append(stats[key])
   values = (testRunStartTimeAsEpoch,
