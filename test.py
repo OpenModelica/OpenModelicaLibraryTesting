@@ -15,6 +15,7 @@ import argparse
 import sqlite3
 import datetime
 import psutil, subprocess, threading
+import hashlib
 from subprocess import call
 from monotonic import monotonic
 from omcommon import friendlyStr, multiple_replace
@@ -116,26 +117,38 @@ print(omc_exe,omc_version,dygraphs)
 conn = sqlite3.connect('sqlite3.db')
 cursor = conn.cursor()
 
-# BOOLEAN NOT NULL CHECK (verify IN (0,1) AND builds IN (0,1) AND simulates IN (0,1))
-cursor.execute('''CREATE TABLE if not exists [%s]
-             (date integer NOT NULL, libname text NOT NULL, model text NOT NULL, exectime real NOT NULL,
-             frontend real NOT NULL, backend real NOT NULL, simcode real NOT NULL, templates real NOT NULL, compile real NOT NULL, simulate real NOT NULL,
-             verify real NOT NULL, verifyfail integer NOT NULL, verifytotal integer NOT NULL, finalphase integer NOT NULL)''' % branch)
-
-# Table to lookup from a run (date, branch) to omcversion used
-cursor.execute("CREATE TABLE if not exists [omcversion] (date integer NOT NULL, branch text NOT NULL, omcversion text NOT NULL)")
-# Table to lookup from a run (date, branch) which library versions were used
-cursor.execute("CREATE TABLE if not exists [libversion] (date integer NOT NULL, branch text NOT NULL, libname text NOT NULL, libversion text NOT NULL)")
-
 user_version = cursor.execute("PRAGMA user_version").fetchone()[0]
 
-# Set user_version to the current schema
-cursor.execute("PRAGMA user_version=1")
+if user_version==0:
+  # BOOLEAN NOT NULL CHECK (verify IN (0,1) AND builds IN (0,1) AND simulates IN (0,1))
+  cursor.execute('''CREATE TABLE if not exists [%s]
+               (date integer NOT NULL, libname text NOT NULL, model text NOT NULL, exectime real NOT NULL,
+               frontend real NOT NULL, backend real NOT NULL, simcode real NOT NULL, templates real NOT NULL, compile real NOT NULL, simulate real NOT NULL,
+               verify real NOT NULL, verifyfail integer NOT NULL, verifytotal integer NOT NULL, finalphase integer NOT NULL)''' % branch)
+  # Table to lookup from a run (date, branch) to omcversion used
+  cursor.execute("CREATE TABLE if not exists [omcversion] (date integer NOT NULL, branch text NOT NULL, omcversion text NOT NULL)")
+  # Table to lookup from a run (date, branch) which library versions were used
+  cursor.execute("CREATE TABLE if not exists [libversion] (date integer NOT NULL, branch text NOT NULL, libname text NOT NULL, libversion text NOT NULL, confighash integer NOT NULL)")
+elif user_version==1:
+  cursor.execute("ALTER TABLE [libversion] ADD COLUMN confighash integer NOT NULL DEFAULT(0)")
+  # Set user_version to the current schema
+elif user_version in [2]:
+  pass
+else:
+  print("Unknown schema user_version=%d" % user_version)
+  sys.exit(1)
+
+cursor.execute("PRAGMA user_version=2")
+
+def strToHashInt(str):
+  return int(hashlib.sha1(str).hexdigest()[0:8],16)
 
 stats_by_libname = {}
 skipped_libs = {}
 tests=[]
 for (library,conf) in configs:
+  confighash = strToHashInt(str(conf))
+  conf["confighash"] = confighash
   if not omc.sendExpression('setCommandLineOptions("-g=Modelica")'):
     print("Failed to set MetaModelica grammar")
     sys.exit(1)
@@ -158,7 +171,8 @@ for (library,conf) in configs:
     conf["libraryLastChange"] = " %s (revision %s)" % (conf["libraryVersionRevision"],"\n".join(open(lastChange).readlines()).strip())
   res=omc.sendExpression('{c for c guard isExperiment(c) and not regexBool(typeNameString(x), "^Modelica_Synchronous\\.WorkInProgress") in getClassNames(%s, recursive=true)}' % library)
   libName=library+("_"+conf["libraryVersion"] if conf["libraryVersion"]!="default" else "")+(("_" + conf["configExtraName"]) if conf.has_key("configExtraName") else "")
-  v = cursor.execute("SELECT date,libversion,libname,branch,omcversion FROM [libversion] NATURAL JOIN [omcversion] WHERE libversion=? AND libname=? AND branch=? AND omcversion=? ORDER BY date DESC LIMIT 1", (conf["libraryLastChange"],libName,branch,omc_version)).fetchone()
+  v = cursor.execute("""SELECT date,libversion,libname,branch,omcversion FROM [libversion] NATURAL JOIN [omcversion]
+  WHERE libversion=? AND libname=? AND branch=? AND omcversion=? AND confighash=? ORDER BY date DESC LIMIT 1""", (conf["libraryLastChange"],libName,branch,omc_version,confighash)).fetchone()
   if v is None:
     stats_by_libname[libName] = {"conf":conf, "stats":[]}
     tests = tests + [(r,library,libName,libName+"_"+r,conf) for r in res]
@@ -262,11 +276,12 @@ for key in stats.keys():
   # print values
   cursor.execute("INSERT INTO [%s] VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)" % branch, values)
 for libname in stats_by_libname.keys():
-  cursor.execute("INSERT INTO [libversion] VALUES (?,?,?,?)", (testRunStartTimeAsEpoch, branch, libname, stats_by_libname[libname]["conf"]["libraryLastChange"]))
+  confighash = stats_by_libname[libname]["conf"]["confighash"]
+  cursor.execute("INSERT INTO [libversion] VALUES (?,?,?,?,?)", (testRunStartTimeAsEpoch, branch, libname, stats_by_libname[libname]["conf"]["libraryLastChange"], confighash))
 cursor.execute("INSERT INTO [omcversion] VALUES (?,?,?)", (testRunStartTimeAsEpoch, branch, omc_version))
 for libname in skipped_libs.keys():
   values = (testRunStartTimeAsEpoch, skipped_libs[libname], libname)
-  cursor.execute("UPDATE [libversion] SET date = ? WHERE date = ? AND libname = ? AND branch = ?", (testRunStartTimeAsEpoch, skipped_libs[libname], libname, branch))
+  cursor.execute("UPDATE [libversion] SET date = ? WHERE date = ? AND libname = ? AND branch = ? AND confighash = ?", (testRunStartTimeAsEpoch, skipped_libs[libname], libname, branch, confighash))
   cursor.execute("UPDATE [%s] SET date = ? WHERE date = ? AND libname = ?" % branch, values)
 
 def checkNumSucceeded(numSucceeded, n):
