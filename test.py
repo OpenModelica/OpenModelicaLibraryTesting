@@ -57,7 +57,7 @@ def runCommand(cmd, prefix, timeout):
     lines = open("%s.tmpfiles" % prefix).readlines()
   except:
     lines = []
-  for suffix in ["_*.o","_*.so","_*.h","_*.c","_*.cpp",".mos","",".c",".cpp","_info.json","_*.xml","_*.tmpfiles"]:
+  for suffix in ["_*.o","_*.so","_*.h","_*.c","_*.cpp",".mos","",".c",".cpp","_info.json","_*.xml","_*.tmpfiles","_res.*"]:
     for f in glob.glob(prefix+suffix):
       lines.append(f)
     for f in glob.glob("OM"+prefix+suffix):
