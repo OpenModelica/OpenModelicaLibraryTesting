@@ -90,7 +90,8 @@ timeDiff := -1.0;
 buildRes := res[1] <> "";
 
 OpenModelica.Scripting.Internal.Time.timerTick(OpenModelica.Scripting.Internal.Time.RT_CLOCK_USER_RESERVED);
-simRes  := if not buildRes then false else 0 == system("./#fileName# #simFlags# "+emit_protected+" 2>&1 | head -c 1048576 > "+simFile);
+cmd := "(rm -f #fileName#.pipe ; mkfifo #fileName#.pipe ; head -c 1048576 < #fileName#.pipe > "+simFile+" & ./#fileName# #simFlags# "+emit_protected+" 2>&1 > #fileName#.pipe)";
+simRes  := if not buildRes then false else 0 == system(cmd);
 timeSim := if buildRes then OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_USER_RESERVED) else 0;
 
 resFile := "#fileName#_res." + outputFormat;
