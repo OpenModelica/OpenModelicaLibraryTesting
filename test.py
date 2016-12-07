@@ -139,23 +139,23 @@ user_version = cursor.execute("PRAGMA user_version").fetchone()[0]
 
 if user_version==0:
   # BOOLEAN NOT NULL CHECK (verify IN (0,1) AND builds IN (0,1) AND simulates IN (0,1))
-  cursor.execute('''CREATE TABLE if not exists [%s]
-               (date integer NOT NULL, libname text NOT NULL, model text NOT NULL, exectime real NOT NULL,
-               frontend real NOT NULL, backend real NOT NULL, simcode real NOT NULL, templates real NOT NULL, compile real NOT NULL, simulate real NOT NULL,
-               verify real NOT NULL, verifyfail integer NOT NULL, verifytotal integer NOT NULL, finalphase integer NOT NULL)''' % branch)
   # Table to lookup from a run (date, branch) to omcversion used
   cursor.execute("CREATE TABLE if not exists [omcversion] (date integer NOT NULL, branch text NOT NULL, omcversion text NOT NULL)")
   # Table to lookup from a run (date, branch) which library versions were used
   cursor.execute("CREATE TABLE if not exists [libversion] (date integer NOT NULL, branch text NOT NULL, libname text NOT NULL, libversion text NOT NULL, confighash integer NOT NULL)")
 elif user_version==1:
   cursor.execute("ALTER TABLE [libversion] ADD COLUMN confighash integer NOT NULL DEFAULT(0)")
-  # Set user_version to the current schema
 elif user_version in [2]:
   pass
 else:
   print("Unknown schema user_version=%d" % user_version)
   sys.exit(1)
 
+cursor.execute('''CREATE TABLE if not exists [%s]
+             (date integer NOT NULL, libname text NOT NULL, model text NOT NULL, exectime real NOT NULL,
+             frontend real NOT NULL, backend real NOT NULL, simcode real NOT NULL, templates real NOT NULL, compile real NOT NULL, simulate real NOT NULL,
+             verify real NOT NULL, verifyfail integer NOT NULL, verifytotal integer NOT NULL, finalphase integer NOT NULL)''' % branch)
+# Set user_version to the current schema
 cursor.execute("PRAGMA user_version=2")
 
 def strToHashInt(str):
