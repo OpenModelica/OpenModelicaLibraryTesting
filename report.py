@@ -30,10 +30,13 @@ configs_lst = [shared.readConfig(c) for c in configs]
 configs = []
 for c in configs_lst:
   configs = configs + c
-libnames = [shared.libname(library,conf) for (library,conf) in configs]
+libnames = set(shared.libname(library,conf) for (library,conf) in configs)
 
 conn = sqlite3.connect('sqlite3.db')
 cursor = conn.cursor()
+
+nmodels = {}
+nsimulate = {}
 
 for branch in branches:
   cursor.execute("SELECT date FROM [%s] ORDER BY date DESC LIMIT 1" % branch)
@@ -41,6 +44,7 @@ for branch in branches:
   dates_str[branch] = str(datetime.datetime.fromtimestamp(v).strftime('%Y-%m-%d %H:%M:%S'))
 
   dates[branch] = {}
+  branch_nmodels = 0
   for libname in libnames:
     cursor.execute("SELECT date FROM [%s] WHERE libname=? ORDER BY date DESC LIMIT 1" % branch, (libname,))
     v = cursor.fetchone()
@@ -48,10 +52,13 @@ for branch in branches:
       dates[branch][libname] = 0
       continue
     dates[branch][libname] = v[0]
-    for x in cursor.execute("SELECT libname,model FROM [%s] WHERE date=?" % branch, (v[0],)):
-      if x[0] not in libs:
-        libs[x[0]] = set()
-      libs[x[0]].add(x[1])
+    for x in cursor.execute("SELECT model FROM [%s] WHERE libname=? AND date=?" % branch, (libname,v[0])):
+      if libname not in libs:
+        libs[libname] = set()
+      libs[libname].add(x[0])
+      branch_nmodels += 1
+  nmodels[branch] = branch_nmodels
+  nsimulate[branch] = 0
 
 entries = ""
 
@@ -75,6 +82,7 @@ for lib in sorted(libs.keys()):
   for branch in branches:
     vs = [cursor.execute("SELECT COUNT(*) FROM [%s] WHERE date=? AND finalphase>=? AND libname=?" % (branch), (dates[branch][lib],i,lib)).fetchone()[0] for i in range(0,8)]
     entries += ("<tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td></tr>\n" % (branch,vs[0],vs[1],vs[2],vs[3],vs[4],vs[5],vs[6],vs[7]))
+    nsimulate[branch] += vs[6]
   entries += "</table>\n"
   entries += "<table>\n"
   entries += entryhead
@@ -86,13 +94,14 @@ for lib in sorted(libs.keys()):
   # print(sorted(list(libs[lib])))
 
 nummodels = sum(len(l) for l in libs.values())
-branches_lines = [("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td%s>%d</td></tr>\n" % (cgi.escape(branch), cgi.escape(
+branches_lines = [("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td%s>%d</td><td>%d</td></tr>\n" % (cgi.escape(branch), cgi.escape(
   (cursor.execute("SELECT omcversion FROM [omcversion] WHERE date=? AND branch=?", (dates[branch][lib],branch)).fetchone() or ["unknown"])[0]
   ), cgi.escape(dates_str[branch]), friendlyStr(
   cursor.execute("SELECT SUM(exectime) FROM [%s] WHERE date=?" % branch, (dates[branch][lib],)).fetchone()[0]
 ),
-  " class=\"warning\"" if nummodels!=cursor.execute("SELECT COUNT(*) FROM [%s] WHERE date=?" % branch, (dates[branch][lib],)).fetchone()[0] else "",
-  cursor.execute("SELECT COUNT(*) FROM [%s] WHERE date=?" % branch, (dates[branch][lib],)).fetchone()[0]
+  " class=\"warning\"" if nummodels!=nmodels[branch] else "",
+  nsimulate[branch],
+  nmodels[branch]
 )) for branch in branches]
 template = open("overview.html.tpl").read()
 replacements = (
