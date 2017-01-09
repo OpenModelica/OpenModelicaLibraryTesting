@@ -37,6 +37,7 @@ cursor = conn.cursor()
 
 nmodels = {}
 nsimulate = {}
+exectime = {}
 
 for branch in branches:
   cursor.execute("SELECT date FROM [%s] ORDER BY date DESC LIMIT 1" % branch)
@@ -59,6 +60,7 @@ for branch in branches:
       branch_nmodels += 1
   nmodels[branch] = branch_nmodels
   nsimulate[branch] = 0
+  exectime[branch] = 0.0
 
 entries = ""
 
@@ -117,15 +119,14 @@ for lib in sorted(libs.keys()):
     vs = [cursor.execute("SELECT COUNT(*) FROM [%s] WHERE date=? AND finalphase>=? AND libname=?" % (branch), (dates[branch][lib],i,lib)).fetchone()[0] for i in range(0,8)]
     sums = [cursor.execute("SELECT SUM(%s) FROM [%s] WHERE date=? AND libname=?" % (fields[i],branch), (dates[branch][lib],lib)).fetchone()[0] or 0 for i in range(0,8)]
     entries += ("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n" % (branch,friendlyStr(sums[0]),friendlyStr(sums[1]),friendlyStr(sums[2]),friendlyStr(sums[3]),friendlyStr(sums[4]),friendlyStr(sums[5]),friendlyStr(sums[6]),friendlyStr(sums[7])))
+    exectime[branch] += sums[0]
   entries += "</table>\n"
   # print(sorted(list(libs[lib])))
 
 nummodels = sum(len(l) for l in libs.values())
 branches_lines = [("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td%s>%d</td><td>%d</td></tr>\n" % (cgi.escape(branch), cgi.escape(
   (cursor.execute("SELECT omcversion FROM [omcversion] WHERE date=? AND branch=?", (dates[branch][lib],branch)).fetchone() or ["unknown"])[0]
-  ), cgi.escape(dates_str[branch]), friendlyStr(
-  cursor.execute("SELECT SUM(exectime) FROM [%s] WHERE date=?" % branch, (dates[branch][lib],)).fetchone()[0]
-),
+  ), cgi.escape(dates_str[branch]), friendlyStr(exectime[branch]),
   " class=\"warning\"" if nummodels!=nmodels[branch] else "",
   nsimulate[branch],
   nmodels[branch]
