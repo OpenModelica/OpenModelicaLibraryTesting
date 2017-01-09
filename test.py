@@ -92,6 +92,7 @@ if configs == []:
   sys.exit(1)
 
 from shared import readConfig
+import shared
 
 configs_lst = [readConfig(c) for c in configs]
 configs = []
