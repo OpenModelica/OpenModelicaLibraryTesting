@@ -79,10 +79,22 @@ for lib in sorted(libs.keys()):
   entries += "</table>\n"
   entries += "<table>\n"
   entries += entryhead
+  old_vs = None
   for branch in branches:
     vs = [cursor.execute("SELECT COUNT(*) FROM [%s] WHERE date=? AND finalphase>=? AND libname=?" % (branch), (dates[branch][lib],i,lib)).fetchone()[0] for i in range(0,8)]
-    entries += ("<tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td></tr>\n" % (branch,vs[0],vs[1],vs[2],vs[3],vs[4],vs[5],vs[6],vs[7]))
+    if old_vs:
+      warnings=[' class="warning"' if vs[i]<old_vs[i] else "" for i in range(0,len(vs))]
+    else:
+      warnings=[""]*len(vs)
+    entries += "<tr><td>%s</td>" % branch
+    for i in range(0,len(vs)):
+      entries += "<td%s>%s</td>" % (warnings[i],vs[i])
+    entries += "</tr>"
     nsimulate[branch] += vs[6]
+    if old_vs:
+      old_vs = max(vs, old_vs)
+    else:
+      old_vs = vs
   entries += "</table>\n"
   entries += "<table>\n"
   entries += entryhead
