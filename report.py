@@ -80,15 +80,30 @@ for lib in sorted(libs.keys()):
   entries += "<table>\n"
   entries += entryhead
   old_vs = None
+  models = {}
+  for branch in branches:
+    master_models = []
+    for i in range(0,8):
+      i_models = set()
+      for v in cursor.execute("SELECT model FROM [%s] WHERE date=? AND finalphase>=? AND libname=?" % (branch), (dates[branch][lib],i,lib)):
+        i_models.add(v[0])
+      master_models.append(i_models)
+    models[branch] = master_models
   for branch in branches:
     vs = [cursor.execute("SELECT COUNT(*) FROM [%s] WHERE date=? AND finalphase>=? AND libname=?" % (branch), (dates[branch][lib],i,lib)).fetchone()[0] for i in range(0,8)]
-    if old_vs:
-      warnings=[' class="warning"' if vs[i]<old_vs[i] else "" for i in range(0,len(vs))]
-    else:
-      warnings=[""]*len(vs)
+    warnings = []
     entries += "<tr><td>%s</td>" % branch
     for i in range(0,len(vs)):
-      entries += "<td%s>%s</td>" % (warnings[i],vs[i])
+      diff1 = models[branch][i] - models[branches[-1]][i]
+      diff2 = models[branches[-1]][i] - models[branch][i]
+      diff_text = ""
+      if len(diff2)>0:
+        diff_text += "<p>Now working in %s, failed in %s:<br />\n" % (branches[-1],branch) + "<br />\n".join(sorted(diff2)) + "</p>"
+      if len(diff1)>0:
+        diff_text += "<p>Now failing in %s, worked in %s:<br />\n" % (branches[-1],branch) + "<br />\n".join(sorted(diff1)) + "</p>"
+      if False and diff_text:
+        diff_text += "<p>Debug:<br />\n" + "<br />\n".join(models[branch][i]) + "</p>"
+      entries += '<td%s><a%s>%s%s</a></td>' % (' class="warning"' if old_vs and old_vs[i]>vs[i] else "",' class="dot"' if diff_text else "",vs[i],('<span class="tooltip">%s</span>' % diff_text) if diff_text else "")
     entries += "</tr>"
     nsimulate[branch] += vs[6]
     if old_vs:
