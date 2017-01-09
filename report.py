@@ -67,7 +67,7 @@ def checkEqual(iterator):
 
 for lib in sorted(libs.keys()):
   models = libs[lib]
-  entries += "<h3>%s</h3>\n" % lib
+  entries += "<hr /><h3>%s</h3>\n" % lib
   entries += "<table>\n"
   entries += "<tr><th>&nbsp;</th>%s</tr>\n" % "".join(["<th>%s</th>" % branch for branch in branches])
   entries += "<tr><td>Version</td>"
