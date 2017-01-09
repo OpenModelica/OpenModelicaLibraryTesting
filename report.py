@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-branches = ["v1.9","v1.10","master"]
+import sys
+
+if len(sys.argv) < 2:
+  raise Exception("Too few arguments")
+branches = [br.split("/")[-1] for br in sys.argv[1:]]
+
 dates = {}
 dates_str = {}
 fields = ["exectime", "frontend", "backend", "simcode", "templates", "compile", "simulate", "verify"]
