@@ -107,7 +107,7 @@ for lib in sorted(libs.keys()):
     entries += "</tr>"
     nsimulate[branch] += vs[6]
     if old_vs:
-      old_vs = max(vs, old_vs)
+      old_vs = [max(vs[i], old_vs[i]) for i in range(0, len(vs))]
     else:
       old_vs = vs
   entries += "</table>\n"
