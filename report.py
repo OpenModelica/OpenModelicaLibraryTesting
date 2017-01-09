@@ -103,7 +103,7 @@ for lib in sorted(libs.keys()):
         diff_text += "<p>Now failing in %s, worked in %s:<br />\n" % (branches[-1],branch) + "<br />\n".join(sorted(diff1)) + "</p>"
       if False and diff_text:
         diff_text += "<p>Debug:<br />\n" + "<br />\n".join(models[branch][i]) + "</p>"
-      entries += '<td%s><a%s>%s%s</a></td>' % (' class="warning"' if old_vs and old_vs[i]>vs[i] else "",' class="dot"' if diff_text else "",vs[i],('<span class="tooltip">%s</span>' % diff_text) if diff_text else "")
+      entries += '<td%s><a%s>%s%s</a></td>' % (' class="warning"' if old_vs and old_vs[i]>vs[i] else (' class="better"' if old_vs and old_vs[i]<vs[i] else ""),' class="dot"' if diff_text else "",vs[i],('<span class="tooltip">%s</span>' % diff_text) if diff_text else "")
     entries += "</tr>"
     nsimulate[branch] += vs[6]
     if old_vs:

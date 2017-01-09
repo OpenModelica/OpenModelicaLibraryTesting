@@ -3,6 +3,7 @@
   <title>#title#</title>
   <style>
   td.warning {background-color:#FFCC66;}
+  td.better {background-color:#00FF00;}
   a span.tooltip {display:none;}
   a:hover span.tooltip {position:fixed;top:30px;left:20px;display:inline;border:2px solid black;background-color:white;}
   a.dot {border-bottom: 1px dotted #000; text-decoration: none;}
