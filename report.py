@@ -1,11 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
+import sys, argparse
+import simplejson as json
+import shared
 
-if len(sys.argv) < 2:
-  raise Exception("Too few arguments")
-branches = [br.split("/")[-1] for br in sys.argv[1:]]
+parser = argparse.ArgumentParser(description='OpenModelica library testing report generation tool')
+parser.add_argument('configs', nargs='*')
+parser.add_argument('--branches', default='')
+args = parser.parse_args()
+configs = args.configs
+
+if configs == []:
+  raise Exception("Error: Expected at least one configuration file to start the library test")
+
+branches = [br.split("/")[-1] for br in args.branches.split(" ")]
 
 dates = {}
 dates_str = {}
@@ -17,20 +26,32 @@ libs = {}
 import cgi, sqlite3, time, datetime
 from omcommon import friendlyStr, multiple_replace
 
+configs_lst = [shared.readConfig(c) for c in configs]
+configs = []
+for c in configs_lst:
+  configs = configs + c
+libnames = [shared.libname(library,conf) for (library,conf) in configs]
+
 conn = sqlite3.connect('sqlite3.db')
 cursor = conn.cursor()
 
 for branch in branches:
-
   cursor.execute("SELECT date FROM [%s] ORDER BY date DESC LIMIT 1" % branch)
   v = cursor.fetchone()[0]
-  dates[branch] = v
   dates_str[branch] = str(datetime.datetime.fromtimestamp(v).strftime('%Y-%m-%d %H:%M:%S'))
 
-  for v in cursor.execute("SELECT libname,model FROM [%s] WHERE date=?" % branch, (v,)):
-    if v[0] not in libs:
-      libs[v[0]] = set()
-    libs[v[0]].add(v[1])
+  dates[branch] = {}
+  for libname in libnames:
+    cursor.execute("SELECT date FROM [%s] WHERE libname=? ORDER BY date DESC LIMIT 1" % branch, (libname,))
+    v = cursor.fetchone()
+    if v is None:
+      dates[branch][libname] = 0
+      continue
+    dates[branch][libname] = v[0]
+    for x in cursor.execute("SELECT libname,model FROM [%s] WHERE date=?" % branch, (v[0],)):
+      if x[0] not in libs:
+        libs[x[0]] = set()
+      libs[x[0]].add(x[1])
 
 entries = ""
 
@@ -43,7 +64,7 @@ for lib in sorted(libs.keys()):
   entries += "<table>\n"
   entries += "<tr><th>&nbsp;</th>%s</tr>\n" % "".join(["<th>%s</th>" % branch for branch in branches])
   entries += "<tr><td>Version</td>"
-  branches_versions = [(cursor.execute("SELECT libversion FROM [libversion] WHERE date=? AND libname=? AND branch=?", (dates[branch],lib,branch)).fetchone() or ["unknown"])[0] for branch in branches]
+  branches_versions = [(cursor.execute("SELECT libversion FROM [libversion] WHERE libname=? AND branch=? ORDER BY date DESC LIMIT 1", (lib,branch)).fetchone() or ["unknown"])[0] for branch in branches]
   all_equal = checkEqual(branches_versions)
   for ver in branches_versions:
     entries += "<td%s>%s</td>" % (' class="warning"' if not all_equal else "", ver)
@@ -52,26 +73,26 @@ for lib in sorted(libs.keys()):
   entries += "<table>\n"
   entries += entryhead
   for branch in branches:
-    vs = [cursor.execute("SELECT COUNT(*) FROM [%s] WHERE date=? AND finalphase>=? AND libname=?" % (branch), (dates[branch],i,lib)).fetchone()[0] for i in range(0,8)]
+    vs = [cursor.execute("SELECT COUNT(*) FROM [%s] WHERE date=? AND finalphase>=? AND libname=?" % (branch), (dates[branch][lib],i,lib)).fetchone()[0] for i in range(0,8)]
     entries += ("<tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td></tr>\n" % (branch,vs[0],vs[1],vs[2],vs[3],vs[4],vs[5],vs[6],vs[7]))
   entries += "</table>\n"
   entries += "<table>\n"
   entries += entryhead
   for branch in branches:
-    vs = [cursor.execute("SELECT COUNT(*) FROM [%s] WHERE date=? AND finalphase>=? AND libname=?" % (branch), (dates[branch],i,lib)).fetchone()[0] for i in range(0,8)]
-    sums = [cursor.execute("SELECT SUM(%s) FROM [%s] WHERE date=? AND libname=?" % (fields[i],branch), (dates[branch],lib)).fetchone()[0] or 0 for i in range(0,8)]
+    vs = [cursor.execute("SELECT COUNT(*) FROM [%s] WHERE date=? AND finalphase>=? AND libname=?" % (branch), (dates[branch][lib],i,lib)).fetchone()[0] for i in range(0,8)]
+    sums = [cursor.execute("SELECT SUM(%s) FROM [%s] WHERE date=? AND libname=?" % (fields[i],branch), (dates[branch][lib],lib)).fetchone()[0] or 0 for i in range(0,8)]
     entries += ("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n" % (branch,friendlyStr(sums[0]),friendlyStr(sums[1]),friendlyStr(sums[2]),friendlyStr(sums[3]),friendlyStr(sums[4]),friendlyStr(sums[5]),friendlyStr(sums[6]),friendlyStr(sums[7])))
   entries += "</table>\n"
   # print(sorted(list(libs[lib])))
 
 nummodels = sum(len(l) for l in libs.values())
 branches_lines = [("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td%s>%d</td></tr>\n" % (cgi.escape(branch), cgi.escape(
-  (cursor.execute("SELECT omcversion FROM [omcversion] WHERE date=? AND branch=?", (dates[branch],branch)).fetchone() or ["unknown"])[0]
+  (cursor.execute("SELECT omcversion FROM [omcversion] WHERE date=? AND branch=?", (dates[branch][lib],branch)).fetchone() or ["unknown"])[0]
   ), cgi.escape(dates_str[branch]), friendlyStr(
-  cursor.execute("SELECT SUM(exectime) FROM [%s] WHERE date=?" % branch, (dates[branch],)).fetchone()[0]
+  cursor.execute("SELECT SUM(exectime) FROM [%s] WHERE date=?" % branch, (dates[branch][lib],)).fetchone()[0]
 ),
-  " class=\"warning\"" if nummodels!=cursor.execute("SELECT COUNT(*) FROM [%s] WHERE date=?" % branch, (dates[branch],)).fetchone()[0] else "",
-  cursor.execute("SELECT COUNT(*) FROM [%s] WHERE date=?" % branch, (dates[branch],)).fetchone()[0]
+  " class=\"warning\"" if nummodels!=cursor.execute("SELECT COUNT(*) FROM [%s] WHERE date=?" % branch, (dates[branch][lib],)).fetchone()[0] else "",
+  cursor.execute("SELECT COUNT(*) FROM [%s] WHERE date=?" % branch, (dates[branch][lib],)).fetchone()[0]
 )) for branch in branches]
 template = open("overview.html.tpl").read()
 replacements = (
