@@ -97,7 +97,7 @@ for lib in sorted(libs.keys()):
   for branch in branches:
     vs = [cursor.execute("SELECT COUNT(*) FROM [%s] WHERE date=? AND finalphase>=? AND libname=?" % (branch), (dates[branch][lib],i,lib)).fetchone()[0] for i in range(0,8)]
     warnings = []
-    entries += "<tr><td>%s</td>" % branch
+    entries += '<tr><td><a href="%s/%s/%s.html">%s</a></td>' % (branch,lib,lib,branch)
     for i in range(0,len(vs)):
       diff1 = models[branch][i] - models[branches[-1]][i]
       diff2 = models[branches[-1]][i] - models[branch][i]
@@ -121,7 +121,8 @@ for lib in sorted(libs.keys()):
   for branch in branches:
     vs = [cursor.execute("SELECT COUNT(*) FROM [%s] WHERE date=? AND finalphase>=? AND libname=?" % (branch), (dates[branch][lib],i,lib)).fetchone()[0] for i in range(0,8)]
     sums = [cursor.execute("SELECT SUM(%s) FROM [%s] WHERE date=? AND libname=?" % (fields[i],branch), (dates[branch][lib],lib)).fetchone()[0] or 0 for i in range(0,8)]
-    entries += ("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n" % (branch,friendlyStr(sums[0]),friendlyStr(sums[1]),friendlyStr(sums[2]),friendlyStr(sums[3]),friendlyStr(sums[4]),friendlyStr(sums[5]),friendlyStr(sums[6]),friendlyStr(sums[7])))
+    entries += '<tr><td><a href="%s/%s/%s.html">%s</a></td>' % (branch,lib,lib,branch)
+    entries += ("<td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n" % (friendlyStr(sums[0]),friendlyStr(sums[1]),friendlyStr(sums[2]),friendlyStr(sums[3]),friendlyStr(sums[4]),friendlyStr(sums[5]),friendlyStr(sums[6]),friendlyStr(sums[7])))
     exectime[branch] += sums[0]
   entries += "</table>\n"
   # print(sorted(list(libs[lib])))
