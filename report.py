@@ -70,15 +70,18 @@ def checkEqual(iterator):
 for lib in sorted(libs.keys()):
   models = libs[lib]
   entries += "<hr /><h3>%s</h3>\n" % lib
-  entries += "<table>\n"
-  entries += "<tr><th>&nbsp;</th>%s</tr>\n" % "".join(["<th>%s</th>" % branch for branch in branches])
-  entries += "<tr><td>Version</td>"
   branches_versions = [(cursor.execute("SELECT libversion FROM [libversion] WHERE libname=? AND branch=? ORDER BY date DESC LIMIT 1", (lib,branch)).fetchone() or ["unknown"])[0] for branch in branches]
   all_equal = checkEqual(branches_versions)
-  for ver in branches_versions:
-    entries += "<td%s>%s</td>" % (' class="warning"' if not all_equal else "", ver)
-  entries += "</tr>\n"
-  entries += "</table>\n"
+  if not all_equal:
+    entries += "<table>\n"
+    entries += "<tr><th>&nbsp;</th>%s</tr>\n" % "".join(["<th>%s</th>" % branch for branch in branches])
+    entries += "<tr><td>Version</td>"
+    for ver in branches_versions:
+      entries += "<td%s>%s</td>" % (' class="warning"', ver)
+    entries += "</tr>\n"
+    entries += "</table>\n"
+  else:
+    entries += "<p><strong>Library version:</strong> %s</p>" % branches_versions[0]
   entries += "<table>\n"
   entries += entryhead
   old_vs = None
