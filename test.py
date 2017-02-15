@@ -103,6 +103,7 @@ from OMPython import OMCSession
 omc = OMCSession()
 
 omhome=omc.sendExpression('getInstallationDirectoryPath()')
+omc.sendExpression('setModelicaPath("%s/lib/omlibrary")' % omhome)
 omc_exe=os.path.join(omhome,"bin","omc")
 omc_version=omc.sendExpression('getVersion()')
 dygraphs=os.path.join(omhome,"share","doc","omc","testmodels","dygraph-combined.js")
