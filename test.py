@@ -137,8 +137,8 @@ cursor.execute('''CREATE TABLE if not exists [%s]
 # Set user_version to the current schema
 cursor.execute("PRAGMA user_version=2")
 
-def strToHashInt(str):
-  return int(hashlib.sha1(str).hexdigest()[0:8],16)
+def strToHashInt(s):
+  return int(hashlib.sha1(s+"fixCorruptBuilds").hexdigest()[0:8],16)
 
 stats_by_libname = {}
 skipped_libs = {}
@@ -180,7 +180,7 @@ for (library,conf) in configs:
 template = open("BuildModel.mos.tpl").read()
 
 for (modelName,library,libName,name,conf) in tests:
-  simFlags="%s %s=%d %s" % (conf["abortSlowSimulation"],conf["alarmFlag"],conf["ulimitExe"],conf["extraSimFlags"])
+  conf["simFlags"]="%s %s=%d %s" % (conf["abortSlowSimulation"],conf["alarmFlag"],conf["ulimitExe"],conf["extraSimFlags"])
   replacements = (
     (u"#logFile#", "/tmp/OpenModelicaLibraryTesting.log"),
     (u"#library#", library),
@@ -193,7 +193,7 @@ for (modelName,library,libName,name,conf) in tests:
     (u"#reference_reltol#", str(conf["reference_reltol"])),
     (u"#reference_reltolDiffMinMax#", str(conf["reference_reltolDiffMinMax"])),
     (u"#reference_rangeDelta#", str(conf["reference_rangeDelta"])),
-    (u"#simFlags#", simFlags),
+    (u"#simFlags#", conf["simFlags"]),
     (u"#referenceFiles#", str(conf.get("referenceFiles") or "")),
     (u"#referenceFileNameDelimiter#", conf["referenceFileNameDelimiter"]),
     (u"#referenceFileExtension#", conf["referenceFileExtension"]),
@@ -287,6 +287,7 @@ def is_non_zero_file(fpath):
 
 htmltpl=open("library.html.tpl").read()
 for libname in stats_by_libname.keys():
+  s = None # Make sure I don't use this
   filesList = open(libname + ".files", "w")
   filesList.write("/\n")
   filesList.write("/%s.html\n" % libname)
@@ -340,7 +341,7 @@ for libname in stats_by_libname.keys():
     (u"#ulimitOmc#", cgi.escape(str(conf["ulimitOmc"]))),
     (u"#ulimitExe#", cgi.escape(str(conf["ulimitExe"]))),
     (u"#default_tolerance#", cgi.escape(str(conf["default_tolerance"]))),
-    (u"#simFlags#", cgi.escape(simFlags)),
+    (u"#simFlags#", cgi.escape(conf.get("simFlags") or "")),
     (u"#Total#", cgi.escape(str(numSucceeded[0]))),
     (u"#FrontendColor#", checkNumSucceeded(numSucceeded, 1)),
     (u"#BackendColor#", checkNumSucceeded(numSucceeded, 2)),
@@ -361,7 +362,7 @@ for libname in stats_by_libname.keys():
   )
   open("%s.html" % libname, "w").write(multiple_replace(htmltpl, *replacements))
   if result_location != "":
-    cmd = ["rsync", "-a", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", "%s/%s" % (result_location, s[2])]
+    cmd = ["rsync", "-a", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", "%s/%s" % (result_location, libname)]
     if 0 != call(cmd):
       print("Error: Failed to rsync files: %s" % cmd)
       sys.exit(1)
