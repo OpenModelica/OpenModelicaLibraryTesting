@@ -75,6 +75,7 @@ parser = argparse.ArgumentParser(description='OpenModelica library testing tool'
 parser.add_argument('configs', nargs='*')
 parser.add_argument('--branch', default='master')
 parser.add_argument('--output', default='')
+parser.add_argument('--ompython_omhome', default='')
 parser.add_argument('-n', default=psutil.cpu_count(logical=False))
 
 args = parser.parse_args()
@@ -82,6 +83,7 @@ configs = args.configs
 branch = args.branch
 result_location = args.output
 n_jobs = args.n
+ompython_omhome = args.ompython_omhome
 print("branch: %s, n_jobs: %d" % (branch, n_jobs))
 
 if result_location != "" and not os.path.exists(result_location):
@@ -100,14 +102,30 @@ for c in configs_lst:
   configs = configs + c
 
 from OMPython import OMCSession
-omc = OMCSession()
 
-omhome=omc.sendExpression('getInstallationDirectoryPath()')
+if ompython_omhome != "":
+  # Use a different OMC for running OMPython than for running the tests
+  omhome = os.environ["OPENMODELICAHOME"]
+  omc_version = subprocess.check_output(["%s/bin/omc" % omhome, "--version"]).strip()
+  os.environ["OPENMODELICAHOME"] = ompython_omhome
+  omc = OMCSession()
+else:
+  omc = OMCSession()
+  omhome=omc.sendExpression('getInstallationDirectoryPath()')
+  omc_version=omc.sendExpression('getVersion()')
+
 omc.sendExpression('setModelicaPath("%s/lib/omlibrary")' % omhome)
 omc_exe=os.path.join(omhome,"bin","omc")
-omc_version=omc.sendExpression('getVersion()')
 dygraphs=os.path.join(omhome,"share","doc","omc","testmodels","dygraph-combined.js")
 print(omc_exe,omc_version,dygraphs)
+
+try:
+  subprocess.check_output(["%s/bin/omc" % omhome, "-n=1", "--version"]).strip()
+  single_thread="-n=1"
+except:
+  subprocess.check_output(["%s/bin/omc" % omhome, "+n=1", "--version"]).strip()
+  single_thread="+n=1"
+  print("Work-around for RML-style command-line arguments")
 
 # Create mos-files
 
@@ -146,8 +164,8 @@ tests=[]
 for (library,conf) in configs:
   confighash = strToHashInt(str(conf))
   conf["confighash"] = confighash
-  if not omc.sendExpression('setCommandLineOptions("-g=Modelica")'):
-    print("Failed to set MetaModelica grammar")
+  if not (omc.sendExpression('setCommandLineOptions("-g=Modelica")') or omc.sendExpression('setCommandLineOptions("+g=Modelica")')):
+    print("Failed to set Modelica grammar")
     sys.exit(1)
   omc.sendExpression('clear()')
   if not omc.sendExpression('loadModel(%s,{"%s"})' % (library,conf["libraryVersion"])):
@@ -156,7 +174,7 @@ for (library,conf) in configs:
     except:
       print("Failed to load library %s %s. getErrorString() failed..." % (library,conf["libraryVersion"]))
     sys.exit(1)
-  if not omc.sendExpression('setCommandLineOptions("-g=MetaModelica")'):
+  if not (omc.sendExpression('setCommandLineOptions("-g=MetaModelica")') or omc.sendExpression('setCommandLineOptions("+g=Modelica")')):
     print("Failed to set MetaModelica grammar")
     sys.exit(1)
 
@@ -205,7 +223,7 @@ def runScript(c, timeout):
   if os.path.exists(j):
     os.remove(j)
   start=monotonic()
-  runCommand("%s -n=1 %s.mos" % (omc_exe, c), prefix=c, timeout=timeout)
+  runCommand("%s %s %s.mos" % (omc_exe, single_thread, c), prefix=c, timeout=timeout)
   execTime=monotonic()-start
   assert(execTime >= 0.0)
   if os.path.exists(j):
