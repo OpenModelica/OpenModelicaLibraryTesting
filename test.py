@@ -104,10 +104,16 @@ for c in configs_lst:
 
 from OMPython import OMCSession
 
+version_cmd = "--version"
 if ompython_omhome != "":
   # Use a different OMC for running OMPython than for running the tests
   omhome = os.environ["OPENMODELICAHOME"]
-  omc_version = subprocess.check_output(["%s/bin/omc" % omhome, "--version"]).strip()
+  try:
+    omc_version = subprocess.check_output(["%s/bin/omc" % omhome, "--version"]).strip()
+  else:
+    omc_version = subprocess.check_output(["%s/bin/omc" % omhome, "+version"]).strip()
+    version_cmd = "+version"
+    print("Work-around for RML-style command-line arguments (+version)")
   os.environ["OPENMODELICAHOME"] = ompython_omhome
   omc = OMCSession()
 else:
@@ -121,18 +127,17 @@ dygraphs=os.path.join(omhome,"share","doc","omc","testmodels","dygraph-combined.
 print(omc_exe,omc_version,dygraphs)
 
 try:
-  subprocess.check_output(["%s/bin/omc" % omhome, "-n=1", "--version"]).strip()
+  subprocess.check_output(["%s/bin/omc" % omhome, "-n=1", version_cmd]).strip()
   single_thread="-n=1"
 except:
-  subprocess.check_output(["%s/bin/omc" % omhome, "+n=1", "--version"]).strip()
+  subprocess.check_output(["%s/bin/omc" % omhome, "+n=1", version_cmd]).strip()
   single_thread="+n=1"
-  print("Work-around for RML-style command-line arguments")
+  print("Work-around for RML-style command-line arguments (+n=1)")
 
 try:
   subprocess.check_output(["%s/bin/omc" % omhome, "test_omstyle.mos"]).strip()
   omstyle=", openmodelicaStyle=true"
 except:
-  subprocess.check_output(["%s/bin/omc" % omhome, "+n=1", "--version"]).strip()
   omstyle=""
   print("Work-around for openmodelicaStyle=true missing. Some reference files might give wrong error-messages.")
 
@@ -230,8 +235,10 @@ for (modelName,library,libName,name,conf) in tests:
 
 def runScript(c, timeout):
   j = "files/%s.stat.json" % c
-  if os.path.exists(j):
+  try:
     os.remove(j)
+  except:
+    pass
   start=monotonic()
   runCommand("%s %s %s.mos" % (omc_exe, single_thread, c), prefix=c, timeout=timeout)
   execTime=monotonic()-start
