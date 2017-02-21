@@ -110,7 +110,7 @@ if ompython_omhome != "":
   omhome = os.environ["OPENMODELICAHOME"]
   try:
     omc_version = subprocess.check_output(["%s/bin/omc" % omhome, "--version"]).strip()
-  else:
+  except:
     omc_version = subprocess.check_output(["%s/bin/omc" % omhome, "+version"]).strip()
     version_cmd = "+version"
     print("Work-around for RML-style command-line arguments (+version)")
