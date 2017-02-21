@@ -23,8 +23,9 @@ from omcommon import friendlyStr, multiple_replace
 def runCommand(cmd, prefix, timeout):
   process = [None]
   def target():
-    process[0] = subprocess.Popen(cmd, shell=True, stderr=subprocess.STDOUT)
-    process[0].communicate()
+    with open(os.devnull, 'w')  as FNULL:
+      process[0] = subprocess.Popen(cmd, shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
+      process[0].communicate()
 
   thread = threading.Thread(target=target)
   thread.start()
