@@ -38,7 +38,7 @@ if regularFileExists(compareVarsFile) then
   numCompared := size(vars,1);
   emit_protected := " -emit_protected";
 elseif referenceExists then
-  vars := readSimulationResultVars(reference, readParameters=true, openmodelicaStyle=true);
+  vars := readSimulationResultVars(reference, readParameters=true#omstyle#);
   variableFilter := sum(stringReplace(stringReplace(stringReplace(stringReplace(s,"[","."),"]","."),"(","."),")",".") + "|" for s in vars);
   numCompared := size(vars,1);
   emit_protected := " -emit_protected";
@@ -118,7 +118,7 @@ if simRes then
     (referenceOK,diffVars) := diffSimulationResults(resFile,reference,prefix,relTol=reference_reltol,relTolDiffMinMax=reference_reltolDiffMinMax,rangeDelta=reference_rangeDelta);
     errVerify := getErrorString();
     if errVerify <> "" then
-      writeFile(errFile, "\nVariables in the reference:"+sum(var+"," for var in OpenModelica.Scripting.readSimulationResultVars(reference, openmodelicaStyle=true)), append=true);
+      writeFile(errFile, "\nVariables in the reference:"+sum(var+"," for var in OpenModelica.Scripting.readSimulationResultVars(reference#omstyle#)), append=true);
       writeFile(errFile, "\nVariables in the result:"+sum(var+"," for var in OpenModelica.Scripting.readSimulationResultVars(resFile))+"\n" + errVerify, append=true);
     end if;
     if referenceOK then

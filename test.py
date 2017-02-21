@@ -127,6 +127,14 @@ except:
   single_thread="+n=1"
   print("Work-around for RML-style command-line arguments")
 
+try:
+  subprocess.check_output(["%s/bin/omc" % omhome, "test_omstyle.mos"]).strip()
+  omstyle=", openmodelicaStyle=true"
+except:
+  subprocess.check_output(["%s/bin/omc" % omhome, "+n=1", "--version"]).strip()
+  omstyle=""
+  print("Work-around for openmodelicaStyle=true missing. Some reference files might give wrong error-messages.")
+
 # Create mos-files
 
 conn = sqlite3.connect('sqlite3.db')
@@ -156,7 +164,7 @@ cursor.execute('''CREATE TABLE if not exists [%s]
 cursor.execute("PRAGMA user_version=2")
 
 def strToHashInt(s):
-  return int(hashlib.sha1(s+"fixCorruptBuilds").hexdigest()[0:8],16)
+  return int(hashlib.sha1(s+"fixCorruptBuilds-2017-02-21").hexdigest()[0:8],16)
 
 stats_by_libname = {}
 skipped_libs = {}
@@ -212,6 +220,7 @@ for (modelName,library,libName,name,conf) in tests:
     (u"#reference_reltolDiffMinMax#", str(conf["reference_reltolDiffMinMax"])),
     (u"#reference_rangeDelta#", str(conf["reference_rangeDelta"])),
     (u"#simFlags#", conf["simFlags"]),
+    (u"#omstyle#", omstyle),
     (u"#referenceFiles#", str(conf.get("referenceFiles") or "")),
     (u"#referenceFileNameDelimiter#", conf["referenceFileNameDelimiter"]),
     (u"#referenceFileExtension#", conf["referenceFileExtension"]),
