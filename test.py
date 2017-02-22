@@ -151,7 +151,7 @@ try:
   os.unlink("HelloWorld")
 except OSError:
   pass
-subprocess.check_output(["%s/bin/omc" % omhome, "HelloWorld.mos"], stderr=subprocess.STDOUT)
+print(subprocess.check_output(["%s/bin/omc" % omhome, "HelloWorld.mos"], stderr=subprocess.STDOUT))
 assert(os.path.exists("HelloWorld"))
 abortSimulationFlag="-abortSlowSimulation" if simulationAcceptsFlag("-abortSlowSimulation") else ""
 alarmFlag="-alarm" if simulationAcceptsFlag("-alarm=480") else ""
