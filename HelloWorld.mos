@@ -1,0 +1,2 @@
+loadFile("HelloWorld.mo");getErrorString();
+buildModel(HelloWorld);getErrorString();

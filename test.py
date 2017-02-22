@@ -94,28 +94,25 @@ if configs == []:
   print("Error: Expected at least one configuration file to start the library test")
   sys.exit(1)
 
-from shared import readConfig
-import shared
-
-configs_lst = [readConfig(c) for c in configs]
-configs = []
-for c in configs_lst:
-  configs = configs + c
-
 from OMPython import OMCSession
 
 version_cmd = "--version"
+single_thread="-n=1"
+rmlStyle=False
+
 if ompython_omhome != "":
   # Use a different OMC for running OMPython than for running the tests
   omhome = os.environ["OPENMODELICAHOME"]
   try:
-    omc_version = subprocess.check_output(["%s/bin/omc" % omhome, "--version"]).strip()
+    omc_version = subprocess.check_output(["%s/bin/omc" % omhome, "--version"], stderr=subprocess.STDOUT).strip()
   except:
-    omc_version = subprocess.check_output(["%s/bin/omc" % omhome, "+version"]).strip()
+    omc_version = subprocess.check_output(["%s/bin/omc" % omhome, "+version"], stderr=subprocess.STDOUT).strip()
     version_cmd = "+version"
+    rmlStyle=True
     print("Work-around for RML-style command-line arguments (+version)")
   os.environ["OPENMODELICAHOME"] = ompython_omhome
   omc = OMCSession()
+  os.environ["OPENMODELICAHOME"] = omhome
 else:
   omc = OMCSession()
   omhome=omc.sendExpression('getInstallationDirectoryPath()')
@@ -126,20 +123,57 @@ omc_exe=os.path.join(omhome,"bin","omc")
 dygraphs=os.path.join(omhome,"share","doc","omc","testmodels","dygraph-combined.js")
 print(omc_exe,omc_version,dygraphs)
 
-try:
-  subprocess.check_output(["%s/bin/omc" % omhome, "-n=1", version_cmd]).strip()
-  single_thread="-n=1"
-except:
-  subprocess.check_output(["%s/bin/omc" % omhome, "+n=1", version_cmd]).strip()
-  single_thread="+n=1"
-  print("Work-around for RML-style command-line arguments (+n=1)")
+# Do feature checks. Handle things like old RML-style arguments...
 
 try:
-  subprocess.check_output(["%s/bin/omc" % omhome, "test_omstyle.mos"]).strip()
-  omstyle=", openmodelicaStyle=true"
+  subprocess.check_output(["%s/bin/omc" % omhome, "-n=1", version_cmd], stderr=subprocess.STDOUT).strip()
+  single_thread="-n=1"
 except:
-  omstyle=""
-  print("Work-around for openmodelicaStyle=true missing. Some reference files might give wrong error-messages.")
+  subprocess.check_output(["%s/bin/omc" % omhome, "+n=1", version_cmd], stderr=subprocess.STDOUT).strip()
+  single_thread="+n=1"
+  rmlStyle=True
+  print("Work-around for RML-style command-line arguments (+n=1)")
+
+def simulationAcceptsFlag(f):
+  try:
+    os.unlink("HelloWorld_res.mat")
+  except OSError:
+    pass
+  try:
+    subprocess.check_output("./HelloWorld %s" % f, shell=True, stderr=subprocess.STDOUT)
+    if os.path.exists("HelloWorld_res.mat"):
+      return True
+  except subprocess.CalledProcessError as e:
+    pass
+  return False
+
+try:
+  os.unlink("HelloWorld")
+except OSError:
+  pass
+subprocess.check_output(["%s/bin/omc" % omhome, "HelloWorld.mos"], stderr=subprocess.STDOUT)
+assert(os.path.exists("HelloWorld"))
+abortSimulationFlag="-abortSlowSimulation" if simulationAcceptsFlag("-abortSlowSimulation") else ""
+alarmFlag="-alarm" if simulationAcceptsFlag("-alarm=480") else ""
+
+try:
+  os.unlink("HelloWorld")
+except OSError:
+  pass
+subprocess.check_output(["%s/bin/omc" % omhome, "%ssimCodeTarget=Cpp" % ("+" if rmlStyle else "--"), "HelloWorld.mos"], stderr=subprocess.STDOUT)
+if os.path.exists("HelloWorld"):
+  haveCppRuntime=simulationAcceptsFlag("")
+else:
+  haveCppRuntime=False
+
+
+from shared import readConfig
+import shared
+
+configs_lst = [readConfig(c, rmlStyle=rmlStyle, abortSimulationFlag=abortSimulationFlag, alarmFlag=alarmFlag) for c in configs]
+configs = []
+for c in configs_lst:
+  configs = configs + c
 
 # Create mos-files
 
@@ -156,7 +190,11 @@ if user_version==0:
   cursor.execute("CREATE TABLE if not exists [libversion] (date integer NOT NULL, branch text NOT NULL, libname text NOT NULL, libversion text NOT NULL, confighash integer NOT NULL)")
 elif user_version==1:
   cursor.execute("ALTER TABLE [libversion] ADD COLUMN confighash integer NOT NULL DEFAULT(0)")
-elif user_version in [2]:
+elif user_version==2:
+  tables = [tbl for (tbl,) in cursor.execute("SELECT name FROM sqlite_master WHERE type='table'") if tbl not in ["libversion","omcversion"]]
+  for tbl in tables:
+    cursor.execute("ALTER TABLE [%s] ADD COLUMN parsing real NOT NULL DEFAULT(0.0)" % tbl)
+elif user_version in [3]:
   pass
 else:
   print("Unknown schema user_version=%d" % user_version)
@@ -165,9 +203,9 @@ else:
 cursor.execute('''CREATE TABLE if not exists [%s]
              (date integer NOT NULL, libname text NOT NULL, model text NOT NULL, exectime real NOT NULL,
              frontend real NOT NULL, backend real NOT NULL, simcode real NOT NULL, templates real NOT NULL, compile real NOT NULL, simulate real NOT NULL,
-             verify real NOT NULL, verifyfail integer NOT NULL, verifytotal integer NOT NULL, finalphase integer NOT NULL)''' % branch)
+             verify real NOT NULL, verifyfail integer NOT NULL, verifytotal integer NOT NULL, finalphase integer NOT NULL, parsing real NOT NULL)''' % branch)
 # Set user_version to the current schema
-cursor.execute("PRAGMA user_version=2")
+cursor.execute("PRAGMA user_version=3")
 
 def strToHashInt(s):
   return int(hashlib.sha1(s+"fixCorruptBuilds-2017-02-21").hexdigest()[0:8],16)
@@ -178,19 +216,26 @@ tests=[]
 for (library,conf) in configs:
   confighash = strToHashInt(str(conf))
   conf["confighash"] = confighash
+  conf["omhome"] = omhome
+  conf["single_thread_cmd"] = single_thread
+  conf["haveCppRuntime"] = haveCppRuntime
   if not (omc.sendExpression('setCommandLineOptions("-g=Modelica")') or omc.sendExpression('setCommandLineOptions("+g=Modelica")')):
     print("Failed to set Modelica grammar")
     sys.exit(1)
   omc.sendExpression('clear()')
   if not omc.sendExpression('loadModel(%s,{"%s"})' % (library,conf["libraryVersion"])):
     try:
-      print("Failed to load library %s %s: %s" % (library,conf["libraryVersion"],omc.sendExpression('getErrorString()')))
+      print("Failed to load library %s %s: %s" % (library,conf["libraryVersion"],omc.sendExpression('OpenModelica.Scripting.getErrorString()')))
     except:
-      print("Failed to load library %s %s. getErrorString() failed..." % (library,conf["libraryVersion"]))
+      print("Failed to load library %s %s. OpenModelica.Scripting.getErrorString() failed..." % (library,conf["libraryVersion"]))
     sys.exit(1)
   if not (omc.sendExpression('setCommandLineOptions("-g=MetaModelica")') or omc.sendExpression('setCommandLineOptions("+g=Modelica")')):
     print("Failed to set MetaModelica grammar")
     sys.exit(1)
+  try:
+    conf["resourceLocation"]=omc.sendExpression('uriToFilename("modelica://%s/Resources")' % library)[0]
+  except:
+    conf["resourceLocation"]=""
 
   conf["libraryVersionRevision"]=omc.sendExpression('getVersion(%s)' % library)
   conf["libraryLastChange"]="" # TODO: FIXME
@@ -209,8 +254,6 @@ for (library,conf) in configs:
     print("Skipping %s as we already have results for it: %s" % (libName,str(v)))
     skipped_libs[libName] = v[0]
 
-template = open("BuildModel.mos.tpl").read()
-
 for (modelName,library,libName,name,conf) in tests:
   conf["simFlags"]="%s %s=%d %s" % (conf["abortSlowSimulation"],conf["alarmFlag"],conf["ulimitExe"],conf["extraSimFlags"])
   replacements = (
@@ -226,12 +269,12 @@ for (modelName,library,libName,name,conf) in tests:
     (u"#reference_reltolDiffMinMax#", str(conf["reference_reltolDiffMinMax"])),
     (u"#reference_rangeDelta#", str(conf["reference_rangeDelta"])),
     (u"#simFlags#", conf["simFlags"]),
-    (u"#omstyle#", omstyle),
     (u"#referenceFiles#", str(conf.get("referenceFiles") or "")),
     (u"#referenceFileNameDelimiter#", conf["referenceFileNameDelimiter"]),
     (u"#referenceFileExtension#", conf["referenceFileExtension"]),
   )
-  open(name + ".mos", "w").write(multiple_replace(template, *replacements))
+  with open(name + ".conf.json", 'w') as fp:
+    json.dump(dict(conf.items()+{"library":library, "modelName":modelName, "fileName":name}.items()), fp)
 
 def runScript(c, timeout):
   j = "files/%s.stat.json" % c
@@ -240,7 +283,8 @@ def runScript(c, timeout):
   except:
     pass
   start=monotonic()
-  runCommand("%s %s %s.mos" % (omc_exe, single_thread, c), prefix=c, timeout=timeout)
+  # runCommand("%s %s %s.mos" % (omc_exe, single_thread, c), prefix=c, timeout=timeout)
+  runCommand("./testmodel.py --ompython_omhome=%s %s.conf.json" % (ompython_omhome, c), prefix=c, timeout=timeout)
   execTime=monotonic()-start
   assert(execTime >= 0.0)
   if os.path.exists(j):
@@ -273,8 +317,8 @@ assert(stop-start >= 0.0)
 #  raise Exception("A command failed with exit status")
 
 stats=dict([(name,(name,model,libname,json.load(open("files/%s.stat.json" % name)))) for (model,lib,libname,name,conf) in tests])
-for k in sorted(stats.keys(), key=lambda c: stats[c][3]["exectime"], reverse=True):
-  print("%s: exectime %.2f" % (k, stats[k][3]["exectime"]))
+#for k in sorted(stats.keys(), key=lambda c: stats[c][3]["exectime"], reverse=True):
+#  print("%s: exectime %.2f" % (k, stats[k][3]["exectime"]))
 
 for key in stats.keys():
   (name,model,libname,data)=stats[key]
@@ -283,6 +327,7 @@ for key in stats.keys():
     libname,
     model,
     data.get("exectime") or 0.0,
+    data.get("parsing") or 0.0,
     data.get("frontend") or 0.0,
     data.get("backend") or 0.0,
     data.get("simcode") or 0.0,
@@ -295,7 +340,7 @@ for key in stats.keys():
     data.get("phase") or 0
   )
   # print values
-  cursor.execute("INSERT INTO [%s] VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)" % branch, values)
+  cursor.execute("INSERT INTO [%s] VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" % branch, values)
 for libname in stats_by_libname.keys():
   confighash = stats_by_libname[libname]["conf"]["confighash"]
   cursor.execute("INSERT INTO [libversion] VALUES (?,?,?,?,?)", (testRunStartTimeAsEpoch, branch, libname, stats_by_libname[libname]["conf"]["libraryLastChange"], confighash))
@@ -371,7 +416,7 @@ for libname in stats_by_libname.keys():
     (u"#omcVersion#", cgi.escape(omc_version)),
     (u"#timeStart#", cgi.escape(time.strftime('%Y-%m-%d %H:%M:%S', start_as_time))),
     (u"#fileName#", cgi.escape(libname)),
-    (u"#customCommands#", cgi.escape(conf["customCommands"])),
+    (u"#customCommands#", cgi.escape("\n".join(conf["customCommands"]))),
     (u"#libraryVersionRevision#", cgi.escape(conf["libraryVersionRevision"])),
     (u"#ulimitOmc#", cgi.escape(str(conf["ulimitOmc"]))),
     (u"#ulimitExe#", cgi.escape(str(conf["ulimitExe"]))),

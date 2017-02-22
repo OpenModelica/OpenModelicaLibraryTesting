@@ -1,1 +1,0 @@
-x:=readSimulationResultVars("test_omstyle.csv", openmodelicaStyle=true);getErrorString();
