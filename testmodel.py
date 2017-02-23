@@ -149,7 +149,23 @@ except:
   pass
 
 outputFormat="mat"
-referenceFile = conf["referenceFiles"]+"/"+conf["modelName"].replace(".",conf["referenceFileNameDelimiter"])+"."+conf["referenceFileExtension"]
+referenceVars=[]
+referenceFile = ""
+if "referenceFiles" in conf:
+  referenceFile = conf["referenceFiles"]+"/"+conf["modelName"].replace(".",conf["referenceFileNameDelimiter"])+"."+conf["referenceFileExtension"]
+  if os.path.exists(referenceFile):
+    try:
+      referenceVars=omc_new.sendExpression('readSimulationResultVars("%s", readParameters=true, openmodelicaStyle=true)' % referenceFile)
+      variableFilter="|".join([v.replace("[",".").replace("]",".").replace("(",".").replace(")",".").replace('"',".") for v in referenceVars])
+      emit_protected="-emit_protected"
+    except:
+      referenceFile=""
+  else:
+    referenceFile=""
+if referenceFile=="":
+  variableFilter=""
+  outputFormat="empty"
+  emit_protected=""
 """TODO:
 compareVarsUri := "modelica://" + /*libraryString*/ "Buildings" + "/Resources/Scripts/OpenModelica/compareVars/#modelName#.mos";
 (compareVarsFile,compareVarsFileMessages) := uriToFilename(compareVarsUri);
@@ -161,20 +177,6 @@ if regularFileExists(compareVarsFile) then
   numCompared := size(vars,1);
   emit_protected := " -emit_protected";
 """
-referenceVars=[]
-if os.path.exists(referenceFile):
-  try:
-    referenceVars=omc_new.sendExpression('readSimulationResultVars("%s", readParameters=true, openmodelicaStyle=true)' % referenceFile)
-    variableFilter="|".join([v.replace("[",".").replace("]",".").replace("(",".").replace(")",".").replace('"',".") for v in referenceVars])
-    emit_protected="-emit_protected"
-  except:
-    referenceFile=""
-else:
-  referenceFile=""
-if referenceFile=="":
-  variableFilter=""
-  outputFormat="empty"
-  emit_protected=""
 # print(variableFilter)
 
 for cmd in conf["customCommands"]:

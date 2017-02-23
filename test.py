@@ -4,18 +4,10 @@
 # TODO: When libraries hash changes, run with the old OMC against the new libs
 #       Then run with the new OMC against the new libs
 
-import cgi
-import sys
-import os
-import re, glob
+import cgi, shutil, sys, os, re, glob, time, argparse, sqlite3, datetime
 from joblib import Parallel, delayed
-import time
 import simplejson as json
-import argparse
-import sqlite3
-import datetime
-import psutil, subprocess, threading
-import hashlib
+import psutil, subprocess, threading, hashlib
 from subprocess import call
 from monotonic import monotonic
 from omcommon import friendlyStr, multiple_replace
@@ -214,7 +206,7 @@ cursor.execute('''CREATE TABLE if not exists [%s]
 cursor.execute("PRAGMA user_version=3")
 
 def strToHashInt(s):
-  return int(hashlib.sha1(s+"fixCorruptBuilds-2017-02-23").hexdigest()[0:8],16)
+  return int(hashlib.sha1(s+"fixCorruptBuilds-2017-02-23v2").hexdigest()[0:8],16)
 
 stats_by_libname = {}
 skipped_libs = {}
@@ -261,7 +253,10 @@ for (library,conf) in configs:
     skipped_libs[libName] = v[0]
 
 for (modelName,library,libName,name,conf) in tests:
-  conf["simFlags"]="%s %s=%d %s" % (conf["abortSlowSimulation"],conf["alarmFlag"],conf["ulimitExe"],conf["extraSimFlags"])
+  if conf["alarmFlag"]!="":
+    conf["simFlags"]="%s %s=%d %s" % (conf["abortSlowSimulation"],conf["alarmFlag"],conf["ulimitExe"],conf["extraSimFlags"])
+  else:
+    conf["simFlags"]="%s %s" % (conf["abortSlowSimulation"],conf["extraSimFlags"])
   replacements = (
     (u"#logFile#", "/tmp/OpenModelicaLibraryTesting.log"),
     (u"#library#", library),
@@ -290,7 +285,20 @@ def runScript(c, timeout):
     pass
   start=monotonic()
   # runCommand("%s %s %s.mos" % (omc_exe, single_thread, c), prefix=c, timeout=timeout)
-  runCommand("./testmodel.py --ompython_omhome=%s %s.conf.json" % (ompython_omhome, c), prefix=c, timeout=timeout)
+  if 0 != runCommand("./testmodel.py --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (ompython_omhome, c, c), prefix=c, timeout=timeout):
+    print("files/%s.err" % c)
+    with open("files/%s.err" % c, "a+") as errfile:
+      errfile.write("Failed to read output from testmodel.py, exit status != 0:\n")
+      try:
+        with open("files/%s.cmdout" % c) as cmdout:
+          errfile.write(cmdout.read())
+      except OSError:
+        pass
+  try:
+    os.unlink("files/%s.cmdout" % c)
+  except OSError:
+    pass
+
   execTime=monotonic()-start
   assert(execTime >= 0.0)
   if os.path.exists(j):
@@ -308,6 +316,16 @@ def expectedExec(c):
   return (v or (0.0,))[0]
 
 tests=sorted(tests, key=lambda c: expectedExec(c), reverse=True)
+
+# Cleanup old runs
+try:
+  shutil.rmtree("./files")
+except OSError:
+  pass
+try:
+  os.mkdir("files")
+except OSError:
+  pass
 
 print("Starting execution of %d tests" % len(tests))
 cmd_res=[0]
