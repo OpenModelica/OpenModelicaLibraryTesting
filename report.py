@@ -18,8 +18,8 @@ branches = [br.split("/")[-1] for br in args.branches.split(" ")]
 
 dates = {}
 dates_str = {}
-fields = ["exectime", "frontend", "backend", "simcode", "templates", "compile", "simulate", "verify"]
-entryhead = "<tr><th>Branch</th><th>Total</th><th>Frontend</th><th>Backend</th><th>SimCode</th><th>Templates</th><th>Compilation</th><th>Simulation</th><th>Verification</th>\n"
+fields = ["exectime", "parsing", "frontend", "backend", "simcode", "templates", "compile", "simulate", "verify"]
+entryhead = "<tr><th>Branch</th><th>Total</th><th>Parsing</th><th>Frontend</th><th>Backend</th><th>SimCode</th><th>Templates</th><th>Compilation</th><th>Simulation</th><th>Verification</th>\n"
 
 libs = {}
 
@@ -98,7 +98,7 @@ for lib in sorted(libs.keys()):
     vs = [cursor.execute("SELECT COUNT(*) FROM [%s] WHERE date=? AND finalphase>=? AND libname=?" % (branch), (dates[branch][lib],i,lib)).fetchone()[0] for i in range(0,8)]
     warnings = []
     entries += '<tr><td><a href="%s/%s/%s.html">%s</a></td>' % (branch,lib,lib,branch)
-    for i in range(0,len(vs)):
+    for i in [0]+list(range(0,len(vs))):
       diff1 = models[branch][i] - models[branches[-1]][i]
       diff2 = models[branches[-1]][i] - models[branch][i]
       diff_text = ""
@@ -120,9 +120,9 @@ for lib in sorted(libs.keys()):
   entries += entryhead
   for branch in branches:
     vs = [cursor.execute("SELECT COUNT(*) FROM [%s] WHERE date=? AND finalphase>=? AND libname=?" % (branch), (dates[branch][lib],i,lib)).fetchone()[0] for i in range(0,8)]
-    sums = [cursor.execute("SELECT SUM(%s) FROM [%s] WHERE date=? AND libname=?" % (fields[i],branch), (dates[branch][lib],lib)).fetchone()[0] or 0 for i in range(0,8)]
+    sums = [cursor.execute("SELECT SUM(%s) FROM [%s] WHERE date=? AND libname=?" % (fields[i],branch), (dates[branch][lib],lib)).fetchone()[0] or 0 for i in range(0,9)]
     entries += '<tr><td><a href="%s/%s/%s.html">%s</a></td>' % (branch,lib,lib,branch)
-    entries += ("<td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n" % (friendlyStr(sums[0]),friendlyStr(sums[1]),friendlyStr(sums[2]),friendlyStr(sums[3]),friendlyStr(sums[4]),friendlyStr(sums[5]),friendlyStr(sums[6]),friendlyStr(sums[7])))
+    entries += ("<td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n" % (friendlyStr(sums[0]),friendlyStr(sums[1]),friendlyStr(sums[2]),friendlyStr(sums[3]),friendlyStr(sums[4]),friendlyStr(sums[5]),friendlyStr(sums[6]),friendlyStr(sums[7]),friendlyStr(sums[8])))
     exectime[branch] += sums[0]
   entries += "</table>\n"
   # print(sorted(list(libs[lib])))

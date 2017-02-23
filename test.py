@@ -72,6 +72,12 @@ def runCommand(cmd, prefix, timeout):
 
   return process[0].returncode
 
+try:
+  subprocess.check_output(["./testmodel.py", "--help"], stderr=subprocess.STDOUT)
+except subprocess.CalledProcessError as e:
+  print("Sanity check failed (./testmodel.py --help):\n" + e.output)
+  sys.exit(1)
+
 parser = argparse.ArgumentParser(description='OpenModelica library testing tool')
 parser.add_argument('configs', nargs='*')
 parser.add_argument('--branch', default='master')
@@ -208,7 +214,7 @@ cursor.execute('''CREATE TABLE if not exists [%s]
 cursor.execute("PRAGMA user_version=3")
 
 def strToHashInt(s):
-  return int(hashlib.sha1(s+"fixCorruptBuilds-2017-02-21").hexdigest()[0:8],16)
+  return int(hashlib.sha1(s+"fixCorruptBuilds-2017-02-23").hexdigest()[0:8],16)
 
 stats_by_libname = {}
 skipped_libs = {}
@@ -387,7 +393,7 @@ for libname in stats_by_libname.keys():
       filesList.write("/%s.diff.%s.csv\n" % (filename_prefix, v))
       filesList.write("/%s.diff.%s.html\n" % (filename_prefix, v))
   filesList.close()
-  testsHTML = "\n".join(['<tr><td>%s%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td></tr>\n' %
+  testsHTML = "\n".join(['<tr><td>%s%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td>%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td></tr>\n' %
     (lambda filename_prefix, diff:
       (
       ('<a href="%s">%s</a>' % (filename_prefix + ".err", cgi.escape(s[1]))) if is_non_zero_file(filename_prefix + ".err") else cgi.escape(s[1]),
@@ -399,6 +405,7 @@ for libname in stats_by_libname.keys():
       friendlyStr(s[3].get("sim") or 0),
       checkPhase(s[3]["phase"], 5),
       friendlyStr(sum(s[3].get(x) or 0.0 for x in ["frontend","backend","simcode","templates","build"])),
+      friendlyStr(s[3].get("parsing") or 0),
       checkPhase(s[3]["phase"], 1),
       friendlyStr(s[3].get("frontend") or 0),
       checkPhase(s[3]["phase"], 2),
