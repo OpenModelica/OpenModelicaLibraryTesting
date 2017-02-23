@@ -2,7 +2,7 @@
 
 import simplejson as json
 
-def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag):
+def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands):
   data["simCodeTarget"] = data.get("simCodeTarget") or "C"
   data["referenceFileExtension"] = data.get("referenceFileExtension") or "mat"
   data["referenceFileNameDelimiter"] = data.get("referenceFileNameDelimiter") or "."
@@ -11,16 +11,6 @@ def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag):
   data["reference_reltolDiffMinMax"] = data.get("reference_reltolDiffMinMax") or 3e-3
   data["reference_rangeDelta"] = data.get("reference_rangeDelta") or 1e-3
   debug = "+d" if rmlStyle else "-d"
-  defaultCustomCommands = [
-'setCommandLineOptions("%s=nogen");' % debug,
-'setCommandLineOptions("%s=initialization);' % debug,
-'setCommandLineOptions("%s=backenddaeinfo);' % debug,
-'setCommandLineOptions("%s=discreteinfo);' % debug,
-'setCommandLineOptions("%s=stateselection);' % debug,
-'setCommandLineOptions("%s=execstat");' % debug,
-'setMatchingAlgorithm("PFPlusExt");',
-'setIndexReductionMethod("dynamicStateSelection");'
-]
   if data["simCodeTarget"]!="C":
     defaultCustomCommands.append('setCommandLineOptions("%ssimCodeTarget=cpp")' % ("+" if rmlStyle else "--"))
   data["customCommands"] = (data.get("customCommands") or defaultCustomCommands) + (data.get("extraCustomCommands") or [])
@@ -34,8 +24,8 @@ def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag):
   data["abortSlowSimulation"] = data.get("abortSlowSimulation") or (abortSimulationFlag if data["simCodeTarget"]=="C" else "")
   return (data["library"],data)
 
-def readConfig(c,rmlStyle=False,abortSimulationFlag="",alarmFlag=""):
-  return [fixData(data,rmlStyle,abortSimulationFlag,alarmFlag) for data in json.load(open(c))]
+def readConfig(c,rmlStyle=False,abortSimulationFlag="",alarmFlag="",defaultCustomCommands=[]):
+  return [fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands) for data in json.load(open(c))]
 
 def libname(library, conf):
   return library+("_"+conf["libraryVersion"] if conf["libraryVersion"]!="default" else "")+(("_" + conf["configExtraName"]) if "configExtraName" in conf else "")

@@ -143,6 +143,9 @@ runningTestsuiteFiles = False
 if omc.sendExpression(cmd):
   runningTestsuiteFiles = True
 
+# Hide errors for old-school running-testsuite flags...
+omc._omc.sendExpression("getErrorString()")
+
 try:
   os.mkdir("files")
 except:

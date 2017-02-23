@@ -164,11 +164,35 @@ if os.path.exists("HelloWorld"):
 else:
   haveCppRuntime=False
 
+defaultCustomCommands = []
+debug = "+d" if rmlStyle else "-d"
+helloWorldContents = open("HelloWorld.mos").read()
+for cmd in [
+  'setCommandLineOptions("%s=nogen");' % debug,
+  'setCommandLineOptions("%s=initialization);' % debug,
+  'setCommandLineOptions("%s=backenddaeinfo);' % debug,
+  'setCommandLineOptions("%s=discreteinfo);' % debug,
+  'setCommandLineOptions("%s=stateselection);' % debug,
+  'setCommandLineOptions("%s=execstat");' % debug,
+  'setMatchingAlgorithm("PFPlusExt");',
+  'setIndexReductionMethod("dynamicStateSelection");'
+]:
+  try:
+    os.unlink("HelloWorld")
+  except OSError:
+    pass
+  open("HelloWorld.cmd.mos","w").write(cmd + "\n" + helloWorldContents)
+  try:
+    out=subprocess.check_output(["%s/bin/omc" % omhome, "HelloWorld.cmd.mos"], stderr=subprocess.STDOUT)
+    if os.path.exists("HelloWorld") and not "Error:" in out:
+      defaultCustomCommands.append(cmd)
+  except subprocess.CalledProcessError as e:
+    pass
 
 from shared import readConfig
 import shared
 
-configs_lst = [readConfig(c, rmlStyle=rmlStyle, abortSimulationFlag=abortSimulationFlag, alarmFlag=alarmFlag) for c in configs]
+configs_lst = [readConfig(c, rmlStyle=rmlStyle, abortSimulationFlag=abortSimulationFlag, alarmFlag=alarmFlag, defaultCustomCommands=defaultCustomCommands) for c in configs]
 configs = []
 for c in configs_lst:
   configs = configs + c
@@ -206,7 +230,7 @@ cursor.execute('''CREATE TABLE if not exists [%s]
 cursor.execute("PRAGMA user_version=3")
 
 def strToHashInt(s):
-  return int(hashlib.sha1(s+"fixCorruptBuilds-2017-02-23v3").hexdigest()[0:8],16)
+  return int(hashlib.sha1(s+"fixCorruptBuilds-2017-02-23v4").hexdigest()[0:8],16)
 
 stats_by_libname = {}
 skipped_libs = {}
