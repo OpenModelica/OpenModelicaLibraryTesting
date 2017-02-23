@@ -227,7 +227,7 @@ templates= omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(Op
 simcode  = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_SIMCODE)")
 backend  = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_BACKEND)")
 frontend = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_FRONTEND)")
-
+print(execTimeTranslateModel,frontend,backend)
 if backend != -1:
   execstat["frontend"]=frontend-backend
   if templates != -1:
@@ -240,12 +240,16 @@ if backend != -1:
         execstat["phase"]=4 if res else 3
       else:
         execstat["phase"]=3
+        execstat["templates"]=templates
     else:
       execstat["phase"]=2
+      execstat["simcode"]=simcode
   else:
     execstat["phase"]=1
+    execstat["backend"]=backend
 else:
   execstat["phase"]=0
+  execstat["frontend"]=frontend
 
 with open(errFile, 'w') as fp:
   fp.write(err)
