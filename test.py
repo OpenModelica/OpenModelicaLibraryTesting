@@ -27,16 +27,18 @@ def runCommand(cmd, prefix, timeout):
     parent = psutil.Process(process[0].pid)
     killedSome = False
     for child in parent.children(recursive=True):
-      if child.name() != "omc":
-        print "Timeout, killing %s: %s" % (cmd.split(" ")[-1], child.name())
+      print "Timeout, killing %s: %s" % cmd, child.name())
+      try:
         child.kill()
         killedSome = True
+      except:
+        pass
     if killedSome:
       thread.join(min(10, timeout))
     if thread.is_alive():
       for child in parent.children(recursive=True):
         try:
-          print "Timeout, killing %s: %s" % (cmd.split(" ")[-1], child.name())
+          print "Timeout, killing %s: %s" % cmd, child.name())
           child.kill()
         except:
           pass
