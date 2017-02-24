@@ -309,7 +309,7 @@ def runScript(c, timeout, memoryLimit):
     pass
   start=monotonic()
   # runCommand("%s %s %s.mos" % (omc_exe, single_thread, c), prefix=c, timeout=timeout)
-  if 0 != runCommand("ulimit -m %d; ./testmodel.py --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (ompython_omhome, c, c), prefix=c, timeout=timeout):
+  if 0 != runCommand("ulimit -m %d; ./testmodel.py --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (memoryLimit, ompython_omhome, c, c), prefix=c, timeout=timeout):
     print("files/%s.err" % c)
     with open("files/%s.err" % c, "a+") as errfile:
       errfile.write("Failed to read output from testmodel.py, exit status != 0:\n")
