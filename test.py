@@ -301,7 +301,7 @@ for (modelName,library,libName,name,conf) in tests:
   with open(name + ".conf.json", 'w') as fp:
     json.dump(dict(conf.items()+{"library":library, "modelName":modelName, "fileName":name}.items()), fp)
 
-def runScript(c, timeout):
+def runScript(c, timeout, memoryLimit):
   j = "files/%s.stat.json" % c
   try:
     os.remove(j)
@@ -309,7 +309,7 @@ def runScript(c, timeout):
     pass
   start=monotonic()
   # runCommand("%s %s %s.mos" % (omc_exe, single_thread, c), prefix=c, timeout=timeout)
-  if 0 != runCommand("./testmodel.py --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (ompython_omhome, c, c), prefix=c, timeout=timeout):
+  if 0 != runCommand("ulimit -m %d; ./testmodel.py --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (ompython_omhome, c, c), prefix=c, timeout=timeout):
     print("files/%s.err" % c)
     with open("files/%s.err" % c, "a+") as errfile:
       errfile.write("Failed to read output from testmodel.py, exit status != 0:\n")
@@ -356,7 +356,7 @@ cmd_res=[0]
 start=monotonic()
 start_as_time=time.localtime()
 testRunStartTimeAsEpoch = int(time.time())
-cmd_res=Parallel(n_jobs=n_jobs)(delayed(runScript)(name, 1.1*data["ulimitOmc"]+1.1*data["ulimitExe"]) for (model,lib,libName,name,data) in tests)
+cmd_res=Parallel(n_jobs=n_jobs)(delayed(runScript)(name, 1.1*data["ulimitOmc"]+1.1*data["ulimitExe"], data["ulimitMemory"]) for (model,lib,libName,name,data) in tests)
 stop=monotonic()
 print("Execution time: %.2f" % (stop-start))
 assert(stop-start >= 0.0)

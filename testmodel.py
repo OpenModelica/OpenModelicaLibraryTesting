@@ -230,6 +230,7 @@ templates= omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(Op
 simcode  = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_SIMCODE)")
 backend  = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_BACKEND)")
 frontend = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_FRONTEND)")
+del omc
 print(execTimeTranslateModel,frontend,backend)
 if backend != -1:
   execstat["frontend"]=frontend-backend
@@ -298,7 +299,7 @@ if len(diffVars)==0 and referenceOK:
   execstat["phase"]=7
 else:
   with open(errFile, 'a') as fp:
-    fp.write(omc._omc.sendExpression('OpenModelica.Scripting.getErrorString()'))
+    fp.write(omc_new._omc.sendExpression('OpenModelica.Scripting.getErrorString()'))
     fp.write("\nVariables in the reference:" )
     fp.write(",".join(referenceVars)+"\n")
     resVars=omc_new.sendExpression('readSimulationResultVars("%s", readParameters=true, openmodelicaStyle=true)' % resFile)

@@ -17,7 +17,7 @@ def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands):
   data["ulimitOmc"] = data.get("ulimitOmc") or 660 # 11 minutes to generate the C-code
   data["ulimitExe"] = data.get("ulimitExe") or 8*60 # 8 additional minutes to initialize and run the simulation
   data["ulimitLoadModel"] = data.get("ulimitLoadModel") or 90
-  data["ulimitMemory"] = data.get("ulimitMemory") or 16000000 # ~16GB memory at most
+  data["ulimitMemory"] = data.get("ulimitMemory") or 14000000 # ~14GB memory at most
   data["extraSimFlags"] = data.get("extraSimFlags") or "" # no extra sim flags
   data["libraryVersion"] = data.get("libraryVersion") or "default"
   data["alarmFlag"] = data.get("alarmFlag") or (alarmFlag if data["simCodeTarget"]=="C" else "")
