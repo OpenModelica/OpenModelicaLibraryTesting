@@ -27,8 +27,8 @@ def runCommand(cmd, prefix, timeout):
     parent = psutil.Process(process[0].pid)
     killedSome = False
     for child in parent.children(recursive=True):
-      print("Timeout, killing %s: %s" % (cmd, child.name()))
       try:
+        print("Timeout, killing %s: %s" % (cmd, child.name()))
         child.kill()
         killedSome = True
       except:
