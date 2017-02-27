@@ -232,7 +232,7 @@ cursor.execute('''CREATE TABLE if not exists [%s]
 cursor.execute("PRAGMA user_version=3")
 
 def strToHashInt(s):
-  return int(hashlib.sha1(s+"fixCorruptBuilds-2017-02-23v4").hexdigest()[0:8],16)
+  return int(hashlib.sha1(s+"fixCorruptBuilds-2017-02-27").hexdigest()[0:8],16)
 
 stats_by_libname = {}
 skipped_libs = {}
