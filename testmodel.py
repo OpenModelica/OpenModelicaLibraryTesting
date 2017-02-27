@@ -14,6 +14,11 @@ args = parser.parse_args()
 config = args.config
 ompython_omhome = args.ompython_omhome
 
+try:
+  os.mkdir("files")
+except OSError:
+  pass
+
 class TimeoutError(Exception):
   pass
 
@@ -103,11 +108,11 @@ simFile="files/%s.sim" % conf["fileName"]
 statFile="files/%s.stat.json" % conf["fileName"]
 try:
   os.unlink(errFile)
-except:
+except OSError:
   pass
 try:
   os.unlink(simFile)
-except:
+except OSError:
   pass
 
 def writeResultAndExit(exitStatus):
@@ -115,8 +120,12 @@ def writeResultAndExit(exitStatus):
     json.dump(execstat, fp)
   sys.exit(exitStatus)
 
+if conf["simCodeTarget"] not in ["Cpp","C"]:
+  with open(errFile, 'w+') as fp:
+    fp.write("Unknown simCodeTarget in %s" % conf["simCodeTarget"])
+  writeResultAndExit(1)
 if conf["simCodeTarget"]=="Cpp" and not conf["haveCppRuntime"]:
-  with open(errFile, 'a') as fp:
+  with open(errFile, 'w+') as fp:
     fp.write("C++ runtime not supported in this installation (HelloWorld failed)")
   writeResultAndExit(0)
 
@@ -145,11 +154,6 @@ if omc.sendExpression(cmd):
 
 # Hide errors for old-school running-testsuite flags...
 omc._omc.sendExpression("getErrorString()")
-
-try:
-  os.mkdir("files")
-except:
-  pass
 
 outputFormat="mat"
 referenceVars=[]
@@ -193,7 +197,7 @@ try:
     sys.exit(1)
 except TimeoutError as e:
   execstat["parsing"]=monotonic()-start
-  with open(errFile, 'a') as fp:
+  with open(errFile, 'a+') as fp:
     fp.write("Timeout error for cmd: %s\n%s"%(cmd,str(e)))
   writeResultAndExit(0)
 execstat["parsing"]=monotonic()-start
@@ -217,7 +221,7 @@ try:
   res=sendExpressionTimeout(omc, cmd, conf["ulimitOmc"])
 except TimeoutError as e:
   execstat["frontend"]=monotonic()-start
-  with open(errFile, 'a') as fp:
+  with open(errFile, 'a+') as fp:
     fp.write("Timeout error for cmd: %s\n%s"%(cmd,str(e)))
   writeResultAndExit(0)
 
