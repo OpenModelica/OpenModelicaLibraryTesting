@@ -232,7 +232,7 @@ cursor.execute('''CREATE TABLE if not exists [%s]
 cursor.execute("PRAGMA user_version=3")
 
 def strToHashInt(s):
-  return int(hashlib.sha1(s+"fixCorruptBuilds-2017-02-27").hexdigest()[0:8],16)
+  return int(hashlib.sha1(s+"fixCorruptBuilds-2017-02-28").hexdigest()[0:8],16)
 
 stats_by_libname = {}
 skipped_libs = {}
@@ -377,7 +377,6 @@ for key in stats.keys():
     libname,
     model,
     data.get("exectime") or 0.0,
-    data.get("parsing") or 0.0,
     data.get("frontend") or 0.0,
     data.get("backend") or 0.0,
     data.get("simcode") or 0.0,
@@ -387,7 +386,8 @@ for key in stats.keys():
     (data.get("diff") or {}).get("time") or 0.0,
     len((data.get("diff") or {}).get("vars") or []),
     (data.get("diff") or {}).get("numCompared") or 0,
-    data.get("phase") or 0
+    data.get("phase") or 0,
+    data.get("parsing") or 0.0
   )
   # print values
   cursor.execute("INSERT INTO [%s] VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" % branch, values)
