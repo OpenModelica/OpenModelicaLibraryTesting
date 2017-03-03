@@ -12,7 +12,7 @@ def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands):
   data["reference_rangeDelta"] = data.get("reference_rangeDelta") or 1e-3
   debug = "+d" if rmlStyle else "-d"
   if data["simCodeTarget"]=="Cpp":
-    defaultCustomCommands.append('setCommandLineOptions("%ssimCodeTarget=Cpp")' % ("+" if rmlStyle else "--"))
+    defaultCustomCommands = defaultCustomCommands[:].append('setCommandLineOptions("%ssimCodeTarget=Cpp")' % ("+" if rmlStyle else "--"))
   data["customCommands"] = (data.get("customCommands") or defaultCustomCommands) + (data.get("extraCustomCommands") or [])
   data["ulimitOmc"] = data.get("ulimitOmc") or 660 # 11 minutes to generate the C-code
   data["ulimitExe"] = data.get("ulimitExe") or 8*60 # 8 additional minutes to initialize and run the simulation
