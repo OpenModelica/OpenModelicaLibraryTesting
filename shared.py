@@ -13,7 +13,8 @@ def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands):
     data["reference_rangeDelta"] = data.get("reference_rangeDelta") or 1e-3
     debug = "+d" if rmlStyle else "-d"
     if data["simCodeTarget"]=="Cpp":
-      defaultCustomCommands2 = defaultCustomCommands[:].append('setCommandLineOptions("%ssimCodeTarget=Cpp")' % ("+" if rmlStyle else "--"))
+      defaultCustomCommands2 = defaultCustomCommands[:]
+      defaultCustomCommands2.append('setCommandLineOptions("%ssimCodeTarget=Cpp")' % ("+" if rmlStyle else "--"))
     else:
       defaultCustomCommands2 = defaultCustomCommands
     data["customCommands"] = (data.get("customCommands") or defaultCustomCommands2) + (data.get("extraCustomCommands") or [])
