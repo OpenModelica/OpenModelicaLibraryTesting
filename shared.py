@@ -25,7 +25,7 @@ def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands):
     data["abortSlowSimulation"] = data.get("abortSlowSimulation") or (abortSimulationFlag if data["simCodeTarget"]=="C" else "")
     return (data["library"],data)
   except:
-    print("Failed to fix data for: %s with extra args: %s" % (str(data),str(rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands)))
+    print("Failed to fix data for: %s with extra args: %s" % (str(data),str((rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands))))
     raise
 
 def readConfig(c,rmlStyle=False,abortSimulationFlag="",alarmFlag="",defaultCustomCommands=[]):
