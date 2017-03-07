@@ -13,8 +13,10 @@ def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands):
     data["reference_rangeDelta"] = data.get("reference_rangeDelta") or 1e-3
     debug = "+d" if rmlStyle else "-d"
     if data["simCodeTarget"]=="Cpp":
-      defaultCustomCommands = defaultCustomCommands[:].append('setCommandLineOptions("%ssimCodeTarget=Cpp")' % ("+" if rmlStyle else "--"))
-    data["customCommands"] = (data.get("customCommands") or defaultCustomCommands) + (data.get("extraCustomCommands") or [])
+      defaultCustomCommands2 = defaultCustomCommands[:].append('setCommandLineOptions("%ssimCodeTarget=Cpp")' % ("+" if rmlStyle else "--"))
+    else:
+      defaultCustomCommands2 = defaultCustomCommands
+    data["customCommands"] = (data.get("customCommands") or defaultCustomCommands2) + (data.get("extraCustomCommands") or [])
     data["ulimitOmc"] = data.get("ulimitOmc") or 660 # 11 minutes to generate the C-code
     data["ulimitExe"] = data.get("ulimitExe") or 8*60 # 8 additional minutes to initialize and run the simulation
     data["ulimitLoadModel"] = data.get("ulimitLoadModel") or 90
@@ -25,7 +27,7 @@ def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands):
     data["abortSlowSimulation"] = data.get("abortSlowSimulation") or (abortSimulationFlag if data["simCodeTarget"]=="C" else "")
     return (data["library"],data)
   except:
-    print("Failed to fix data for: %s with extra args: %s" % (str(data),str((rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands))))
+    print("Failed to fix data for: %s with extra args: %s" % (str(data),str((rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands,defaultCustomCommands2))))
     raise
 
 def readConfig(c,rmlStyle=False,abortSimulationFlag="",alarmFlag="",defaultCustomCommands=[]):
