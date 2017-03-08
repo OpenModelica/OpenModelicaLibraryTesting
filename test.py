@@ -358,7 +358,7 @@ cmd_res=[0]
 start=monotonic()
 start_as_time=time.localtime()
 testRunStartTimeAsEpoch = int(time.time())
-cmd_res=Parallel(n_jobs=n_jobs)(delayed(runScript)(name, 1.1*data["ulimitOmc"]+1.1*data["ulimitExe"], data["ulimitMemory"]) for (model,lib,libName,name,data) in tests)
+cmd_res=Parallel(n_jobs=n_jobs)(delayed(runScript)(name, 1.1*data["ulimitOmc"]+1.1*data["ulimitExe"]+15, data["ulimitMemory"]) for (model,lib,libName,name,data) in tests)
 stop=monotonic()
 print("Execution time: %.2f" % (stop-start))
 assert(stop-start >= 0.0)
