@@ -280,6 +280,7 @@ except TimeoutError as e:
 
 start=monotonic()
 try:
+  # TODO: Timeout more reliably...
   res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe > %s & ./%s %s %s 2>&1 > %s.pipe)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,conf["fileName"],conf["simFlags"],emit_protected,conf["fileName"]), conf["ulimitExe"])
   execstat["sim"] = monotonic()-start
   execstat["phase"] = 6
