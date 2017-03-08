@@ -100,6 +100,9 @@ version_cmd = "--version"
 single_thread="-n=1"
 rmlStyle=False
 
+# Try to make the processes a bit nicer...
+os.environ["GC_MARKERS"]=1
+
 if ompython_omhome != "":
   # Use a different OMC for running OMPython than for running the tests
   omhome = os.environ["OPENMODELICAHOME"]
