@@ -35,16 +35,16 @@ def sendExpressionTimeout(omc, cmd, timeout):
   thread.join(timeout)
 
   if thread.is_alive():
-    for process in psutil.Process().children():
+    for process in psutil.Process().children(recursive=True):
       try:
-        os.killpg(process.pid, signal.SIGINT)
+        os.kill(process.pid, signal.SIGINT)
       except OSError:
         pass
     thread.join(2)
     if thread.is_alive():
-      for process in psutil.Process().children():
+      for process in psutil.Process().children(recursive=True):
         try:
-          os.killpg(process.pid, signal.SIGKILL)
+          os.kill(process.pid, signal.SIGKILL)
         except OSError:
           pass
       thread.join()
@@ -69,16 +69,16 @@ def checkOutputTimeout(cmd, timeout):
   thread.join(timeout)
 
   if thread.is_alive():
-    for process in psutil.Process().children():
+    for process in psutil.Process().children(recursive=True):
       try:
         os.killpg(process.pid, signal.SIGINT)
       except OSError:
         pass
     thread.join(2)
     if thread.is_alive():
-      for process in psutil.Process().children():
+      for process in psutil.Process().children(recursive=True):
         try:
-          os.killpg(process.pid, signal.SIGKILL)
+          os.kill(process.pid, signal.SIGKILL)
         except OSError:
           pass
       thread.join()
