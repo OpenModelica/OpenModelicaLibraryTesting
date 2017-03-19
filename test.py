@@ -173,8 +173,8 @@ try:
   subprocess.check_output(["%s/bin/omc" % omhome, "Architecture.mos"], stderr=subprocess.STDOUT)
 except subprocess.CalledProcessError:
   print("Patching ModelicaServices for Architecture bug...")
-  for f in glob.glob(omhome + "/lib/omlibrary/ModelicaServices*/package.mo"):
-    open(f,"w").write(open(f).read().replace("OpenModelica.Internal.Architecture.integerMax","2147483647"))
+  for f in glob.glob(omhome + "/lib/omlibrary/ModelicaServices*/package.mo") + glob.glob(omhome + "/lib/omlibrary/Modelica */Constants.mo"):
+    open(f,"w").write(open(f).read().replace("OpenModelica.Internal.Architecture.integerMax()","2147483647"))
 
 defaultCustomCommands = []
 debug = "+d" if rmlStyle else "-d"
