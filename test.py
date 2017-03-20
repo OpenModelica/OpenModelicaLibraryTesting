@@ -175,6 +175,7 @@ except subprocess.CalledProcessError:
   print("Patching ModelicaServices for Architecture bug...")
   for f in glob.glob(omhome + "/lib/omlibrary/ModelicaServices*/package.mo") + glob.glob(omhome + "/lib/omlibrary/Modelica */Constants.mo"):
     content = open(f).read().replace("OpenModelica.Internal.Architecture.integerMax()","2147483647")
+    assert(len(content > 0))
     open(f,"w").write(content)
 
 defaultCustomCommands = []
