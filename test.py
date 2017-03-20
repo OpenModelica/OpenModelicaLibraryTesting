@@ -174,7 +174,8 @@ try:
 except subprocess.CalledProcessError:
   print("Patching ModelicaServices for Architecture bug...")
   for f in glob.glob(omhome + "/lib/omlibrary/ModelicaServices*/package.mo") + glob.glob(omhome + "/lib/omlibrary/Modelica */Constants.mo"):
-    open(f,"w").write(open(f).read().replace("OpenModelica.Internal.Architecture.integerMax()","2147483647"))
+    content = open(f).read().replace("OpenModelica.Internal.Architecture.integerMax()","2147483647")
+    open(f,"w").write(content)
 
 defaultCustomCommands = []
 debug = "+d" if rmlStyle else "-d"
