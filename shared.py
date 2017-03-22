@@ -26,6 +26,8 @@ def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands):
     data["libraryVersion"] = data.get("libraryVersion") or "default"
     data["alarmFlag"] = data.get("alarmFlag") or (alarmFlag if data["simCodeTarget"]=="C" else "")
     data["abortSlowSimulation"] = data.get("abortSlowSimulation") or (abortSimulationFlag if data["simCodeTarget"]=="C" else "")
+    if data.has_key("changeHash"): # Force rebuilding the library due to change in the testing script
+      data["changeHash"] = data["changeHash"]
     return (data["library"],data)
   except:
     print("Failed to fix data for: %s with extra args: %s" % (str(data),str((rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands,defaultCustomCommands2))))

@@ -318,6 +318,8 @@ else:
   with open(prefix+".html", 'w') as fp:
     fp.write("<html><body><h1>%s differences from the reference file</h1><p>startTime: %g</p><p>stopTime: %g</p><p>Simulated using tolerance: %g</p><ul>%s</ul></body></html>" % (conf["modelName"], startTime, stopTime, tolerance, lstfiles));
   for var in diffVars:
+    if "/" in var:
+      continue # Quoted identifier, or possibly an error message... Either way, avoid crapping out below
     with open(prefix+"."+var+".html", 'w') as fp:
       fp.write("""<html>
 <head>
