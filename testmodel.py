@@ -291,15 +291,15 @@ except TimeoutError as e:
 if referenceFile=="":
   writeResultAndExit(0)
 
-if not os.path.exists(resFile):
-  with open(errFile, 'a') as fp:
-    fp.write("TODO: How the !@#!# did the simulation report success but not simulation result exists to compare?")
-  writeResultAndExit(0)
-
 # Check the reference file...
 
 prefix = "files/%s.diff" % conf["fileName"]
 resFile = "%s_res.%s" % (conf["fileName"], outputFormat)
+
+if not os.path.exists(resFile):
+  with open(errFile, 'a') as fp:
+    fp.write("TODO: How the !@#!# did the simulation report success but not simulation result exists to compare?")
+  writeResultAndExit(0)
 
 start=monotonic()
 (referenceOK,diffVars) = sendExpressionTimeout(omc_new, 'diffSimulationResults("%s","%s","%s",relTol=%g,relTolDiffMinMax=%g,rangeDelta=%g)' %
