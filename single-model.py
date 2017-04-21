@@ -36,13 +36,17 @@ except:
 for model in models:
   lines=[]
   c=0
-  for (dint,libname) in cursor.execute("SELECT date,libname FROM [%s] WHERE model=? ORDER BY date ASC" % (branch), (model,)):
-    c+=1
-    dstr = str(datetime.datetime.fromtimestamp(dint).strftime('%Y-%m-%d %H:%M:%S'))
-    cursor2 = conn.cursor()
-    omcversion = cursor2.execute("SELECT omcversion FROM [omcversion] WHERE date=? AND branch=?", (dint,branch)).fetchone()[0]
-    lines.insert(0, "%s %s" % (dstr,omcversion))
-  if c==0:
-    raise Exception("No such model: %s" % model)
-  print(libname)
-  print("\n".join(lines))
+  libnames = [libname for (libname,) in cursor.execute("SELECT DISTINCT libname FROM [%s] WHERE model=? ORDER BY libname ASC" % (branch), (model,))]
+  for libname in libnames:
+    for (finalphase,dint,libversion) in cursor.execute("SELECT finalphase,date,libversion FROM [%s] NATURAL JOIN [libversion] WHERE model=? AND libname=? ORDER BY date ASC" % (branch), (model,libname)):
+      c+=1
+      dstr = str(datetime.datetime.fromtimestamp(dint).strftime('%Y-%m-%d %H:%M:%S'))
+      cursor2 = conn.cursor()
+      omcversion = cursor2.execute("SELECT omcversion FROM [omcversion] WHERE date=? AND branch=?", (dint,branch)).fetchone()[0]
+      omcversion = omcversion.replace("OpenModelica ","").replace("OMCompiler ","")
+      lines.insert(0, "%s %s %s %s" % (dstr,shared.finalphaseName(finalphase),omcversion,libversion.strip()))
+    if c==0:
+      raise Exception("No such model: %s" % model)
+    print("%s - %s" % (libname,model))
+    print("\n".join(lines))
+    print("")

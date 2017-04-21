@@ -38,3 +38,6 @@ def readConfig(c,rmlStyle=False,abortSimulationFlag="",alarmFlag="",defaultCusto
 
 def libname(library, conf):
   return library+("_"+conf["libraryVersion"] if conf["libraryVersion"]!="default" else "")+(("_" + conf["configExtraName"]) if "configExtraName" in conf else "")
+
+def finalphaseName(finalphase):
+  return ("Failed","FrontEnd","BackEnd","SimCode","Templates","Compile","Simulate","Verify")[finalphase]
