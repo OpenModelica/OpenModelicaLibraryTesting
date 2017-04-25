@@ -18,6 +18,8 @@
 <tr><td>Libraries Changed</td><td>#NUMLIBS#</td></tr>
 <tr><td>Number of Improvements</td><td>#NUMIMPROVE#</td></tr>
 <tr><td>Number of Regressions</td><td>#NUMREGRESSION#</td></tr>
+<tr><td>Number of Performance Improvements</td><td>#NUMPERFIMPROVE#</td></tr>
+<tr><td>Number of Performance Regressions</td><td>#NUMPERFREGRESSION#</td></tr>
 </table>
 
 <h2>OpenModelica Changes</h2>
