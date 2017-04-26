@@ -9,10 +9,24 @@ from omcommon import friendlyStr
 
 parser = argparse.ArgumentParser(description='OpenModelica model testing report generation tool')
 parser.add_argument('branches', nargs='*')
-
+parser.add_argument('--baseurl', default="http://libraries.openmodelica.org/branches")
+parser.add_argument('--historyurl', default="http://libraries.openmodelica.org/branches/history")
+parser.add_argument('--historypath', default="/var/www/branches/history")
+parser.add_argument('--githuburl', default="https://github.com/OpenModelica/OMCompiler/commit")
+parser.add_argument('--omcgitdir', default="../OpenModelica/OMCompiler")
+parser.add_argument('--email', default=False, action='store_true')
 args = parser.parse_args()
 
 branches = [branch.split("/")[-1] for branch in args.branches]
+baseurl = args.baseurl
+historyurl  = args.historyurl
+githuburl = args.githuburl
+omcgitdir = args.omcgitdir
+fnameprefix = args.historypath
+doemail = args.email
+
+if not os.path.exists(omcgitdir):
+  raise Exception("Could not find OMCompiler.git directory, set it with --omcgitdir. Tried: %s" % omcgitdir)
 
 dates = {}
 dates_str = {}
@@ -41,7 +55,9 @@ def getTagOrVersion(v):
   return v
 
 def libraryLink(branch, libname):
-  return '<a href="http://libraries.openmodelica.org/branches/%s/%s/%s.html">%s</a>' % (branch,libname,libname,libname)
+  return '<a href="%s/%s/%s/%s.html">%s</a>' % (baseurl,branch,libname,libname,libname)
+
+emails_to_send = {}
 for branch in branches:
   try:
     cursor.execute("SELECT name FROM [sqlite_master] WHERE type='table' AND name=?", (branch,))
@@ -51,24 +67,31 @@ for branch in branches:
   cursor.execute("SELECT date,omcversion FROM [omcversion] WHERE branch=? ORDER BY date ASC", (branch,))
   entries = cursor.fetchall()
   n = len(entries)
-  for i in range(n-1,0,-1):
+  for i in range(1,n):
     d1 = entries[i-1][0]
     d2 = entries[i][0]
-    v1 = getTagOrVersion(entries[i-1][1])
-    v2 = getTagOrVersion(entries[i][1])
-    fname = "%s/%s..%s.html" % (branch,dateStr(d1),dateStr(d2))
+    fname = "%s/%s/%s..%s.html" % (fnameprefix,branch,dateStr(d1),dateStr(d2))
     if os.path.exists(fname):
       continue
+    v1 = getTagOrVersion(entries[i-1][1])
+    v2 = getTagOrVersion(entries[i][1])
     with open("history.html.tpl") as fin:
       tpl = fin.read()
+    emails_current = set(["openmodelicabuilds@ida.liu.se"])
     if v1 != v2:
       try:
-        gitlog = subprocess.check_output(["git", "log", '--pretty=<tr><td><a href="https://github.com/OpenModelica/OMCompiler/commit/%h">%h</a></td><td>%an</td><td>%s</td></tr>', "%s..%s" % (v1,v2)], cwd="/home/martin/OpenModelica/OMCompiler").decode("utf-8")
+        gitlog = subprocess.check_output(["git", "log", '--pretty=<tr><td><a href="%s/%%h">%%h</a></td><td>%%an</td><td>%%s</td></tr>' % githuburl, "%s..%s" % (v1,v2)], cwd=omcgitdir).decode("utf-8")
+        for email in [email.strip() for email in subprocess.check_output(["git", "log", '--pretty=%ae', "%s..%s" % (v1,v2)], cwd=omcgitdir).decode("utf-8").split("\n")]:
+          if "@" not in email:
+            continue
+          emails_current.add(email)
       except subprocess.CalledProcessError:
         gitlog = "<tr><td>%s..%s</td></tr>" % (v1,v2)
     else:
       gitlog = ""
     tpl = tpl.replace("#OMCGITLOG#",gitlog).replace("#NUMCOMMITS#",str(gitlog.count("<tr>")))
+    # Order by date so we can select and know which is the older and which is the newer value... for finalphase, and the execution times
+    # Note: GROUP_CONCAT returns both values as a string... So you need to split it later
     cursor.execute("""SELECT model,libname,GROUP_CONCAT(finalphase),GROUP_CONCAT(frontend),GROUP_CONCAT(backend),GROUP_CONCAT(simcode),GROUP_CONCAT(templates),GROUP_CONCAT(compile),GROUP_CONCAT(simulate) FROM
   (SELECT model,libname,finalphase,frontend,backend,simcode,templates,compile,simulate FROM [%s] WHERE date IN (?,?) ORDER BY date)
 GROUP BY model,libname HAVING MIN(finalphase) <> MAX(finalphase) OR
@@ -81,8 +104,6 @@ GROUP BY model,libname HAVING MIN(finalphase) <> MAX(finalphase) OR
   ORDER BY libname,model
 """ % branch, (d1,d2,timeRel,timeAbs,timeRel,timeAbs,timeRel,timeAbs,timeRel,timeAbs,timeRel,2*timeAbs,timeRel,timeAbs))
     regressions = cursor.fetchall()
-    if len(regressions)==0:
-      continue
     libs = set()
 
     numImproved = 0
@@ -120,7 +141,7 @@ GROUP BY model,libname HAVING MIN(finalphase) <> MAX(finalphase) OR
         else:
           numPerformanceRegression += 1
         msg = " ".join(msgs)
-      regstrs.append('<tr><td><a href="http://libraries.openmodelica.org/branches/%s/%s/%s.html">%s</a></td><td>%s</td><td class="%s">%s</td></tr>' % (branch,libname,libname,libname,model,color,msg))
+      regstrs.append('<tr><td>%s</td><td>%s</td><td class="%s">%s</td></tr>' % (libraryLink(branch, libname),model,color,msg))
     tpl = tpl.replace("#NUMIMPROVE#",str(numImproved)).replace("#NUMREGRESSION#",str(numRegression)).replace("#NUMPERFIMPROVE#",str(numPerformanceImproved)).replace("#NUMPERFREGRESSION#",str(numPerformanceRegression)).replace("#MODELCHANGES#", "\n".join(regstrs))
     tpl = tpl.replace("#BRANCH#",branch).replace("#DATE1#",dateStr(d1)).replace("#DATE2#",dateStr(d2))
 
@@ -138,8 +159,51 @@ GROUP BY model,libname HAVING MIN(finalphase) <> MAX(finalphase) OR
         libstrs.append("<tr><td>%s</td><td>Configuration hash (OMC settings or the testing script changed)</td></tr>" % libraryLink(branch, libname))
     tpl = tpl.replace("#LIBCHANGES#","\n".join(libstrs)).replace("#NUMLIBS#",str(len(libstrs)))
 
-    print("%s %d improved, %d regressions; performance %d improved, %d regressions" % (fname,numImproved,numRegression,numPerformanceImproved,numPerformanceRegression))
+    email_summary_html = '<p><a href="%s/%s/%s">%s</a> %d improved, %d regressions; performance %d improved, %d regressions</p>' % (historyurl, branch, os.path.basename(fname).replace(" ","%20"), os.path.basename(fname),numImproved,numRegression,numPerformanceImproved,numPerformanceRegression)
+    email_summary_plain = '%s/%s/%s: %d improved, %d regressions; performance %d improved, %d regressions</p>' % (historyurl, branch, os.path.basename(fname).replace(" ","%20"), numImproved, numRegression, numPerformanceImproved, numPerformanceRegression)
+    if sum([numImproved,numRegression,numPerformanceImproved,numPerformanceRegression])>0:
+      for email in emails_current:
+        if email not in emails_to_send:
+          emails_to_send[email] = {"plain":[],"html":[]}
+        emails_to_send[email]["plain"].append(email_summary_plain)
+        emails_to_send[email]["html"].append(email_summary_html)
+    if not os.path.exists(os.path.dirname(fname)):
+      os.makedirs(os.path.dirname(fname))
     with open(fname, "w") as fout:
       fout.write(tpl)
+    if not os.path.exists(os.path.dirname("%s/%s" % (fnameprefix,branch))):
+      os.makedirs("%s/%s" % (fnameprefix,branch))
+    with open("%s/%s/00_history.html" % (fnameprefix,branch), "a+") as fout:
+      fout.write(email_summary_html)
+      fout.write("\n")
 
-sys.exit(1)
+if not doemail:
+  # We are done
+  sys.exit(0)
+
+# OK; send the emails :D
+import smtplib
+
+from email.message import EmailMessage
+from email.headerregistry import Address
+from email.utils import make_msgid
+
+for email in sorted(emails_to_send.keys()):
+  msg = EmailMessage()
+  msg['Subject'] = 'OpenModelica Library Testing Regressions'
+  msg['From'] = Address("OM Hudson", "openmodelicabuilds", "ida.liu.se")
+  msg['To'] = email
+  msg.set_content("""\
+The following reports contain regressions your account was involved with:
+""" + "\n".join(reversed(emails_to_send[email]["plain"])))
+  msg.add_alternative("""\
+<html>
+<head></head>
+<body>
+%s
+</body>
+</html>
+""" % "\n".join(reversed(emails_to_send[email]["html"])), subtype='html')
+  print(msg)
+  with smtplib.SMTP('localhost') as s:
+    s.send_message(msg)
