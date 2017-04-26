@@ -204,6 +204,5 @@ The following reports contain regressions your account was involved with:
 </body>
 </html>
 """ % "\n".join(reversed(emails_to_send[email]["html"])), subtype='html')
-  print(msg)
   with smtplib.SMTP('localhost') as s:
     s.send_message(msg)
