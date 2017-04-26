@@ -200,6 +200,7 @@ The following reports contain regressions your account was involved with:
 <html>
 <head></head>
 <body>
+<p>The following reports contain regressions your account was involved with:</p>
 %s
 </body>
 </html>
