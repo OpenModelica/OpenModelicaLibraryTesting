@@ -11,6 +11,7 @@ import psutil, subprocess, threading, hashlib
 from subprocess import call
 from monotonic import monotonic
 from omcommon import friendlyStr, multiple_replace
+rom natsort import natsorted
 
 def runCommand(cmd, prefix, timeout):
   process = [None]
@@ -478,7 +479,7 @@ for libname in stats_by_libname.keys():
       checkPhase(s[3]["phase"], 5),
       friendlyStr(s[3].get("build") or 0)
     ))(filename_prefix="files/%s_%s" % (s[2], s[1]), diff=s[3].get("diff"))
-    for s in sorted(stats, key=lambda s: s[1])])
+    for s in natsorted(stats, key=lambda s: s[1])])
   numSucceeded = [len(stats)] + [sum(1 if s[3]["phase"]>=i else 0 for s in stats) for i in range(1,8)]
   replacements = (
     (u"#omcVersion#", cgi.escape(omc_version)),
