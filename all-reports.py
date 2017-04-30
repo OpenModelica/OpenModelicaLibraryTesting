@@ -159,7 +159,7 @@ GROUP BY model,libname HAVING MIN(finalphase) <> MAX(finalphase) OR
         libstrs.append("<tr><td>%s</td><td>Configuration hash (OMC settings or the testing script changed)</td></tr>" % libraryLink(branch, libname))
     tpl = tpl.replace("#LIBCHANGES#","\n".join(libstrs)).replace("#NUMLIBS#",str(len(libstrs)))
 
-    email_summary_html = '<p><a href="%s/%s/%s">%s</a> %d improved, %d regressions; performance %d improved, %d regressions</p>' % (historyurl, branch, os.path.basename(fname).replace(" ","%20"), os.path.basename(fname),numImproved,numRegression,numPerformanceImproved,numPerformanceRegression)
+    email_summary_html = '<p><a href="%s/%s/%s">%s %s</a> %d improved, %d regressions; performance %d improved, %d regressions</p>' % (historyurl, branch, os.path.basename(fname).replace(" ","%20"), branch, os.path.basename(fname),numImproved,numRegression,numPerformanceImproved,numPerformanceRegression)
     email_summary_plain = '%s/%s/%s: %d improved, %d regressions; performance %d improved, %d regressions</p>' % (historyurl, branch, os.path.basename(fname).replace(" ","%20"), numImproved, numRegression, numPerformanceImproved, numPerformanceRegression)
     if sum([numImproved,numRegression,numPerformanceImproved,numPerformanceRegression])>0:
       for email in emails_current:
