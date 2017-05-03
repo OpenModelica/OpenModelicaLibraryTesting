@@ -11,7 +11,7 @@ import psutil, subprocess, threading, hashlib
 from subprocess import call
 from monotonic import monotonic
 from omcommon import friendlyStr, multiple_replace
-rom natsort import natsorted
+from natsort import natsorted
 
 def runCommand(cmd, prefix, timeout):
   process = [None]
