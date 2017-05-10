@@ -64,6 +64,7 @@ for branch in branches:
     v = cursor.fetchone()[0]
   except:
     raise Exception("No such table '%s'; specify it using --branch=XXX" % branch)
+  cursor.execute('''CREATE INDEX IF NOT EXISTS [idx_%s_date] ON [%s](date)''' % (branch,branch))
   cursor.execute("SELECT date,omcversion FROM [omcversion] WHERE branch=? ORDER BY date ASC", (branch,))
   entries = cursor.fetchall()
   n = len(entries)
