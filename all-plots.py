@@ -82,17 +82,17 @@ def plotLibrary(branch, libname, xs, total, frontend,backend,simcode,template,co
   ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
   try:
-    os.makedirs("%s/%s" % (fnameprefix,libname))
+    os.makedirs("%s/%s" % (fnameprefix,branch))
   except FileExistsError:
     pass
 
-  plt.savefig("%s/%s/%s/%s.svg" % (fnameprefix,branch,libname,libname), format="svg")
+  plt.savefig("%s/%s/%s.svg" % (fnameprefix,branch,libname), format="svg")
 
   if len(xs)>=7:
     plt.title(libname + " (%s branch last 7 runs)" % branch)
     ax.set_ylim(ymin=None)
     ax.set_xlim(xmin=xs[-7], xmax=xs[-1])
-    plt.savefig("%s/%s/%s/%s-recent.svg" % (fnameprefix,branch,libname,libname), format="svg")
+    plt.savefig("%s/%s/%s-recent.svg" % (fnameprefix,branch,libname), format="svg")
 
   plt.close()
 
