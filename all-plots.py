@@ -102,7 +102,7 @@ for branch in branches:
     raise Exception("No such table '%s'; specify it using --branch=XXX" % branch)
 
 for branch in branches:
-  cursor.execute('''CREATE INDEX IF NOT EXISTS idx_%s_date ON %s(date)''' % (branch,branch))
+  cursor.execute('''CREATE INDEX IF NOT EXISTS idx_%s_date ON %s(date)''' % (branch.replace(".","_"),branch.replace(".","_")))
   libs = {}
   for (date,libname,total,frontend,backend,simcode,template,compile,simulate,verify) in cursor.execute("""SELECT date,libname,COUNT(finalphase),COUNT(finalphase>=1 or null),COUNT(finalphase>=2 or null),COUNT(finalphase>=3 or null),COUNT(finalphase>=4 or null),COUNT(finalphase>=5 or null),COUNT(finalphase>=6 or null),COUNT(finalphase>=7 or null)
     FROM [%s]
