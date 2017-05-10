@@ -72,7 +72,7 @@ def plotLibrary(branch, libname, xs, total, frontend,backend,simcode,template,co
 
   plt.gcf().autofmt_xdate()
 
-  plt.title(libname)
+  plt.title("%s (%s branch)" % (libname, branch))
 
   # Shrink current axis by 20%
   box = ax.get_position()
@@ -89,7 +89,7 @@ def plotLibrary(branch, libname, xs, total, frontend,backend,simcode,template,co
   plt.savefig("%s/%s/%s/%s.svg" % (fnameprefix,branch,libname,libname), format="svg")
 
   if len(xs)>=7:
-    plt.title(libname + " (last 7 runs)")
+    plt.title(libname + " (%s branch last 7 runs)" % branch)
     ax.set_ylim(ymin=None)
     ax.set_xlim(xmin=xs[-7], xmax=xs[-1])
     plt.savefig("%s/%s/%s/%s-recent.svg" % (fnameprefix,branch,libname,libname), format="svg")
