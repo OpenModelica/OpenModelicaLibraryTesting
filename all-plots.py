@@ -7,6 +7,8 @@ import shared
 import re, time, math
 from omcommon import friendlyStr
 
+import matplotlib as mpl
+mpl.use('svg') # Disables the Tk dependency / DISPLAY dependency
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.cbook as cbook
