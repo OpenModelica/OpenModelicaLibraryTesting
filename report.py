@@ -43,7 +43,7 @@ for branch in branches:
   cursor.execute("SELECT date FROM [%s] ORDER BY date DESC LIMIT 1" % branch)
   v = cursor.fetchone()[0]
   dates_str[branch] = str(datetime.datetime.fromtimestamp(v).strftime('%Y-%m-%d %H:%M:%S'))
-  cursor.execute('''CREATE INDEX IF NOT EXISTS idx_%s_date ON %s(date)''' % (branch.replace(".","_"),branch.replace(".","_")))
+  cursor.execute('''CREATE INDEX IF NOT EXISTS [idx_%s_date] ON [%s](date)''' % (branch,branch))
 
   dates[branch] = {}
   branch_nmodels = 0

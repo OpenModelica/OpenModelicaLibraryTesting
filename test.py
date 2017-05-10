@@ -246,7 +246,7 @@ cursor.execute('''CREATE TABLE if not exists [%s]
              (date integer NOT NULL, libname text NOT NULL, model text NOT NULL, exectime real NOT NULL,
              frontend real NOT NULL, backend real NOT NULL, simcode real NOT NULL, templates real NOT NULL, compile real NOT NULL, simulate real NOT NULL,
              verify real NOT NULL, verifyfail integer NOT NULL, verifytotal integer NOT NULL, finalphase integer NOT NULL, parsing real NOT NULL)''' % branch)
-cursor.execute('''DROP INDEX IF EXISTS idx_%s_date''' % branch.replace(".","_"))
+cursor.execute('''DROP INDEX IF EXISTS [idx_%s_date]''' % branch)
 cursor.execute('''DROP INDEX IF EXISTS idx_omcversion_date''')
 cursor.execute('''DROP INDEX IF EXISTS idx_libversion_date''')
 
