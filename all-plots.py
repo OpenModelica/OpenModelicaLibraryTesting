@@ -44,7 +44,7 @@ def getTagOrVersion(v):
 def libraryLink(branch, libname):
   return '<a href="%s/%s/%s/%s.html">%s</a>' % (baseurl,branch,libname,libname,libname)
 
-def plotLibrary(libname, xs, total, frontend,backend,simcode,template,compile,simulate,verify):
+def plotLibrary(branch, libname, xs, total, frontend,backend,simcode,template,compile,simulate,verify):
   f, ax = plt.subplots(1)
   lw = 0.5
   plt.plot(xs, total, label='total (%d)' % total[-1], linewidth=lw)
@@ -86,13 +86,13 @@ def plotLibrary(libname, xs, total, frontend,backend,simcode,template,compile,si
   except FileExistsError:
     pass
 
-  plt.savefig("%s/%s/%s.svg" % (fnameprefix,libname,libname), format="svg")
+  plt.savefig("%s/%s/%s/%s.svg" % (fnameprefix,branch,libname,libname), format="svg")
 
   if len(xs)>=7:
     plt.title(libname + " (last 7 runs)")
     ax.set_ylim(ymin=None)
     ax.set_xlim(xmin=xs[-7], xmax=xs[-1])
-    plt.savefig("%s/%s/%s-recent.svg" % (fnameprefix,libname,libname), format="svg")
+    plt.savefig("%s/%s/%s/%s-recent.svg" % (fnameprefix,branch,libname,libname), format="svg")
 
   plt.close()
 
@@ -123,7 +123,7 @@ for branch in branches:
     libs[libname][7].append(simulate)
     libs[libname][8].append(verify)
   for libname in libs.keys():
-    plotLibrary(libname, libs[libname][0], libs[libname][1], libs[libname][2], libs[libname][3], libs[libname][4], libs[libname][5], libs[libname][6], libs[libname][7], libs[libname][8])
+    plotLibrary(branch, libname, libs[libname][0], libs[libname][1], libs[libname][2], libs[libname][3], libs[libname][4], libs[libname][5], libs[libname][6], libs[libname][7], libs[libname][8])
 
 """
 for branch in branches:
