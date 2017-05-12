@@ -256,11 +256,37 @@ cursor.execute("PRAGMA user_version=3")
 def strToHashInt(s):
   return int(hashlib.sha1(s+"fixCorruptBuilds-2017-03-26").hexdigest()[0:8],16)
 
+def findAllFiles(d):
+  res = []
+  for root, dirs, files in os.walk(d):
+    res += [os.path.join(root, f) for f in files]
+    for d in dirs:
+      res += findAllFiles(d)
+  return res
+
+def getmd5(f):
+  hf = f+".hash"
+  if not os.path.exists(hf) or (os.path.getmtime(f) > os.path.getmtime(hf)):
+    with open(hf, "w") as fout:
+      with open(f, "r") as fin:
+        fout.write(hashlib.sha512(fin.read()).hexdigest())
+  with open(hf) as fin:
+    return fin.read()
+
+
+def hashReferenceFiles(s):
+  if s=="":
+    return s
+  files = [f for f in findAllFiles(s) if (not f.endswith(".hash"))]
+  files = sorted(files)
+  res = "".join([getmd5(f) for f in files])
+  return res
+
 stats_by_libname = {}
 skipped_libs = {}
 tests=[]
 for (library,conf) in configs:
-  confighash = strToHashInt(str(conf))
+  confighash = strToHashInt(str(conf)+hashReferenceFiles(conf["referenceFiles"]))
   conf["confighash"] = confighash
   conf["omhome"] = omhome
   conf["single_thread_cmd"] = single_thread
