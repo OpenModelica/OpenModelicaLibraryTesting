@@ -286,7 +286,10 @@ stats_by_libname = {}
 skipped_libs = {}
 tests=[]
 for (library,conf) in configs:
-  confighash = strToHashInt(str(conf)+hashReferenceFiles(conf["referenceFiles"]))
+  if "referenceFiles" in conf:
+    confighash = strToHashInt(str(conf)+hashReferenceFiles(conf["referenceFiles"]))
+  else:
+    confighash = strToHashInt(str(conf)+hashReferenceFiles(""))
   conf["confighash"] = confighash
   conf["omhome"] = omhome
   conf["single_thread_cmd"] = single_thread
