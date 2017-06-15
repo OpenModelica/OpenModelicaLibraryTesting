@@ -280,7 +280,7 @@ def hashReferenceFiles(s):
   files = [f for f in findAllFiles(s) if (not f.endswith(".hash"))]
   files = sorted(files)
   res = "".join([getmd5(f) for f in files])
-  return res
+  return res+"fixCorruptBuilds-2017-06-15"
 
 stats_by_libname = {}
 skipped_libs = {}
