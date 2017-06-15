@@ -159,7 +159,13 @@ outputFormat="mat"
 referenceVars=[]
 referenceFile = ""
 if "referenceFiles" in conf:
-  referenceFile = conf["referenceFiles"]+"/"+conf["modelName"].replace(".",conf["referenceFileNameDelimiter"])+"."+conf["referenceFileExtension"]
+  modelName = conf["modelName"]
+  if "referenceFileNameExtraName" in conf:
+    if conf["referenceFileNameExtraName"] == "$ClassName":
+      modelName += "."+(modelName.split(".")[-1])
+    else:
+      modelName += "."+conf["referenceFileNameExtraName"]
+  referenceFile = conf["referenceFiles"]+"/"+modelName.replace(".",conf["referenceFileNameDelimiter"])+"."+conf["referenceFileExtension"]
   if os.path.exists(referenceFile):
     try:
       referenceVars=omc_new.sendExpression('readSimulationResultVars("%s", readParameters=true, openmodelicaStyle=true)' % referenceFile)
