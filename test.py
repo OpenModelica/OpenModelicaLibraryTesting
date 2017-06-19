@@ -421,7 +421,7 @@ def loadJsonOrEmptySet(f):
   if os.stat(f).st_size == 0:
     return {}
   else:
-    return json.load(open(f)
+    return json.load(open(f))
 
 stats=dict([(name,(name,model,libname,loadJsonOrEmptySet("files/%s.stat.json" % name))) for (model,lib,libname,name,conf) in tests])
 #for k in sorted(stats.keys(), key=lambda c: stats[c][3]["exectime"], reverse=True):
