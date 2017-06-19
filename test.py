@@ -122,6 +122,9 @@ else:
   omhome=omc.sendExpression('getInstallationDirectoryPath()')
   omc_version=omc.sendExpression('getVersion()')
 
+def timeSeconds(f):
+  return cgi.escape("%.2f" % f)
+
 omc.sendExpression('setModelicaPath("%s/lib/omlibrary")' % omhome)
 omc_exe=os.path.join(omhome,"bin","omc")
 dygraphs=os.path.join(omhome,"share","doc","omc","testmodels","dygraph-combined.js")
@@ -500,23 +503,23 @@ for libname in stats_by_libname.keys():
       ('<a href="%s">%s</a>' % (filename_prefix + ".err", cgi.escape(s[1]))) if is_non_zero_file(filename_prefix + ".err") else cgi.escape(s[1]),
       (' (<a href="%s">sim</a>)' % (filename_prefix + ".sim")) if is_non_zero_file(filename_prefix + ".sim") else "",
       checkPhase(s[3]["phase"], 7) if s[3]["phase"]>=6 else "#FFFFFF",
-      ("%s (%d verified)" % (friendlyStr(diff.get("time")), diff.get("numCompared"))) if s[3]["phase"]>=7 else ("&nbsp;" if diff is None else
-      ('%s (<a href="%s.diff.html">%d/%d failed</a>)' % (friendlyStr(diff.get("time")), filename_prefix, len(diff.get("vars")), diff.get("numCompared")))),
+      ("%s (%d verified)" % (timeSeconds(diff.get("time")), diff.get("numCompared"))) if s[3]["phase"]>=7 else ("&nbsp;" if diff is None else
+      ('%s (<a href="%s.diff.html">%d/%d failed</a>)' % (timeSeconds(diff.get("time")), filename_prefix, len(diff.get("vars")), diff.get("numCompared")))),
       checkPhase(s[3]["phase"], 6),
-      friendlyStr(s[3].get("sim") or 0),
+      timeSeconds(s[3].get("sim") or 0),
       checkPhase(s[3]["phase"], 5),
-      friendlyStr(sum(s[3].get(x) or 0.0 for x in ["frontend","backend","simcode","templates","build"])),
-      friendlyStr(s[3].get("parsing") or 0),
+      timeSeconds(sum(s[3].get(x) or 0.0 for x in ["frontend","backend","simcode","templates","build"])),
+      timeSeconds(s[3].get("parsing") or 0),
       checkPhase(s[3]["phase"], 1),
-      friendlyStr(s[3].get("frontend") or 0),
+      timeSeconds(s[3].get("frontend") or 0),
       checkPhase(s[3]["phase"], 2),
-      friendlyStr(s[3].get("backend") or 0),
+      timeSeconds(s[3].get("backend") or 0),
       checkPhase(s[3]["phase"], 3),
-      friendlyStr(s[3].get("simcode") or 0),
+      timeSeconds(s[3].get("simcode") or 0),
       checkPhase(s[3]["phase"], 4),
-      friendlyStr(s[3].get("templates") or 0),
+      timeSeconds(s[3].get("templates") or 0),
       checkPhase(s[3]["phase"], 5),
-      friendlyStr(s[3].get("build") or 0)
+      timeSeconds(s[3].get("build") or 0)
     ))(filename_prefix="files/%s_%s" % (s[2], s[1]), diff=s[3].get("diff"))
     for s in natsorted(stats, key=lambda s: s[1])])
   numSucceeded = [len(stats)] + [sum(1 if s[3]["phase"]>=i else 0 for s in stats) for i in range(1,8)]
