@@ -417,7 +417,13 @@ assert(stop-start >= 0.0)
 #if max(cmd_res) > 0:
 #  raise Exception("A command failed with exit status")
 
-stats=dict([(name,(name,model,libname,json.load(open("files/%s.stat.json" % name)))) for (model,lib,libname,name,conf) in tests])
+def loadJsonOrEmptySet(f):
+  if os.stat(f).st_size == 0:
+    return {}
+  else:
+    return json.load(open(f)
+
+stats=dict([(name,(name,model,libname,loadJsonOrEmptySet("files/%s.stat.json" % name))) for (model,lib,libname,name,conf) in tests])
 #for k in sorted(stats.keys(), key=lambda c: stats[c][3]["exectime"], reverse=True):
 #  print("%s: exectime %.2f" % (k, stats[k][3]["exectime"]))
 

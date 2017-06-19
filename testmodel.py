@@ -115,9 +115,14 @@ try:
 except OSError:
   pass
 
-def writeResultAndExit(exitStatus):
+def writeResult():
   with open(statFile, 'w') as fp:
     json.dump(execstat, fp)
+    fp.flush()
+    os.fsync(fp.fileno())
+
+def writeResultAndExit(exitStatus):
+  writeResult()
   sys.exit(exitStatus)
 
 if conf["simCodeTarget"] not in ["Cpp","C"]:
@@ -240,7 +245,13 @@ templates= omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(Op
 simcode  = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_SIMCODE)")
 backend  = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_BACKEND)")
 frontend = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_FRONTEND)")
-del omc
+
+writeResult()
+try:
+  del omc
+except:
+  pass
+
 print(execTimeTranslateModel,frontend,backend)
 if backend != -1:
   execstat["frontend"]=frontend-backend
@@ -282,6 +293,7 @@ except TimeoutError as e:
     fp.write(str(e))
   writeResultAndExit(0)
 
+writeResult()
 # Do the simulation
 
 start=monotonic()
