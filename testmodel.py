@@ -162,7 +162,7 @@ omc._omc.sendExpression("getErrorString()")
 
 outputFormat="mat"
 referenceVars=[]
-referenceFile = ""
+referenceFile = conf.get("referenceFile") or ""
 if "referenceFiles" in conf:
   modelName = conf["modelName"]
   if "referenceFileNameExtraName" in conf:

@@ -212,7 +212,7 @@ for cmd in [
   except subprocess.CalledProcessError as e:
     pass
 
-from shared import readConfig
+from shared import readConfig, getReferenceFileName
 import shared
 
 configs_lst = [readConfig(c, rmlStyle=rmlStyle, abortSimulationFlag=abortSimulationFlag, alarmFlag=alarmFlag, defaultCustomCommands=defaultCustomCommands) for c in configs]
@@ -283,7 +283,7 @@ def hashReferenceFiles(s):
   files = [f for f in findAllFiles(s) if (not f.endswith(".hash"))]
   files = sorted(files)
   res = "".join([getmd5(f) for f in files])
-  return res+"fixCorruptBuilds-2017-06-15"
+  return res+"fixCorruptBuilds-2017-06-21"
 
 stats_by_libname = {}
 skipped_libs = {}
@@ -355,7 +355,9 @@ for (modelName,library,libName,name,conf) in tests:
     (u"#referenceFileExtension#", conf["referenceFileExtension"]),
   )
   with open(name + ".conf.json", 'w') as fp:
-    json.dump(dict(conf.items()+{"library":library, "modelName":modelName, "fileName":name}.items()), fp)
+    newconf = dict(conf.items()+{"library":library, "modelName":modelName, "fileName":name}.items())
+    newconf["referenceFile"] = getReferenceFileName(newconf)
+    json.dump(newconf, fp)
 
 def runScript(c, timeout, memoryLimit):
   j = "files/%s.stat.json" % c

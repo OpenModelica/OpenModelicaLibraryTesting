@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import simplejson as json
 
 def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands):
@@ -41,3 +42,20 @@ def libname(library, conf):
 
 def finalphaseName(finalphase):
   return ("Failed","FrontEnd","BackEnd","SimCode","Templates","Compile","Simulate","Verify")[finalphase]
+
+def getReferenceFileName(conf):
+  referenceFile=""
+  if "referenceFiles" in conf:
+    modelName = conf["modelName"]
+    if "referenceFileNameExtraName" in conf:
+      if conf["referenceFileNameExtraName"] == "$ClassName":
+        modelName += "."+(modelName.split(".")[-1])
+      else:
+        modelName += "."+conf["referenceFileNameExtraName"]
+    referenceFile = conf["referenceFiles"]+"/"+modelName.replace(".",conf["referenceFileNameDelimiter"])+"."+conf["referenceFileExtension"]
+    if not os.path.exists(referenceFile):
+      if conf.get("allReferenceFilesExist"):
+        raise Exception("Missing reference file %s for config %s" % (referenceFile,conf))
+      else:
+        referenceFile=""
+  return referenceFile
