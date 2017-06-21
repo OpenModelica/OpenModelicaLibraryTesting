@@ -163,23 +163,12 @@ omc._omc.sendExpression("getErrorString()")
 outputFormat="mat"
 referenceVars=[]
 referenceFile = conf.get("referenceFile") or ""
-if "referenceFiles" in conf:
-  modelName = conf["modelName"]
-  if "referenceFileNameExtraName" in conf:
-    if conf["referenceFileNameExtraName"] == "$ClassName":
-      modelName += "."+(modelName.split(".")[-1])
-    else:
-      modelName += "."+conf["referenceFileNameExtraName"]
-  referenceFile = conf["referenceFiles"]+"/"+modelName.replace(".",conf["referenceFileNameDelimiter"])+"."+conf["referenceFileExtension"]
-  if os.path.exists(referenceFile):
-    try:
-      referenceVars=omc_new.sendExpression('readSimulationResultVars("%s", readParameters=true, openmodelicaStyle=true)' % referenceFile)
-      variableFilter="|".join([v.replace("[",".").replace("]",".").replace("(",".").replace(")",".").replace('"',".") for v in referenceVars])
-      emit_protected="-emit_protected"
-    except:
-      referenceFile=""
-  else:
-    referenceFile=""
+try:
+  referenceVars=omc_new.sendExpression('readSimulationResultVars("%s", readParameters=true, openmodelicaStyle=true)' % referenceFile)
+  variableFilter="|".join([v.replace("[",".").replace("]",".").replace("(",".").replace(")",".").replace('"',".") for v in referenceVars])
+  emit_protected="-emit_protected"
+except:
+  referenceFile=""
 if referenceFile=="":
   variableFilter=""
   outputFormat="empty"
