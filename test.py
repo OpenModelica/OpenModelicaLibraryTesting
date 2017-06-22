@@ -568,6 +568,11 @@ for libname in stats_by_libname.keys():
       print("Error: Failed to rsync files: %s" % cmd)
       sys.exit(1)
 
+for g in ["*.o","*.so","*.h","*.c","*.cpp","*.simsuccess","*.conf.json","*.tmpfiles","*.log","*.libs","OMCpp*"]:
+  for f in glob.glob(g):
+    os.unlink(f)
+shutil.rmtree("files/")
+
 # Do not commit until we have generated and uploaded the reports
 conn.commit()
 conn.close()
