@@ -95,7 +95,8 @@ for branch in branches:
     # Note: GROUP_CONCAT returns both values as a string... So you need to split it later
     cursor.execute("""SELECT model,libname,GROUP_CONCAT(finalphase),GROUP_CONCAT(frontend),GROUP_CONCAT(backend),GROUP_CONCAT(simcode),GROUP_CONCAT(templates),GROUP_CONCAT(compile),GROUP_CONCAT(simulate) FROM
   (SELECT model,libname,finalphase,frontend,backend,simcode,templates,compile,simulate FROM [%s] WHERE date IN (?,?) ORDER BY date)
-GROUP BY model,libname HAVING MIN(finalphase) <> MAX(finalphase) OR
+GROUP BY model,libname HAVING
+  (MIN(finalphase) <> MAX(finalphase)) OR
   (MAX(frontend) > ?*MIN(frontend) AND MAX(frontend) > ?) OR
   (MAX(backend) > ?*MIN(backend) AND MAX(backend) > ?) OR
   (MAX(simcode) > ?*MIN(simcode) AND MAX(simcode) > ?) OR

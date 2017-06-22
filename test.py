@@ -462,10 +462,13 @@ for libname in stats_by_libname.keys():
   confighash = stats_by_libname[libname]["conf"]["confighash"]
   cursor.execute("INSERT INTO [libversion] VALUES (?,?,?,?,?)", (testRunStartTimeAsEpoch, branch, libname, stats_by_libname[libname]["conf"]["libraryLastChange"], confighash))
 cursor.execute("INSERT INTO [omcversion] VALUES (?,?,?)", (testRunStartTimeAsEpoch, branch, omc_version))
+"""
+# Not really a good thing to do; was just done to make generation of the report simpler
 for libname in skipped_libs.keys():
   values = (testRunStartTimeAsEpoch, skipped_libs[libname], libname)
   cursor.execute("UPDATE [libversion] SET date = ? WHERE date = ? AND libname = ? AND branch = ? AND confighash = ?", (testRunStartTimeAsEpoch, skipped_libs[libname], libname, branch, confighash))
   cursor.execute("UPDATE [%s] SET date = ? WHERE date = ? AND libname = ?" % branch, values)
+"""
 
 def checkNumSucceeded(numSucceeded, n):
   if numSucceeded[n]==numSucceeded[n-1]:

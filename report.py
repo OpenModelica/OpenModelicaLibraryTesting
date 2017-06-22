@@ -130,7 +130,7 @@ for lib in sorted(libs.keys()):
 
 nummodels = sum(len(l) for l in libs.values())
 branches_lines = [("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td%s>%d</td><td>%d</td></tr>\n" % (cgi.escape(branch), cgi.escape(
-  (cursor.execute("SELECT omcversion FROM [omcversion] WHERE date=? AND branch=?", (dates[branch][lib],branch)).fetchone() or ["unknown"])[0]
+  (cursor.execute("SELECT omcversion FROM [omcversion] WHERE date=? AND branch=?", (max(dates[branch][lib] for lib in libnames),branch)).fetchone() or ["unknown"])[0]
   ), cgi.escape(dates_str[branch]), friendlyStr(exectime[branch]),
   " class=\"warning\"" if nummodels!=nmodels[branch] else "",
   nsimulate[branch],
