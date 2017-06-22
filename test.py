@@ -409,6 +409,11 @@ try:
 except OSError:
   pass
 
+if len(tests)==0:
+  print("Everything already up to date. Not executing any tests.")
+  sys.exit(0)
+
+
 print("Starting execution of %d tests" % len(tests))
 cmd_res=[0]
 start=monotonic()
