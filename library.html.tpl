@@ -36,6 +36,8 @@
 <p>BuildModel time limit: #ulimitOmc#s</p>
 <p>Simulation time limit: #ulimitExe#s</p>
 <p>Default tolerance: #default_tolerance#</p>
+#referenceFiles#
+#referenceTool#
 Flags: <pre>#customCommands#</pre>
 <p>Links are provided if getErrorString() or the simulation generates output. The links are coded with <font style="#FF0000">red</font> if there were errors, <font style="#FFCC66">yellow</font> if there were warnings, and normal links if there are only notifications.</p>
 <table>

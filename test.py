@@ -103,7 +103,6 @@ rmlStyle=False
 
 # Try to make the processes a bit nicer...
 os.environ["GC_MARKERS"]="1"
-
 if ompython_omhome != "":
   # Use a different OMC for running OMPython than for running the tests
   omhome = os.environ["OPENMODELICAHOME"]
@@ -116,11 +115,14 @@ if ompython_omhome != "":
     print("Work-around for RML-style command-line arguments (+version)")
   os.environ["OPENMODELICAHOME"] = ompython_omhome
   omc = OMCSession()
+  ompython_omc_version=omc.sendExpression('getVersion()')
   os.environ["OPENMODELICAHOME"] = omhome
 else:
   omc = OMCSession()
   omhome=omc.sendExpression('getInstallationDirectoryPath()')
   omc_version=omc.sendExpression('getVersion()')
+  ompython_omc_version=omc_version
+ompython_omc_version=ompython_omc_version.replace("OMCompiler","").strip()
 
 def timeSeconds(f):
   return cgi.escape("%.2f" % f)
@@ -487,6 +489,8 @@ def is_non_zero_file(fpath):
 
 htmltpl=open("library.html.tpl").read()
 for libname in stats_by_libname.keys():
+  if libname in skipped_libs:
+    continue
   s = None # Make sure I don't use this
   filesList = open(libname + ".files", "w")
   filesList.write("/\n")
@@ -543,6 +547,8 @@ for libname in stats_by_libname.keys():
     (u"#ulimitExe#", cgi.escape(str(conf["ulimitExe"]))),
     (u"#default_tolerance#", cgi.escape(str(conf["default_tolerance"]))),
     (u"#simFlags#", cgi.escape(conf.get("simFlags") or "")),
+    (u"#referenceFiles#", ('<p>Reference Files: %s</p>' % cgi.escape(conf["referenceFiles"].replace(os.path.dirname(os.path.realpath(__file__)),""))) if ((conf.get("referenceFiles") or "") <> "") else ""),
+    (u"#referenceTool#", ('<p>Verified using: %s (diffSimulationResults)</p>' % cgi.escape(ompython_omc_version)) if ((conf.get("referenceFiles") or "") <> "") else ""),
     (u"#Total#", cgi.escape(str(numSucceeded[0]))),
     (u"#FrontendColor#", checkNumSucceeded(numSucceeded, 1)),
     (u"#BackendColor#", checkNumSucceeded(numSucceeded, 2)),
@@ -563,10 +569,13 @@ for libname in stats_by_libname.keys():
   )
   open("%s.html" % libname, "w").write(multiple_replace(htmltpl, *replacements))
   if result_location != "":
-    cmd = ["rsync", "-a", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", "%s/%s" % (result_location, libname)]
+    result_location_libname = "%s/%s" % (result_location, libname)
+    cmd = ["rsync", "-a", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", result_location_libname]
     if 0 != call(cmd):
       print("Error: Failed to rsync files: %s" % cmd)
       sys.exit(1)
+    if (conf.get("referenceFiles") or "") != "":
+      shutil.copy(dygraphs, result_location_libname+"/")
 
 for g in ["*.o","*.so","*.h","*.c","*.cpp","*.simsuccess","*.conf.json","*.tmpfiles","*.log","*.libs","OMCpp*"]:
   for f in glob.glob(g):
