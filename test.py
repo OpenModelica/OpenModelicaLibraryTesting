@@ -575,7 +575,7 @@ for libname in stats_by_libname.keys():
       print("Error: Failed to rsync files: %s" % cmd)
       sys.exit(1)
     if (conf.get("referenceFiles") or "") != "":
-      shutil.copy(dygraphs, result_location_libname+"/")
+      shutil.copy(dygraphs, result_location_libname+"/files/")
 
 for g in ["*.o","*.so","*.h","*.c","*.cpp","*.simsuccess","*.conf.json","*.tmpfiles","*.log","*.libs","OMCpp*"]:
   for f in glob.glob(g):
