@@ -91,21 +91,35 @@ for branch in branches:
     else:
       gitlog = ""
     tpl = tpl.replace("#OMCGITLOG#",gitlog).replace("#NUMCOMMITS#",str(gitlog.count("<tr>")))
+    libnames = [libname for (libname,) in cursor.execute("""SELECT libname FROM [%s] WHERE date=? GROUP BY libname""" % branch, (d2,))]
+    startdates = {}
+    # Get previous date of each library run and group them together for fast queries later
+    for libname in libnames:
+      ds = cursor.execute("""SELECT date FROM [%s] WHERE date<? AND libname=? ORDER BY date DESC LIMIT 1""" % branch, (d2,libname)).fetchall()
+      if len(ds)==0:
+        continue
+      ((d1lib,),) = ds
+      if d1lib not in startdates:
+        startdates[d1lib] = []
+      startdates[d1lib] += [libname]
+    regressions = []
+    for d1lib in startdates.keys():
     # Order by date so we can select and know which is the older and which is the newer value... for finalphase, and the execution times
     # Note: GROUP_CONCAT returns both values as a string... So you need to split it later
-    cursor.execute("""SELECT model,libname,GROUP_CONCAT(finalphase),GROUP_CONCAT(frontend),GROUP_CONCAT(backend),GROUP_CONCAT(simcode),GROUP_CONCAT(templates),GROUP_CONCAT(compile),GROUP_CONCAT(simulate) FROM
-  (SELECT model,libname,finalphase,frontend,backend,simcode,templates,compile,simulate FROM [%s] WHERE date IN (?,?) ORDER BY date)
-GROUP BY model,libname HAVING
-  (MIN(finalphase) <> MAX(finalphase)) OR
-  (MAX(frontend) > ?*MIN(frontend) AND MAX(frontend) > ?) OR
-  (MAX(backend) > ?*MIN(backend) AND MAX(backend) > ?) OR
-  (MAX(simcode) > ?*MIN(simcode) AND MAX(simcode) > ?) OR
-  (MAX(templates) > ?*MIN(templates) AND MAX(templates) > ?) OR
-  (MAX(compile) > ?*MIN(compile) AND MAX(compile) > ?) OR
-  (MAX(simulate) > ?*MIN(simulate) AND MAX(simulate) > ?)
-  ORDER BY libname,model
-""" % branch, (d1,d2,timeRel,timeAbs,timeRel,timeAbs,timeRel,timeAbs,timeRel,timeAbs,timeRel,2*timeAbs,timeRel,timeAbs))
-    regressions = cursor.fetchall()
+      query = """SELECT model,libname,GROUP_CONCAT(finalphase),GROUP_CONCAT(frontend),GROUP_CONCAT(backend),GROUP_CONCAT(simcode),GROUP_CONCAT(templates),GROUP_CONCAT(compile),GROUP_CONCAT(simulate) FROM
+    (SELECT model,libname,finalphase,frontend,backend,simcode,templates,compile,simulate FROM [%s] WHERE date IN (?,?) AND libname IN (%s) ORDER BY date)
+  GROUP BY model,libname HAVING
+    (MIN(finalphase) <> MAX(finalphase)) OR
+    (MAX(frontend) > ?*MIN(frontend) AND MAX(frontend) > ?) OR
+    (MAX(backend) > ?*MIN(backend) AND MAX(backend) > ?) OR
+    (MAX(simcode) > ?*MIN(simcode) AND MAX(simcode) > ?) OR
+    (MAX(templates) > ?*MIN(templates) AND MAX(templates) > ?) OR
+    (MAX(compile) > ?*MIN(compile) AND MAX(compile) > ?) OR
+    (MAX(simulate) > ?*MIN(simulate) AND MAX(simulate) > ?)
+  """ % (branch,",".join(["'%s'" % libname for libname in startdates[d1lib]]))
+      cursor.execute(query, (d1lib,d2,timeRel,timeAbs,timeRel,timeAbs,timeRel,timeAbs,timeRel,timeAbs,timeRel,2*timeAbs,timeRel,timeAbs))
+      regressions += cursor.fetchall()
+    regressions = sorted(regressions, key = lambda x: (x[1],x[0]))
     libs = set()
 
     numImproved = 0
