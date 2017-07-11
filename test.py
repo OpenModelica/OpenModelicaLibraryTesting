@@ -129,7 +129,7 @@ def timeSeconds(f):
 
 omc.sendExpression('setModelicaPath("%s/lib/omlibrary")' % omhome)
 omc_exe=os.path.join(omhome,"bin","omc")
-dygraphs=os.path.join(omhome,"share","doc","omc","testmodels","dygraph-combined.js")
+dygraphs=os.path.join(ompython_omhome or omhome,"share","doc","omc","testmodels","dygraph-combined.js")
 print(omc_exe,omc_version,dygraphs)
 
 # Do feature checks. Handle things like old RML-style arguments...
