@@ -133,6 +133,15 @@ if conf["simCodeTarget"]=="Cpp" and not conf["haveCppRuntime"]:
   with open(errFile, 'w+') as fp:
     fp.write("C++ runtime not supported in this installation (HelloWorld failed)")
   writeResultAndExit(0)
+if conf.get("fmi"):
+  if conf["simCodeTarget"]=="Cpp" and not conf["haveFMICpp"]:
+    with open(errFile, 'w+') as fp:
+      fp.write("C++ FMI runtime not supported in this installation (HelloWorld failed or did not respect fileNamePrefix)")
+    writeResultAndExit(0)
+  elif conf["simCodeTarget"]=="C" and not conf["haveFMI"]:
+    with open(errFile, 'w+') as fp:
+      fp.write("C FMI runtime not supported in this installation (HelloWorld failed or did not respect fileNamePrefix)")
+    writeResultAndExit(0)
 
 omhome = conf["omhome"]
 os.environ["OPENMODELICAHOME"] = omhome

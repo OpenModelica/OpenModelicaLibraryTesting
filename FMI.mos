@@ -1,0 +1,3 @@
+loadFile("HelloWorld.mo");getErrorString();
+system("rm -f HelloWorldX HelloWorld *HelloWorld*.o *HelloWorld*.c *HelloWorld*.c *HelloWorld*.so *HelloWorld*.fmu");
+buildModelFMU(HelloWorld, fileNamePrefix="HelloWorldX", version="2.0");getErrorString();

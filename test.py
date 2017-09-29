@@ -228,6 +228,28 @@ for cmd in [
   except subprocess.CalledProcessError as e:
     pass
 
+fmiOK_C = False
+fmiOK_Cpp = False
+try:
+  out=subprocess.check_output(["%s/bin/omc" % omhome, "--simCodeTarget=C", "FMI.mos"], stderr=subprocess.STDOUT)
+  if os.path.exists("HelloWorldX.fmu") and not "Error:" in out:
+    fmiOK_C = True
+    print("C FMU OK")
+  else:
+    print("No C-based FMUs (files not generated in correct location)")
+except subprocess.CalledProcessError as e:
+  pass
+try:
+  out=subprocess.check_output(["%s/bin/omc" % omhome, "--simCodeTarget=Cpp", "FMI.mos"], stderr=subprocess.STDOUT)
+  if os.path.exists("HelloWorldX.fmu") and not "Error:" in out:
+    fmiOK_Cpp = True
+    print("C++ FMU OK")
+  else:
+    print("No C++-based FMUs (files not generated in correct location)")
+except subprocess.CalledProcessError as e:
+  pass
+
+
 from shared import readConfig, getReferenceFileName
 import shared
 
@@ -313,6 +335,9 @@ for (library,conf) in configs:
   conf["omhome"] = omhome
   conf["single_thread_cmd"] = single_thread
   conf["haveCppRuntime"] = haveCppRuntime
+  if conf.get("fmi"):
+    conf["haveFMI"] = fmiOK_C
+    conf["haveFMICpp"] = fmiOK_Cpp
   conf["fmisimulator"] = fmisimulator
   if not (omc.sendExpression('setCommandLineOptions("-g=Modelica")') or omc.sendExpression('setCommandLineOptions("+g=Modelica")')):
     print("Failed to set Modelica grammar")
