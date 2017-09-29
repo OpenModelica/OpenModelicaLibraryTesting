@@ -216,7 +216,10 @@ except:
 # TODO: Detect and handle the case where RT_CLOCK is not available in OMC
 total_before = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_SIMULATE_TOTAL)")
 start=monotonic()
-cmd='translateModel(%s,tolerance=%g,outputFormat="%s",numberOfIntervals=%d,variableFilter="%s",fileNamePrefix="%s")' % (conf["modelName"],tolerance,outputFormat,2*numberOfIntervals,variableFilter,conf["fileName"])
+if conf.get("fmi"):
+  cmd='"" <> buildModelFMU(%s,fileNamePrefix="%s",version="%s",platforms={"dynamic"})' % (conf["modelName"],conf["fileName"].replace(".","_"),conf["fmi"])
+else:
+  cmd='translateModel(%s,tolerance=%g,outputFormat="%s",numberOfIntervals=%d,variableFilter="%s",fileNamePrefix="%s")' % (conf["modelName"],tolerance,outputFormat,2*numberOfIntervals,variableFilter,conf["fileName"])
 try:
   res=sendExpressionTimeout(omc, cmd, conf["ulimitOmc"])
 except TimeoutError as e:
@@ -230,6 +233,7 @@ except TimeoutError as e:
 execTimeTranslateModel=monotonic()-start
 err=omc.sendExpression("OpenModelica.Scripting.getErrorString()")
 total    = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_SIMULATE_TOTAL)")-total_before
+buildmodel= omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_BUILD_MODEL)")
 templates= omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_TEMPLATES)")
 simcode  = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_SIMCODE)")
 backend  = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_BACKEND)")
@@ -249,9 +253,16 @@ if backend != -1:
     if simcode != -1:
       execstat["simcode"]=simcode-templates
       if templates != -1:
-        # assert(res) ?
-        execstat["templates"]=templates
-        execstat["phase"]=4 if res else 3
+        execstat["templates"]=templates-max(buildmodel, 0.0)
+        if res:
+          fmuExpectedLocation = "%s.fmu" % conf["fileName"].replace(".","_")
+          if conf.get("fmi") and not os.path.exists(fmuExpectedLocation):
+            err += "\nFMU was not generated in the expected location: %s" % fmuExpectedLocation
+            execstat["phase"]=3
+          else:
+            execstat["phase"]=4
+        else:
+          execstat["phase"]=3
       else:
         execstat["phase"]=3
         execstat["templates"]=templates
@@ -273,9 +284,14 @@ if execstat["phase"] < 4:
 
 start=monotonic()
 try:
-  res = checkOutputTimeout("make -j1 -f %s.makefile" % conf["fileName"], conf["ulimitOmc"])
-  execstat["build"] = monotonic()-start
-  execstat["phase"] = 5
+  if conf.get("fmi"):
+    if res:
+      execstat["build"] = max(0.0, buildmodel) # Older versions didn't separate translate and build times
+      execstat["phase"] = 5
+  else:
+    res = checkOutputTimeout("make -j1 -f %s.makefile" % conf["fileName"], conf["ulimitOmc"])
+    execstat["build"] = monotonic()-start
+    execstat["phase"] = 5
 except TimeoutError as e:
   execstat["build"] = monotonic()-start
   with open(errFile, 'a') as fp:
@@ -285,10 +301,26 @@ except TimeoutError as e:
 writeResult()
 # Do the simulation
 
+resFile = "%s_res.%s" % (conf["fileName"], outputFormat)
+
 start=monotonic()
 try:
   # TODO: Timeout more reliably...
-  res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe > %s & ./%s %s %s 2>&1 > %s.pipe)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,conf["fileName"],conf["simFlags"],emit_protected,conf["fileName"]), conf["ulimitExe"])
+  if conf.get("fmi"):
+    if not conf.get("fmisimulator"):
+      with open(simFile,"w") as fp:
+        fp.write("OMSimulator not available\n")
+      writeResultAndExit(0)
+    cmd = "%s --tolerance %g %s.fmu" % (("-r %s" % resFile) if outputFormat != "empty" else "",tolerance,conf["fileName"].replace(".","_"))
+    with open(simFile,"w") as fp:
+      fp.write("OMSimulator %s\n" % cmd)
+    #res = checkOutputTimeout("%s %s >> %s 2>&1" % (conf["fmisimulator"],cmd,simFile), conf["ulimitExe"])
+    res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,conf["fmisimulator"],cmd,conf["fileName"]), conf["ulimitExe"])
+  else:
+    cmd = "./%s %s %s" % (conf["fileName"],conf["simFlags"],emit_protected)
+    with open(simFile,"w") as fp:
+      fp.write("OMSimulator %s\n" % cmd)
+    res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,cmd,conf["fileName"]), conf["ulimitExe"])
   execstat["sim"] = monotonic()-start
   execstat["phase"] = 6
 except TimeoutError as e:
@@ -301,7 +333,6 @@ if referenceFile=="":
 # Check the reference file...
 
 prefix = "files/%s.diff" % conf["fileName"]
-resFile = "%s_res.%s" % (conf["fileName"], outputFormat)
 
 if not os.path.exists(resFile):
   with open(errFile, 'a') as fp:

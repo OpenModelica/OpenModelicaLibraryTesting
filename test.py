@@ -49,21 +49,22 @@ def runCommand(cmd, prefix, timeout):
         pass
     thread.join()
 
-  try:
-    lines = open("%s.tmpfiles" % prefix).readlines()
-  except:
-    lines = []
-  for suffix in ["_*.o","_*.so","_*.h","_*.c","_*.cpp",".mos","",".o",".h",".c",".cpp","_info.json","_*.xml","_*.tmpfiles","_res.*",".pipe",".tmpfiles",".libs",".log"]:
-    for f in glob.glob(prefix+suffix):
-      lines.append(f)
-    for f in glob.glob("OM"+prefix+suffix):
-      lines.append(f)
-  for line in lines:
+  if clean:
     try:
-      os.unlink(line.strip())
+      lines = open("%s.tmpfiles" % prefix).readlines()
     except:
-      pass
-      #print("Failed to unlink: %s" % line.strip())
+      lines = []
+    for suffix in ["_*.o","_*.so","_*.h","_*.c","_*.cpp",".mos","",".o",".h",".c",".cpp","_info.json","_*.xml","_*.tmpfiles","_res.*",".pipe",".tmpfiles",".libs",".log"]:
+      for f in glob.glob(prefix+suffix):
+        lines.append(f)
+      for f in glob.glob("OM"+prefix+suffix):
+        lines.append(f)
+    for line in lines:
+      try:
+        os.unlink(line.strip())
+      except:
+        pass
+        #print("Failed to unlink: %s" % line.strip())
 
   return process[0].returncode
 
@@ -78,6 +79,8 @@ parser.add_argument('configs', nargs='*')
 parser.add_argument('--branch', default='master')
 parser.add_argument('--output', default='')
 parser.add_argument('--ompython_omhome', default='')
+parser.add_argument('--noclean', action="store_true", default=False)
+parser.add_argument('--fmisimulator', default='')
 parser.add_argument('-n', default=psutil.cpu_count(logical=False))
 
 args = parser.parse_args()
@@ -85,8 +88,12 @@ configs = args.configs
 branch = args.branch
 result_location = args.output
 n_jobs = args.n
+clean = not args.noclean
 ompython_omhome = args.ompython_omhome
+fmisimulator = args.fmisimulator or None
 print("branch: %s, n_jobs: %d" % (branch, n_jobs))
+if clean:
+  print("Removing temporary files, etc to the best ability of the script")
 
 if result_location != "" and not os.path.exists(result_location):
   os.makedirs(result_location)
@@ -142,6 +149,13 @@ except:
   single_thread="+n=1"
   rmlStyle=True
   print("Work-around for RML-style command-line arguments (+n=1)")
+
+fmisimulatorversion = None
+if fmisimulator:
+  fmisimulatorversion = subprocess.check_output([fmisimulator, "-v"], stderr=subprocess.STDOUT).strip()
+  print(fmisimulatorversion)
+else:
+  print("No OMSimulator")
 
 def simulationAcceptsFlag(f):
   try:
@@ -217,7 +231,7 @@ for cmd in [
 from shared import readConfig, getReferenceFileName
 import shared
 
-configs_lst = [readConfig(c, rmlStyle=rmlStyle, abortSimulationFlag=abortSimulationFlag, alarmFlag=alarmFlag, defaultCustomCommands=defaultCustomCommands) for c in configs]
+configs_lst = [readConfig(c, rmlStyle=rmlStyle, abortSimulationFlag=abortSimulationFlag, alarmFlag=alarmFlag, defaultCustomCommands=defaultCustomCommands, fmisimulatorversion=fmisimulatorversion) for c in configs]
 configs = []
 for c in configs_lst:
   configs = configs + c
@@ -299,6 +313,7 @@ for (library,conf) in configs:
   conf["omhome"] = omhome
   conf["single_thread_cmd"] = single_thread
   conf["haveCppRuntime"] = haveCppRuntime
+  conf["fmisimulator"] = fmisimulator
   if not (omc.sendExpression('setCommandLineOptions("-g=Modelica")') or omc.sendExpression('setCommandLineOptions("+g=Modelica")')):
     print("Failed to set Modelica grammar")
     sys.exit(1)
@@ -378,10 +393,11 @@ def runScript(c, timeout, memoryLimit):
           errfile.write(cmdout.read())
       except OSError:
         pass
-  try:
-    os.unlink("files/%s.cmdout" % c)
-  except OSError:
-    pass
+  if clean:
+    try:
+      os.unlink("files/%s.cmdout" % c)
+    except OSError:
+      pass
 
   execTime=monotonic()-start
   assert(execTime >= 0.0)
@@ -403,7 +419,8 @@ tests=sorted(tests, key=lambda c: expectedExec(c), reverse=True)
 
 # Cleanup old runs
 try:
-  shutil.rmtree("./files")
+  if clean:
+    shutil.rmtree("./files")
 except OSError:
   pass
 try:
@@ -577,10 +594,12 @@ for libname in stats_by_libname.keys():
     if (conf.get("referenceFiles") or "") != "":
       shutil.copy(dygraphs, result_location_libname+"/files/")
 
-for g in ["*.o","*.so","*.h","*.c","*.cpp","*.simsuccess","*.conf.json","*.tmpfiles","*.log","*.libs","OMCpp*"]:
-  for f in glob.glob(g):
-    os.unlink(f)
-shutil.rmtree("files/")
+if clean:
+  for g in ["*.o","*.so","*.h","*.c","*.cpp","*.simsuccess","*.conf.json","*.tmpfiles","*.log","*.libs","OMCpp*"]:
+    for f in glob.glob(g):
+      os.unlink(f)
+if clean:
+  shutil.rmtree("files/")
 
 # Do not commit until we have generated and uploaded the reports
 conn.commit()
