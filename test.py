@@ -427,13 +427,12 @@ def runScript(c, timeout, memoryLimit):
 
   execTime=monotonic()-start
   assert(execTime >= 0.0)
-  if os.path.exists(j):
+  try:
     data=json.load(open(j))
-    data["exectime"] = execTime
-    json.dump(data, open(j,"w"))
-  else:
-    data = {"exectime":execTime,"phase":0}
-    json.dump(data, open(j,"w"))
+  except:
+    data = {"phase":0}
+  data["exectime"] = execTime
+  json.dump(data, open(j,"w"))
 
 def expectedExec(c):
   (model,lib,libName,name,data) = c
