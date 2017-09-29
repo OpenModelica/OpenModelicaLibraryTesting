@@ -375,6 +375,7 @@ for (library,conf) in configs:
     print("Skipping %s as we already have results for it: %s" % (libName,str(v)))
     skipped_libs[libName] = v[0]
 
+errorOccurred=False
 for (modelName,library,libName,name,conf) in tests:
   if conf["alarmFlag"]!="":
     conf["simFlags"]="%s %s=%d %s" % (conf["abortSlowSimulation"],conf["alarmFlag"],conf["ulimitExe"],conf["extraSimFlags"])
@@ -399,8 +400,15 @@ for (modelName,library,libName,name,conf) in tests:
   )
   with open(name + ".conf.json", 'w') as fp:
     newconf = dict(conf.items()+{"library":library, "modelName":modelName, "fileName":name}.items())
-    newconf["referenceFile"] = getReferenceFileName(newconf)
+    try:
+      newconf["referenceFile"] = getReferenceFileName(newconf)
+    except Exception as e:
+      # Find all such errors
+      print(e)
+      errorOccurred = True
     json.dump(newconf, fp)
+if errorOccurred:
+  sys.exit(1)
 
 def runScript(c, timeout, memoryLimit):
   j = "files/%s.stat.json" % c
