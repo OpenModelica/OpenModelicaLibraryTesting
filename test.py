@@ -595,7 +595,7 @@ for libname in stats_by_libname.keys():
       shutil.copy(dygraphs, result_location_libname+"/files/")
 
 if clean:
-  for g in ["*.o","*.so","*.h","*.c","*.cpp","*.simsuccess","*.conf.json","*.tmpfiles","*.log","*.libs","OMCpp*"]:
+  for g in ["*.o","*.so","*.h","*.c","*.cpp","*.simsuccess","*.conf.json","*.tmpfiles","*.log","*.libs","OMCpp*","*.fmu"]:
     for f in glob.glob(g):
       os.unlink(f)
 if clean:

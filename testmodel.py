@@ -255,12 +255,7 @@ if backend != -1:
       if templates != -1:
         execstat["templates"]=templates-max(buildmodel, 0.0)
         if res:
-          fmuExpectedLocation = "%s.fmu" % conf["fileName"].replace(".","_")
-          if conf.get("fmi") and not os.path.exists(fmuExpectedLocation):
-            err += "\nFMU was not generated in the expected location: %s" % fmuExpectedLocation
-            execstat["phase"]=3
-          else:
-            execstat["phase"]=4
+          execstat["phase"]=4
         else:
           execstat["phase"]=3
       else:
@@ -286,7 +281,12 @@ start=monotonic()
 try:
   if conf.get("fmi"):
     if res:
+      fmuExpectedLocation = "%s.fmu" % conf["fileName"].replace(".","_")
       execstat["build"] = max(0.0, buildmodel) # Older versions didn't separate translate and build times
+      if not os.path.exists(fmuExpectedLocation):
+        err += "\nFMU was not generated in the expected location: %s" % fmuExpectedLocation
+        execstat["phase"]=4
+        writeResultAndExit(0)
       execstat["phase"] = 5
   else:
     res = checkOutputTimeout("make -j1 -f %s.makefile" % conf["fileName"], conf["ulimitOmc"])
