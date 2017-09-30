@@ -233,8 +233,17 @@ try:
   res=sendExpressionTimeout(omc, cmd, conf["ulimitOmc"])
 except TimeoutError as e:
   execstat["frontend"]=monotonic()-start
+
   with open(errFile, 'a+') as fp:
     fp.write("Timeout error for cmd: %s\n%s"%(cmd,str(e)))
+    try:
+      name = omc._omc_log_file.name
+      del omc
+      with open(name,"r") as fp2:
+        fp.write("OMC output: %s" % fp2.read())
+    except:
+      pass
+
   writeResultAndExit(0)
 
 # See which translateModel phases completed
