@@ -204,8 +204,23 @@ except subprocess.CalledProcessError:
 
 defaultCustomCommands = []
 debug = "+d" if rmlStyle else "-d"
-with open("HelloWorld.mos") as fin:
-  helloWorldContents = fin.read()
+
+def testHelloWorld(cmd):
+  with open("HelloWorld.mos") as fin:
+    helloWorldContents = fin.read()
+  try:
+    os.unlink("HelloWorld")
+  except OSError:
+    pass
+  open("HelloWorld.cmd.mos","w").write(cmd + "\n" + helloWorldContents)
+  try:
+    out=subprocess.check_output(["%s/bin/omc" % omhome, "HelloWorld.cmd.mos"], stderr=subprocess.STDOUT)
+    if os.path.exists("HelloWorld") and not "Error:" in out:
+      return True
+  except subprocess.CalledProcessError as e:
+    pass
+  return False
+
 for cmd in [
   'setCommandLineOptions("%s=nogen");' % debug,
   'setCommandLineOptions("%s=initialization);' % debug,
@@ -216,17 +231,14 @@ for cmd in [
   'setMatchingAlgorithm("PFPlusExt");',
   'setIndexReductionMethod("dynamicStateSelection");'
 ]:
-  try:
-    os.unlink("HelloWorld")
-  except OSError:
-    pass
-  open("HelloWorld.cmd.mos","w").write(cmd + "\n" + helloWorldContents)
-  try:
-    out=subprocess.check_output(["%s/bin/omc" % omhome, "HelloWorld.cmd.mos"], stderr=subprocess.STDOUT)
-    if os.path.exists("HelloWorld") and not "Error:" in out:
-      defaultCustomCommands.append(cmd)
-  except subprocess.CalledProcessError as e:
-    pass
+  if testHelloWorld(cmd):
+    defaultCustomCommands.append(cmd)
+
+canChangeOptLevel = False
+if testHelloWorld("flags:=getCFlags();setCFlags(flags+\" -O1\");"):
+  canChangeOptLevel = True
+else:
+  print("Cannot change optimization level")
 
 fmiOK_C = False
 fmiOK_Cpp = False
@@ -339,6 +351,9 @@ for (library,conf) in configs:
     conf["haveFMI"] = fmiOK_C
     conf["haveFMICpp"] = fmiOK_Cpp
     conf["fmisimulator"] = fmisimulator
+  if (not canChangeOptLevel) and "optlevel" in conf:
+    print("Deleting optlevel")
+    del conf["optlevel"]
   if not (omc.sendExpression('setCommandLineOptions("-g=Modelica")') or omc.sendExpression('setCommandLineOptions("+g=Modelica")')):
     print("Failed to set Modelica grammar")
     sys.exit(1)
@@ -593,6 +608,8 @@ for libname in stats_by_libname.keys():
   numSucceeded = [len(stats)] + [sum(1 if s[3]["phase"]>=i else 0 for s in stats) for i in range(1,8)]
   replacements = (
     (u"#omcVersion#", cgi.escape(omc_version)),
+    (u"#fmi#", ("<p>"+cgi.escape("FMI version: %s" % conf.get("fmi"))+"</p>") if conf.get("fmi") else ""),
+    (u"#optlevel#", cgi.escape(conf.get("optlevel")) if (canChangeOptLevel and conf.get("optlevel")) else "Tool default"),
     (u"#timeStart#", cgi.escape(time.strftime('%Y-%m-%d %H:%M:%S', start_as_time))),
     (u"#fileName#", cgi.escape(libname)),
     (u"#customCommands#", cgi.escape("\n".join(conf["customCommands"]))),

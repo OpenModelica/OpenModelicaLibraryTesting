@@ -198,6 +198,13 @@ if regularFileExists(compareVarsFile) then
 for cmd in conf["customCommands"]:
   omc._omc.sendExpression(cmd)
 
+if conf.get("optlevel"):
+  print("optlevel")
+  cflags = omc.sendExpression("getCFlags()")
+  cflags = cflags.replace("${MODELICAUSERCFLAGS}","").replace("-O0","").replace("-O1","").replace("-O2","").replace("-O3","").replace("-march=native","").strip()
+  cflags += " " + conf["optlevel"]
+  omc._omc.sendExpression("setCFlags(\"%s\")" % cflags)
+
 cmd = 'loadModel(%s, {"%s"})' % (conf["library"], conf["libraryVersion"])
 start=monotonic()
 try:

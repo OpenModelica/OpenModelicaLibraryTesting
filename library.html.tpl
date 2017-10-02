@@ -31,11 +31,13 @@
 
 <p>Total time taken: #totalTime#</p>
 <p>OpenModelica Version: #omcVersion#</p>
+#fmi#
 <p>Test started: #timeStart#</p>
 <p>Tested Library: #libraryVersionRevision#</p>
 <p>BuildModel time limit: #ulimitOmc#s</p>
 <p>Simulation time limit: #ulimitExe#s</p>
 <p>Default tolerance: #default_tolerance#</p>
+<p>Optimization level: #optlevel#</p>
 #referenceFiles#
 #referenceTool#
 Flags: <pre>#customCommands#</pre>
