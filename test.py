@@ -369,6 +369,8 @@ for (library,conf) in configs:
   libName=shared.libname(library, conf)
   v = cursor.execute("""SELECT date,libversion,libname,branch,omcversion FROM [libversion] NATURAL JOIN [omcversion]
   WHERE libversion=? AND libname=? AND branch=? AND omcversion=? AND confighash=? ORDER BY date DESC LIMIT 1""", (conf["libraryLastChange"],libName,branch,omc_version,confighash)).fetchone()
+  if libName in stats_by_libname or libName in skipped_libs:
+    raise Exception("Duplicate libName found: %s" % libName)
   if v is None:
     stats_by_libname[libName] = {"conf":conf, "stats":[]}
     tests = tests + [(r,library,libName,libName+"_"+r,conf) for r in res]
