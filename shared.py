@@ -3,7 +3,7 @@
 import os
 import simplejson as json
 
-def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands,fmisimulatorversion):
+def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands):
   try:
     data["simCodeTarget"] = data.get("simCodeTarget") or "C"
     data["referenceFileExtension"] = data.get("referenceFileExtension") or "mat"
@@ -27,8 +27,6 @@ def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands,fm
     data["libraryVersion"] = data.get("libraryVersion") or "default"
     data["alarmFlag"] = data.get("alarmFlag") or (alarmFlag if data["simCodeTarget"]=="C" else "")
     data["abortSlowSimulation"] = data.get("abortSlowSimulation") or (abortSimulationFlag if data["simCodeTarget"]=="C" else "")
-    if data.get("fmi"):
-      data["fmisimulatorversion"] = fmisimulatorversion
     if "changeHash" in data: # Force rebuilding the library due to change in the testing script
       data["changeHash"] = data["changeHash"]
     return (data["library"],data)
@@ -36,8 +34,8 @@ def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands,fm
     print("Failed to fix data for: %s with extra args: %s" % (str(data),str((rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands,defaultCustomCommands2))))
     raise
 
-def readConfig(c,rmlStyle=False,abortSimulationFlag="",alarmFlag="",defaultCustomCommands=[],fmisimulatorversion=None):
-  return [fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands,fmisimulatorversion) for data in json.load(open(c))]
+def readConfig(c,rmlStyle=False,abortSimulationFlag="",alarmFlag="",defaultCustomCommands=[]):
+  return [fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands) for data in json.load(open(c))]
 
 def libname(library, conf):
   return library+("_"+conf["libraryVersion"] if conf["libraryVersion"]!="default" else "")+(("_" + conf["configExtraName"]) if "configExtraName" in conf else "")

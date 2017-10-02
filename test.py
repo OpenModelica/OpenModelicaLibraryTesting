@@ -253,7 +253,7 @@ except subprocess.CalledProcessError as e:
 from shared import readConfig, getReferenceFileName
 import shared
 
-configs_lst = [readConfig(c, rmlStyle=rmlStyle, abortSimulationFlag=abortSimulationFlag, alarmFlag=alarmFlag, defaultCustomCommands=defaultCustomCommands, fmisimulatorversion=fmisimulatorversion) for c in configs]
+configs_lst = [readConfig(c, rmlStyle=rmlStyle, abortSimulationFlag=abortSimulationFlag, alarmFlag=alarmFlag, defaultCustomCommands=defaultCustomCommands) for c in configs]
 configs = []
 for c in configs_lst:
   configs = configs + c
@@ -338,7 +338,7 @@ for (library,conf) in configs:
   if conf.get("fmi"):
     conf["haveFMI"] = fmiOK_C
     conf["haveFMICpp"] = fmiOK_Cpp
-  conf["fmisimulator"] = fmisimulator
+    conf["fmisimulator"] = fmisimulator
   if not (omc.sendExpression('setCommandLineOptions("-g=Modelica")') or omc.sendExpression('setCommandLineOptions("+g=Modelica")')):
     print("Failed to set Modelica grammar")
     sys.exit(1)
@@ -358,6 +358,8 @@ for (library,conf) in configs:
     conf["resourceLocation"]=""
 
   conf["libraryVersionRevision"]=omc.sendExpression('getVersion(%s)' % library)
+  if conf.get("fmi") and fmisimulatorversion:
+    conf["libraryVersionRevision"] = conf["libraryVersionRevision"] + " " + fmisimulatorversion
   conf["libraryLastChange"]="" # TODO: FIXME
   librarySourceFile=omc.sendExpression('getSourceFile(%s)' % library)
   lastChange=(librarySourceFile[:-3]+".last_change") if not librarySourceFile.endswith("package.mo") else (os.path.dirname(librarySourceFile)+".last_change")
