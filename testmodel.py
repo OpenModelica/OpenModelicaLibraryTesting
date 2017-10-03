@@ -271,7 +271,7 @@ except TimeoutError as e:
       name = omc._omc_log_file.name
       del omc
       with open(name,"r") as fp2:
-        fp.write("OMC output: %s" % fp2.read())
+        fp.write("\n\nOMC output: %s" % fp2.read())
     except:
       pass
 
@@ -360,7 +360,10 @@ try:
       with open(simFile,"w") as fp:
         fp.write("OMSimulator not available\n")
       writeResultAndExit(0)
-    cmd = "%s --tolerance %g %s.fmu" % (("-r %s" % resFile) if outputFormat != "empty" else "",tolerance,conf["fileName"].replace(".","_"))
+    fmitmpdir = "temp_%s_fmu" % conf["fileName"].replace(".","_")
+    with open("%s.tmpfiles" % conf["fileName"], "a+") as fp:
+      fp.write("%s\n" % fmitmpdir)
+    cmd = "%s --tempDir %s --tolerance %g %s.fmu" % (("-r %s" % resFile) if outputFormat != "empty" else "",fmitmpdir,tolerance,conf["fileName"].replace(".","_"))
     with open(simFile,"w") as fp:
       fp.write("OMSimulator %s\n" % cmd)
     #res = checkOutputTimeout("%s %s >> %s 2>&1" % (conf["fmisimulator"],cmd,simFile), conf["ulimitExe"])

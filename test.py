@@ -62,11 +62,11 @@ def runCommand(cmd, prefix, timeout):
       for f in glob.glob("OM"+prefix+suffix):
         lines.append(f)
     for line in lines:
-      try:
-        os.unlink(line.strip())
-      except:
-        pass
-        #print("Failed to unlink: %s" % line.strip())
+      f = line.strip()
+      if os.path.isdir(f):
+        shutil.rmtree(f)
+      elif os.path.exists(f):
+        os.unlink(f)
 
   return process[0].returncode
 
@@ -634,9 +634,12 @@ for libname in stats_by_libname.keys():
       shutil.copy(dygraphs, result_location_libname+"/files/")
 
 if clean:
-  for g in ["*.o","*.so","*.h","*.c","*.cpp","*.simsuccess","*.conf.json","*.tmpfiles","*.log","*.libs","OMCpp*","*.fmu"]:
+  for g in ["*.o","*.so","*.h","*.c","*.cpp","*.simsuccess","*.conf.json","*.tmpfiles","*.log","*.libs","OMCpp*","*.fmu*","temp_*"]:
     for f in glob.glob(g):
-      os.unlink(f)
+      if os.path.isdir(f):
+        shutil.rmtree(f)
+      elif os.path.exists(f):
+        os.unlink(f)
 if clean:
   shutil.rmtree("files/")
 
