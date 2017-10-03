@@ -485,14 +485,14 @@ if len(tests)==0:
   sys.exit(0)
 
 
-print("Starting execution of %d tests" % len(tests))
+print("Starting execution of %d tests. Estimated execution time %s (wrong if there are many new tests)." % (len(tests), friendlyStr(sum(expectedExec(c) for c in tests))))
 cmd_res=[0]
 start=monotonic()
 start_as_time=time.localtime()
 testRunStartTimeAsEpoch = int(time.time())
 cmd_res=Parallel(n_jobs=n_jobs)(delayed(runScript)(name, 1.1*data["ulimitOmc"]+1.1*data["ulimitExe"]+15, data["ulimitMemory"]) for (model,lib,libName,name,data) in tests)
 stop=monotonic()
-print("Execution time: %.2f" % (stop-start))
+print("Execution time: %s" % friendlyStr(stop-start))
 assert(stop-start >= 0.0)
 
 #if max(cmd_res) > 0:
