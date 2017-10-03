@@ -237,21 +237,20 @@ def sendExpressionOldOrNew(cmd):
     loadLibraryInNewOM()
     return omc_new.sendExpression(cmd)
 
-if conf["simCodeTarget"]=="C":
-  annotationSimFlags=""
-  (startTime,stopTime,tolerance,numberOfIntervals,stepSize)=sendExpressionOldOrNew('getSimulationOptions(%s,defaultTolerance=%s,defaultNumberOfIntervals=2500)' % (conf["modelName"],conf["default_tolerance"]))
-  if sendExpressionOldOrNew('classAnnotationExists(%s, __OpenModelica_simulationFlags)' % conf["modelName"]):
-    for flag in sendExpressionOldOrNew('getAnnotationNamedModifiers(%s,"__OpenModelica_simulationFlags")' % conf["modelName"]):
-      if flag=="The searched annotation name not found":
-        # Old, stupid API
-        continue
-      val=sendExpressionOldOrNew('getAnnotationModifierValue(%s,"__OpenModelica_simulationFlags","%s")' % (conf["modelName"],flag))
-      flagVal=" -%s=%s" % (flag,val)
-      if shared.simulationAcceptsFlag(" -noemit " + flagVal):
-        annotationSimFlags+=flagVal
-      else:
-        with open(errFile, 'a+') as fp:
-          fp.write("Ignoring simflag %s since it seems broken on HelloWorld\n" % flagVal)
+annotationSimFlags=""
+(startTime,stopTime,tolerance,numberOfIntervals,stepSize)=sendExpressionOldOrNew('getSimulationOptions(%s,defaultTolerance=%s,defaultNumberOfIntervals=2500)' % (conf["modelName"],conf["default_tolerance"]))
+if conf["simCodeTarget"]=="C" and sendExpressionOldOrNew('classAnnotationExists(%s, __OpenModelica_simulationFlags)' % conf["modelName"]):
+  for flag in sendExpressionOldOrNew('getAnnotationNamedModifiers(%s,"__OpenModelica_simulationFlags")' % conf["modelName"]):
+    if flag=="The searched annotation name not found":
+      # Old, stupid API
+      continue
+    val=sendExpressionOldOrNew('getAnnotationModifierValue(%s,"__OpenModelica_simulationFlags","%s")' % (conf["modelName"],flag))
+    flagVal=" -%s=%s" % (flag,val)
+    if shared.simulationAcceptsFlag(" -noemit " + flagVal):
+      annotationSimFlags+=flagVal
+    else:
+      with open(errFile, 'a+') as fp:
+        fp.write("Ignoring simflag %s since it seems broken on HelloWorld\n" % flagVal)
 
 # TODO: Detect and handle the case where RT_CLOCK is not available in OMC
 total_before = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_SIMULATE_TOTAL)")
