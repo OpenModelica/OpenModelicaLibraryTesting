@@ -12,6 +12,8 @@ from subprocess import call
 from monotonic import monotonic
 from omcommon import friendlyStr, multiple_replace
 from natsort import natsorted
+from shared import readConfig, getReferenceFileName, simulationAcceptsFlag
+import shared
 
 def runCommand(cmd, prefix, timeout):
   process = [None]
@@ -157,28 +159,6 @@ if fmisimulator:
 else:
   print("No OMSimulator")
 
-def simulationAcceptsFlag(f):
-  try:
-    os.unlink("HelloWorld_res.mat")
-  except OSError:
-    pass
-  try:
-    subprocess.check_output("./HelloWorld %s" % f, shell=True, stderr=subprocess.STDOUT)
-    if os.path.exists("HelloWorld_res.mat"):
-      return True
-  except subprocess.CalledProcessError as e:
-    pass
-  return False
-
-try:
-  os.unlink("HelloWorld")
-except OSError:
-  pass
-print(subprocess.check_output(["%s/bin/omc" % omhome, "HelloWorld.mos"], stderr=subprocess.STDOUT))
-assert(os.path.exists("HelloWorld"))
-abortSimulationFlag="-abortSlowSimulation" if simulationAcceptsFlag("-abortSlowSimulation") else ""
-alarmFlag="-alarm" if simulationAcceptsFlag("-alarm=480") else ""
-
 try:
   os.unlink("HelloWorld")
 except OSError:
@@ -261,9 +241,14 @@ try:
 except subprocess.CalledProcessError as e:
   pass
 
-
-from shared import readConfig, getReferenceFileName
-import shared
+try:
+  os.unlink("HelloWorld")
+except OSError:
+  pass
+print(subprocess.check_output(["%s/bin/omc" % omhome, "HelloWorld.mos"], stderr=subprocess.STDOUT))
+assert(os.path.exists("HelloWorld"))
+abortSimulationFlag="-abortSlowSimulation" if simulationAcceptsFlag("-abortSlowSimulation") else ""
+alarmFlag="-alarm" if simulationAcceptsFlag("-alarm=480") else ""
 
 configs_lst = [readConfig(c, rmlStyle=rmlStyle, abortSimulationFlag=abortSimulationFlag, alarmFlag=alarmFlag, defaultCustomCommands=defaultCustomCommands) for c in configs]
 configs = []

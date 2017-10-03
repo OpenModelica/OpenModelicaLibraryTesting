@@ -5,6 +5,7 @@ import argparse, os, sys, signal, threading, psutil, subprocess
 import simplejson as json
 from monotonic import monotonic
 from OMPython import OMCSession
+import shared
 
 parser = argparse.ArgumentParser(description='OpenModelica library testing tool helper (single model)')
 parser.add_argument('config')
@@ -126,20 +127,20 @@ def writeResultAndExit(exitStatus):
   sys.exit(exitStatus)
 
 if conf["simCodeTarget"] not in ["Cpp","C"]:
-  with open(errFile, 'w+') as fp:
+  with open(errFile, 'a+') as fp:
     fp.write("Unknown simCodeTarget in %s" % conf["simCodeTarget"])
   writeResultAndExit(1)
 if conf["simCodeTarget"]=="Cpp" and not conf["haveCppRuntime"]:
-  with open(errFile, 'w+') as fp:
+  with open(errFile, 'a+') as fp:
     fp.write("C++ runtime not supported in this installation (HelloWorld failed)")
   writeResultAndExit(0)
 if conf.get("fmi"):
   if conf["simCodeTarget"]=="Cpp" and not conf["haveFMICpp"]:
-    with open(errFile, 'w+') as fp:
+    with open(errFile, 'a+') as fp:
       fp.write("C++ FMI runtime not supported in this installation (HelloWorld failed or did not respect fileNamePrefix)")
     writeResultAndExit(0)
   elif conf["simCodeTarget"]=="C" and not conf["haveFMI"]:
-    with open(errFile, 'w+') as fp:
+    with open(errFile, 'a+') as fp:
       fp.write("C FMI runtime not supported in this installation (HelloWorld failed or did not respect fileNamePrefix)")
     writeResultAndExit(0)
 
@@ -206,6 +207,17 @@ if conf.get("optlevel"):
   omc._omc.sendExpression("setCFlags(\"%s\")" % cflags)
 
 cmd = 'loadModel(%s, {"%s"})' % (conf["library"], conf["libraryVersion"])
+newOMLoaded = False
+def loadLibraryInNewOM():
+  if not newOMLoaded:
+    newOMLoaded = True
+    # Broken/old getSimulationOptions; use new one (requires parsing again)
+    assert(ompython_omhome!="")
+    assert(omc_new.sendExpression('setModelicaPath("%s/lib/omlibrary")' % omhome))
+    if not omc_new.sendExpression(cmd):
+      print(omc_new.sendExpression('OpenModelica.Scripting.getErrorString()'))
+      sys.exit(1)
+
 start=monotonic()
 try:
   if not sendExpressionTimeout(omc, cmd, conf["ulimitLoadModel"]):
@@ -218,16 +230,28 @@ except TimeoutError as e:
   writeResultAndExit(0)
 execstat["parsing"]=monotonic()-start
 
-try:
-  (startTime,stopTime,tolerance,numberOfIntervals,stepSize)=omc.sendExpression('getSimulationOptions(%s,defaultTolerance=%s,defaultNumberOfIntervals=2500)' % (conf["modelName"],conf["default_tolerance"]))
-except:
-  # Broken/old getSimulationOptions; use new one (requires parsing again)
-  assert(ompython_omhome!="")
-  assert(omc_new.sendExpression('setModelicaPath("%s/lib/omlibrary")' % omhome))
-  if not omc_new.sendExpression(cmd):
-    print(omc_new.sendExpression('OpenModelica.Scripting.getErrorString()'))
-    sys.exit(1)
-  (startTime,stopTime,tolerance,numberOfIntervals,stepSize)=omc_new.sendExpression('getSimulationOptions(%s,defaultTolerance=%s,defaultNumberOfIntervals=2500)' % (conf["modelName"],conf["default_tolerance"]))
+def sendExpressionOldOrNew(cmd):
+  try:
+    return omc.sendExpression(cmd)
+  except:
+    loadLibraryInNewOM()
+    return omc_new.sendExpression(cmd)
+
+if conf["simCodeTarget"]=="C":
+  annotationSimFlags=""
+  (startTime,stopTime,tolerance,numberOfIntervals,stepSize)=sendExpressionOldOrNew('getSimulationOptions(%s,defaultTolerance=%s,defaultNumberOfIntervals=2500)' % (conf["modelName"],conf["default_tolerance"]))
+  if sendExpressionOldOrNew('classAnnotationExists(%s, __OpenModelica_simulationFlags)' % conf["modelName"]):
+    for flag in sendExpressionOldOrNew('getAnnotationNamedModifiers(%s,"__OpenModelica_simulationFlags")' % conf["modelName"]):
+      if flag=="The searched annotation name not found":
+        # Old, stupid API
+        continue
+      val=sendExpressionOldOrNew('getAnnotationModifierValue(%s,"__OpenModelica_simulationFlags","%s")' % (conf["modelName"],flag))
+      flagVal=" -%s=%s" % (flag,val)
+      if shared.simulationAcceptsFlag(" -noemit " + flagVal):
+        annotationSimFlags+=flagVal
+      else:
+        with open(errFile, 'a+') as fp:
+          fp.write("Ignoring simflag %s since it seems broken on HelloWorld\n" % flagVal)
 
 # TODO: Detect and handle the case where RT_CLOCK is not available in OMC
 total_before = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_SIMULATE_TOTAL)")
@@ -296,7 +320,7 @@ else:
   execstat["phase"]=0
   execstat["frontend"]=frontend
 
-with open(errFile, 'w') as fp:
+with open(errFile, 'a+') as fp:
   fp.write(err)
 
 if execstat["phase"] < 4:
@@ -319,7 +343,7 @@ try:
     execstat["phase"] = 5
 except TimeoutError as e:
   execstat["build"] = monotonic()-start
-  with open(errFile, 'a') as fp:
+  with open(errFile, 'a+') as fp:
     fp.write(str(e))
   writeResultAndExit(0)
 
@@ -342,9 +366,9 @@ try:
     #res = checkOutputTimeout("%s %s >> %s 2>&1" % (conf["fmisimulator"],cmd,simFile), conf["ulimitExe"])
     res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,conf["fmisimulator"],cmd,conf["fileName"]), conf["ulimitExe"])
   else:
-    cmd = "./%s %s %s" % (conf["fileName"],conf["simFlags"],emit_protected)
+    cmd = "./%s %s %s %s" % (conf["fileName"],conf["simFlags"],annotationSimFlags,emit_protected)
     with open(simFile,"w") as fp:
-      fp.write("OMSimulator %s\n" % cmd)
+      fp.write("Regular simulation: %s\n" % cmd)
     res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,cmd,conf["fileName"]), conf["ulimitExe"])
   execstat["sim"] = monotonic()-start
   execstat["phase"] = 6
@@ -360,7 +384,7 @@ if referenceFile=="":
 prefix = "files/%s.diff" % conf["fileName"]
 
 if not os.path.exists(resFile):
-  with open(errFile, 'a') as fp:
+  with open(errFile, 'a+') as fp:
     fp.write("TODO: How the !@#!# did the simulation report success but not simulation result exists to compare?")
   writeResultAndExit(0)
 
@@ -371,7 +395,7 @@ execstat["diff"] = {"time":monotonic()-start, "vars":[], "numCompared":len(refer
 if len(diffVars)==0 and referenceOK:
   execstat["phase"]=7
 else:
-  with open(errFile, 'a') as fp:
+  with open(errFile, 'a+') as fp:
     fp.write(omc_new._omc.sendExpression('OpenModelica.Scripting.getErrorString()'))
     fp.write("\nVariables in the reference:" )
     fp.write(",".join(referenceVars)+"\n")

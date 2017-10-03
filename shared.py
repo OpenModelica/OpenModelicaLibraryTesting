@@ -2,6 +2,7 @@
 
 import os
 import simplejson as json
+import subprocess
 
 def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands):
   try:
@@ -59,3 +60,16 @@ def getReferenceFileName(conf):
       else:
         referenceFile=""
   return referenceFile
+
+def simulationAcceptsFlag(f):
+  try:
+    os.unlink("HelloWorld_res.mat")
+  except OSError:
+    pass
+  try:
+    subprocess.check_output("./HelloWorld %s" % f, shell=True, stderr=subprocess.STDOUT)
+    if os.path.exists("HelloWorld_res.mat"):
+      return True
+  except subprocess.CalledProcessError as e:
+    pass
+  return False
