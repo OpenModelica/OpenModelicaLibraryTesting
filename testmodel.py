@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 
-import argparse, os, sys, signal, threading, psutil, subprocess
+import argparse, os, sys, signal, threading, psutil, subprocess, shutil
 import simplejson as json
 from monotonic import monotonic
 from OMPython import OMCSession
@@ -104,9 +104,16 @@ execstat = {
 with open(config) as fp:
   conf = json.load(fp)
 
-errFile="files/%s.err" % conf["fileName"]
-simFile="files/%s.sim" % conf["fileName"]
-statFile="files/%s.stat.json" % conf["fileName"]
+try:
+  shutil.rmtree(conf["fileName"])
+except OSError:
+  pass
+os.mkdir(conf["fileName"])
+os.chdir(conf["fileName"])
+
+errFile="../files/%s.err" % conf["fileName"]
+simFile="../files/%s.sim" % conf["fileName"]
+statFile="../files/%s.stat.json" % conf["fileName"]
 try:
   os.unlink(errFile)
 except OSError:
@@ -383,7 +390,7 @@ if referenceFile=="":
 
 # Check the reference file...
 
-prefix = "files/%s.diff" % conf["fileName"]
+prefix = "../files/%s.diff" % conf["fileName"]
 
 if not os.path.exists(resFile):
   with open(errFile, 'a+') as fp:

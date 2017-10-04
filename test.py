@@ -63,7 +63,7 @@ def runCommand(cmd, prefix, timeout):
       lines = open("%s.tmpfiles" % prefix).readlines()
     except:
       lines = []
-    for suffix in ["_*.o","_*.so","_*.h","_*.c","_*.cpp",".mos","",".o",".h",".c",".cpp","_info.json","_*.xml","_*.tmpfiles","_res.*",".pipe",".tmpfiles",".libs",".log"]:
+    for suffix in [".so",".mos","",".o",".h",".c",".cpp","_info.json",".xml",".tmpfiles",".pipe",".tmpfiles",".libs",".log"]:
       for f in glob.glob(prefix+suffix):
         lines.append(f)
       for f in glob.glob("OM"+prefix+suffix):
@@ -74,6 +74,10 @@ def runCommand(cmd, prefix, timeout):
         shutil.rmtree(f)
       elif os.path.exists(f):
         os.unlink(f)
+    try:
+      shutil.rmtree(prefix)
+    except OSError:
+      pass
 
   return process[0].returncode
 
