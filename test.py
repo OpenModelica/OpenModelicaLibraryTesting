@@ -391,6 +391,7 @@ for (library,conf) in configs:
     print("Skipping %s as we already have results for it: %s" % (libName,str(v)))
     skipped_libs[libName] = v[0]
 
+print("Checked which libraries to run")
 sys.stdout.flush()
 
 errorOccurred=False
@@ -428,6 +429,7 @@ for (modelName,library,libName,name,conf) in tests:
 if errorOccurred:
   sys.exit(1)
 
+print("Created .conf.json files")
 sys.stdout.flush()
 
 def runScript(c, timeout, memoryLimit):
@@ -474,12 +476,15 @@ tests=sorted(tests, key=lambda c: expectedExec(c), reverse=True)
 try:
   if clean:
     shutil.rmtree("./files")
+    print("Cleaned files directory")
 except OSError:
   pass
 try:
   os.mkdir("files")
 except OSError:
   pass
+print("Created files directory")
+sys.stdout.flush()
 
 if len(tests)==0:
   print("Everything already up to date. Not executing any tests.")
