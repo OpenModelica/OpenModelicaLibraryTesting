@@ -470,7 +470,7 @@ if len(tests)==0:
   sys.exit(0)
 
 
-print("Starting execution of %d tests. Estimated execution time %s (wrong if there are many new tests)." % (len(tests), friendlyStr(sum(expectedExec(c) for c in tests))))
+print("Starting execution of %d tests. Estimated execution time %s (wrong if there are new or few tests)." % (len(tests), friendlyStr(sum(expectedExec(c) for c in tests)/(1.0*n_jobs))))
 cmd_res=[0]
 start=monotonic()
 start_as_time=time.localtime()
