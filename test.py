@@ -141,6 +141,8 @@ omc_exe=os.path.join(omhome,"bin","omc")
 dygraphs=os.path.join(ompython_omhome or omhome,"share","doc","omc","testmodels","dygraph-combined.js")
 print(omc_exe,omc_version,dygraphs)
 
+sys.stdout.flush()
+
 # Do feature checks. Handle things like old RML-style arguments...
 
 try:
@@ -152,12 +154,16 @@ except:
   rmlStyle=True
   print("Work-around for RML-style command-line arguments (+n=1)")
 
+sys.stdout.flush()
+
 fmisimulatorversion = None
 if fmisimulator:
   fmisimulatorversion = subprocess.check_output([fmisimulator, "-v"], stderr=subprocess.STDOUT).strip()
   print(fmisimulatorversion)
 else:
   print("No OMSimulator")
+
+sys.stdout.flush()
 
 try:
   os.unlink("HelloWorld")
@@ -166,8 +172,12 @@ except OSError:
 subprocess.check_output(["%s/bin/omc" % omhome, "%ssimCodeTarget=Cpp" % ("+" if rmlStyle else "--"), "HelloWorld.mos"], stderr=subprocess.STDOUT)
 if os.path.exists("HelloWorld"):
   haveCppRuntime=simulationAcceptsFlag("")
+  print("Have C++ runtime")
 else:
   haveCppRuntime=False
+  print("No C++ runtime")
+
+sys.stdout.flush()
 
 try:
   subprocess.check_output(["%s/bin/omc" % omhome, "Architecture.mos"], stderr=subprocess.STDOUT)
@@ -181,6 +191,8 @@ except subprocess.CalledProcessError:
     assert(len(content) > 0)
     with open(f, "w") as fout:
       open(f,"w").write(content)
+
+sys.stdout.flush()
 
 defaultCustomCommands = []
 debug = "+d" if rmlStyle else "-d"
