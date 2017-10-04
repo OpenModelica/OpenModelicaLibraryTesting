@@ -391,6 +391,8 @@ for (library,conf) in configs:
     print("Skipping %s as we already have results for it: %s" % (libName,str(v)))
     skipped_libs[libName] = v[0]
 
+sys.stdout.flush()
+
 errorOccurred=False
 for (modelName,library,libName,name,conf) in tests:
   if conf["alarmFlag"]!="":
@@ -425,6 +427,8 @@ for (modelName,library,libName,name,conf) in tests:
     json.dump(newconf, fp)
 if errorOccurred:
   sys.exit(1)
+
+sys.stdout.flush()
 
 def runScript(c, timeout, memoryLimit):
   j = "files/%s.stat.json" % c
@@ -483,6 +487,7 @@ if len(tests)==0:
 
 
 print("Starting execution of %d tests. Estimated execution time %s (wrong if there are new or few tests)." % (len(tests), friendlyStr(sum(expectedExec(c) for c in tests)/(1.0*n_jobs))))
+sys.stdout.flush()
 cmd_res=[0]
 start=monotonic()
 start_as_time=time.localtime()
