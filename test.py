@@ -473,11 +473,18 @@ def runScript(c, timeout, memoryLimit):
 
 def expectedExec(c):
   (model,lib,libName,name,data) = c
+  if "expectedExec" in data:
+    return data["expectedExec"]
   cursor.execute("SELECT exectime FROM [%s] WHERE libname = ? AND model = ? ORDER BY date DESC LIMIT 1" % branch, (libName,model))
   v = cursor.fetchone()
-  return (v or (0.0,))[0]
+  data["expectedExec"] = (v or (0.0,))[0]
+  return data["expectedExec"]
 
+start=monotonic()
 tests=sorted(tests, key=lambda c: expectedExec(c), reverse=True)
+stop=monotonic()
+print("Querying expected execution time: %s" % friendlyStr(stop-start))
+sys.stdout.flush()
 
 # Cleanup old runs
 try:
