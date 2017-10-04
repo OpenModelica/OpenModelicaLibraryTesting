@@ -15,6 +15,13 @@ from natsort import natsorted
 from shared import readConfig, getReferenceFileName, simulationAcceptsFlag
 import shared
 
+import signal
+
+def print_linenum(signum, frame):
+    print "Currently at line", frame.f_lineno
+
+signal.signal(signal.SIGUSR1, print_linenum)
+
 def runCommand(cmd, prefix, timeout):
   process = [None]
   def target():
