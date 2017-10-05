@@ -660,7 +660,7 @@ for libname in stats_by_libname.keys():
     (u"#Compilation#", cgi.escape(str(numSucceeded[5]))),
     (u"#Simulation#", cgi.escape(str(numSucceeded[6]))),
     (u"#Verification#", cgi.escape(str(numSucceeded[7]))),
-    (u"#totalTime#", cgi.escape(str(datetime.timedelta(seconds=int(sum(s[3]["exectime"] for s in stats)))))),
+    (u"#totalTime#", cgi.escape(str(datetime.timedelta(seconds=int(sum(s[3].get("exectime") or 0.0 for s in stats)))))),
     (u"#testsHTML#", testsHTML)
   )
   open("%s.html" % libname, "w").write(multiple_replace(htmltpl, *replacements))
