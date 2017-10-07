@@ -216,6 +216,7 @@ if conf.get("optlevel"):
 cmd = 'loadModel(%s, {"%s"})' % (conf["library"], conf["libraryVersion"])
 newOMLoaded = False
 def loadLibraryInNewOM():
+  global newOMLoaded
   if not newOMLoaded:
     newOMLoaded = True
     # Broken/old getSimulationOptions; use new one (requires parsing again)
