@@ -388,6 +388,10 @@ except TimeoutError as e:
 
 if referenceFile=="":
   writeResultAndExit(0)
+if len(referenceVars)==0:
+  execstat["diff"] = {"time":0.0, "vars":[], "numCompared":0}
+  execstat["phase"]=7
+  writeResultAndExit(0)
 
 # Check the reference file...
 
