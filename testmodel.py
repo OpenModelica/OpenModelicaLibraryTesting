@@ -181,7 +181,11 @@ outputFormat="mat"
 referenceVars=[]
 referenceFile = conf.get("referenceFile") or ""
 try:
-  referenceVars=omc_new.sendExpression('readSimulationResultVars("%s", readParameters=true, openmodelicaStyle=true)' % referenceFile)
+  compSignals = os.path.join(os.path.dirname(referenceFile),"comparisonSignals.txt")
+  if os.path.exists(compSignals):
+    referenceVars=[s.strip() for s in open(compSignals).readlines() if s.lower() != "time" and s != ""]
+  else:
+    referenceVars=omc_new.sendExpression('readSimulationResultVars("%s", readParameters=true, openmodelicaStyle=true)' % referenceFile)
   variableFilter="|".join([v.replace("[",".").replace("]",".").replace("(",".").replace(")",".").replace('"',".") for v in referenceVars])
   emit_protected="-emit_protected"
 except:
