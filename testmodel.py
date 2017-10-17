@@ -169,10 +169,10 @@ try:
   os.unlink("%s.tmpfiles" % conf["fileName"])
 except:
   pass
-cmd = 'setCommandLineOptions("--running-testsuite=%s.tmpfiles")' % conf["fileName"]
+#cmd = 'setCommandLineOptions("--running-testsuite=%s.tmpfiles")' % conf["fileName"]
 runningTestsuiteFiles = False
-if omc.sendExpression(cmd):
-  runningTestsuiteFiles = True
+#if omc.sendExpression(cmd):
+#  runningTestsuiteFiles = True
 
 # Hide errors for old-school running-testsuite flags...
 omc._omc.sendExpression("getErrorString()")
