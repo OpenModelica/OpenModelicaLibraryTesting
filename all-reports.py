@@ -49,7 +49,7 @@ def dateStr(dint):
 
 def getTagOrVersion(v):
   v = v.replace("OpenModelica ","").replace("OMCompiler ","")
-  m = re.search("[+]g([0-9a-f]{7})$", v)
+  m = re.search("[+]g([0-9a-f]{7}[0-9a-f]?[0-9a-f]?)$", v)
   if m:
     return m.group(1)
   return v
@@ -86,7 +86,8 @@ for branch in branches:
           if "@" not in email:
             continue
           emails_current.add(email)
-      except subprocess.CalledProcessError:
+      except subprocess.CalledProcessError as e:
+        print(str(e))
         gitlog = "<tr><td>%s..%s</td></tr>" % (v1,v2)
     else:
       gitlog = ""
