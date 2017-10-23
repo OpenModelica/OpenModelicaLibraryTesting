@@ -259,7 +259,7 @@ if conf["simCodeTarget"]=="C" and sendExpressionOldOrNew('classAnnotationExists(
       continue
     val=sendExpressionOldOrNew('getAnnotationModifierValue(%s,"__OpenModelica_simulationFlags","%s")' % (conf["modelName"],flag))
     flagVal=" -%s=%s" % (flag,val)
-    if shared.simulationAcceptsFlag(" -noemit " + flagVal):
+    if shared.simulationAcceptsFlag(" -noemit " + flagVal, checkOutput=False):
       annotationSimFlags+=flagVal
     else:
       with open(errFile, 'a+') as fp:
