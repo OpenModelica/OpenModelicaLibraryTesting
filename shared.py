@@ -54,20 +54,20 @@ def getReferenceFileName(conf):
       else:
         modelName += "."+conf["referenceFileNameExtraName"]
     referenceFile = conf["referenceFiles"]+"/"+modelName.replace(".",conf["referenceFileNameDelimiter"])+"."+conf["referenceFileExtension"]
-    if not os.path.exists(referenceFile):
+    if not os.path.exists(referenceFile) and not os.path.isdir(referenceFile):
       if conf.get("allReferenceFilesExist"):
         raise Exception("Missing reference file %s for config %s" % (referenceFile,conf))
       else:
         referenceFile=""
   return referenceFile
 
-def simulationAcceptsFlag(f, checkOutput=True):
+def simulationAcceptsFlag(f, checkOutput=True, cwd=None):
   try:
     os.unlink("HelloWorld_res.mat")
   except OSError:
     pass
   try:
-    subprocess.check_output("./HelloWorld %s" % f, shell=True, stderr=subprocess.STDOUT)
+    subprocess.check_output("./HelloWorld %s" % f, shell=True, stderr=subprocess.STDOUT, cwd=cwd)
     if (not checkOutput) or os.path.exists("HelloWorld_res.mat"):
       return True
   except subprocess.CalledProcessError as e:

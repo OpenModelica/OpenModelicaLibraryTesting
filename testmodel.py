@@ -180,17 +180,18 @@ omc._omc.sendExpression("getErrorString()")
 outputFormat="mat"
 referenceVars=[]
 referenceFile = conf.get("referenceFile") or ""
-try:
-  compSignals = os.path.join(os.path.dirname(referenceFile),"comparisonSignals.txt")
-  if os.path.exists(compSignals):
-    referenceVars=[s.strip() for s in open(compSignals).readlines() if (s.strip() != "")] # s.strip().lower() != "time" and ??? I guess we should check time variable...
-    print(referenceVars)
-  else:
-    referenceVars=omc_new.sendExpression('readSimulationResultVars("%s", readParameters=true, openmodelicaStyle=true)' % referenceFile)
-  variableFilter="|".join([v.replace("[",".").replace("]",".").replace("(",".").replace(")",".").replace('"',".") for v in referenceVars])
-  emit_protected="-emit_protected"
-except:
-  referenceFile=""
+if referenceFile != "":
+  try:
+    compSignals = os.path.join(os.path.dirname(referenceFile),"comparisonSignals.txt")
+    if os.path.exists(compSignals):
+      referenceVars=[s.strip() for s in open(compSignals).readlines() if (s.strip() != "")] # s.strip().lower() != "time" and ??? I guess we should check time variable...
+      print(referenceVars)
+    else:
+      referenceVars=omc_new.sendExpression('readSimulationResultVars("%s", readParameters=true, openmodelicaStyle=true)' % referenceFile)
+    variableFilter="|".join([v.replace("[",".").replace("]",".").replace("(",".").replace(")",".").replace('"',".") for v in referenceVars])
+    emit_protected="-emit_protected"
+  except:
+    referenceFile=""
 if referenceFile=="":
   variableFilter=""
   outputFormat="empty"
@@ -258,8 +259,8 @@ if conf["simCodeTarget"]=="C" and sendExpressionOldOrNew('classAnnotationExists(
       # Old, stupid API
       continue
     val=sendExpressionOldOrNew('getAnnotationModifierValue(%s,"__OpenModelica_simulationFlags","%s")' % (conf["modelName"],flag))
-    flagVal=" -%s=%s" % (flag,val)
-    if shared.simulationAcceptsFlag(" -noemit " + flagVal, checkOutput=False):
+    flagVal=" -noemit -%s=%s" % (flag,val)
+    if shared.simulationAcceptsFlag(flagVal, checkOutput=False, cwd=".."):
       annotationSimFlags+=flagVal
     else:
       with open(errFile, 'a+') as fp:
