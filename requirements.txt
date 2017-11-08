@@ -1,8 +1,7 @@
-cgi
 datetime
 matplotlib
 monotonic
-natsorted
+natsort
 joblib
 ompython
 simplejson
