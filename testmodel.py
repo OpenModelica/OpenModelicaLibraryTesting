@@ -210,7 +210,7 @@ if regularFileExists(compareVarsFile) then
 # print(variableFilter)
 
 for cmd in conf["customCommands"]:
-  omc._omc.sendExpression(cmd)
+  omc._omc.sendExpression(str(cmd))
 
 if conf.get("optlevel"):
   print("optlevel")
