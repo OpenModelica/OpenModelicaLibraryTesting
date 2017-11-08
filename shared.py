@@ -12,7 +12,6 @@ def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands):
         if k not in os.environ:
           raise Exception("Environment variable %s not defined, but used in JSON config for reference files" % k)
         data["referenceFiles"] = data["referenceFiles"].replace(m.group(0), os.environ[k])
-      print(data["referenceFiles"])
     data["simCodeTarget"] = data.get("simCodeTarget") or "C"
     data["referenceFileExtension"] = data.get("referenceFileExtension") or "mat"
     data["referenceFileNameDelimiter"] = data.get("referenceFileNameDelimiter") or "."
