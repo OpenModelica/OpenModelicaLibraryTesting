@@ -426,7 +426,7 @@ else:
   execstat["diff"]["vars"]=diffVars
 
   # Create a file containing only the calibrated variables, for easy display
-  lstfiles = "\n".join(['<li>%s <a href="%s.html">(javascript)</a> <a href="%s.csv">(csv)</a></li>' % (str.split(f,".diff.",1)[1],str(os.path.basename(f)),str(os.path.basename(f))) for f in diffFiles])
+  lstfiles = "\n".join(['<li>%s <a href="%s.html">(javascript)</a> <a href="%s.csv">(csv)</a></li>' % (str.split(str(f),".diff.",1)[1],str(os.path.basename(f)),str(os.path.basename(f))) for f in diffFiles])
   with open(prefix+".html", 'w') as fp:
     fp.write("<html><body><h1>%s differences from the reference file</h1><p>startTime: %g</p><p>stopTime: %g</p><p>Simulated using tolerance: %g</p><ul>%s</ul></body></html>" % (conf["modelName"], startTime, stopTime, tolerance, lstfiles));
   for var in diffVars:
