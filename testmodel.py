@@ -217,7 +217,7 @@ if conf.get("optlevel"):
   cflags = omc.sendExpression("getCFlags()")
   cflags = cflags.replace("${MODELICAUSERCFLAGS}","").replace("-O0","").replace("-O1","").replace("-O2","").replace("-O3","").replace("-march=native","").strip()
   cflags += " " + conf["optlevel"]
-  omc._omc.sendExpression("setCFlags(\"%s\")" % cflags)
+  omc._omc.sendExpression(str("setCFlags(\"%s\")" % cflags))
 
 cmd = 'loadModel(%s, {"%s"})' % (conf["library"], conf["libraryVersion"])
 newOMLoaded = False
