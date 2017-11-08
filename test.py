@@ -91,6 +91,7 @@ parser = argparse.ArgumentParser(description='OpenModelica library testing tool'
 parser.add_argument('configs', nargs='*')
 parser.add_argument('--branch', default='master')
 parser.add_argument('--output', default='')
+parser.add_argument('--extraflags', default='')
 parser.add_argument('--ompython_omhome', default='')
 parser.add_argument('--noclean', action="store_true", default=False)
 parser.add_argument('--fmisimulator', default='')
@@ -102,6 +103,7 @@ branch = args.branch
 result_location = args.output
 n_jobs = args.n
 clean = not args.noclean
+extraflags = args.extraflags
 ompython_omhome = args.ompython_omhome
 fmisimulator = args.fmisimulator or None
 print("branch: %s, n_jobs: %d" % (branch, n_jobs))
@@ -206,6 +208,8 @@ except subprocess.CalledProcessError:
 sys.stdout.flush()
 
 defaultCustomCommands = []
+if extraflags:
+  defaultCustomCommands += [extraflags]
 debug = "+d" if rmlStyle else "-d"
 
 def testHelloWorld(cmd):
