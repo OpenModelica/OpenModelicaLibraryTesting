@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
 
-import os
+import re, os, subprocess
 import simplejson as json
-import subprocess
 
 def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands):
   try:
+    if "referenceFiles" in data:
+      m = re.search("^[$][A-Z]+", data["referenceFiles"])
+      if m:
+        k = m.group(0)[1:]
+        if k not in os.environ:
+          raise Exception("Environment variable %s not defined, but used in JSON config for reference files" % k)
+        data["referenceFiles"] = data["referenceFiles"].replace(m.group(0), os.environ[k])
+      print(data["referenceFiles"])
     data["simCodeTarget"] = data.get("simCodeTarget") or "C"
     data["referenceFileExtension"] = data.get("referenceFileExtension") or "mat"
     data["referenceFileNameDelimiter"] = data.get("referenceFileNameDelimiter") or "."
@@ -32,7 +39,7 @@ def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands):
       data["changeHash"] = data["changeHash"]
     return (data["library"],data)
   except:
-    print("Failed to fix data for: %s with extra args: %s" % (str(data),str((rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands,defaultCustomCommands2))))
+    print("Failed to fix data for: %s with extra args: %s" % (str(data),str((rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands))))
     raise
 
 def readConfig(c,rmlStyle=False,abortSimulationFlag="",alarmFlag="",defaultCustomCommands=[]):

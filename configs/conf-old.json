@@ -1,0 +1,19 @@
+[
+  {
+    "library":"Buildings",
+    "libraryVersion":"1.6"
+  },
+  {
+    "library":"Buildings",
+    "libraryVersion":"2.0.0"
+  },
+  {
+    "library":"Buildings",
+    "libraryVersion":"2.1.0"
+  },
+  {
+    "library":"Modelica",
+    "libraryVersion":"3.1",
+    "referenceFiles":"$REFERENCEFILES/msl31"
+  }
+]
