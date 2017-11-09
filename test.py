@@ -287,7 +287,7 @@ for c in configs_lst:
   configs = configs + c
 for (lib,c) in configs:
   if "referenceFiles" in c:
-    m = re.search("^[$][A-Z]+", data["referenceFiles"])
+    m = re.search("^[$][A-Z]+", c["referenceFiles"])
     if m:
       k = m.group(0)[1:]
       if k not in os.environ:
