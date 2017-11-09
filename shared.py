@@ -5,13 +5,6 @@ import simplejson as json
 
 def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands):
   try:
-    if "referenceFiles" in data:
-      m = re.search("^[$][A-Z]+", data["referenceFiles"])
-      if m:
-        k = m.group(0)[1:]
-        if k not in os.environ:
-          raise Exception("Environment variable %s not defined, but used in JSON config for reference files" % k)
-        data["referenceFiles"] = data["referenceFiles"].replace(m.group(0), os.environ[k])
     data["simCodeTarget"] = data.get("simCodeTarget") or "C"
     data["referenceFileExtension"] = data.get("referenceFileExtension") or "mat"
     data["referenceFileNameDelimiter"] = data.get("referenceFileNameDelimiter") or "."

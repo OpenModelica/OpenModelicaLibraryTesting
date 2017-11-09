@@ -90,6 +90,7 @@ except subprocess.CalledProcessError as e:
 parser = argparse.ArgumentParser(description='OpenModelica library testing tool')
 parser.add_argument('configs', nargs='*')
 parser.add_argument('--branch', default='master')
+parser.add_argument('--fmi', default=False)
 parser.add_argument('--output', default='')
 parser.add_argument('--extraflags', default='')
 parser.add_argument('--ompython_omhome', default='')
@@ -106,6 +107,7 @@ clean = not args.noclean
 extraflags = args.extraflags
 ompython_omhome = args.ompython_omhome
 fmisimulator = args.fmisimulator or None
+allTestsFmi = args.fmi
 print("branch: %s, n_jobs: %d" % (branch, n_jobs))
 if clean:
   print("Removing temporary files, etc to the best ability of the script")
@@ -174,6 +176,8 @@ if fmisimulator:
   fmisimulatorversion = subprocess.check_output([fmisimulator, "-v"], stderr=subprocess.STDOUT).strip()
   print(fmisimulatorversion)
 else:
+  if allTestsFmi:
+    raise Exception("No OMSimulator; trying to simulate using FMI")
   print("No OMSimulator")
 
 sys.stdout.flush()
@@ -281,6 +285,16 @@ configs_lst = [readConfig(c, rmlStyle=rmlStyle, abortSimulationFlag=abortSimulat
 configs = []
 for c in configs_lst:
   configs = configs + c
+for c in configs:
+  if "referenceFiles" in c:
+    m = re.search("^[$][A-Z]+", data["referenceFiles"])
+    if m:
+      k = m.group(0)[1:]
+      if k not in os.environ:
+        raise Exception("Environment variable %s not defined, but used in JSON config for reference files" % k)
+      c["referenceFiles"] = c["referenceFiles"].replace(m.group(0), os.environ[k])
+  if allTestsFmi:
+    c["fmi"] = "2.0"
 
 # Create mos-files
 
