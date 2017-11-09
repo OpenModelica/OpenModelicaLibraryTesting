@@ -697,7 +697,19 @@ for libname in stats_by_libname.keys():
   open("%s.html" % libname, "w").write(multiple_replace(htmltpl, *replacements))
   if result_location != "":
     result_location_libname = "%s/%s" % (result_location, libname)
-    cmd = ["rsync", "-a", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", result_location_libname]
+    try:
+      os.mkdir("emptydir")
+    except:
+      pass
+    cmd = ["rsync", "emptydir/", result_location]
+    if 0 != call(cmd):
+      print("Error: Failed to create dir for rsync: %s" % cmd)
+      sys.exit(1)
+    cmd = ["rsync", "emptydir/", result_location_libname]
+    if 0 != call(cmd):
+      print("Error: Failed to create dir for rsync: %s" % cmd)
+      sys.exit(1)
+    cmd = ["rsync", "-aR", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", result_location_libname]
     if 0 != call(cmd):
       print("Error: Failed to rsync files: %s" % cmd)
       sys.exit(1)
