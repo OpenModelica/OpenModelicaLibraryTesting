@@ -285,7 +285,7 @@ configs_lst = [readConfig(c, rmlStyle=rmlStyle, abortSimulationFlag=abortSimulat
 configs = []
 for c in configs_lst:
   configs = configs + c
-for c in configs:
+for (lib,c) in configs:
   if "referenceFiles" in c:
     m = re.search("^[$][A-Z]+", data["referenceFiles"])
     if m:
