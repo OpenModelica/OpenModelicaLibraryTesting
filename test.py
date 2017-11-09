@@ -701,18 +701,10 @@ for libname in stats_by_libname.keys():
       os.mkdir("emptydir")
     except:
       pass
-    cmd = ["rsync", "emptydir/", result_location]
-    if 0 != call(cmd):
-      print("Error: Failed to create dir for rsync: %s" % cmd)
-      sys.exit(1)
-    cmd = ["rsync", "emptydir/", result_location_libname]
-    if 0 != call(cmd):
-      print("Error: Failed to create dir for rsync: %s" % cmd)
-      sys.exit(1)
-    cmd = ["rsync", "-aR", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", result_location_libname]
-    if 0 != call(cmd):
-      print("Error: Failed to rsync files: %s" % cmd)
-      sys.exit(1)
+    subprocess.check_output(["rsync", "-aR", "emptydir/", result_location])
+    subprocess.check_output(["rsync", "-aR", "emptydir/", result_location_libname])
+    subprocess.check_output(["rsync", "-aR", "emptydir/", result_location_libname+"/files"])
+    subprocess.check_output(["rsync", "-aR", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", result_location_libname])
     if (conf.get("referenceFiles") or "") != "":
       shutil.copy(dygraphs, result_location_libname+"/files/")
 
