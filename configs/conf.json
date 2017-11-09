@@ -136,6 +136,9 @@
     "library":"HelmholtzMedia"
   },
   {
+    "library":"IndustrialControlSystems"
+  },
+  {
     "library":"IdealizedContact"
   },
   {
