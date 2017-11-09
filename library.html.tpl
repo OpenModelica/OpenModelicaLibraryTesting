@@ -30,6 +30,7 @@
 </table>
 
 <p>Total time taken: #totalTime#</p>
+<p>System info: #sysInfo#</p>
 <p>OpenModelica Version: #omcVersion#</p>
 #fmi#
 <p>Test started: #timeStart#</p>

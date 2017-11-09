@@ -4,7 +4,7 @@
 # TODO: When libraries hash changes, run with the old OMC against the new libs
 #       Then run with the new OMC against the new libs
 
-import cgi, shutil, sys, os, re, glob, time, argparse, sqlite3, datetime
+import cgi, shutil, sys, os, re, glob, time, argparse, sqlite3, datetime, math, platform
 from joblib import Parallel, delayed
 import simplejson as json
 import psutil, subprocess, threading, hashlib
@@ -604,6 +604,13 @@ def checkPhase(phase, n):
 def is_non_zero_file(fpath):
     return os.path.isfile(fpath) and os.path.getsize(fpath) > 0
 
+def cpu_name():
+  for line in open("/proc/cpuinfo").readlines():
+    if "model name" in line.strip():
+      return (re.sub( ".*model name.*:", "", line,1)).strip()
+
+sysInfo = "%s, %d GB RAM, %s" % (cpu_name(), int(math.ceil(psutil.virtual_memory().total / (1024.0**3))), subprocess.check_output(["lsb_release","-sd"]).strip())
+
 htmltpl=open("library.html.tpl").read()
 for libname in stats_by_libname.keys():
   if libname in skipped_libs:
@@ -655,6 +662,7 @@ for libname in stats_by_libname.keys():
     for s in natsorted(stats, key=lambda s: s[1])])
   numSucceeded = [len(stats)] + [sum(1 if s[3]["phase"]>=i else 0 for s in stats) for i in range(1,8)]
   replacements = (
+    (u"#sysInfo#", cgi.escape(sysInfo)),
     (u"#omcVersion#", cgi.escape(omc_version)),
     (u"#fmi#", ("<p>"+cgi.escape("FMI version: %s" % conf.get("fmi"))+"</p>") if conf.get("fmi") else ""),
     (u"#optlevel#", cgi.escape(conf.get("optlevel")) if (canChangeOptLevel and conf.get("optlevel")) else "Tool default"),
