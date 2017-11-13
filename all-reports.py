@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import codecs
 import sys, argparse, subprocess, os
 import simplejson as json
 import shared
@@ -186,8 +187,8 @@ for branch in branches:
         emails_to_send[email]["html"].append(email_summary_html)
     if not os.path.exists(os.path.dirname(fname)):
       os.makedirs(os.path.dirname(fname))
-    with open(fname, "w") as fout:
-      fout.write(str(tpl.encode('utf-8')))
+    with codecs.open(fname, "w", encoding="utf-8") as fout:
+      fout.write(tpl)
     if not os.path.exists(os.path.dirname("%s/%s" % (fnameprefix,branch))):
       os.makedirs("%s/%s" % (fnameprefix,branch))
     with open("%s/%s/00_history.html" % (fnameprefix,branch), "a+") as fout:
