@@ -376,7 +376,7 @@ try:
     fmitmpdir = "temp_%s_fmu" % conf["fileName"].replace(".","_")
     with open("%s.tmpfiles" % conf["fileName"], "a+") as fp:
       fp.write("%s\n" % fmitmpdir)
-    cmd = "%s --tempDir %s --startTime %g --stopTime %g --tolerance %g %s.fmu" % (("-r %s" % resFile) if outputFormat != "empty" else "",fmitmpdir,startTime,stopTime,tolerance,conf["fileName"].replace(".","_"))
+    cmd = "%s --tempDir %s --startTime %g --stopTime %g --timeout %g --tolerance %g %s.fmu" % (("-r %s" % resFile) if outputFormat != "empty" else "",fmitmpdir,startTime,stopTime,conf["ulimitExe"],tolerance,conf["fileName"].replace(".","_"))
     with open(simFile,"w") as fp:
       fp.write("OMSimulator %s\n" % cmd)
     #res = checkOutputTimeout("%s %s >> %s 2>&1" % (conf["fmisimulator"],cmd,simFile), conf["ulimitExe"])
