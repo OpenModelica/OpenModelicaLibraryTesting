@@ -187,7 +187,7 @@ for branch in branches:
     if not os.path.exists(os.path.dirname(fname)):
       os.makedirs(os.path.dirname(fname))
     with open(fname, "w") as fout:
-      fout.write(tpl)
+      fout.write(tpl.encode('utf-8'))
     if not os.path.exists(os.path.dirname("%s/%s" % (fnameprefix,branch))):
       os.makedirs("%s/%s" % (fnameprefix,branch))
     with open("%s/%s/00_history.html" % (fnameprefix,branch), "a+") as fout:
