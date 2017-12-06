@@ -89,7 +89,8 @@
   },
   {
     "library":"IBPSA",
-    "libraryVersion":"latest"
+    "libraryVersion":"latest",
+    "extraCustomCommands":["setCommandLineOptions(\"-d=ignoreCycles\")"]
   },
   {
     "library":"Buildings",

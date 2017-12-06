@@ -380,7 +380,7 @@ try:
     with open(simFile,"w") as fp:
       fp.write("OMSimulator %s\n" % cmd)
     #res = checkOutputTimeout("%s %s >> %s 2>&1" % (conf["fmisimulator"],cmd,simFile), conf["ulimitExe"])
-    res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,conf["fmisimulator"],cmd,conf["fileName"]), conf["ulimitExe"])
+    res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,conf["fmisimulator"],cmd,conf["fileName"]), 1.05*conf["ulimitExe"])
   else:
     cmd = "./%s %s %s %s" % (conf["fileName"],conf["simFlags"],annotationSimFlags,emit_protected)
     with open(simFile,"w") as fp:
