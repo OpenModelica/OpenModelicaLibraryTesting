@@ -17,6 +17,13 @@ import shared
 
 import signal
 
+def rmtree(f):
+  try:
+    shutil.rmtree(f)
+  except UnicodeDecodeError:
+    # Yes, we can get UnicodeDecodeError because shutil.rmtree is poorly implemented
+    subprocess.check_call(["rm", "-rf", f], stderr=subprocess.STDOUT)
+
 def print_linenum(signum, frame):
     print "Currently at line", frame.f_lineno
 
@@ -71,11 +78,11 @@ def runCommand(cmd, prefix, timeout):
     for line in lines:
       f = line.strip()
       if os.path.isdir(f):
-        shutil.rmtree(f)
+        rmtree(f)
       elif os.path.exists(f):
         os.unlink(f)
     try:
-      shutil.rmtree(prefix)
+      rmtree(prefix)
     except OSError:
       pass
 
@@ -518,7 +525,7 @@ sys.stdout.flush()
 # Cleanup old runs
 try:
   if clean:
-    shutil.rmtree("./files")
+    rmtree("./files")
     print("Cleaned files directory")
 except OSError:
   pass
@@ -721,11 +728,11 @@ if clean:
   for g in ["*.o","*.so","*.h","*.c","*.cpp","*.simsuccess","*.conf.json","*.tmpfiles","*.log","*.libs","OMCpp*","*.fmu*","temp_*"]:
     for f in glob.glob(g):
       if os.path.isdir(f):
-        shutil.rmtree(f)
+        rmtree(f)
       elif os.path.exists(f):
         os.unlink(f)
 if clean:
-  shutil.rmtree("files/")
+  rmtree("files/")
 
 # Do not commit until we have generated and uploaded the reports
 conn.commit()
