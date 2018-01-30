@@ -96,6 +96,7 @@ parser.add_argument('--extraflags', default='')
 parser.add_argument('--ompython_omhome', default='')
 parser.add_argument('--noclean', action="store_true", default=False)
 parser.add_argument('--fmisimulator', default='')
+parser.add_argument('--ulimitvmem', help="Virtual memory limit (in kB)", type=int, default=4*1024*1024)
 parser.add_argument('-n', default=psutil.cpu_count(logical=False))
 
 args = parser.parse_args()
@@ -108,6 +109,7 @@ extraflags = args.extraflags
 ompython_omhome = args.ompython_omhome
 fmisimulator = args.fmisimulator or None
 allTestsFmi = args.fmi
+ulimitMemory = args.ulimitvmem
 print("branch: %s, n_jobs: %d" % (branch, n_jobs))
 if clean:
   print("Removing temporary files, etc to the best ability of the script")
@@ -373,6 +375,7 @@ for (library,conf) in configs:
   conf["omhome"] = omhome
   conf["single_thread_cmd"] = single_thread
   conf["haveCppRuntime"] = haveCppRuntime
+  conf["ulimitMemory"] = data.get("ulimitMemory") or ulimitMemory
   if conf.get("fmi"):
     conf["haveFMI"] = fmiOK_C
     conf["haveFMICpp"] = fmiOK_Cpp
