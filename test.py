@@ -375,7 +375,7 @@ for (library,conf) in configs:
   conf["omhome"] = omhome
   conf["single_thread_cmd"] = single_thread
   conf["haveCppRuntime"] = haveCppRuntime
-  conf["ulimitMemory"] = data.get("ulimitMemory") or ulimitMemory
+  conf["ulimitMemory"] = conf.get("ulimitMemory") or ulimitMemory
   if conf.get("fmi"):
     conf["haveFMI"] = fmiOK_C
     conf["haveFMICpp"] = fmiOK_Cpp
