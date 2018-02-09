@@ -2,6 +2,7 @@
   {
     "library":"Modelica",
     "libraryVersion":"trunk",
+    "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
     "referenceFiles":"$MSLREFERENCE/v3.2.2+build.0-beta.3",
@@ -10,6 +11,7 @@
   {
     "library":"Modelica",
     "libraryVersion":"3.2.2",
+    "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
     "allReferenceFilesExist":false,
@@ -19,6 +21,7 @@
   {
     "library":"Modelica",
     "libraryVersion":"3.2.1",
+    "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
     "allReferenceFilesExist":true,
@@ -27,6 +30,7 @@
   {
     "library":"ModelicaTest",
     "libraryVersion":"trunk",
+    "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
     "referenceFiles":"$MSLREFERENCE/v3.2.2+build.0-beta.3",
@@ -35,6 +39,7 @@
   {
     "library":"ModelicaTest",
     "libraryVersion":"3.2.2",
+    "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
     "referenceFiles":"$MSLREFERENCE/v3.2.2+build.0-beta.3"
@@ -42,6 +47,7 @@
   {
     "library":"ModelicaTestOverdetermined",
     "libraryVersion":"3.2.2",
+    "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
     "referenceFiles":"$MSLREFERENCE/v3.2.2+build.0-beta.3"
@@ -49,6 +55,7 @@
   {
     "library":"ModelicaTest",
     "libraryVersion":"3.2.1",
+    "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
     "referenceFiles":"$MSLREFERENCE/v3.2.1+build.4"
