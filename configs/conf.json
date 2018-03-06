@@ -141,6 +141,9 @@
     "library":"FCSys"
   },
   {
+    "library":"HanserModelica"
+  },
+  {
     "library":"HelmholtzMedia"
   },
   {
