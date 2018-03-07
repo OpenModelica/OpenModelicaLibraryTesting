@@ -209,6 +209,10 @@
     "library":"SolarTherm"
   },
   {
+    "library":"SolarTherm",
+    "libraryVersion":"alberto-merge"
+  },
+  {
     "library":"Spot"
   },
   {
