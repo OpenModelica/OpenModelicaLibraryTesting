@@ -243,10 +243,10 @@ def testHelloWorld(cmd):
 
 for cmd in [
   'setCommandLineOptions("%s=nogen");' % debug,
-  'setCommandLineOptions("%s=initialization);' % debug,
-  'setCommandLineOptions("%s=backenddaeinfo);' % debug,
-  'setCommandLineOptions("%s=discreteinfo);' % debug,
-  'setCommandLineOptions("%s=stateselection);' % debug,
+  'setCommandLineOptions("%s=initialization");' % debug,
+  'setCommandLineOptions("%s=backenddaeinfo");' % debug,
+  'setCommandLineOptions("%s=discreteinfo");' % debug,
+  'setCommandLineOptions("%s=stateselection");' % debug,
   'setCommandLineOptions("%s=execstat");' % debug,
   'setMatchingAlgorithm("PFPlusExt");',
   'setIndexReductionMethod("dynamicStateSelection");'
