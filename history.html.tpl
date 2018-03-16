@@ -27,6 +27,7 @@
 <tr><th>Commit</th><th>Author</th><th>Summary</th></tr>
 #OMCGITLOG#
 </table>
+#3rdParty#
 
 <h2>Library Changes</h2>
 <table>

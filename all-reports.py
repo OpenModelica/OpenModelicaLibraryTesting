@@ -77,12 +77,24 @@ for branch in branches:
       continue
     v1 = getTagOrVersion(entries[i-1][1])
     v2 = getTagOrVersion(entries[i][1])
+    thirdPartyChanged = ""
     with open("history.html.tpl") as fin:
       tpl = fin.read()
     emails_current = set(["openmodelicabuilds@ida.liu.se"])
     if v1 != v2:
       try:
-        gitlog = subprocess.check_output(["git", "log", '--pretty=<tr><td><a href="%s/%%h">%%h</a></td><td>%%an</td><td>%%s</td></tr>' % githuburl, "%s..%s" % (v1,v2)], cwd=omcgitdir).decode("utf-8")
+        gitlog = subprocess.check_output(["git", "log", '--pretty=<tr><td><a href="%s/%%h">%%h</a></td><td>%%an</td><td>%%s</td></tr>' % (githuburl), "%s..%s" % (v1,v2)], cwd=omcgitdir).decode("utf-8")
+        t1 = subprocess.check_output(["git", "ls-tree", v1, "3rdParty"], cwd=omcgitdir).decode("utf-8").strip().split(" ")[2].split("\t")[0]
+        t2 = subprocess.check_output(["git", "ls-tree", v2, "3rdParty"], cwd=omcgitdir).decode("utf-8").strip().split(" ")[2].split("\t")[0]
+        if t1 != t2:
+          try:
+            tv2 = len(subprocess.check_output(["git", "rev-list", "%s..%s" % (t2,t1)], cwd=omcgitdir+"/3rdParty").decode("utf-8").strip().split("\n"))
+          except subprocess.CalledProcessError as e:
+            tv2 = 0
+          if tv2 > 0:
+            thirdPartyChanged = '<h3>3rdParty changes</h3>Note that the 3rdParty libraries <b>REVERTED TO AN OLD COMMIT</b>: <a href="%s">%s..%s</a>' % (githuburl.replace("OMCompiler/commit", "OMCompiler-3rdParty/compare/%s...%s" % (t2,t1)), t1[:12], t2[:12])
+          else:
+            thirdPartyChanged = '<h3>3rdParty changes</h3>Note that the 3rdParty libraries changed: <a href="%s">%s..%s</a>' % (githuburl.replace("OMCompiler/commit", "OMCompiler-3rdParty/compare/%s...%s" % (t1,t2)), t1[:12], t2[:12])
         for email in [email.strip() for email in subprocess.check_output(["git", "log", '--pretty=%ae', "%s..%s" % (v1,v2)], cwd=omcgitdir).decode("utf-8").split("\n")]:
           if "@" not in email:
             continue
@@ -92,7 +104,7 @@ for branch in branches:
         gitlog = "<tr><td>%s..%s</td></tr>" % (v1,v2)
     else:
       gitlog = ""
-    tpl = tpl.replace("#OMCGITLOG#",gitlog).replace("#NUMCOMMITS#",str(gitlog.count("<tr>")))
+    tpl = tpl.replace("#OMCGITLOG#",gitlog).replace("#NUMCOMMITS#",str(gitlog.count("<tr>"))).replace("#3rdParty#",thirdPartyChanged)
     libnames = [libname for (libname,) in cursor.execute("""SELECT libname FROM [%s] WHERE date=? GROUP BY libname""" % branch, (d2,))]
     startdates = {}
     # Get previous date of each library run and group them together for fast queries later
