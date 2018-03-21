@@ -196,7 +196,6 @@
     "library":"ScalableTestSuite",
     "ulimitOmc":300,
     "ulimitExe":300,
-    "extraCustomCommands":["setCommandLineOptions(\"--daeMode=new\")"],
     "optlevel":"-Os -march=native"
   },
   {
