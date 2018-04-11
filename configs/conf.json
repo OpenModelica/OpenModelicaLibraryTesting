@@ -199,6 +199,13 @@
     "optlevel":"-Os -march=native"
   },
   {
+    "library":"ScalableTestSuite",
+    "configExtraName":"noopt",
+    "ulimitOmc":300,
+    "ulimitExe":300,
+    "optlevel":"-O0"
+  },
+  {
     "library":"SiemensPower"
   },
   {
