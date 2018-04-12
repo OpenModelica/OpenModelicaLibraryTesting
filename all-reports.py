@@ -34,6 +34,7 @@ dates_str = {}
 fields = ["exectime", "frontend", "backend", "simcode", "templates", "compile", "simulate", "verify"]
 entryhead = "<tr><th>Branch</th><th>Total</th><th>Frontend</th><th>Backend</th><th>SimCode</th><th>Templates</th><th>Compilation</th><th>Simulation</th><th>Verification</th>\n"
 
+timeMinPhase = 4 # Need to have completed code generation to report performance regressions
 timeRel = 1.7 # Minimum 1.7x time is registered as a performance regression
 timeAbs = 10 # Ignore performance regressions for times <10s...
 
@@ -124,14 +125,16 @@ for branch in branches:
     (SELECT model,libname,finalphase,frontend,backend,simcode,templates,compile,simulate FROM [%s] WHERE date IN (?,?) AND libname IN (%s) ORDER BY date)
   GROUP BY model,libname HAVING
     (MIN(finalphase) <> MAX(finalphase)) OR
-    (MAX(frontend) > ?*MIN(frontend) AND MAX(frontend) > ?) OR
-    (MAX(backend) > ?*MIN(backend) AND MAX(backend) > ?) OR
-    (MAX(simcode) > ?*MIN(simcode) AND MAX(simcode) > ?) OR
-    (MAX(templates) > ?*MIN(templates) AND MAX(templates) > ?) OR
-    (MAX(compile) > ?*MIN(compile) AND MAX(compile) > ?) OR
-    (MAX(simulate) > ?*MIN(simulate) AND MAX(simulate) > ?)
+    ((MIN(finalphase) >= ?) AND
+      (MAX(frontend) > ?*MIN(frontend) AND MAX(frontend) > ?) OR
+      (MAX(backend) > ?*MIN(backend) AND MAX(backend) > ?) OR
+      (MAX(simcode) > ?*MIN(simcode) AND MAX(simcode) > ?) OR
+      (MAX(templates) > ?*MIN(templates) AND MAX(templates) > ?) OR
+      (MAX(compile) > ?*MIN(compile) AND MAX(compile) > ?) OR
+      (MAX(simulate) > ?*MIN(simulate) AND MAX(simulate) > ?)
+    )
   """ % (branch,",".join(["'%s'" % libname for libname in startdates[d1lib]]))
-      cursor.execute(query, (d1lib,d2,timeRel,timeAbs,timeRel,timeAbs,timeRel,timeAbs,timeRel,timeAbs,timeRel,2*timeAbs,timeRel,timeAbs))
+      cursor.execute(query, (d1lib,d2,timeMinPhase,timeRel,timeAbs,timeRel,timeAbs,timeRel,timeAbs,timeRel,timeAbs,timeRel,2*timeAbs,timeRel,timeAbs))
       regressions += cursor.fetchall()
     regressions = sorted(regressions, key = lambda x: (x[1],x[0]))
     libs = set()
@@ -153,7 +156,7 @@ for branch in branches:
         numRegression += 1
       if color is not None:
         msg = "%s &rarr; %s" % (shared.finalphaseName(phase1),shared.finalphaseName(phase2))
-      else:
+      elif min(phase1,phase2) >= timeMinPhase:
         msgs = []
         for (phase,times) in [(1,frontend),(2,backend),(3,simcode),(4,templates),(5,compile),(6,simulate)]:
           (t1,t2) = [float(d) for d in times.split(",")]
