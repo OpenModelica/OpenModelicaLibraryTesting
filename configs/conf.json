@@ -159,6 +159,9 @@
     "library":"KeyWordIO"
   },
   {
+    "library":"LibRAS"
+  },
+  {
     "library":"MessagePack"
   },
   {
