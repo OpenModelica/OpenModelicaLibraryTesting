@@ -59,6 +59,9 @@ def getTagOrVersion(v):
 def libraryLink(branch, libname):
   return '<a href="%s/%s/%s/%s.html">%s</a>' % (baseurl,branch,libname,libname,libname)
 
+def is_non_zero_file(fpath):
+    return os.path.isfile(fpath) and os.path.getsize(fpath) > 0
+
 def modelLink(libname, modelname, extension):
   filename = "files/%s_%s.%s" % (libname, modelname, extension)
   if is_non_zero_file(filename):
