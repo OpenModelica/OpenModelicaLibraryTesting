@@ -59,6 +59,13 @@ def getTagOrVersion(v):
 def libraryLink(branch, libname):
   return '<a href="%s/%s/%s/%s.html">%s</a>' % (baseurl,branch,libname,libname,libname)
 
+def modelLink(libname, modelname, extension):
+  filename = "files/%s_%s.%s" % (libname, modelname, extension)
+  if is_non_zero_file(filename):
+    return '<a href="%s">%s</a>' % (filename, modelname)
+  else:
+    return modelname
+
 emails_to_send = {}
 for branch in branches:
   try:
@@ -174,7 +181,7 @@ for branch in branches:
         else:
           numPerformanceRegression += 1
         msg = " ".join(msgs)
-      regstrs.append('<tr><td>%s</td><td>%s</td><td class="%s">%s</td></tr>' % (libraryLink(branch, libname),model,color,msg))
+      regstrs.append('<tr><td>%s</td><td>%s</td><td class="%s">%s</td></tr>' % (libraryLink(branch, libname),modelLink(libname, model, ".err"),color,msg))
     tpl = tpl.replace("#NUMIMPROVE#",str(numImproved)).replace("#NUMREGRESSION#",str(numRegression)).replace("#NUMPERFIMPROVE#",str(numPerformanceImproved)).replace("#NUMPERFREGRESSION#",str(numPerformanceRegression)).replace("#MODELCHANGES#", "\n".join(regstrs))
     tpl = tpl.replace("#BRANCH#",branch).replace("#DATE1#",dateStr(d1)).replace("#DATE2#",dateStr(d2))
 
