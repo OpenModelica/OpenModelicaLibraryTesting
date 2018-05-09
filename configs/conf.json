@@ -159,7 +159,8 @@
     "library":"KeyWordIO"
   },
   {
-    "library":"LibRAS"
+    "library":"LibRAS",
+    "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"]
   },
   {
     "library":"MessagePack"
