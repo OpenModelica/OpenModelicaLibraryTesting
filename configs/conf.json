@@ -200,14 +200,28 @@
     "library":"ScalableTestSuite",
     "ulimitOmc":300,
     "ulimitExe":300,
-    "optlevel":"-Os -march=native"
+    "optlevel":"-Os -march=native",
+    "referenceFileExtension":"mat",
+    "referenceFileNameDelimiter":".",
+    "referenceFinalDot":"_res.",
+    "referenceFiles":{
+      "giturl":"https://github.com/casella/ScalableTestSuite-ref",
+      "destination":"ReferenceFiles/ScalableTestSuite"
+    }
   },
   {
     "library":"ScalableTestSuite",
     "configExtraName":"noopt",
     "ulimitOmc":300,
     "ulimitExe":300,
-    "optlevel":"-O0"
+    "optlevel":"-O0",
+    "referenceFileExtension":"mat",
+    "referenceFileNameDelimiter":".",
+    "referenceFinalDot":"_res.",
+    "referenceFiles":{
+      "giturl":"https://github.com/casella/ScalableTestSuite-ref",
+      "destination":"ReferenceFiles/ScalableTestSuite"
+    }
   },
   {
     "library":"SiemensPower"

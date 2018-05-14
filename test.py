@@ -292,16 +292,38 @@ alarmFlag="-alarm" if simulationAcceptsFlag("-alarm=480") else ""
 
 configs_lst = [readConfig(c, rmlStyle=rmlStyle, abortSimulationFlag=abortSimulationFlag, alarmFlag=alarmFlag, defaultCustomCommands=defaultCustomCommands) for c in configs]
 configs = []
+preparedReferenceDirs = set()
 for c in configs_lst:
   configs = configs + c
 for (lib,c) in configs:
   if "referenceFiles" in c:
-    m = re.search("^[$][A-Z]+", c["referenceFiles"])
+    c["referenceFilesURL"] = c["referenceFiles"]
+    if isinstance(c["referenceFiles"], basestring):
+      m = re.search("^[$][A-Z]+", c["referenceFiles"])
+    else:
+      m = None
     if m:
       k = m.group(0)[1:]
       if k not in os.environ:
         raise Exception("Environment variable %s not defined, but used in JSON config for reference files" % k)
       c["referenceFiles"] = c["referenceFiles"].replace(m.group(0), os.environ[k])
+    elif "giturl" in c["referenceFiles"] and not c["referenceFiles"]["destination"] in preparedReferenceDirs:
+      giturl = c["referenceFiles"]["giturl"]
+      destination = c["referenceFiles"]["destination"]
+      preparedReferenceDirs.add(destination)
+      if not os.path.isdir(destination):
+        subprocess.check_call(["git", "clone", giturl, destination], stderr=subprocess.STDOUT)
+      destination = os.path.realpath(destination)
+      subprocess.check_call(["git", "fetch", giturl], stderr=subprocess.STDOUT, cwd=destination)
+      subprocess.check_call(["git", "reset", "--hard", "origin/master"], stderr=subprocess.STDOUT, cwd=destination)
+      githash = subprocess.check_output(["git", "rev-parse", "--verify", "HEAD"], stderr=subprocess.STDOUT, cwd=destination)
+      c["referenceFiles"] = destination
+      if giturl.startswith("https://github.com"):
+        c["referenceFilesURL"] = '<a href="%s/tree/%s">%s (%s)</a>' % (giturl,githash.strip(),giturl,githash.strip())
+      else:
+        c["referenceFilesURL"] = "%s (%s)" % (giturl,githash.strip())
+
+
   if allTestsFmi:
     c["fmi"] = "2.0"
 
@@ -347,9 +369,9 @@ def strToHashInt(s):
 def findAllFiles(d):
   res = []
   for root, dirs, files in os.walk(d):
-    res += [os.path.join(root, f) for f in files]
-    for d in dirs:
-      res += findAllFiles(d)
+    if "/." in root:
+      continue
+    res += [os.path.join(root, f) for f in files if f[0]!="."]
   return res
 
 def getmd5(f):
@@ -375,7 +397,12 @@ skipped_libs = {}
 tests=[]
 for (library,conf) in configs:
   if "referenceFiles" in conf:
-    confighash = strToHashInt(str(conf)+hashReferenceFiles(conf["referenceFiles"]))
+    c=conf.copy()
+    del(c["referenceFilesURL"])
+    print("deleted referenceFilesURL")
+    print(str(c))
+    confighash = strToHashInt(str(c)+hashReferenceFiles(conf["referenceFiles"]))
+    print("confighash",conf["referenceFilesURL"])
   else:
     confighash = strToHashInt(str(conf)+hashReferenceFiles(""))
   conf["confighash"] = confighash
@@ -456,7 +483,7 @@ for (modelName,library,libName,name,conf) in tests:
     (u"#reference_reltolDiffMinMax#", str(conf["reference_reltolDiffMinMax"])),
     (u"#reference_rangeDelta#", str(conf["reference_rangeDelta"])),
     (u"#simFlags#", conf["simFlags"]),
-    (u"#referenceFiles#", str(conf.get("referenceFiles") or "")),
+    (u"#referenceFiles#", str(conf.get("referenceFilesURL") or conf.get("referenceFiles") or "")),
     (u"#referenceFileNameDelimiter#", conf["referenceFileNameDelimiter"]),
     (u"#referenceFileExtension#", conf["referenceFileExtension"]),
   )
@@ -684,7 +711,7 @@ for libname in stats_by_libname.keys():
     (u"#ulimitExe#", cgi.escape(str(conf["ulimitExe"]))),
     (u"#default_tolerance#", cgi.escape(str(conf["default_tolerance"]))),
     (u"#simFlags#", cgi.escape(conf.get("simFlags") or "")),
-    (u"#referenceFiles#", ('<p>Reference Files: %s</p>' % cgi.escape(conf["referenceFiles"].replace(os.path.dirname(os.path.realpath(__file__)),""))) if ((conf.get("referenceFiles") or "") <> "") else ""),
+    (u"#referenceFiles#", ('<p>Reference Files: %s</p>' % conf["referenceFilesURL"].replace(os.path.dirname(os.path.realpath(__file__)),""))) if ((conf.get("referenceFilesURL") or "") <> "") else "",
     (u"#referenceTool#", ('<p>Verified using: %s (diffSimulationResults)</p>' % cgi.escape(ompython_omc_version)) if ((conf.get("referenceFiles") or "") <> "") else ""),
     (u"#Total#", cgi.escape(str(numSucceeded[0]))),
     (u"#FrontendColor#", checkNumSucceeded(numSucceeded, 1)),
