@@ -711,7 +711,7 @@ for libname in stats_by_libname.keys():
     (u"#ulimitExe#", cgi.escape(str(conf["ulimitExe"]))),
     (u"#default_tolerance#", cgi.escape(str(conf["default_tolerance"]))),
     (u"#simFlags#", cgi.escape(conf.get("simFlags") or "")),
-    (u"#referenceFiles#", ('<p>Reference Files: %s</p>' % conf["referenceFilesURL"].replace(os.path.dirname(os.path.realpath(__file__)),""))) if ((conf.get("referenceFilesURL") or "") <> "") else "",
+    (u"#referenceFiles#", ('<p>Reference Files: %s</p>' % conf["referenceFilesURL"].replace(os.path.dirname(os.path.realpath(__file__)),"")) if ((conf.get("referenceFilesURL") or "") <> "") else ""),
     (u"#referenceTool#", ('<p>Verified using: %s (diffSimulationResults)</p>' % cgi.escape(ompython_omc_version)) if ((conf.get("referenceFiles") or "") <> "") else ""),
     (u"#Total#", cgi.escape(str(numSucceeded[0]))),
     (u"#FrontendColor#", checkNumSucceeded(numSucceeded, 1)),
