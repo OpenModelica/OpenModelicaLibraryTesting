@@ -292,7 +292,7 @@ alarmFlag="-alarm" if simulationAcceptsFlag("-alarm=480") else ""
 
 configs_lst = [readConfig(c, rmlStyle=rmlStyle, abortSimulationFlag=abortSimulationFlag, alarmFlag=alarmFlag, defaultCustomCommands=defaultCustomCommands) for c in configs]
 configs = []
-preparedReferenceDirs = set()
+preparedReferenceDirs = {}
 for c in configs_lst:
   configs = configs + c
 for (lib,c) in configs:
@@ -305,21 +305,24 @@ for (lib,c) in configs:
         if k not in os.environ:
           raise Exception("Environment variable %s not defined, but used in JSON config for reference files" % k)
         c["referenceFiles"] = c["referenceFiles"].replace(m.group(0), os.environ[k])
-    elif "giturl" in c["referenceFiles"] and not c["referenceFiles"]["destination"] in preparedReferenceDirs:
+    elif "giturl" in c["referenceFiles"]:
+      if c["referenceFiles"]["destination"] in preparedReferenceDirs:
+        (c["referenceFiles"],c["referenceFilesURL"]) = preparedReferenceDirs["referenceFiles"]
+        continue
       giturl = c["referenceFiles"]["giturl"]
       destination = c["referenceFiles"]["destination"]
-      preparedReferenceDirs.add(destination)
       if not os.path.isdir(destination):
         subprocess.check_call(["git", "clone", giturl, destination], stderr=subprocess.STDOUT)
-      destination = os.path.realpath(destination)
+      destinationReal = os.path.realpath(destination)
       subprocess.check_call(["git", "fetch", giturl], stderr=subprocess.STDOUT, cwd=destination)
-      subprocess.check_call(["git", "reset", "--hard", "origin/master"], stderr=subprocess.STDOUT, cwd=destination)
-      githash = subprocess.check_output(["git", "rev-parse", "--verify", "HEAD"], stderr=subprocess.STDOUT, cwd=destination)
-      c["referenceFiles"] = destination
+      subprocess.check_call(["git", "reset", "--hard", "origin/master"], stderr=subprocess.STDOUT, cwd=destinationReal)
+      githash = subprocess.check_output(["git", "rev-parse", "--verify", "HEAD"], stderr=subprocess.STDOUT, cwd=destinationReal)
+      c["referenceFiles"] = destinationReal
       if giturl.startswith("https://github.com"):
         c["referenceFilesURL"] = '<a href="%s/tree/%s">%s (%s)</a>' % (giturl,githash.strip(),giturl,githash.strip())
       else:
         c["referenceFilesURL"] = "%s (%s)" % (giturl,githash.strip())
+      preparedReferenceDirs[destination] = (c["referenceFiles"],c["referenceFilesURL"])
     else:
       raise Exception("Unknown referenceFiles in config: %s" % (str(c)))
 
