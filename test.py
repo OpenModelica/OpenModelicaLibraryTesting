@@ -307,7 +307,7 @@ for (lib,c) in configs:
         c["referenceFiles"] = c["referenceFiles"].replace(m.group(0), os.environ[k])
     elif "giturl" in c["referenceFiles"]:
       if c["referenceFiles"]["destination"] in preparedReferenceDirs:
-        (c["referenceFiles"],c["referenceFilesURL"]) = preparedReferenceDirs["referenceFiles"]
+        (c["referenceFiles"],c["referenceFilesURL"]) = preparedReferenceDirs[destination]
         continue
       giturl = c["referenceFiles"]["giturl"]
       destination = c["referenceFiles"]["destination"]
