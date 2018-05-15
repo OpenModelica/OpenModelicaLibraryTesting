@@ -300,13 +300,11 @@ for (lib,c) in configs:
     c["referenceFilesURL"] = c["referenceFiles"]
     if isinstance(c["referenceFiles"], basestring):
       m = re.search("^[$][A-Z]+", c["referenceFiles"])
-    else:
-      m = None
-    if m:
-      k = m.group(0)[1:]
-      if k not in os.environ:
-        raise Exception("Environment variable %s not defined, but used in JSON config for reference files" % k)
-      c["referenceFiles"] = c["referenceFiles"].replace(m.group(0), os.environ[k])
+      if m:
+        k = m.group(0)[1:]
+        if k not in os.environ:
+          raise Exception("Environment variable %s not defined, but used in JSON config for reference files" % k)
+        c["referenceFiles"] = c["referenceFiles"].replace(m.group(0), os.environ[k])
     elif "giturl" in c["referenceFiles"] and not c["referenceFiles"]["destination"] in preparedReferenceDirs:
       giturl = c["referenceFiles"]["giturl"]
       destination = c["referenceFiles"]["destination"]
@@ -322,6 +320,8 @@ for (lib,c) in configs:
         c["referenceFilesURL"] = '<a href="%s/tree/%s">%s (%s)</a>' % (giturl,githash.strip(),giturl,githash.strip())
       else:
         c["referenceFilesURL"] = "%s (%s)" % (giturl,githash.strip())
+    else:
+      raise Exception("Unknown referenceFiles in config: %s" % (str(c)))
 
 
   if allTestsFmi:
@@ -399,10 +399,7 @@ for (library,conf) in configs:
   if "referenceFiles" in conf:
     c=conf.copy()
     del(c["referenceFilesURL"])
-    print("deleted referenceFilesURL")
-    print(str(c))
     confighash = strToHashInt(str(c)+hashReferenceFiles(conf["referenceFiles"]))
-    print("confighash",conf["referenceFilesURL"])
   else:
     confighash = strToHashInt(str(conf)+hashReferenceFiles(""))
   conf["confighash"] = confighash
