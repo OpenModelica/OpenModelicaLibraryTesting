@@ -265,7 +265,7 @@ if conf["simCodeTarget"]=="C" and sendExpressionOldOrNew('classAnnotationExists(
     val=sendExpressionOldOrNew('getAnnotationModifierValue(%s,"__OpenModelica_simulationFlags","%s")' % (conf["modelName"],flag))
     flagVal=" -noemit -%s=%s" % (flag,val)
     if shared.simulationAcceptsFlag(flagVal, checkOutput=False, cwd=".."):
-      annotationSimFlags+=flagVal
+      annotationSimFlags+=" -%s=%s" % (flag,val)
     else:
       with open(errFile, 'a+') as fp:
         fp.write("Ignoring simflag %s since it seems broken on HelloWorld\n" % flagVal)
@@ -409,7 +409,7 @@ prefix = "../files/%s.diff" % conf["fileName"]
 
 if not os.path.exists(resFile):
   with open(errFile, 'a+') as fp:
-    fp.write("TODO: How the !@#!# did the simulation report success but not simulation result exists to compare?")
+    fp.write("TODO: How the !@#!# did the simulation report success but simulation result %s does not exist to compare? outputFormat=%s" % (resFile,outputFormat))
   writeResultAndExit(0)
 
 start=monotonic()
