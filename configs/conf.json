@@ -6,6 +6,7 @@
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
     "referenceFiles":"$MSLREFERENCE/v3.2.2+build.0-beta.3",
+    "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.2\") then exit(1); end if;"],
     "optlevel":"-Os -march=native"
   },
   {
@@ -34,6 +35,7 @@
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
     "referenceFiles":"$MSLREFERENCE/v3.2.2+build.0-beta.3",
+    "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.2\") then exit(1); end if;"],
     "optlevel":"-Os -march=native"
   },
   {
