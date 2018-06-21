@@ -104,6 +104,7 @@ parser.add_argument('--ompython_omhome', default='')
 parser.add_argument('--noclean', action="store_true", default=False)
 parser.add_argument('--fmisimulator', default='')
 parser.add_argument('--ulimitvmem', help="Virtual memory limit (in kB)", type=int, default=4*1024*1024)
+parser.add_argument('--default', action='append', help="Add a default value for some configuration key, such as --default=ulimitExe=60. The equals sign is mandatory.")
 parser.add_argument('-n', default=psutil.cpu_count(logical=False))
 
 args = parser.parse_args()
@@ -117,6 +118,7 @@ ompython_omhome = args.ompython_omhome
 fmisimulator = args.fmisimulator or None
 allTestsFmi = args.fmi
 ulimitMemory = args.ulimitvmem
+overrideDefaults = [arg.split("=", 1) for arg in args.default]
 print("branch: %s, n_jobs: %d" % (branch, n_jobs))
 if clean:
   print("Removing temporary files, etc to the best ability of the script")
@@ -290,7 +292,7 @@ assert(os.path.exists("HelloWorld"))
 abortSimulationFlag="-abortSlowSimulation" if simulationAcceptsFlag("-abortSlowSimulation") else ""
 alarmFlag="-alarm" if simulationAcceptsFlag("-alarm=480") else ""
 
-configs_lst = [readConfig(c, rmlStyle=rmlStyle, abortSimulationFlag=abortSimulationFlag, alarmFlag=alarmFlag, defaultCustomCommands=defaultCustomCommands) for c in configs]
+configs_lst = [readConfig(c, rmlStyle=rmlStyle, abortSimulationFlag=abortSimulationFlag, alarmFlag=alarmFlag, overrideDefaults=overrideDefaults, defaultCustomCommands=defaultCustomCommands) for c in configs]
 configs = []
 preparedReferenceDirs = {}
 for c in configs_lst:
