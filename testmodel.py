@@ -338,7 +338,7 @@ else:
   execstat["frontend"]=frontend
 
 with open(errFile, 'a+') as fp:
-  fp.write(err)
+  fp.write(err.encode('ascii', 'ignore'))
 
 if execstat["phase"] < 4:
   writeResultAndExit(0)
