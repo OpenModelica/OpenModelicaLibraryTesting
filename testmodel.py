@@ -420,7 +420,7 @@ if len(diffVars)==0 and referenceOK:
   execstat["phase"]=7
 else:
   with open(errFile, 'a+') as fp:
-    fp.write(omc_new.sendExpression('OpenModelica.Scripting.getErrorString()'), parsed = False)
+    fp.write(omc_new.sendExpression('OpenModelica.Scripting.getErrorString()', parsed = False))
     fp.write("\nVariables in the reference:" )
     fp.write(",".join(referenceVars)+"\n")
     resVars=omc_new.sendExpression('readSimulationResultVars("%s", readParameters=true, openmodelicaStyle=true)' % resFile)
