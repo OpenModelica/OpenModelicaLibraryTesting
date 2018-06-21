@@ -4,7 +4,7 @@
 import argparse, os, sys, signal, threading, psutil, subprocess, shutil
 import simplejson as json
 from monotonic import monotonic
-from OMPython import OMCSession
+from OMPython import FindBestOMCSession, OMCSessionZMQ
 import shared
 
 parser = argparse.ArgumentParser(description='OpenModelica library testing tool helper (single model)')
@@ -154,10 +154,10 @@ if conf.get("fmi"):
 omhome = conf["omhome"]
 os.environ["OPENMODELICAHOME"] = omhome
 
-omc = OMCSession()
+omc = FindBestOMCSession()
 if ompython_omhome != "":
   os.environ["OPENMODELICAHOME"] = ompython_omhome
-  omc_new = OMCSession()
+  omc_new = OMCSessionZMQ()
 else:
   omc_new = omc
 

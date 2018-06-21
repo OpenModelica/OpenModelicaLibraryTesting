@@ -104,7 +104,7 @@ parser.add_argument('--ompython_omhome', default='')
 parser.add_argument('--noclean', action="store_true", default=False)
 parser.add_argument('--fmisimulator', default='')
 parser.add_argument('--ulimitvmem', help="Virtual memory limit (in kB)", type=int, default=4*1024*1024)
-parser.add_argument('--default', action='append', help="Add a default value for some configuration key, such as --default=ulimitExe=60. The equals sign is mandatory.")
+parser.add_argument('--default', action='append', help="Add a default value for some configuration key, such as --default=ulimitExe=60. The equals sign is mandatory.", default=[])
 parser.add_argument('-n', default=psutil.cpu_count(logical=False))
 
 args = parser.parse_args()
@@ -130,7 +130,7 @@ if configs == []:
   print("Error: Expected at least one configuration file to start the library test")
   sys.exit(1)
 
-from OMPython import OMCSession
+from OMPython import OMCSessionZMQ, FindBestOMCSession
 
 version_cmd = "--version"
 single_thread="-n=1"
@@ -149,11 +149,11 @@ if ompython_omhome != "":
     rmlStyle=True
     print("Work-around for RML-style command-line arguments (+version)")
   os.environ["OPENMODELICAHOME"] = ompython_omhome
-  omc = OMCSession()
+  omc = OMCSessionZMQ()
   ompython_omc_version=omc.sendExpression('getVersion()')
   os.environ["OPENMODELICAHOME"] = omhome
 else:
-  omc = OMCSession()
+  omc = FindBestOMCSession()
   omhome=omc.sendExpression('getInstallationDirectoryPath()')
   omc_version=omc.sendExpression('getVersion()')
   ompython_omc_version=omc_version
