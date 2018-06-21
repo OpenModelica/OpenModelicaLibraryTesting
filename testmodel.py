@@ -175,7 +175,7 @@ runningTestsuiteFiles = False
 #  runningTestsuiteFiles = True
 
 # Hide errors for old-school running-testsuite flags...
-omc._omc.sendExpression("getErrorString()")
+omc.sendExpression("getErrorString()", parsed = False)
 
 outputFormat="mat"
 referenceVars=[]
@@ -210,18 +210,18 @@ if regularFileExists(compareVarsFile) then
 # print(variableFilter)
 
 for cmd in conf["customCommands"]:
-  omc._omc.sendExpression(str(cmd))
+  omc.sendExpression(str(cmd), parsed = False)
 
 if conf.get("optlevel"):
   cflags = omc.sendExpression("getCFlags()")
   cflags = cflags.replace("${MODELICAUSERCFLAGS}","").replace("-O0","").replace("-O1","").replace("-O2","").replace("-O3","").replace("-march=native","").strip()
   cflags += " " + conf["optlevel"]
-  omc._omc.sendExpression(str("setCFlags(\"%s\")" % cflags))
+  omc.sendExpression(str("setCFlags(\"%s\")" % cflags), parsed = False)
 
 if conf.get("ulimitMemory"):
   # Use at most 80% of the vmem for the GC heap; some memory will be used for other purposes than the GC itself
   # Note: Only works on 1.13+ OpenModelica; we still need to ulimit the process for safety
-  omc._omc.sendExpression(str("GC_set_max_heap_size(%d);" % (int(conf["ulimitMemory"]*1024*0.8))))
+  omc.sendExpression(str("GC_set_max_heap_size(%d);" % (int(conf["ulimitMemory"]*1024*0.8))), parsed = False)
 
 cmd = 'loadModel(%s, {"%s"})' % (conf["library"], conf["libraryVersion"])
 newOMLoaded = False
@@ -420,7 +420,7 @@ if len(diffVars)==0 and referenceOK:
   execstat["phase"]=7
 else:
   with open(errFile, 'a+') as fp:
-    fp.write(omc_new._omc.sendExpression('OpenModelica.Scripting.getErrorString()'))
+    fp.write(omc_new.sendExpression('OpenModelica.Scripting.getErrorString()'), parsed = False)
     fp.write("\nVariables in the reference:" )
     fp.write(",".join(referenceVars)+"\n")
     resVars=omc_new.sendExpression('readSimulationResultVars("%s", readParameters=true, openmodelicaStyle=true)' % resFile)
