@@ -744,18 +744,18 @@ for libname in stats_by_libname.keys():
       os.mkdir("emptydir")
     except:
       pass
-    subprocess.check_output(["rsync", "-aRvv", "emptydir/", result_location])
-    subprocess.check_output(["rsync", "-aRvv", "emptydir/", result_location_libname])
-    subprocess.check_output(["rsync", "-aRvv", "emptydir/", result_location_libname+"/files"])
+    subprocess.check_output(["rsync", "-aR", "emptydir/", result_location])
+    subprocess.check_output(["rsync", "-aR", "emptydir/", result_location_libname])
+    subprocess.check_output(["rsync", "-aR", "emptydir/", result_location_libname+"/files"])
     try:
-      subprocess.check_output(["rsync", "-aRvv", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", result_location_libname])
+      subprocess.check_output(["rsync", "-aR", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", result_location_libname])
     except:
-      subprocess.check_output(["rsync", "-aRvv", "emptydir/", result_location])
-      subprocess.check_output(["rsync", "-aRvv", "emptydir/", result_location_libname])
-      subprocess.check_output(["rsync", "-aRvv", "emptydir/", result_location_libname+"/files"])
-      subprocess.check_output(["rsync", "-aRvv", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", result_location_libname])
+      subprocess.check_output(["rsync", "-aR", "emptydir/", result_location])
+      subprocess.check_output(["rsync", "-aR", "emptydir/", result_location_libname])
+      subprocess.check_output(["rsync", "-aR", "emptydir/", result_location_libname+"/files"])
+      subprocess.check_output(["rsync", "-aR", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", result_location_libname])
     if (conf.get("referenceFiles") or "") != "":
-      subprocess.check_output(["rsync", "-avv", dygraphs, result_location_libname+"/files"])
+      subprocess.check_output(["rsync", "-a", dygraphs, result_location_libname+"/files"])
 
 if clean:
   for g in ["*.o","*.so","*.h","*.c","*.cpp","*.simsuccess","*.conf.json","*.tmpfiles","*.log","*.libs","OMCpp*","*.fmu*","temp_*"]:
