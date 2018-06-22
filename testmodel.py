@@ -414,7 +414,7 @@ if not os.path.exists(resFile):
 
 start=monotonic()
 (referenceOK,diffVars) = sendExpressionTimeout(omc_new, 'diffSimulationResults("%s","%s","%s",relTol=%g,relTolDiffMinMax=%g,rangeDelta=%g)' %
-                             (resFile, referenceFile, prefix,conf["reference_reltol"],conf["reference_reltolDiffMinMax"],conf["reference_rangeDelta"]), conf["ulimitOmc"])
+                             (resFile, referenceFile, prefix, conf["reference_reltol"],conf["reference_reltolDiffMinMax"], conf["reference_rangeDelta"]), conf["ulimitOmc"])
 execstat["diff"] = {"time":monotonic()-start, "vars":[], "numCompared":len(referenceVars)}
 if len(diffVars)==0 and referenceOK:
   execstat["phase"]=7
