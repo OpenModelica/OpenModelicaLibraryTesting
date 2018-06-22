@@ -665,8 +665,8 @@ for libname in stats_by_libname.keys():
   stats = stats_by_libname[libname]["stats"]
   for s in stats:
     filename_prefix = "files/%s_%s" % (s[2],s[1])
-	filesList.write("/%s*diff*csv\n" % filename_prefix)
-	filesList.write("/%s*diff*html\n" % filename_prefix)
+    filesList.write("/%s*diff*csv\n" % filename_prefix)
+    filesList.write("/%s*diff*html\n" % filename_prefix)
     if is_non_zero_file(filename_prefix+".sim"):
       filesList.write("/%s.sim\n" % filename_prefix)
     if is_non_zero_file(filename_prefix+".err"):
