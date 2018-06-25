@@ -93,10 +93,6 @@
     "library":"AdvancedNoise"
   },
   {
-    "library":"Annex60",
-    "libraryVersion":"1.0.0"
-  },
-  {
     "library":"IBPSA",
     "libraryVersion":"latest",
     "extraCustomCommands":["setCommandLineOptions(\"-d=ignoreCycles\")"]

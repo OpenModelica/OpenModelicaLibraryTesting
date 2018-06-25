@@ -1,5 +1,9 @@
 [
   {
+    "library":"Annex60",
+    "libraryVersion":"1.0.0"
+  },
+  {
     "library":"Buildings",
     "libraryVersion":"1.6"
   },
