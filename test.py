@@ -33,36 +33,21 @@ def runCommand(cmd, prefix, timeout):
   process = [None]
   def target():
     with open(os.devnull, 'w')  as FNULL:
-      process[0] = subprocess.Popen(cmd, shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
+      process[0] = subprocess.Popen(cmd, shell=True, stdout=FNULL, stderr=subprocess.STDOUT, preexec_fn=os.setpgrp)
       process[0].communicate()
 
   thread = threading.Thread(target=target)
   thread.start()
   thread.join(timeout)
 
+  gotTimeout = False
+
   if thread.is_alive():
-    parent = psutil.Process(process[0].pid)
-    killedSome = False
-    for child in parent.children(recursive=True):
-      try:
-        print("Timeout, killing %s: %s" % (cmd, child.name()))
-        child.kill()
-        killedSome = True
-      except:
-        pass
-    if killedSome:
-      thread.join(min(10, timeout))
+    gotTimeout = True
+    os.kill(-process[0].pid, signal.SIGTERM)
+    thread.join(min(10, timeout))
     if thread.is_alive():
-      for child in parent.children(recursive=True):
-        try:
-          print("Timeout, killing %s: %s" % (cmd, child.name()))
-          child.kill()
-        except:
-          pass
-      try:
-        process[0].terminate()
-      except:
-        pass
+      os.kill(-process[0].pid, signal.SIGKILL)
     thread.join()
 
   if clean:
@@ -86,7 +71,7 @@ def runCommand(cmd, prefix, timeout):
     except OSError:
       pass
 
-  return process[0].returncode
+  return 1 if gotTimeout else process[0].returncode
 
 try:
   subprocess.check_output(["./testmodel.py", "--help"], stderr=subprocess.STDOUT)
