@@ -177,6 +177,8 @@ for branch in branches:
         else:
           numPerformanceRegression += 1
         msg = " ".join(msgs)
+      else:
+        msg = "" # Happens if we try to generate a report without previous results
       regstrs.append('<tr><td>%s</td><td>%s</td><td class="%s">%s</td></tr>' % (libraryLink(branch, libname),modelLink(libname, model, "err"),color,msg))
     tpl = tpl.replace("#NUMIMPROVE#",str(numImproved)).replace("#NUMREGRESSION#",str(numRegression)).replace("#NUMPERFIMPROVE#",str(numPerformanceImproved)).replace("#NUMPERFREGRESSION#",str(numPerformanceRegression)).replace("#MODELCHANGES#", "\n".join(regstrs))
     tpl = tpl.replace("#BRANCH#",branch).replace("#DATE1#",dateStr(d1)).replace("#DATE2#",dateStr(d2))
