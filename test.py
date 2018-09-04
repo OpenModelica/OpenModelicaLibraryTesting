@@ -88,7 +88,7 @@ parser.add_argument('--extraflags', default='')
 parser.add_argument('--ompython_omhome', default='')
 parser.add_argument('--noclean', action="store_true", default=False)
 parser.add_argument('--fmisimulator', default='')
-parser.add_argument('--ulimitvmem', help="Virtual memory limit (in kB)", type=int, default=4*1024*1024)
+parser.add_argument('--ulimitvmem', help="Virtual memory limit (in kB)", type=int, default=8*1024*1024)
 parser.add_argument('--default', action='append', help="Add a default value for some configuration key, such as --default=ulimitExe=60. The equals sign is mandatory.", default=[])
 parser.add_argument('-n', default=psutil.cpu_count(logical=False))
 
