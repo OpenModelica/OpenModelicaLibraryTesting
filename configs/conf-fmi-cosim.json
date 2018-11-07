@@ -1,0 +1,22 @@
+[
+  {
+    "library":"Modelica",
+    "libraryVersion":"3.2.2",
+    "fmuType":"cs",
+    "referenceFileExtension":"csv",
+    "referenceFileNameDelimiter":"/",
+    "referenceFileNameExtraName":"$ClassName_cosim",
+    "allReferenceFilesExist":false,
+    "referenceFiles":"$MSLREFERENCE/v3.2.2+build.0-beta.3",
+    "optlevel":"-Os -march=native"
+  },
+  {
+    "library":"ModelicaTest",
+    "libraryVersion":"3.2.2",
+    "fmuType":"cs",
+    "referenceFileExtension":"csv",
+    "referenceFileNameDelimiter":"/",
+    "referenceFileNameExtraName":"$ClassName_cosim",
+    "referenceFiles":"$MSLREFERENCE/v3.2.2+build.0-beta.3"
+  }
+]

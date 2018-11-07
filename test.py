@@ -403,6 +403,7 @@ for (library,conf) in configs:
     conf["haveFMI"] = fmiOK_C
     conf["haveFMICpp"] = fmiOK_Cpp
     conf["fmisimulator"] = fmisimulator
+    conf["fmuType"] = conf.get("fmuType", "me")
   if (not canChangeOptLevel) and "optlevel" in conf:
     print("Deleting optlevel")
     del conf["optlevel"]

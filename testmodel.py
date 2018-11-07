@@ -274,7 +274,7 @@ if conf["simCodeTarget"]=="C" and sendExpressionOldOrNew('classAnnotationExists(
 total_before = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_SIMULATE_TOTAL)")
 start=monotonic()
 if conf.get("fmi"):
-  cmd='"" <> buildModelFMU(%s,fileNamePrefix="%s",version="%s",platforms={"dynamic"})' % (conf["modelName"],conf["fileName"].replace(".","_"),conf["fmi"])
+  cmd='"" <> buildModelFMU(%s,fileNamePrefix="%s",fmuType="%s",version="%s",platforms={"dynamic"})' % (conf["modelName"],conf["fileName"].replace(".","_"),conf["fmuType"],conf["fmi"])
 else:
   cmd='translateModel(%s,tolerance=%g,outputFormat="%s",numberOfIntervals=%d,variableFilter="%s",fileNamePrefix="%s")' % (conf["modelName"],tolerance,outputFormat,2*numberOfIntervals,variableFilter,conf["fileName"])
 try:
