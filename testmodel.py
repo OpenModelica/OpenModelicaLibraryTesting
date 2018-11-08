@@ -277,6 +277,8 @@ if conf.get("fmi"):
   cmd='"" <> buildModelFMU(%s,fileNamePrefix="%s",fmuType="%s",version="%s",platforms={"dynamic"})' % (conf["modelName"],conf["fileName"].replace(".","_"),conf["fmuType"],conf["fmi"])
 else:
   cmd='translateModel(%s,tolerance=%g,outputFormat="%s",numberOfIntervals=%d,variableFilter="%s",fileNamePrefix="%s")' % (conf["modelName"],tolerance,outputFormat,2*numberOfIntervals,variableFilter,conf["fileName"])
+with open(errFile, 'a+') as fp:
+  fp.write("Running command: %s\n"%(cmd))
 try:
   res=sendExpressionTimeout(omc, cmd, conf["ulimitOmc"])
 except TimeoutError as e:
