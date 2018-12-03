@@ -70,7 +70,7 @@ def simulationAcceptsFlag(f, checkOutput=True, cwd=None):
   try:
     subprocess.check_output("./HelloWorld %s" % f, shell=True, stderr=subprocess.STDOUT, cwd=cwd)
     if (not os.path.exists("HelloWorld_res.mat")):
-	  print("Result file HelloWorld_res.mat WAS NOT generated running: ./HelloWorld with flags [%s]" % f)
+      print("Result file HelloWorld_res.mat WAS NOT generated running: ./HelloWorld with flags [%s]" % f)
     if (not checkOutput) or os.path.exists("HelloWorld_res.mat"):
       return True
   except subprocess.CalledProcessError as e:
