@@ -184,8 +184,12 @@ except OSError:
   pass
 subprocess.check_output(["%s/bin/omc" % omhome, "%ssimCodeTarget=Cpp" % ("+" if rmlStyle else "--"), "HelloWorld.mos"], stderr=subprocess.STDOUT)
 if os.path.exists("HelloWorld"):
+  print("Have C++ HelloWorld simulation executable")
   haveCppRuntime=simulationAcceptsFlag("")
-  print("Have C++ runtime")
+  if haveCppRuntime:
+    print("Have C++ runtime")
+  else:
+    print("C++ HelloWorld simulation executable failed to run")
 else:
   haveCppRuntime=False
   print("No C++ runtime")
