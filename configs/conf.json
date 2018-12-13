@@ -242,6 +242,9 @@
     "library":"SystemDynamics"
   },
   {
+    "library":"ThermalSeparation"
+  },
+  {
     "library":"ThermoPower",
     "optlevel":"-Os -march=native"
   },
