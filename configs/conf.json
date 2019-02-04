@@ -250,5 +250,8 @@
   },
   {
     "library":"ThermoSysPro"
+  },
+  {
+    "library":"VehicleInterfaces"
   }
 ]
