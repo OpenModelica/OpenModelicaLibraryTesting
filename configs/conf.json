@@ -62,7 +62,7 @@
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
-    "referenceFiles":"$MSLREFERENCE/../../MAP-LIB_ReferenceResults/v3.2.3",
+    "referenceFiles":"$MSLREFERENCE/../../MAP-LIB_ReferenceResults/v3.2.3"
   },
   {
     "library":"ModelicaTestOverdetermined",
