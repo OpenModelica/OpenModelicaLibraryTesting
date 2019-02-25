@@ -5,7 +5,7 @@
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
-    "referenceFiles":"$MSLREFERENCE/v3.2.2+build.0-beta.3",
+    "referenceFiles":"$MSLREFERENCE/../../MAP-LIB_ReferenceResults/v3.2.3"
     "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.2\") then exit(1); end if;"],
     "optlevel":"-Os -march=native"
   },
@@ -44,7 +44,7 @@
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
-    "referenceFiles":"$MSLREFERENCE/v3.2.2+build.0-beta.3",
+    "referenceFiles":"$MSLREFERENCE/../../MAP-LIB_ReferenceResults/v3.2.3"
     "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.2\") then exit(1); end if;"],
     "optlevel":"-Os -march=native"
   },
