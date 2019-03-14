@@ -264,6 +264,9 @@
     "extraCustomCommands":["setCommandLineOptions(\"-d=-NLSanalyticJacobian\")"]
   },
   {
+    "library":"TILMedia"
+  },
+  {
     "library":"ThermoPower",
     "optlevel":"-Os -march=native"
   },
