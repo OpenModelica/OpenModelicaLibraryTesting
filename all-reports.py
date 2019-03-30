@@ -164,15 +164,15 @@ for branch in branches:
         for (phase,times) in [(1,frontend),(2,backend),(3,simcode),(4,templates),(5,compile),(6,simulate)]:
           (t1,t2) = [float(d) for d in times.split(",")]
           if t2 > timeRel*t1 and t2 > timeAbs:
-            color = "warning"
+            color = "warningPerformance"
             msgs.append("%s performance %s &rarr; %s" % (shared.finalphaseName(phase),friendlyStr(t1),friendlyStr(t2)))
           elif t1 > timeRel*t2 and t1 > timeAbs:
             if color is None:
-              color = "better"
+              color = "betterPerformance"
             msgs.append("%s performance %s &rarr; %s" % (shared.finalphaseName(phase),friendlyStr(t1),friendlyStr(t2)))
         if color is None:
           raise Exception("Unknown regression/improvement...")
-        if color == "better":
+        if color == "betterPerformance":
           numPerformanceImproved += 1
         else:
           numPerformanceRegression += 1
