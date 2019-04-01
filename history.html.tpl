@@ -6,6 +6,8 @@
   <style>
   td.warning {background-color:#FFCC66;}
   td.better {background-color:#00FF00;}
+  td.warningPerformance {background-color:#FFFC66;}
+  td.betterPerformance {background-color:#00FAFF;}
   </style>
 </head>
 <body>
