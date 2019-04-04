@@ -1,0 +1,369 @@
+pipeline {
+  agent none
+  parameters {
+    booleanParam(name: 'FMI', defaultValue: false, description: 'All tests are FMI tests')
+    booleanParam(name: 'OLDLIBS', defaultValue: false, description: 'Also test some outdated libraries')
+    booleanParam(name: 'fmi_v1_9', defaultValue: false, description: 'maintenance/v1.9 branch with FMI (ripper)')
+    booleanParam(name: 'fmi_v1_11', defaultValue: false, description: 'maintenance/v1.11 branch with FMI (ripper)')
+    booleanParam(name: 'fmi_v1_12', defaultValue: false, description: 'maintenance/v1.12 branch with FMI (ripper)')
+    booleanParam(name: 'fmi_v1_13', defaultValue: false, description: 'maintenance/v1.13 branch with FMI (ripper)')
+    booleanParam(name: 'fmi_master', defaultValue: false, description: 'master branch with FMI (ripper)')
+    booleanParam(name: 'daeMode', defaultValue: false, description: 'master branch, --daeMode (ripper)')
+    booleanParam(name: 'newInst_daeMode', defaultValue: false, description: 'master branch, --daeMode with -d=newInst (ripper)')
+    booleanParam(name: 'newInst', defaultValue: false, description: 'master branch, with -d=newInst (ripper)')
+  }
+  environment {
+    LC_ALL = 'C.UTF-8'
+  }
+  stages {
+    stage('test') { parallel {
+      stage('v1.9 FMI') {
+        agent {
+          node {
+            label 'ripper.openmodelica.org'
+            customWorkspace 'OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          expression { params.fmi_v1_9 }
+        }
+        steps {
+          test('maintenance/v1.9', 'v1.9-fmi', '', omsimulatorHash())
+        }
+      }
+      stage('v1.11 FMI') {
+        agent {
+          node {
+            label 'ripper.openmodelica.org'
+            customWorkspace 'OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          expression { params.fmi_v1_11 }
+        }
+        steps {
+          test('maintenance/v1.11', 'v1.11-fmi', '', omsimulatorHash())
+        }
+      }
+      stage('v1.12 FMI') {
+        agent {
+          node {
+            label 'ripper.openmodelica.org'
+            customWorkspace 'OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          expression { params.fmi_v1_12 }
+        }
+        steps {
+          test('maintenance/v1.12', 'v1.12-fmi', '', omsimulatorHash())
+        }
+      }
+      stage('v1.13 FMI') {
+        agent {
+          node {
+            label 'ripper.openmodelica.org'
+            customWorkspace 'OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          expression { params.fmi_v1_13 }
+        }
+        steps {
+          test('maintenance/v1.13', 'v1.13-fmi', '', omsimulatorHash())
+        }
+      }
+      stage('master FMI') {
+        agent {
+          node {
+            label 'ripper.openmodelica.org'
+            customWorkspace 'OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          expression { params.fmi_v1_13 }
+        }
+        steps {
+          test('maintenance/v1.13', 'v1.13-fmi', '', 'origin/master')
+        }
+      }
+      stage('daeMode') {
+        agent {
+          node {
+            label 'ripper.openmodelica.org'
+            customWorkspace 'OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          expression { params.daeMode }
+        }
+        steps {
+          test('master', 'daeMode', '--daeMode=true', '')
+        }
+      }
+      stage('newInst-daeMode') {
+        agent {
+          node {
+            label 'ripper.openmodelica.org'
+            customWorkspace 'OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          expression { params.newInst_daeMode }
+        }
+        steps {
+          test('master', 'newInst-daeMode', '-d=newInst,-frontEndUnitCheck --daeMode=true', '')
+        }
+      }
+      stage('newInst') {
+        agent {
+          node {
+            label 'ripper.openmodelica.org'
+            customWorkspace 'OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          expression { params.newInst }
+        }
+        steps {
+          test('master', 'newInst', '-d=newInst,-frontEndUnitCheck', '')
+        }
+      }
+    } }
+    stage('report') { parallel {
+      stage('ripper') {
+        agent {
+          node {
+            label 'ripper.openmodelica.org'
+            customWorkspace 'OpenModelicaLibraryTestingReport'
+          }
+        }
+        when {
+          expression { params.fmi_v1_9 || params.fmi_v1_11 || params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_master || params.daeMode || params.newInst_daeMode }
+        }
+        environment {
+          GITBRANCHES_FMI = 'maintenance/v1.9-fmi maintenance/v1.11-fmi maintenance/v1.12-fmi maintenance/v1.13-fmi master-fmi'
+          GITBRANCHES_NEWINST = 'newInst'
+          GITBRANCHES_DAE = 'daemode newInst-daemode'
+        }
+        steps {
+          sh '''
+          export PYTHONIOENCODING=utf-8
+          export MSLREFERENCE="`pwd`/Reference-modelica.org/ReferenceResults/MSL/tags"
+          export REFERENCEFILES="`pwd`/OpenModelica/testsuite/ReferenceFiles"
+          export GITREPOS="`pwd`/OpenModelica/libraries/git"
+
+          time ./clean-empty-omcversion-dates.py
+
+          time ./all-reports.py --email --historypath=/var/www/branches/history $GITBRANCHES_FMI $GITBRANCHES_NEWINST $GITBRANCHES_DAE
+          time ./all-plots.py $GITBRANCHES_FMI $GITBRANCHES_NEWINST $GITBRANCHES_DAE
+
+          rsync -a /var/www/branches/history/* libraries.openmodelica.org:/var/www/branches/history/
+
+          time ./report.py --branches="$GITBRANCHES_NEWINST" configs/conf.json
+          scp overview.html libraries.openmodelica.org:/var/www/branches/overview-newinst.html
+          time ./report.py --branches="$GITBRANCHES_NEWINST" configs/conf.json configs/conf-c++.json configs/conf-old.json
+          scp overview.html libraries.openmodelica.org:/var/www/branches/overview-combined-newinst.html
+          time ./report.py --branches="$GITBRANCHES_NEWINST" configs/conf-old.json
+          scp overview.html libraries.openmodelica.org:/var/www/branches/overview-old-libs-newinst.html
+          time ./report.py --branches="$GITBRANCHES_NEWINST" configs/conf-c++.json
+          scp overview.html libraries.openmodelica.org:/var/www/branches/overview-c++-newinst.html
+
+          time ./report.py --branches="$GITBRANCHES_FMI" configs/conf.json
+          scp overview.html libraries.openmodelica.org:/var/www/branches/overview-fmi.html
+          time ./report.py --branches="$GITBRANCHES_FMI" configs/conf-c++.json
+          scp overview.html libraries.openmodelica.org:/var/www/branches/overview-c++-fmi.html
+          time ./report.py --branches="$GITBRANCHES_FMI" configs/conf.json configs/conf-c++.json configs/conf-old.json
+          scp overview.html libraries.openmodelica.org:/var/www/branches/overview-combined-fmi.html
+          time ./report.py --branches="$GITBRANCHES_FMI" configs/conf-old.json
+          scp overview.html libraries.openmodelica.org:/var/www/branches/overview-old-libs-fmi.html
+
+          time ./report.py --branches="$GITBRANCHES_DAE" configs/conf.json
+          scp overview.html libraries.openmodelica.org:/var/www/branches/overview-dae.html
+          time ./report.py --branches="$GITBRANCHES_DAE" configs/conf-c++.json
+          scp overview.html libraries.openmodelica.org:/var/www/branches/overview-c++-dae.html
+          time ./report.py --branches="$GITBRANCHES_DAE" configs/conf.json configs/conf-c++.json configs/conf-old.json
+          scp overview.html libraries.openmodelica.org:/var/www/branches/overview-combined-dae.html
+          time ./report.py --branches="$GITBRANCHES_DAE" configs/conf-old.json
+          scp overview.html libraries.openmodelica.org:/var/www/branches/overview-old-libs-dae.html
+          '''
+        }
+      }
+    } }
+  }
+}
+def omsimulatorHash() {
+  return '1552061d5fe27ecfa51f5289909717192b102263'
+}
+def test(branch, name, extraFlags, omsHash) {
+  sh '''
+  find /tmp  -name "*openmodelica.hudson*" -exec rm {} ";" || true
+  mkdir -p ~/TEST_LIBS_BACKUP
+  find ~/TEST_LIBS_BACKUP -mtime +7 -exec rm {} ";"
+
+  if test -z "$WORKSPACE"; then
+    echo "Odd workspace"
+    exit 1
+  fi
+  '''
+  FMI_TESTING_FLAG=""
+  if (omsHash) {
+    sh """
+    if ! test -d OMSimulator; then
+      git clone --recursive https://openmodelica.org/git-readonly/OMSimulator.git || exit 1
+    fi
+    cd OMSimulator || exit 1
+
+    git fetch || exit 1
+    git reset --hard "${omsHash}" || exit 1
+
+    git rev-parse HEAD > .newhash
+    echo "OMSimulator Hash: ${omsHash}"
+    echo Old Hash:
+    cat ~/saved_omc/OMSimulator/.githash || true
+
+    if ! (cmp ~/saved_omc/OMSimulator/.githash .newhash); then
+
+      git submodule update || exit 1
+      git clean -fdx || exit 1
+      git submodule foreach --recursive  "git fetch --tags && git reset --hard && git clean -fdxq -e /git -e /svn" || exit 1
+      make config-3rdParty || exit 1
+      make config-OMSimulator || exit 1
+      make OMSimulator || exit 1
+      mkdir -p ~/saved_omc/OMSimulator || exit 1
+      cp -a * ~/saved_omc/OMSimulator/ || exit 1
+      git rev-parse HEAD > ~/saved_omc/OMSimulator/.githash || exit 1
+
+    fi
+    """
+    FMI_TESTING_FLAG="--fmi=true --fmisimulator=${env.HOME}/saved_omc/OMSimulator/install/linux/bin/OMSimulator --default=ulimitExe=50"
+  }
+
+  sh """
+  FREE=`df -k --output=avail "\$PWD" | tail -n1`   # df -k not df -h
+  if test "$FREE" -lt 31457280; then               # 30G = 30*1024*1024k
+    echo "Less than 30 GB free disk space"
+    exit 1
+  fi;
+  """
+
+  sh 'killall omc || true'
+
+  sh """
+  if test ! -d OpenModelica; then
+    git clone --recursive https://openmodelica.org/git-readonly/OpenModelica.git OpenModelica
+  fi
+  cd OpenModelica
+
+  if ! test -f ~/saved_omc/$GITBRANCHNOMAINT/.nogit; then
+
+    git reset --hard && git checkout -f "$GITBRANCH" && (git rev-parse --verify "tags/${branch}"  || (git reset --hard "origin/${branch}" && git pull)) && git fetch --tags || exit 1
+    git submodule update --init --recursive --force || exit 1
+    git submodule foreach --recursive  "git fetch --tags && git reset --hard && git clean -fdxq -e /git -e /svn" || exit 1
+    git clean -fdxq || exit 1
+    git submodule status --recursive
+  fi
+
+  # Always get the latest libraries; old ones break sometimes due to removed branches, etc...
+  cd libraries
+  git fetch
+  git reset --hard origin/master
+  cd ../testsuite
+  git fetch
+  git reset --hard origin/master
+  cd ..
+
+  cd OMCompiler
+  export OPENMODELICAHOME="`pwd`/build"
+
+  git rev-parse --verify HEAD > .newhash
+  echo New Hash:
+  cat .newhash
+  echo Old Hash:
+  cat ~/saved_omc/${name}/.githash || true
+  # TODO: Create a docker image for these things instead?
+  if ! (cmp ~/saved_omc/${name}/.githash .newhash || test -f ~/saved_omc/${name}/.nogit); then
+    autoconf
+    ./configure --with-cppruntime --without-omc --disable-modelica3d CC=clang CXX=clang++ FC=gfortran CFLAGS='-O2 -march=native' --with-omlibrary=all --with-omniORB
+    time make -j9 clean
+    if ! time make -j9 omc > log 2>&1; then
+      cat log
+      exit 1
+    fi
+    if ! time make -j9 runtimeCPPinstall > log 2>&1; then
+      cat log
+      if test "${name}" = "master"; then
+        exit 1
+      else
+        echo "Ignoring failed C++ runtime"
+      fi
+    fi
+    rm -rf ~/saved_omc/${name}/
+    mkdir -p ~/saved_omc/${name}/
+    CMD="rsync -a --delete build/ \$HOME/saved_omc/${name}/"
+    echo $CMD
+    $CMD || exit 1
+    cp .newhash ~/saved_omc/${name}/.githash
+  else
+    rsync -a --delete ~/saved_omc/${name}/ build/ || exit 1
+    echo "Restoring cached OMC version: ${name}, `cat ~/saved_omc/${name}/.githash`"
+  fi
+  """
+
+  sh """
+  cd OpenModelica
+  if ! time make -j9 -C libraries all BUILD_DIR="`pwd`/build/lib/omlibrary/" > log 2>&1; then
+    cat log
+    exit 1
+  fi
+  cp -a /mnt/ReferenceFiles/ExtraLibs/packaged/* build/lib/omlibrary/
+  if ! time make -j9 -C testsuite/ReferenceFiles > log 2>&1; then
+    cat log
+    exit 1
+  fi
+
+  cd ../
+  rm -rf Reference-modelica.org
+  ln -s /mnt/ReferenceFiles/modelica.org Reference-modelica.org
+  """
+  // sh 'rsync -av modelica-ro:/files/RegressionTesting/ReferenceResults Reference-modelica.org || true # exit 1'
+
+  def MSLREFERENCE="${WORKSPACE}/Reference-modelica.org/ReferenceResults/MSL/tags"
+  def REFERENCEFILES="${WORKSPACE}/OpenModelica/testsuite/ReferenceFiles"
+  def GITREPOS="${WORKSPACE}/OpenModelica/libraries/git"
+
+  sh """
+  test -d "${MSLREFERENCE}/v3.2.2+build.0-beta.3" || exit 1
+  test -d "${MSLREFERENCE}/v3.2.1+build.4" || exit 1
+
+  if test ! -d OpenModelicaLibraryTesting; then
+    git clone --recursive https://openmodelica.org/git-readonly/OpenModelicaLibraryTesting.git OpenModelicaLibraryTesting
+  fi
+  cd OpenModelicaLibraryTesting
+  git fetch
+  git reset --hard origin/master
+
+  mkdir -p "/var/www/branches/${name}/"
+  """
+
+  sh 'date'
+
+  sh """
+  export OPENMODELICAHOME="${WORKSPACE}/OpenModelica/build"
+  export MSLREFERENCE="${MSLREFERENCE}"
+  export REFERENCEFILES="${REFERENCEFILES}"
+  export GITREPOS="${GITREPOS}"
+  # Force /usr/bin/omc as being used for generating the mos-files. Ensures consistent behavior among all tested OMC versions
+  stdbuf -oL -eL time ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags="$EXTRA_FLAGS" --branch="${name}" --output="libraries.openmodelica.org:/var/www/branches/${name}/" configs/conf.json configs/conf-c++.json ${parameters.OLD_LIBS ? "configs/conf-old.json" : ""} || (killall omc ; false) || exit 1
+  """
+  sh 'date'
+  sh 'cp sqlite3.db ~/TEST_LIBS_BACKUP/`date +sqlite3.%Y%m%d.db`'
+}
