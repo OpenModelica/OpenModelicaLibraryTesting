@@ -364,16 +364,12 @@ def test(branch, name, extraFlags, omsHash) {
 
   sh 'date'
 
-  sh "echo ${MSLREFERENCE}"
-  sh "echo ${REFERENCEFILES}"
-  sh "echo ${GITREPOS}"
-  sh "echo ${FMI_TESTING_FLAG}"
-
   sh """
   export OPENMODELICAHOME="${WORKSPACE}/OpenModelica/build"
   export MSLREFERENCE="${MSLREFERENCE}"
   export REFERENCEFILES="${REFERENCEFILES}"
   export GITREPOS="${GITREPOS}"
+  cd OpenModelicaLibraryTesting
   # Force /usr/bin/omc as being used for generating the mos-files. Ensures consistent behavior among all tested OMC versions
   stdbuf -oL -eL time ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags="${extraFlags}" --branch="${name}" --output="libraries.openmodelica.org:/var/www/branches/${name}/" configs/conf.json configs/conf-c++.json ${params.OLD_LIBS ? "configs/conf-old.json" : ""} || (killall omc ; false) || exit 1
   """
