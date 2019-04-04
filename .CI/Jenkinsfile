@@ -1,7 +1,6 @@
 pipeline {
   agent none
   parameters {
-    booleanParam(name: 'FMI', defaultValue: false, description: 'All tests are FMI tests')
     booleanParam(name: 'OLDLIBS', defaultValue: false, description: 'Also test some outdated libraries')
     booleanParam(name: 'fmi_v1_9', defaultValue: false, description: 'maintenance/v1.9 branch with FMI (ripper)')
     booleanParam(name: 'fmi_v1_11', defaultValue: false, description: 'maintenance/v1.11 branch with FMI (ripper)')
