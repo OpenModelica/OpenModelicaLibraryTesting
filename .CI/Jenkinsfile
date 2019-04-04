@@ -365,7 +365,7 @@ def test(branch, name, extraFlags, omsHash) {
   sh 'date'
 
   sh """
-  export OPENMODELICAHOME="${WORKSPACE}/OpenModelica/build"
+  export OPENMODELICAHOME="${WORKSPACE}/OpenModelica/OMCompiler/build"
   export MSLREFERENCE="${MSLREFERENCE}"
   export REFERENCEFILES="${REFERENCEFILES}"
   export GITREPOS="${GITREPOS}"
