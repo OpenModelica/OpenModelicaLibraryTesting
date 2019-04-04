@@ -328,11 +328,11 @@ def test(branch, name, extraFlags, omsHash) {
 
   sh """
   cd OpenModelica
-  if ! time make -j9 -C libraries all BUILD_DIR="`pwd`/build/lib/omlibrary/" > log 2>&1; then
+  if ! time make -j9 -C libraries all BUILD_DIR="`pwd`/OMCompiler/build/lib/omlibrary/" > log 2>&1; then
     cat log
     exit 1
   fi
-  cp -a /mnt/ReferenceFiles/ExtraLibs/packaged/* build/lib/omlibrary/
+  cp -a /mnt/ReferenceFiles/ExtraLibs/packaged/* OMCompiler/build/lib/omlibrary/
   if ! time make -j9 -C testsuite/ReferenceFiles > log 2>&1; then
     cat log
     exit 1
