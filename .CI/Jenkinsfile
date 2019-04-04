@@ -344,9 +344,9 @@ def test(branch, name, extraFlags, omsHash) {
   """
   // sh 'rsync -av modelica-ro:/files/RegressionTesting/ReferenceResults Reference-modelica.org || true # exit 1'
 
-  def MSLREFERENCE="${WORKSPACE}/Reference-modelica.org/ReferenceResults/MSL/tags"
-  def REFERENCEFILES="${WORKSPACE}/OpenModelica/testsuite/ReferenceFiles"
-  def GITREPOS="${WORKSPACE}/OpenModelica/libraries/git"
+  MSLREFERENCE="${WORKSPACE}/Reference-modelica.org/ReferenceResults/MSL/tags"
+  REFERENCEFILES="${WORKSPACE}/OpenModelica/testsuite/ReferenceFiles"
+  GITREPOS="${WORKSPACE}/OpenModelica/libraries/git"
 
   sh """
   test -d "${MSLREFERENCE}/v3.2.2+build.0-beta.3" || exit 1
@@ -363,6 +363,11 @@ def test(branch, name, extraFlags, omsHash) {
   """
 
   sh 'date'
+
+  sh "echo ${MSLREFERENCE}"
+  sh "echo ${REFERENCEFILES}"
+  sh "echo ${GITREPOS}"
+  sh "echo ${FMI_TESTING_FLAG}"
 
   sh """
   export OPENMODELICAHOME="${WORKSPACE}/OpenModelica/build"
