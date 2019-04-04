@@ -21,7 +21,7 @@ pipeline {
         agent {
           node {
             label 'ripper.openmodelica.org'
-            customWorkspace 'OpenModelicaLibraryTestingWork'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
         options { skipDefaultCheckout() }
@@ -37,7 +37,7 @@ pipeline {
         agent {
           node {
             label 'ripper.openmodelica.org'
-            customWorkspace 'OpenModelicaLibraryTestingWork'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
         options { skipDefaultCheckout() }
@@ -53,7 +53,7 @@ pipeline {
         agent {
           node {
             label 'ripper.openmodelica.org'
-            customWorkspace 'OpenModelicaLibraryTestingWork'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
         options { skipDefaultCheckout() }
@@ -69,7 +69,7 @@ pipeline {
         agent {
           node {
             label 'ripper.openmodelica.org'
-            customWorkspace 'OpenModelicaLibraryTestingWork'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
         options { skipDefaultCheckout() }
@@ -85,7 +85,7 @@ pipeline {
         agent {
           node {
             label 'ripper.openmodelica.org'
-            customWorkspace 'OpenModelicaLibraryTestingWork'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
         options { skipDefaultCheckout() }
@@ -101,7 +101,7 @@ pipeline {
         agent {
           node {
             label 'ripper.openmodelica.org'
-            customWorkspace 'OpenModelicaLibraryTestingWork'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
         options { skipDefaultCheckout() }
@@ -117,7 +117,7 @@ pipeline {
         agent {
           node {
             label 'ripper.openmodelica.org'
-            customWorkspace 'OpenModelicaLibraryTestingWork'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
         options { skipDefaultCheckout() }
@@ -133,7 +133,7 @@ pipeline {
         agent {
           node {
             label 'ripper.openmodelica.org'
-            customWorkspace 'OpenModelicaLibraryTestingWork'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
         options { skipDefaultCheckout() }
@@ -256,13 +256,13 @@ def test(branch, name, extraFlags, omsHash) {
     FMI_TESTING_FLAG="--fmi=true --fmisimulator=${env.HOME}/saved_omc/OMSimulator/install/linux/bin/OMSimulator --default=ulimitExe=50"
   }
 
-  sh """
-  FREE=`df -k --output=avail "\$PWD" | tail -n1`   # df -k not df -h
+  sh '''
+  FREE=`df -k --output=avail "$PWD" | tail -n1`   # df -k not df -h
   if test "$FREE" -lt 31457280; then               # 30G = 30*1024*1024k
     echo "Less than 30 GB free disk space"
     exit 1
   fi;
-  """
+  '''
 
   sh 'killall omc || true'
 
@@ -272,9 +272,9 @@ def test(branch, name, extraFlags, omsHash) {
   fi
   cd OpenModelica
 
-  if ! test -f ~/saved_omc/$GITBRANCHNOMAINT/.nogit; then
+  if ! test -f ~/saved_omc/${name}/.nogit; then
 
-    git reset --hard && git checkout -f "$GITBRANCH" && (git rev-parse --verify "tags/${branch}"  || (git reset --hard "origin/${branch}" && git pull)) && git fetch --tags || exit 1
+    git reset --hard && git checkout -f "${branch}" && (git rev-parse --verify "tags/${branch}"  || (git reset --hard "origin/${branch}" && git pull)) && git fetch --tags || exit 1
     git submodule update --init --recursive --force || exit 1
     git submodule foreach --recursive  "git fetch --tags && git reset --hard && git clean -fdxq -e /git -e /svn" || exit 1
     git clean -fdxq || exit 1
