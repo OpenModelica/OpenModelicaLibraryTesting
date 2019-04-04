@@ -317,8 +317,8 @@ def test(branch, name, extraFlags, omsHash) {
     rm -rf ~/saved_omc/${name}/
     mkdir -p ~/saved_omc/${name}/
     CMD="rsync -a --delete build/ \$HOME/saved_omc/${name}/"
-    echo $CMD
-    $CMD || exit 1
+    echo \$CMD
+    \$CMD || exit 1
     cp .newhash ~/saved_omc/${name}/.githash
   else
     rsync -a --delete ~/saved_omc/${name}/ build/ || exit 1
@@ -370,7 +370,7 @@ def test(branch, name, extraFlags, omsHash) {
   export REFERENCEFILES="${REFERENCEFILES}"
   export GITREPOS="${GITREPOS}"
   # Force /usr/bin/omc as being used for generating the mos-files. Ensures consistent behavior among all tested OMC versions
-  stdbuf -oL -eL time ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags="$EXTRA_FLAGS" --branch="${name}" --output="libraries.openmodelica.org:/var/www/branches/${name}/" configs/conf.json configs/conf-c++.json ${parameters.OLD_LIBS ? "configs/conf-old.json" : ""} || (killall omc ; false) || exit 1
+  stdbuf -oL -eL time ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags="${extraFlags}" --branch="${name}" --output="libraries.openmodelica.org:/var/www/branches/${name}/" configs/conf.json configs/conf-c++.json ${parameters.OLD_LIBS ? "configs/conf-old.json" : ""} || (killall omc ; false) || exit 1
   """
   sh 'date'
   sh 'cp sqlite3.db ~/TEST_LIBS_BACKUP/`date +sqlite3.%Y%m%d.db`'
