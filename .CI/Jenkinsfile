@@ -10,6 +10,7 @@ pipeline {
     booleanParam(name: 'daeMode', defaultValue: false, description: 'master branch, --daeMode (ripper)')
     booleanParam(name: 'newInst_daeMode', defaultValue: false, description: 'master branch, --daeMode with -d=newInst (ripper)')
     booleanParam(name: 'newInst', defaultValue: false, description: 'master branch, with -d=newInst (ripper)')
+    booleanParam(name: 'report_ripper', defaultValue: false, description: 'Generate a report for ripper without running the tests')
   }
   environment {
     LC_ALL = 'C.UTF-8'
@@ -155,7 +156,7 @@ pipeline {
         }
         when {
           beforeAgent true
-          expression { params.fmi_v1_9 || params.fmi_v1_11 || params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_master || params.daeMode || params.newInst_daeMode  || params.newInst }
+          expression { params.fmi_v1_9 || params.fmi_v1_11 || params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_master || params.daeMode || params.newInst_daeMode  || params.newInst || params.report_ripper }
         }
         environment {
           GITBRANCHES_FMI = 'maintenance/v1.9-fmi maintenance/v1.11-fmi maintenance/v1.12-fmi maintenance/v1.13-fmi master-fmi'
@@ -168,6 +169,8 @@ pipeline {
           export MSLREFERENCE="`pwd`/Reference-modelica.org/ReferenceResults/MSL/tags"
           export REFERENCEFILES="`pwd`/OpenModelica/testsuite/ReferenceFiles"
           export GITREPOS="`pwd`/OpenModelica/libraries/git"
+
+          cp ~/TEST_LIBS_BACKUP/sqlite3.db .
 
           time ./clean-empty-omcversion-dates.py
 
