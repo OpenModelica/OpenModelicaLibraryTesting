@@ -162,50 +162,43 @@ pipeline {
           GITBRANCHES_FMI = 'maintenance/v1.9-fmi maintenance/v1.11-fmi maintenance/v1.12-fmi maintenance/v1.13-fmi master-fmi'
           GITBRANCHES_NEWINST = 'newInst'
           GITBRANCHES_DAE = 'daemode newInst-daemode'
+          PYTHONIOENCODING = 'utf-8'
         }
         steps {
-          sh '''
-          export PYTHONIOENCODING=utf-8
-          export MSLREFERENCE="`pwd`/Reference-modelica.org/ReferenceResults/MSL/tags"
-          export REFERENCEFILES="`pwd`/OpenModelica/testsuite/ReferenceFiles"
-          export GITREPOS="`pwd`/OpenModelica/libraries/git"
+          sh 'cp ~/TEST_LIBS_BACKUP/sqlite3.db .'
+          sh './clean-empty-omcversion-dates.py'
 
-          cp ~/TEST_LIBS_BACKUP/sqlite3.db .
+          sh "./all-reports.py --email --omcgitdir=../OpenModelicaLibraryTestingWork/OpenModelica/OMCompiler --historypath=/var/www/branches/history ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE}"
+          sh "./all-plots.py ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE}"
 
-          time ./clean-empty-omcversion-dates.py
+          sh "rsync -a /var/www/branches/history/* libraries.openmodelica.org:/var/www/branches/history/"
 
-          time ./all-reports.py --email --historypath=/var/www/branches/history $GITBRANCHES_FMI $GITBRANCHES_NEWINST $GITBRANCHES_DAE
-          time ./all-plots.py $GITBRANCHES_FMI $GITBRANCHES_NEWINST $GITBRANCHES_DAE
+          sh "./report.py --branches='${env.GITBRANCHES_NEWINST}' configs/conf.json"
+          sh "scp overview.html libraries.openmodelica.org:/var/www/branches/overview-newinst.html"
+          sh "./report.py --branches='${env.GITBRANCHES_NEWINST}' configs/conf.json configs/conf-c++.json configs/conf-old.json"
+          sh "scp overview.html libraries.openmodelica.org:/var/www/branches/overview-combined-newinst.html"
+          sh "./report.py --branches='${env.GITBRANCHES_NEWINST}' configs/conf-old.json"
+          sh "overview.html libraries.openmodelica.org:/var/www/branches/overview-old-libs-newinst.html"
+          sh "./report.py --branches='${env.GITBRANCHES_NEWINST}' configs/conf-c++.json"
+          sh "scp overview.html libraries.openmodelica.org:/var/www/branches/overview-c++-newinst.html"
 
-          rsync -a /var/www/branches/history/* libraries.openmodelica.org:/var/www/branches/history/
+          sh "./report.py --branches='${env.GITBRANCHES_FMI}' configs/conf.json"
+          sh "scp overview.html libraries.openmodelica.org:/var/www/branches/overview-fmi.html"
+          sh "./report.py --branches='${env.GITBRANCHES_FMI}' configs/conf-c++.json"
+          sh "scp overview.html libraries.openmodelica.org:/var/www/branches/overview-c++-fmi.html"
+          sh "./report.py --branches='${env.GITBRANCHES_FMI}' configs/conf.json configs/conf-c++.json configs/conf-old.json"
+          sh "scp overview.html libraries.openmodelica.org:/var/www/branches/overview-combined-fmi.html"
+          sh "./report.py --branches='${env.GITBRANCHES_FMI}' configs/conf-old.json"
+          sh "scp overview.html libraries.openmodelica.org:/var/www/branches/overview-old-libs-fmi.html"
 
-          time ./report.py --branches="$GITBRANCHES_NEWINST" configs/conf.json
-          scp overview.html libraries.openmodelica.org:/var/www/branches/overview-newinst.html
-          time ./report.py --branches="$GITBRANCHES_NEWINST" configs/conf.json configs/conf-c++.json configs/conf-old.json
-          scp overview.html libraries.openmodelica.org:/var/www/branches/overview-combined-newinst.html
-          time ./report.py --branches="$GITBRANCHES_NEWINST" configs/conf-old.json
-          scp overview.html libraries.openmodelica.org:/var/www/branches/overview-old-libs-newinst.html
-          time ./report.py --branches="$GITBRANCHES_NEWINST" configs/conf-c++.json
-          scp overview.html libraries.openmodelica.org:/var/www/branches/overview-c++-newinst.html
-
-          time ./report.py --branches="$GITBRANCHES_FMI" configs/conf.json
-          scp overview.html libraries.openmodelica.org:/var/www/branches/overview-fmi.html
-          time ./report.py --branches="$GITBRANCHES_FMI" configs/conf-c++.json
-          scp overview.html libraries.openmodelica.org:/var/www/branches/overview-c++-fmi.html
-          time ./report.py --branches="$GITBRANCHES_FMI" configs/conf.json configs/conf-c++.json configs/conf-old.json
-          scp overview.html libraries.openmodelica.org:/var/www/branches/overview-combined-fmi.html
-          time ./report.py --branches="$GITBRANCHES_FMI" configs/conf-old.json
-          scp overview.html libraries.openmodelica.org:/var/www/branches/overview-old-libs-fmi.html
-
-          time ./report.py --branches="$GITBRANCHES_DAE" configs/conf.json
-          scp overview.html libraries.openmodelica.org:/var/www/branches/overview-dae.html
-          time ./report.py --branches="$GITBRANCHES_DAE" configs/conf-c++.json
-          scp overview.html libraries.openmodelica.org:/var/www/branches/overview-c++-dae.html
-          time ./report.py --branches="$GITBRANCHES_DAE" configs/conf.json configs/conf-c++.json configs/conf-old.json
-          scp overview.html libraries.openmodelica.org:/var/www/branches/overview-combined-dae.html
-          time ./report.py --branches="$GITBRANCHES_DAE" configs/conf-old.json
-          scp overview.html libraries.openmodelica.org:/var/www/branches/overview-old-libs-dae.html
-          '''
+          sh "./report.py --branches='${env.GITBRANCHES_DAE}' configs/conf.json"
+          sh "scp overview.html libraries.openmodelica.org:/var/www/branches/overview-dae.html"
+          sh "time ./report.py --branches='${env.GITBRANCHES_DAE}' configs/conf-c++.json"
+          sh "scp overview.html libraries.openmodelica.org:/var/www/branches/overview-c++-dae.html"
+          sh "./report.py --branches='${env.GITBRANCHES_DAE}' configs/conf.json configs/conf-c++.json configs/conf-old.json"
+          sh "scp overview.html libraries.openmodelica.org:/var/www/branches/overview-combined-dae.html"
+          sh "./report.py --branches='${env.GITBRANCHES_DAE}' configs/conf-old.json"
+          sh "scp overview.html libraries.openmodelica.org:/var/www/branches/overview-old-libs-dae.html"
         }
       }
     } }
