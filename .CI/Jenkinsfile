@@ -178,7 +178,7 @@ pipeline {
           sh "./report.py --branches='${env.GITBRANCHES_NEWINST}' configs/conf.json configs/conf-c++.json configs/conf-old.json"
           sh "scp overview.html libraries.openmodelica.org:/var/www/branches/overview-combined-newinst.html"
           sh "./report.py --branches='${env.GITBRANCHES_NEWINST}' configs/conf-old.json"
-          sh "overview.html libraries.openmodelica.org:/var/www/branches/overview-old-libs-newinst.html"
+          sh "scp overview.html libraries.openmodelica.org:/var/www/branches/overview-old-libs-newinst.html"
           sh "./report.py --branches='${env.GITBRANCHES_NEWINST}' configs/conf-c++.json"
           sh "scp overview.html libraries.openmodelica.org:/var/www/branches/overview-c++-newinst.html"
 
