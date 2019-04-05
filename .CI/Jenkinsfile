@@ -155,7 +155,7 @@ pipeline {
         }
         when {
           beforeAgent true
-          expression { params.fmi_v1_9 || params.fmi_v1_11 || params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_master || params.daeMode || params.newInst_daeMode }
+          expression { params.fmi_v1_9 || params.fmi_v1_11 || params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_master || params.daeMode || params.newInst_daeMode  || params.newInst }
         }
         environment {
           GITBRANCHES_FMI = 'maintenance/v1.9-fmi maintenance/v1.11-fmi maintenance/v1.12-fmi maintenance/v1.13-fmi master-fmi'
@@ -362,7 +362,10 @@ def test(branch, name, extraFlags, omsHash) {
   mkdir -p "/var/www/branches/${name}/"
   """
 
-  sh 'cp ~/TEST_LIBS_BACKUP/sqlite3.db OpenModelicaLibraryTesting/sqlite3.db'
+  sh '''
+  cp ~/TEST_LIBS_BACKUP/sqlite3.db OpenModelicaLibraryTesting/sqlite3.db
+  test -s OpenModelicaLibraryTesting/sqlite3.db
+  '''
 
   sh 'date'
 
