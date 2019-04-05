@@ -90,10 +90,10 @@ pipeline {
         options { skipDefaultCheckout() }
         when {
           beforeAgent true
-          expression { params.fmi_v1_13 }
+          expression { params.fmi_master }
         }
         steps {
-          test('maintenance/v1.13', 'v1.13-fmi', '', 'origin/master')
+          test('master', 'master-fmi', '', 'origin/master')
         }
       }
       stage('daeMode') {
