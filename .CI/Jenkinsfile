@@ -151,7 +151,7 @@ pipeline {
         agent {
           node {
             label 'ripper.openmodelica.org'
-            customWorkspace 'OpenModelicaLibraryTestingReport'
+            customWorkspace 'ws/OpenModelicaLibraryTestingReport'
           }
         }
         when {
