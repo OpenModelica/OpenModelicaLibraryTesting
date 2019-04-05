@@ -110,7 +110,7 @@ pipeline {
           expression { params.daeMode }
         }
         steps {
-          test('master', 'daeMode', '--daeMode=true', '')
+          test('master', 'daeMode', 'setCommandLineOptions("--daeMode=true")', '')
         }
       }
       stage('newInst-daeMode') {
@@ -126,7 +126,7 @@ pipeline {
           expression { params.newInst_daeMode }
         }
         steps {
-          test('master', 'newInst-daeMode', '-d=newInst,-frontEndUnitCheck --daeMode=true', '')
+          test('master', 'newInst-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --daeMode=true")', '')
         }
       }
       stage('newInst') {
@@ -142,7 +142,7 @@ pipeline {
           expression { params.newInst }
         }
         steps {
-          test('master', 'newInst', '-d=newInst,-frontEndUnitCheck', '')
+          test('master', 'newInst', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '')
         }
       }
     } }
