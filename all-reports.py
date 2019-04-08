@@ -78,7 +78,7 @@ for branch in branches:
   for i in range(1,n):
     d1 = entries[i-1][0]
     d2 = entries[i][0]
-    fname = "history/%s/%s..%s.html" % (fnameprefix,branch,dateStr(d1),dateStr(d2))
+    fname = "history/%s/%s..%s.html" % (branch,dateStr(d1),dateStr(d2))
     if fname.replace(" ","%20") in urlContents:
       continue
     v1 = getTagOrVersion(entries[i-1][1])
@@ -211,9 +211,9 @@ for branch in branches:
       os.makedirs(os.path.dirname(fname))
     with codecs.open(fname, "w", encoding="utf-8") as fout:
       fout.write(tpl)
-    if not os.path.exists(os.path.dirname("%s/%s" % (fnameprefix,branch))):
-      os.makedirs("%s/%s" % (fnameprefix,branch))
-    with open("%s/%s/00_history.html" % (fnameprefix,branch), "w") as fout:
+    if not os.path.exists(os.path.dirname("history/%s" % branch)):
+      os.makedirs("history/%s" % branch)
+    with open("history/%s/00_history.html" % branch, "w") as fout:
       fout.write(urlContents)
       fout.write(email_summary_html)
       fout.write("\n")
