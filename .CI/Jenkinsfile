@@ -270,6 +270,7 @@ def test(branch, name, extraFlags, omsHash) {
   if ! test -f ~/saved_omc/${name}/.nogit; then
 
     git reset --hard && git checkout -f "${branch}" && (git rev-parse --verify "tags/${branch}"  || (git reset --hard "origin/${branch}" && git pull)) && git fetch --tags || exit 1
+    git clean -fdxq || exit 1
     git submodule update --init --recursive --force || exit 1
     git submodule foreach --recursive  "git fetch --tags && git reset --hard && git clean -fdxq -e /git -e /svn" || exit 1
     git clean -fdxq || exit 1
