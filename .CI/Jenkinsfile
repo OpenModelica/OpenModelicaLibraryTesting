@@ -334,9 +334,9 @@ pipeline {
     stage('report') { parallel {
       stage('lib') {
         agent {
-          docker {
+          dockerfile {
             label 'linux'
-            image 'docker.openmodelica.org/build-deps:v1.13'
+            dir '.CI/build-dep'
             customWorkspace 'ws/OpenModelicaLibraryTestingReport'
           }
         }
