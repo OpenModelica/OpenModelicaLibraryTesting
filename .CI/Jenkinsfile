@@ -403,7 +403,7 @@ pipeline {
           cd OMCompiler
           git fetch
           '''
-          sh 'wget https://libraries.openmodelica.org/sqlite3/ripper/sqlite3.db'
+          sh 'wget -q https://libraries.openmodelica.org/sqlite3/ripper/sqlite3.db'
           sh './clean-empty-omcversion-dates.py'
 
           sh "./all-reports.py --email --omcgitdir=OMCompiler --historypath=/var/www/branches/history ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE}"
@@ -440,6 +440,41 @@ pipeline {
 
           sshPublisher(publishers: [sshPublisherDesc(configName: 'LibraryTestingReports', transfers: [sshTransfer(sourceFiles: 'overview-*.html,history/**')])])
 
+        }
+      }
+    } }
+    stage('cleanup') { parallel {
+      // The cleanup is needed because we can't save the cleanup done in the report stage
+      stage('lib') {
+        agent {
+          node {
+            label 'libraries.openmodelica.org'
+          }
+        }
+        when {
+          beforeAgent true
+          expression { params.v1_8_1_rml || params.v1_9_0_rml || params.v1_9_1 || params.v1_9_2 || params.v1_9_3 || params.v1_9 || params.v1_11 || params.v1_12 || params.v1_13 || params.master || params.report_lib }
+        }
+        steps {
+          sh 'cp ~/TEST_LIBS_BACKUP/sqlite3.db .'
+          sh './clean-empty-omcversion-dates.py'
+          sh 'cp sqlite3.db ~/TEST_LIBS_BACKUP/'
+        }
+      }
+      stage('ripper') {
+        agent {
+          node {
+            label 'libraries.openmodelica.org'
+          }
+        }
+        when {
+          beforeAgent true
+          expression { params.fmi_v1_9 || params.fmi_v1_11 || params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_master || params.daeMode || params.newInst_daeMode  || params.newInst || params.report_ripper }
+        }
+        steps {
+          sh 'cp ~/TEST_LIBS_BACKUP/sqlite3.db .'
+          sh './clean-empty-omcversion-dates.py'
+          sh 'cp sqlite3.db ~/TEST_LIBS_BACKUP/'
         }
       }
     } }
