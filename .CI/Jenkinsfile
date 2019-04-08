@@ -366,7 +366,7 @@ pipeline {
           sh "./report.py --branches='${env.GITBRANCHES}' configs/conf-c++.json"
           sh 'mv overview.html overview-c++.html'
           sh "./report.py --branches='${env.GITBRANCHES}' configs/conf.json configs/conf-c++.json configs/conf-old.json"
-          sh 'mv overview.html /var/www/branches/overview-combined.html'
+          sh 'mv overview.html overview-combined.html'
           sh "./report.py --branches='${env.GITBRANCHES}' configs/conf-old.json"
           sh "mv overview.html overview-old-libs.html"
           sh "./report.py --branches='${env.GITBRANCHES}' configs/conf.json"
@@ -406,10 +406,8 @@ pipeline {
           sh 'wget -q https://libraries.openmodelica.org/sqlite3/ripper/sqlite3.db'
           sh './clean-empty-omcversion-dates.py'
 
-          sh "./all-reports.py --email --omcgitdir=OMCompiler --historypath=/var/www/branches/history ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE}"
+          sh "./all-reports.py --email --omcgitdir=OMCompiler ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE}"
           sh "./all-plots.py ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE}"
-
-          sh "rsync -a /var/www/branches/history/* libraries.openmodelica.org:/var/www/branches/history/"
 
           sh "./report.py --branches='${env.GITBRANCHES_NEWINST}' configs/conf.json"
           sh "mv overview.html overview-newinst.html"
