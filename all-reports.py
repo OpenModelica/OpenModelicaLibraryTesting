@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import urllib.request
 import codecs
 import sys, argparse, subprocess, os
 import simplejson as json
@@ -12,7 +13,6 @@ parser = argparse.ArgumentParser(description='OpenModelica model testing report 
 parser.add_argument('branches', nargs='*')
 parser.add_argument('--baseurl', default="http://libraries.openmodelica.org/branches")
 parser.add_argument('--historyurl', default="http://libraries.openmodelica.org/branches/history")
-parser.add_argument('--historypath', default="/var/www/branches/history")
 parser.add_argument('--githuburl', default="https://github.com/OpenModelica/OMCompiler/commit")
 parser.add_argument('--omcgitdir', default="../OpenModelica/OMCompiler")
 parser.add_argument('--email', default=False, action='store_true')
@@ -23,7 +23,6 @@ baseurl = args.baseurl
 historyurl  = args.historyurl
 githuburl = args.githuburl
 omcgitdir = args.omcgitdir
-fnameprefix = args.historypath
 doemail = args.email
 
 if not os.path.exists(omcgitdir):
@@ -73,11 +72,14 @@ for branch in branches:
   cursor.execute("SELECT date,omcversion FROM [omcversion] WHERE branch=? ORDER BY date ASC", (branch,))
   entries = cursor.fetchall()
   n = len(entries)
+  urlContents = urllib.request.urlopen("%s/%s/00_history.html" % (historyurl, branch)).read()
+
+
   for i in range(1,n):
     d1 = entries[i-1][0]
     d2 = entries[i][0]
-    fname = "%s/%s/%s..%s.html" % (fnameprefix,branch,dateStr(d1),dateStr(d2))
-    if os.path.exists(fname):
+    fname = "history/%s/%s..%s.html" % (fnameprefix,branch,dateStr(d1),dateStr(d2))
+    if fname.replace(" ","%20") in urlContents:
       continue
     v1 = getTagOrVersion(entries[i-1][1])
     v2 = getTagOrVersion(entries[i][1])
@@ -211,7 +213,8 @@ for branch in branches:
       fout.write(tpl)
     if not os.path.exists(os.path.dirname("%s/%s" % (fnameprefix,branch))):
       os.makedirs("%s/%s" % (fnameprefix,branch))
-    with open("%s/%s/00_history.html" % (fnameprefix,branch), "a+") as fout:
+    with open("%s/%s/00_history.html" % (fnameprefix,branch), "w") as fout:
+      fout.write(urlContents)
       fout.write(email_summary_html)
       fout.write("\n")
 
@@ -243,5 +246,5 @@ The following reports contain regressions your account was involved with:
 </body>
 </html>
 """ % "\n".join(reversed(emails_to_send[email]["html"])), subtype='html')
-  with smtplib.SMTP('localhost') as s:
+  with smtplib.SMTP('test.openmodelica.org') as s:
     s.send_message(msg)

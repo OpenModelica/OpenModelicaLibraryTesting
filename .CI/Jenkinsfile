@@ -30,7 +30,7 @@ pipeline {
           expression { params.fmi_v1_9 }
         }
         steps {
-          test('maintenance/v1.9', 'v1.9-fmi', '', omsimulatorHash())
+          test('maintenance/v1.9', 'v1.9-fmi', '', omsimulatorHash(), 'LibraryTestingRipperDB')
         }
       }
       stage('v1.11 FMI') {
@@ -46,7 +46,7 @@ pipeline {
           expression { params.fmi_v1_11 }
         }
         steps {
-          test('maintenance/v1.11', 'v1.11-fmi', '', omsimulatorHash())
+          test('maintenance/v1.11', 'v1.11-fmi', '', omsimulatorHash(), 'LibraryTestingRipperDB')
         }
       }
       stage('v1.12 FMI') {
@@ -62,7 +62,7 @@ pipeline {
           expression { params.fmi_v1_12 }
         }
         steps {
-          test('maintenance/v1.12', 'v1.12-fmi', '', omsimulatorHash())
+          test('maintenance/v1.12', 'v1.12-fmi', '', omsimulatorHash(), 'LibraryTestingRipperDB')
         }
       }
       stage('v1.13 FMI') {
@@ -78,7 +78,7 @@ pipeline {
           expression { params.fmi_v1_13 }
         }
         steps {
-          test('maintenance/v1.13', 'v1.13-fmi', '', omsimulatorHash())
+          test('maintenance/v1.13', 'v1.13-fmi', '', omsimulatorHash(), 'LibraryTestingRipperDB')
         }
       }
       stage('master FMI') {
@@ -94,7 +94,7 @@ pipeline {
           expression { params.fmi_master }
         }
         steps {
-          test('master', 'master-fmi', '', 'origin/master')
+          test('master', 'master-fmi', '', 'origin/master', 'LibraryTestingRipperDB')
         }
       }
       stage('daeMode') {
@@ -110,7 +110,7 @@ pipeline {
           expression { params.daeMode }
         }
         steps {
-          test('master', 'daeMode', 'setCommandLineOptions("--daeMode=true")', '')
+          test('master', 'daeMode', 'setCommandLineOptions("--daeMode=true")', '', 'LibraryTestingRipperDB')
         }
       }
       stage('newInst-daeMode') {
@@ -126,7 +126,7 @@ pipeline {
           expression { params.newInst_daeMode }
         }
         steps {
-          test('master', 'newInst-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --daeMode=true")', '')
+          test('master', 'newInst-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --daeMode=true")', '', 'LibraryTestingRipperDB')
         }
       }
       stage('newInst') {
@@ -142,15 +142,16 @@ pipeline {
           expression { params.newInst }
         }
         steps {
-          test('master', 'newInst', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '')
+          test('master', 'newInst', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'LibraryTestingRipperDB')
         }
       }
     } }
     stage('report') { parallel {
       stage('ripper') {
         agent {
-          node {
-            label 'ripper.openmodelica.org'
+          docker {
+            label 'linux'
+            image 'docker.openmodelica.org/build-deps:v1.13'
             customWorkspace 'ws/OpenModelicaLibraryTestingReport'
           }
         }
@@ -165,40 +166,51 @@ pipeline {
           PYTHONIOENCODING = 'utf-8'
         }
         steps {
-          sh 'cp ~/TEST_LIBS_BACKUP/sqlite3.db .'
+          sh 'rm -f sqlite3.db *.html'
+          sh '''
+          if ! test -d OMCompiler; then
+            git clone https://openmodelica.org/git-readonly/OMCompiler.git
+          fi
+          cd OMCompiler
+          git fetch
+          '''
+          sh 'wget https://libraries.openmodelica.org/sqlite3/ripper/sqlite3.db'
           sh './clean-empty-omcversion-dates.py'
 
-          sh "./all-reports.py --email --omcgitdir=../OpenModelicaLibraryTestingWork/OpenModelica/OMCompiler --historypath=/var/www/branches/history ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE}"
+          sh "./all-reports.py --email --omcgitdir=OMCompiler --historypath=/var/www/branches/history ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE}"
           sh "./all-plots.py ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE}"
 
           sh "rsync -a /var/www/branches/history/* libraries.openmodelica.org:/var/www/branches/history/"
 
           sh "./report.py --branches='${env.GITBRANCHES_NEWINST}' configs/conf.json"
-          sh "scp overview.html libraries.openmodelica.org:/var/www/branches/overview-newinst.html"
+          sh "mv overview.html overview-newinst.html"
           sh "./report.py --branches='${env.GITBRANCHES_NEWINST}' configs/conf.json configs/conf-c++.json configs/conf-old.json"
-          sh "scp overview.html libraries.openmodelica.org:/var/www/branches/overview-combined-newinst.html"
+          sh "mv overview.html overview-combined-newinst.html"
           sh "./report.py --branches='${env.GITBRANCHES_NEWINST}' configs/conf-old.json"
-          sh "scp overview.html libraries.openmodelica.org:/var/www/branches/overview-old-libs-newinst.html"
+          sh "mv overview.html overview-old-libs-newinst.html"
           sh "./report.py --branches='${env.GITBRANCHES_NEWINST}' configs/conf-c++.json"
-          sh "scp overview.html libraries.openmodelica.org:/var/www/branches/overview-c++-newinst.html"
+          sh "mv overview.html overview-c++-newinst.html"
 
           sh "./report.py --branches='${env.GITBRANCHES_FMI}' configs/conf.json"
-          sh "scp overview.html libraries.openmodelica.org:/var/www/branches/overview-fmi.html"
+          sh "mv overview.html overview-fmi.html"
           sh "./report.py --branches='${env.GITBRANCHES_FMI}' configs/conf-c++.json"
-          sh "scp overview.html libraries.openmodelica.org:/var/www/branches/overview-c++-fmi.html"
+          sh "mv overview.html overview-c++-fmi.html"
           sh "./report.py --branches='${env.GITBRANCHES_FMI}' configs/conf.json configs/conf-c++.json configs/conf-old.json"
-          sh "scp overview.html libraries.openmodelica.org:/var/www/branches/overview-combined-fmi.html"
+          sh "mv overview.html overview-combined-fmi.html"
           sh "./report.py --branches='${env.GITBRANCHES_FMI}' configs/conf-old.json"
-          sh "scp overview.html libraries.openmodelica.org:/var/www/branches/overview-old-libs-fmi.html"
+          sh "mv overview.html overview-old-libs-fmi.html"
 
           sh "./report.py --branches='${env.GITBRANCHES_DAE}' configs/conf.json"
-          sh "scp overview.html libraries.openmodelica.org:/var/www/branches/overview-dae.html"
-          sh "time ./report.py --branches='${env.GITBRANCHES_DAE}' configs/conf-c++.json"
-          sh "scp overview.html libraries.openmodelica.org:/var/www/branches/overview-c++-dae.html"
+          sh "mv overview.html overview-dae.html"
+          sh "./report.py --branches='${env.GITBRANCHES_DAE}' configs/conf-c++.json"
+          sh "mv overview.html overview-c++-dae.html"
           sh "./report.py --branches='${env.GITBRANCHES_DAE}' configs/conf.json configs/conf-c++.json configs/conf-old.json"
-          sh "scp overview.html libraries.openmodelica.org:/var/www/branches/overview-combined-dae.html"
+          sh "mv overview.html overview-combined-dae.html"
           sh "./report.py --branches='${env.GITBRANCHES_DAE}' configs/conf-old.json"
-          sh "scp overview.html libraries.openmodelica.org:/var/www/branches/overview-old-libs-dae.html"
+          sh "mv overview.html overview-old-libs-dae.html"
+
+          sshPublisher(publishers: [sshPublisherDesc(configName: 'LibraryTestingReports', transfers: [sshTransfer(sourceFiles: 'overview-*.html')])])
+
         }
       }
     } }
@@ -207,11 +219,11 @@ pipeline {
 def omsimulatorHash() {
   return '1552061d5fe27ecfa51f5289909717192b102263'
 }
-def test(branch, name, extraFlags, omsHash) {
+def test(branch, name, extraFlags, omsHash, sshConfig) {
   sh '''
   find /tmp  -name "*openmodelica.hudson*" -exec rm {} ";" || true
   mkdir -p ~/TEST_LIBS_BACKUP
-  find ~/TEST_LIBS_BACKUP -mtime +7 -exec rm {} ";"
+  find ~/TEST_LIBS_BACKUP -name sqlite3.*.db -mtime +7 -exec rm {} ";"
 
   if test -z "$WORKSPACE"; then
     echo "Odd workspace"
@@ -376,6 +388,9 @@ def test(branch, name, extraFlags, omsHash) {
   stdbuf -oL -eL time ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags='${extraFlags}' --branch="${name}" --output="libraries.openmodelica.org:/var/www/branches/${name}/" configs/conf.json configs/conf-c++.json ${params.OLD_LIBS ? "configs/conf-old.json" : ""} || (killall omc ; false) || exit 1
   """
   sh 'date'
+  sh 'ln OpenModelicaLibraryTesting/sqlite3.db OpenModelicaLibraryTesting/sqlite3.db.tmp'
+  sshPublisher(publishers: [sshPublisherDesc(configName: sshConfig, transfers: [sshTransfer(removePrefix: 'OpenModelicaLibraryTesting', sourceFiles: 'OpenModelicaLibraryTesting/sqlite3.db'), execCommand: 'mv sqlite3.db.tmp sqlite3.db'])])
+
   sh 'rm -f ~/TEST_LIBS_BACKUP/sqlite3.db'
   sh 'cp OpenModelicaLibraryTesting/sqlite3.db ~/TEST_LIBS_BACKUP/sqlite3.db'
   sh 'mv ~/TEST_LIBS_BACKUP/sqlite3.db.tmp ~/TEST_LIBS_BACKUP/sqlite3.db'
