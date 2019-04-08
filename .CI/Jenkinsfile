@@ -357,7 +357,7 @@ pipeline {
           cd OMCompiler
           git fetch
           '''
-          sh 'wget https://libraries.openmodelica.org/sqlite3/lib/sqlite3.db'
+          sh 'wget -q https://libraries.openmodelica.org/sqlite3/lib/sqlite3.db'
           sh './clean-empty-omcversion-dates.py'
 
           sh "./all-reports.py --email --omcgitdir=OMCompiler ${env.GITBRANCHES}"
