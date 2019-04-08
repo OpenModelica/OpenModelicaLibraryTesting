@@ -17,7 +17,7 @@ from matplotlib.font_manager import FontProperties
 
 parser = argparse.ArgumentParser(description='OpenModelica model testing report generation tool')
 parser.add_argument('branches', nargs='*')
-parser.add_argument('--historypath', default="/var/www/branches/history")
+parser.add_argument('--historypath', default="history")
 args = parser.parse_args()
 
 branches = [branch.split("/")[-1] for branch in args.branches]

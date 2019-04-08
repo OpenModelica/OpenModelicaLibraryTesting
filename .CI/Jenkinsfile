@@ -2,6 +2,19 @@ pipeline {
   agent none
   parameters {
     booleanParam(name: 'OLDLIBS', defaultValue: false, description: 'Also test some outdated libraries')
+
+    booleanParam(name: 'v1_8_1_rml', defaultValue: false, description: 'v1.8.1 release using RML (lib)')
+    booleanParam(name: 'v1_9_0_rml', defaultValue: false, description: 'v1.9.0 release using RML (lib)')
+    booleanParam(name: 'v1_9_1', defaultValue: false, description: 'v1.9.1 release branch (lib)')
+    booleanParam(name: 'v1_9_2', defaultValue: false, description: 'v1.9.2 release branch (lib)')
+    booleanParam(name: 'v1_9_3', defaultValue: false, description: 'v1.9.3 release branch (lib)')
+
+    booleanParam(name: 'v1_9', defaultValue: false, description: 'maintenance/v1.9 branch (lib)')
+    booleanParam(name: 'v1_11', defaultValue: false, description: 'maintenance/v1.11 branch (lib)')
+    booleanParam(name: 'v1_12', defaultValue: false, description: 'maintenance/v1.12 branch (lib)')
+    booleanParam(name: 'v1_13', defaultValue: false, description: 'maintenance/v1.13 branch (lib)')
+    booleanParam(name: 'master', defaultValue: false, description: 'master branch (lib)')
+
     booleanParam(name: 'fmi_v1_9', defaultValue: false, description: 'maintenance/v1.9 branch with FMI (ripper)')
     booleanParam(name: 'fmi_v1_11', defaultValue: false, description: 'maintenance/v1.11 branch with FMI (ripper)')
     booleanParam(name: 'fmi_v1_12', defaultValue: false, description: 'maintenance/v1.12 branch with FMI (ripper)')
@@ -11,12 +24,184 @@ pipeline {
     booleanParam(name: 'newInst_daeMode', defaultValue: false, description: 'master branch, --daeMode with -d=newInst (ripper)')
     booleanParam(name: 'newInst', defaultValue: false, description: 'master branch, with -d=newInst (ripper)')
     booleanParam(name: 'report_ripper', defaultValue: false, description: 'Generate a report for ripper without running the tests')
+    booleanParam(name: 'report_lib', defaultValue: false, description: 'Generate a report for lib without running the tests')
   }
   environment {
     LC_ALL = 'C.UTF-8'
   }
   stages {
     stage('test') { parallel {
+
+      stage('v1.8.1 rml') {
+        agent {
+          node {
+            label 'libraries.openmodelica.org'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.v1_8_1_rml }
+        }
+        steps {
+          test('maintenance/v1.8.1', 'v1.8.1', '', '', 'LibraryTestingLibrariesDB')
+        }
+      }
+
+      stage('v1.9.0 rml') {
+        agent {
+          node {
+            label 'libraries.openmodelica.org'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.v1_9_0_rml }
+        }
+        steps {
+          test('v1.9.0-rml', 'v1.9.0-rml', '', '', 'LibraryTestingLibrariesDB')
+        }
+      }
+
+      stage('v1.9.1') {
+        agent {
+          node {
+            label 'libraries.openmodelica.org'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.v1_9_1 }
+        }
+        steps {
+          test('v1.9.1', 'v1.9.1', '', '', 'LibraryTestingLibrariesDB')
+        }
+      }
+
+      stage('v1.9.2') {
+        agent {
+          node {
+            label 'libraries.openmodelica.org'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.v1_9_2 }
+        }
+        steps {
+          test('v1.9.2', 'v1.9.2', '', '', 'LibraryTestingLibrariesDB')
+        }
+      }
+
+      stage('v1.9.3') {
+        agent {
+          node {
+            label 'libraries.openmodelica.org'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.v1_9_3 }
+        }
+        steps {
+          test('v1.9.3', 'v1.9.3', '', '', 'LibraryTestingLibrariesDB')
+        }
+      }
+
+      stage('v1.9') {
+        agent {
+          node {
+            label 'libraries.openmodelica.org'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.v1_9 }
+        }
+        steps {
+          test('maintenance/v1.9', 'v1.9', '', '', 'LibraryTestingLibrariesDB')
+        }
+      }
+
+      stage('v1.11') {
+        agent {
+          node {
+            label 'libraries.openmodelica.org'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.v1_11 }
+        }
+        steps {
+          test('maintenance/v1.11', 'v1.11', '', '', 'LibraryTestingLibrariesDB')
+        }
+      }
+
+      stage('v1.12') {
+        agent {
+          node {
+            label 'libraries.openmodelica.org'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.v1_12 }
+        }
+        steps {
+          test('maintenance/v1.12', 'v1.12', '', '', 'LibraryTestingLibrariesDB')
+        }
+      }
+
+      stage('v1.13') {
+        agent {
+          node {
+            label 'libraries.openmodelica.org'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.v1_13 }
+        }
+        steps {
+          test('maintenance/v1.13', 'v1.13', '', '', 'LibraryTestingLibrariesDB')
+        }
+      }
+
+      stage('master') {
+        agent {
+          node {
+            label 'libraries.openmodelica.org'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.master }
+        }
+        steps {
+          test('master', 'master', '', '', 'LibraryTestingLibrariesDB')
+        }
+      }
+
       stage('v1.9 FMI') {
         agent {
           node {
@@ -147,6 +332,50 @@ pipeline {
       }
     } }
     stage('report') { parallel {
+      stage('lib') {
+        agent {
+          docker {
+            label 'linux'
+            image 'docker.openmodelica.org/build-deps:v1.13'
+            customWorkspace 'ws/OpenModelicaLibraryTestingReport'
+          }
+        }
+        when {
+          beforeAgent true
+          expression { params.v1_8_1_rml || params.v1_9_0_rml || params.v1_9_1 || params.v1_9_2 || params.v1_9_3 || params.v1_9 || params.v1_11 || params.v1_12 || params.v1_13 || params.master || params.report_lib }
+        }
+        environment {
+          GITBRANCHES = 'v1.8.1-rml v1.9.0-rml v1.9.1 v1.9.2 v1.9.3 maintenance/v1.9 maintenance/v1.11 maintenance/v1.12 maintenance/v1.13 master'
+          PYTHONIOENCODING = 'utf-8'
+        }
+        steps {
+          sh 'rm -rf sqlite3.db *.html history'
+          sh '''
+          if ! test -d OMCompiler; then
+            git clone https://openmodelica.org/git-readonly/OMCompiler.git
+          fi
+          cd OMCompiler
+          git fetch
+          '''
+          sh 'wget https://libraries.openmodelica.org/sqlite3/lib/sqlite3.db'
+          sh './clean-empty-omcversion-dates.py'
+
+          sh "./all-reports.py --email --omcgitdir=OMCompiler ${env.GITBRANCHES}"
+          sh "./all-plots.py ${env.GITBRANCHES}"
+
+          sh "./report.py --branches='${env.GITBRANCHES}' configs/conf-c++.json"
+          sh 'mv overview.html overview-c++.html'
+          sh "./report.py --branches='${env.GITBRANCHES}' configs/conf.json configs/conf-c++.json configs/conf-old.json"
+          sh 'mv overview.html /var/www/branches/overview-combined.html'
+          sh "./report.py --branches='${env.GITBRANCHES}' configs/conf-old.json"
+          sh "mv overview.html overview-old-libs.html"
+          sh "./report.py --branches='${env.GITBRANCHES}' configs/conf.json"
+
+          sshPublisher(publishers: [sshPublisherDesc(configName: 'LibraryTestingReports', transfers: [sshTransfer(sourceFiles: 'overview-*.html,history/**')])])
+
+        }
+      }
+
       stage('ripper') {
         agent {
           docker {
@@ -209,7 +438,7 @@ pipeline {
           sh "./report.py --branches='${env.GITBRANCHES_DAE}' configs/conf-old.json"
           sh "mv overview.html overview-old-libs-dae.html"
 
-          sshPublisher(publishers: [sshPublisherDesc(configName: 'LibraryTestingReports', transfers: [sshTransfer(sourceFiles: 'overview-*.html')])])
+          sshPublisher(publishers: [sshPublisherDesc(configName: 'LibraryTestingReports', transfers: [sshTransfer(sourceFiles: 'overview-*.html,history/**')])])
 
         }
       }
