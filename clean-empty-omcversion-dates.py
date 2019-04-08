@@ -12,10 +12,21 @@ cursor = conn.cursor()
 
 entries = cursor.execute("SELECT date,branch FROM omcversion").fetchall()
 dropped=0
+branches=set()
+branchDates = {}
 for (date,branch) in entries:
-  i=0
-  (i,) = cursor.execute("SELECT COUNT(date) FROM [%s] WHERE date=?" % branch, (date,)).fetchone()
-  if i==0:
+  branches.add(branch)
+  if branch not in branchDates:
+    branchDates[branch] = set()
+  branchDates[branch].add(date)
+for branch in branches:
+  data=cursor.execute("SELECT DISTINCT date FROM [%s]" % branch).fetchall()
+  for (date,) in data:
+    try:
+      branchDates[branch].remove(date)
+    except KeyError:
+      pass
+  for date in branchDates[branch]:
     print("Dropping empty omcversion entry (%d,%s)" % (date,branch))
     cursor.execute("DELETE FROM [omcversion] WHERE date=? AND branch=?", (date,branch))
     dropped += 1
