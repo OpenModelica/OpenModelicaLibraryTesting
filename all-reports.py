@@ -18,6 +18,9 @@ parser.add_argument('--omcgitdir', default="../OpenModelica/OMCompiler")
 parser.add_argument('--email', default=False, action='store_true')
 args = parser.parse_args()
 
+os.environ['TZ'] = 'Europe/Stockholm'
+time.tzset()
+
 branches = [branch.split("/")[-1] for branch in args.branches]
 baseurl = args.baseurl
 historyurl  = args.historyurl
@@ -79,8 +82,9 @@ for branch in branches:
     d1 = entries[i-1][0]
     d2 = entries[i][0]
     fname = "history/%s/%s..%s.html" % (branch,dateStr(d1),dateStr(d2))
-    if fname.replace(" ","%20") in urlContents:
+    if fname.replace(" ","%20") in urlContents or fname in urlContents:
       continue
+    print("Generate %s" % fname)
     v1 = getTagOrVersion(entries[i-1][1])
     v2 = getTagOrVersion(entries[i][1])
     thirdPartyChanged = ""
