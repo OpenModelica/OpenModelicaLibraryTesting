@@ -650,6 +650,7 @@ def test(branch, name, extraFlags, omsHash, sshConfig) {
   stdbuf -oL -eL time ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags='${extraFlags}' --branch="${name}" --output="libraries.openmodelica.org:/var/www/branches/${name}/" configs/conf.json configs/conf-c++.json ${params.OLD_LIBS ? "configs/conf-old.json" : ""} || (killall omc ; false) || exit 1
   """
   sh 'date'
+  sh 'rm -f OpenModelicaLibraryTesting/sqlite3.db.tmp'
   sh 'ln OpenModelicaLibraryTesting/sqlite3.db OpenModelicaLibraryTesting/sqlite3.db.tmp'
   sshPublisher(publishers: [sshPublisherDesc(configName: sshConfig, transfers: [sshTransfer(removePrefix: 'OpenModelicaLibraryTesting', sourceFiles: 'OpenModelicaLibraryTesting/sqlite3.db.tmp', execCommand: 'mv sqlite3.db.tmp sqlite3.db')])])
 
