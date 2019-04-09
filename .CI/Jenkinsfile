@@ -652,11 +652,11 @@ def test(branch, name, extraFlags, omsHash, sshConfig) {
   sh 'date'
   sh 'rm -f OpenModelicaLibraryTesting/sqlite3.db.tmp'
   sh 'ln OpenModelicaLibraryTesting/sqlite3.db OpenModelicaLibraryTesting/sqlite3.db.tmp'
-  sshPublisher(publishers: [sshPublisherDesc(configName: sshConfig, transfers: [sshTransfer(removePrefix: 'OpenModelicaLibraryTesting', sourceFiles: 'OpenModelicaLibraryTesting/sqlite3.db.tmp', execCommand: 'mv sqlite3.db.tmp sqlite3.db')])])
 
-  sh 'rm -f ~/TEST_LIBS_BACKUP/sqlite3.db'
   sh 'cp OpenModelicaLibraryTesting/sqlite3.db ~/TEST_LIBS_BACKUP/sqlite3.db'
-  sh 'mv ~/TEST_LIBS_BACKUP/sqlite3.db.tmp ~/TEST_LIBS_BACKUP/sqlite3.db'
   sh 'rm -f ~/TEST_LIBS_BACKUP/`date +sqlite3.%Y%m%d.db`'
   sh 'ln ~/TEST_LIBS_BACKUP/sqlite3.db ~/TEST_LIBS_BACKUP/`date +sqlite3.%Y%m%d.db`'
+
+  sshPublisher(publishers: [sshPublisherDesc(configName: sshConfig, transfers: [sshTransfer(removePrefix: 'OpenModelicaLibraryTesting', sourceFiles: 'OpenModelicaLibraryTesting/sqlite3.db.tmp', execCommand: 'mv sqlite3.db.tmp sqlite3.db')])])
+
 }
