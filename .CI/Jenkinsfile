@@ -371,7 +371,7 @@ pipeline {
           sh "mv overview.html overview-old-libs.html"
           sh "./report.py --branches='${env.GITBRANCHES}' configs/conf.json"
 
-          sshPublisher(publishers: [sshPublisherDesc(configName: 'LibraryTestingReports', transfers: [sshTransfer(sourceFiles: 'overview-*.html,history/**')])])
+          sshPublisher(publishers: [sshPublisherDesc(configName: 'LibraryTestingReports', transfers: [sshTransfer(sourceFiles: 'overview*.html,history/**')])])
 
         }
       }
