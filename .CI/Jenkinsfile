@@ -462,7 +462,7 @@ pipeline {
       stage('ripper') {
         agent {
           node {
-            label 'libraries.openmodelica.org'
+            label 'ripper.openmodelica.org'
           }
         }
         when {
