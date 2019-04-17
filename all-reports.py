@@ -75,8 +75,7 @@ for branch in branches:
   cursor.execute("SELECT date,omcversion FROM [omcversion] WHERE branch=? ORDER BY date ASC", (branch,))
   entries = cursor.fetchall()
   n = len(entries)
-  urlContents = str(urllib.request.urlopen("%s/%s/00_history.html" % (historyurl, branch)).read())
-
+  urlContents = urllib.request.urlopen("%s/%s/00_history.html" % (historyurl, branch)).read().decode('utf-8')
 
   for i in range(1,n):
     d1 = entries[i-1][0]
