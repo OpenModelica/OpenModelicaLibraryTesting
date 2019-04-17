@@ -371,6 +371,10 @@ pipeline {
           sh "mv overview.html overview-old-libs.html"
           sh "./report.py --branches='${env.GITBRANCHES}' configs/conf.json"
 
+          sh 'date'
+          sh 'find overview*.html history -type f | wc -l'
+          sh 'find overview*.html history'
+
           sshPublisher(publishers: [sshPublisherDesc(configName: 'LibraryTestingReports', transfers: [sshTransfer(sourceFiles: 'overview*.html,history/**')])])
 
         }
@@ -435,6 +439,10 @@ pipeline {
           sh "mv overview.html overview-combined-dae.html"
           sh "./report.py --branches='${env.GITBRANCHES_DAE}' configs/conf-old.json"
           sh "mv overview.html overview-old-libs-dae.html"
+
+          sh 'date'
+          sh 'find overview*.html history -type f | wc -l'
+          sh 'find overview*.html history'
 
           sshPublisher(publishers: [sshPublisherDesc(configName: 'LibraryTestingReports', transfers: [sshTransfer(sourceFiles: 'overview-*.html,history/**')])])
 
