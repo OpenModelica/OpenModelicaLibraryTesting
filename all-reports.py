@@ -216,10 +216,9 @@ for branch in branches:
       fout.write(tpl)
     if not os.path.exists(os.path.dirname("history/%s" % branch)):
       os.makedirs("history/%s" % branch)
-    with open("history/%s/00_history.html" % branch, "w") as fout:
-      fout.write(urlContents)
-      fout.write(email_summary_html)
-      fout.write("\n")
+    urlContents = urlContents + email_summary_html + "\n"
+  with open("history/%s/00_history.html" % branch, "w") as fout:
+    fout.write(urlContents)
 
 if not doemail:
   # We are done
