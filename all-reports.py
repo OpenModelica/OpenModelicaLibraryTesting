@@ -77,6 +77,8 @@ for branch in branches:
   n = len(entries)
   urlContents = urllib.request.urlopen("%s/%s/00_history.html" % (historyurl, branch)).read().decode('utf-8')
 
+  generated = False
+
   for i in range(1,n):
     d1 = entries[i-1][0]
     d2 = entries[i][0]
@@ -84,6 +86,7 @@ for branch in branches:
     if fname.replace(" ","%20") in urlContents or fname in urlContents:
       continue
     print("Generate %s" % fname)
+    generated = True
     v1 = getTagOrVersion(entries[i-1][1])
     v2 = getTagOrVersion(entries[i][1])
     thirdPartyChanged = ""
@@ -217,8 +220,9 @@ for branch in branches:
     if not os.path.exists(os.path.dirname("history/%s" % branch)):
       os.makedirs("history/%s" % branch)
     urlContents = urlContents + email_summary_html + "\n"
-  with open("history/%s/00_history.html" % branch, "w") as fout:
-    fout.write(urlContents)
+  if generated:
+    with open("history/%s/00_history.html" % branch, "w") as fout:
+      fout.write(urlContents)
 
 if not doemail:
   # We are done
