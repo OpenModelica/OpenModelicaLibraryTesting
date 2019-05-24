@@ -13,8 +13,8 @@ parser = argparse.ArgumentParser(description='OpenModelica model testing report 
 parser.add_argument('branches', nargs='*')
 parser.add_argument('--baseurl', default="http://libraries.openmodelica.org/branches")
 parser.add_argument('--historyurl', default="http://libraries.openmodelica.org/branches/history")
-parser.add_argument('--githuburl', default="https://github.com/OpenModelica/OMCompiler/commit")
-parser.add_argument('--omcgitdir', default="../OpenModelica/OMCompiler")
+parser.add_argument('--githuburl', default="https://github.com/OpenModelica/OpenModelica/commit")
+parser.add_argument('--omcgitdir', default="../OpenModelica/OpenModelica")
 parser.add_argument('--email', default=False, action='store_true')
 args = parser.parse_args()
 
@@ -29,7 +29,7 @@ omcgitdir = args.omcgitdir
 doemail = args.email
 
 if not os.path.exists(omcgitdir):
-  raise Exception("Could not find OMCompiler.git directory, set it with --omcgitdir. Tried: %s" % omcgitdir)
+  raise Exception("Could not find OpenModelica.git directory, set it with --omcgitdir. Tried: %s" % omcgitdir)
 
 dates = {}
 dates_str = {}

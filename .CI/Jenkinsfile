@@ -351,16 +351,16 @@ pipeline {
         steps {
           sh 'rm -rf sqlite3.db *.html history'
           sh '''
-          if ! test -d OMCompiler; then
-            git clone https://openmodelica.org/git-readonly/OMCompiler.git
+          if ! test -d OpenModelica; then
+            git clone https://openmodelica.org/git-readonly/OpenModelica.git
           fi
-          cd OMCompiler
+          cd OpenModelica
           git fetch
           '''
           sh 'wget -q https://libraries.openmodelica.org/sqlite3/lib/sqlite3.db'
           sh './clean-empty-omcversion-dates.py'
 
-          sh "./all-reports.py --email --omcgitdir=OMCompiler ${env.GITBRANCHES}"
+          sh "./all-reports.py --email --omcgitdir=OpenModelica ${env.GITBRANCHES}"
           sh "./all-plots.py ${env.GITBRANCHES}"
 
           sh "./report.py --branches='${env.GITBRANCHES}' configs/conf-c++.json"
@@ -401,16 +401,16 @@ pipeline {
         steps {
           sh 'rm -f sqlite3.db *.html'
           sh '''
-          if ! test -d OMCompiler; then
-            git clone https://openmodelica.org/git-readonly/OMCompiler.git
+          if ! test -d OpenModelica; then
+            git clone https://openmodelica.org/git-readonly/OpenModelica.git
           fi
-          cd OMCompiler
+          cd OpenModelica
           git fetch
           '''
           sh 'wget -q https://libraries.openmodelica.org/sqlite3/ripper/sqlite3.db'
           sh './clean-empty-omcversion-dates.py'
 
-          sh "./all-reports.py --email --omcgitdir=OMCompiler ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE}"
+          sh "./all-reports.py --email --omcgitdir=OpenModelica ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE}"
           sh "./all-plots.py ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE}"
 
           sh "./report.py --branches='${env.GITBRANCHES_NEWINST}' configs/conf.json"
