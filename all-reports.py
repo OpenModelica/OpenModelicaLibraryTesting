@@ -97,17 +97,20 @@ for branch in branches:
       try:
         gitlog = subprocess.check_output(["git", "log", '--pretty=<tr><td><a href="%s/%%h">%%h</a></td><td>%%an</td><td>%%s</td></tr>' % (githuburl), "%s..%s" % (v1,v2)], cwd=omcgitdir).decode("utf-8")
         print("Do git ls-tree for %s %s" % (v1,v2))
-        t1 = subprocess.check_output(["git", "ls-tree", v1, "OMCompiler/3rdParty", "3rdParty"], cwd=omcgitdir).decode("utf-8").strip().split(" ")[2].split("\t")[0]
-        t2 = subprocess.check_output(["git", "ls-tree", v2, "OMCompiler/3rdParty", "3rdParty"], cwd=omcgitdir).decode("utf-8").strip().split(" ")[2].split("\t")[0]
-        if t1 != t2:
-          try:
-            tv2 = len(subprocess.check_output(["git", "rev-list", "%s..%s" % (t2,t1)], cwd=omcgitdir+"/"+thirdParty).decode("utf-8").strip().split("\n"))
-          except subprocess.CalledProcessError as e:
-            tv2 = 0
-          if tv2 > 0:
-            thirdPartyChanged = '<h3>3rdParty changes</h3>Note that the 3rdParty libraries <b>REVERTED TO AN OLD COMMIT</b>: <a href="%s">%s..%s</a>' % (githuburl.replace("OMCompiler/commit", "OMCompiler-3rdParty/compare/%s...%s" % (t2,t1)), t1[:12], t2[:12])
-          else:
-            thirdPartyChanged = '<h3>3rdParty changes</h3>Note that the 3rdParty libraries changed: <a href="%s">%s..%s</a>' % (githuburl.replace("OMCompiler/commit", "OMCompiler-3rdParty/compare/%s...%s" % (t1,t2)), t1[:12], t2[:12])
+        try:
+          t1 = subprocess.check_output(["git", "ls-tree", v1, "OMCompiler/3rdParty"], cwd=omcgitdir).decode("utf-8").strip().split(" ")[2].split("\t")[0]
+          t2 = subprocess.check_output(["git", "ls-tree", v2, "OMCompiler/3rdParty"], cwd=omcgitdir).decode("utf-8").strip().split(" ")[2].split("\t")[0]
+          if t1 != t2:
+            try:
+              tv2 = len(subprocess.check_output(["git", "rev-list", "%s..%s" % (t2,t1)], cwd=omcgitdir+"/"+thirdParty).decode("utf-8").strip().split("\n"))
+            except subprocess.CalledProcessError as e:
+              tv2 = 0
+            if tv2 > 0:
+              thirdPartyChanged = '<h3>3rdParty changes</h3>Note that the 3rdParty libraries <b>REVERTED TO AN OLD COMMIT</b>: <a href="%s">%s..%s</a>' % (githuburl.replace("OMCompiler/commit", "OMCompiler-3rdParty/compare/%s...%s" % (t2,t1)), t1[:12], t2[:12])
+            else:
+              thirdPartyChanged = '<h3>3rdParty changes</h3>Note that the 3rdParty libraries changed: <a href="%s">%s..%s</a>' % (githuburl.replace("OMCompiler/commit", "OMCompiler-3rdParty/compare/%s...%s" % (t1,t2)), t1[:12], t2[:12])
+        except:
+          pass
         for email in [email.strip() for email in subprocess.check_output(["git", "log", '--pretty=%ae', "%s..%s" % (v1,v2)], cwd=omcgitdir).decode("utf-8").split("\n")]:
           if "@" not in email:
             continue
