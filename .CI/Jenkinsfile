@@ -406,6 +406,8 @@ pipeline {
           fi
           cd OpenModelica
           git fetch
+          git submodule init
+          git submodule update
           '''
           sh 'wget -q https://libraries.openmodelica.org/sqlite3/ripper/sqlite3.db'
           sh './clean-empty-omcversion-dates.py'
