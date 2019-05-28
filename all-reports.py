@@ -102,7 +102,7 @@ for branch in branches:
           t2 = subprocess.check_output(["git", "ls-tree", v2, "OMCompiler/3rdParty"], cwd=omcgitdir).decode("utf-8").strip().split(" ")[2].split("\t")[0]
           if t1 != t2:
             try:
-              tv2 = len(subprocess.check_output(["git", "rev-list", "%s..%s" % (t2,t1)], cwd=omcgitdir+"/"+thirdParty).decode("utf-8").strip().split("\n"))
+              tv2 = len(subprocess.check_output(["git", "rev-list", "%s..%s" % (t2,t1)], cwd=omcgitdir+"/OMCompiler/3rdParty").decode("utf-8").strip().split("\n"))
             except subprocess.CalledProcessError as e:
               tv2 = 0
             if tv2 > 0:
