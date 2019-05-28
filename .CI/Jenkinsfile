@@ -558,7 +558,7 @@ def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler) {
   git reset --hard origin/master
   git clean -fdx
 
-  cd ${OMCPATH}OMCompiler
+  cd ${OMCPATH}
 
   if ! test -f ~/saved_omc/${name}/.nogit; then
     git reset --hard && git checkout -f "${branch}" && (git rev-parse --verify "tags/${branch}"  || (git reset --hard "origin/${branch}" && git pull)) && git fetch --tags || exit 1
@@ -606,11 +606,11 @@ def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler) {
 
   sh """
   cd OpenModelica
-  if ! time make -j9 -C libraries all BUILD_DIR="`pwd`/${OMCPATH}OMCompiler/build/lib/omlibrary/" > log 2>&1; then
+  if ! time make -j9 -C libraries all BUILD_DIR="`pwd`/${OMCPATH}/build/lib/omlibrary/" > log 2>&1; then
     cat log
     exit 1
   fi
-  cp -a /mnt/ReferenceFiles/ExtraLibs/packaged/* ${OMCPATH}OMCompiler/build/lib/omlibrary/
+  cp -a /mnt/ReferenceFiles/ExtraLibs/packaged/* ${OMCPATH}/build/lib/omlibrary/
   if ! time make -j9 -C testsuite/ReferenceFiles > log 2>&1; then
     cat log
     exit 1
@@ -648,7 +648,7 @@ def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler) {
   sh 'date'
 
   sh """
-  export OPENMODELICAHOME="${WORKSPACE}/OpenModelica/${OMCPATH}OMCompiler/build"
+  export OPENMODELICAHOME="${WORKSPACE}/OpenModelica/${OMCPATH}/build"
   export MSLREFERENCE="${MSLREFERENCE}"
   export REFERENCEFILES="${REFERENCEFILES}"
   export GITREPOS="${GITREPOS}"
