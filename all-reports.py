@@ -96,9 +96,9 @@ for branch in branches:
     if v1 != v2:
       try:
         gitlog = subprocess.check_output(["git", "log", '--pretty=<tr><td><a href="%s/%%h">%%h</a></td><td>%%an</td><td>%%s</td></tr>' % (githuburl), "%s..%s" % (v1,v2)], cwd=omcgitdir).decode("utf-8")
-        thirdParty = "OMCompiler/3rdParty"
-        t1 = subprocess.check_output(["git", "ls-tree", v1, thirdParty], cwd=omcgitdir).decode("utf-8").strip().split(" ")[2].split("\t")[0]
-        t2 = subprocess.check_output(["git", "ls-tree", v2, thirdParty], cwd=omcgitdir).decode("utf-8").strip().split(" ")[2].split("\t")[0]
+        thirdParty =
+        t1 = subprocess.check_output(["git", "ls-tree", v1, "OMCompiler/3rdParty", "3rdParty"], cwd=omcgitdir).decode("utf-8").strip().split(" ")[2].split("\t")[0]
+        t2 = subprocess.check_output(["git", "ls-tree", v2, "OMCompiler/3rdParty", "3rdParty"], cwd=omcgitdir).decode("utf-8").strip().split(" ")[2].split("\t")[0]
         if t1 != t2:
           try:
             tv2 = len(subprocess.check_output(["git", "rev-list", "%s..%s" % (t2,t1)], cwd=omcgitdir+"/"+thirdParty).decode("utf-8").strip().split("\n"))
