@@ -553,6 +553,7 @@ def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler) {
   fi
   cd OpenModelica
   git fetch
+  rm -rf OMCompiler # Make sure the old submodule is not there
   git reset --hard origin/master
   git clean -fdx
 
