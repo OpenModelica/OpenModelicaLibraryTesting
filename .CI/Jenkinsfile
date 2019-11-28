@@ -13,12 +13,16 @@ pipeline {
     booleanParam(name: 'v1_11', defaultValue: false, description: 'maintenance/v1.11 branch (lib)')
     booleanParam(name: 'v1_12', defaultValue: false, description: 'maintenance/v1.12 branch (lib)')
     booleanParam(name: 'v1_13', defaultValue: false, description: 'maintenance/v1.13 branch (lib)')
+    booleanParam(name: 'v1_14', defaultValue: false, description: 'maintenance/v1.14 branch (lib)')
+    booleanParam(name: 'v1_15', defaultValue: false, description: 'maintenance/v1.15 branch (lib)')
     booleanParam(name: 'master', defaultValue: false, description: 'master branch (lib)')
 
     booleanParam(name: 'fmi_v1_9', defaultValue: false, description: 'maintenance/v1.9 branch with FMI (ripper)')
     booleanParam(name: 'fmi_v1_11', defaultValue: false, description: 'maintenance/v1.11 branch with FMI (ripper)')
     booleanParam(name: 'fmi_v1_12', defaultValue: false, description: 'maintenance/v1.12 branch with FMI (ripper)')
     booleanParam(name: 'fmi_v1_13', defaultValue: false, description: 'maintenance/v1.13 branch with FMI (ripper)')
+    booleanParam(name: 'fmi_v1_14', defaultValue: false, description: 'maintenance/v1.14 branch with FMI (ripper)')
+    booleanParam(name: 'fmi_v1_15', defaultValue: false, description: 'maintenance/v1.15 branch with FMI (ripper)')
     booleanParam(name: 'fmi_master', defaultValue: false, description: 'master branch with FMI (ripper)')
     booleanParam(name: 'daeMode', defaultValue: false, description: 'master branch, --daeMode (ripper)')
     booleanParam(name: 'newInst_daeMode', defaultValue: false, description: 'master branch, --daeMode with -d=newInst (ripper)')
@@ -185,6 +189,40 @@ pipeline {
         }
       }
 
+      stage('v1.14') {
+        agent {
+          node {
+            label 'libraries.openmodelica.org'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.v1_14 }
+        }
+        steps {
+          test('maintenance/v1.14', 'v1.14', '', '', 'LibraryTestingLibrariesDB', true)
+        }
+      }
+
+      stage('v1.15') {
+        agent {
+          node {
+            label 'libraries.openmodelica.org'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.v1_15 }
+        }
+        steps {
+          test('maintenance/v1.15', 'v1.15', '', '', 'LibraryTestingLibrariesDB', true)
+        }
+      }
+
       stage('master') {
         agent {
           node {
@@ -266,6 +304,38 @@ pipeline {
           test('maintenance/v1.13', 'v1.13-fmi', '', omsimulatorHash(), 'LibraryTestingRipperDB', true)
         }
       }
+      stage('v1.14 FMI') {
+        agent {
+          node {
+            label 'ripper.openmodelica.org'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.fmi_v1_14 }
+        }
+        steps {
+          test('maintenance/v1.14', 'v1.14-fmi', '', omsimulatorHash(), 'LibraryTestingRipperDB', true)
+        }
+      }
+      stage('v1.15 FMI') {
+        agent {
+          node {
+            label 'ripper.openmodelica.org'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.fmi_v1_15 }
+        }
+        steps {
+          test('maintenance/v1.15', 'v1.15-fmi', '', omsimulatorHash(), 'LibraryTestingRipperDB', true)
+        }
+      }
       stage('master FMI') {
         agent {
           node {
@@ -342,10 +412,10 @@ pipeline {
         }
         when {
           beforeAgent true
-          expression { params.v1_8_1_rml || params.v1_9_0_rml || params.v1_9_1 || params.v1_9_2 || params.v1_9_3 || params.v1_9 || params.v1_11 || params.v1_12 || params.v1_13 || params.master || params.report_lib }
+          expression { params.v1_8_1_rml || params.v1_9_0_rml || params.v1_9_1 || params.v1_9_2 || params.v1_9_3 || params.v1_9 || params.v1_11 || params.v1_12 || params.v1_13 || params.v1_14 || params.v1_15 || params.master || params.report_lib }
         }
         environment {
-          GITBRANCHES = 'v1.8.1-rml v1.9.0-rml v1.9.1 v1.9.2 v1.9.3 maintenance/v1.9 maintenance/v1.11 maintenance/v1.12 maintenance/v1.13 master'
+          GITBRANCHES = 'v1.8.1-rml v1.9.0-rml v1.9.1 v1.9.2 v1.9.3 maintenance/v1.9 maintenance/v1.11 maintenance/v1.12 maintenance/v1.13 maintenance/v1.14 maintenance/v1.15 master'
           PYTHONIOENCODING = 'utf-8'
         }
         steps {
@@ -390,10 +460,10 @@ pipeline {
         }
         when {
           beforeAgent true
-          expression { params.fmi_v1_9 || params.fmi_v1_11 || params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_master || params.daeMode || params.newInst_daeMode  || params.newInst || params.report_ripper }
+          expression { params.fmi_v1_9 || params.fmi_v1_11 || params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_v1_14 || params.fmi_v1_15 || params.fmi_master || params.daeMode || params.newInst_daeMode  || params.newInst || params.report_ripper }
         }
         environment {
-          GITBRANCHES_FMI = 'maintenance/v1.9-fmi maintenance/v1.11-fmi maintenance/v1.12-fmi maintenance/v1.13-fmi master-fmi'
+          GITBRANCHES_FMI = 'maintenance/v1.9-fmi maintenance/v1.11-fmi maintenance/v1.12-fmi maintenance/v1.13-fmi maintenance/v1.14-fmi maintenance/v1.15-fmi master-fmi'
           GITBRANCHES_NEWINST = 'newInst'
           GITBRANCHES_DAE = 'daemode newInst-daemode'
           PYTHONIOENCODING = 'utf-8'
@@ -459,7 +529,7 @@ pipeline {
         }
         when {
           beforeAgent true
-          expression { params.v1_8_1_rml || params.v1_9_0_rml || params.v1_9_1 || params.v1_9_2 || params.v1_9_3 || params.v1_9 || params.v1_11 || params.v1_12 || params.v1_13 || params.master || params.report_lib }
+          expression { params.v1_8_1_rml || params.v1_9_0_rml || params.v1_9_1 || params.v1_9_2 || params.v1_9_3 || params.v1_9 || params.v1_11 || params.v1_12 || params.v1_13 || params.v1_14 || params.v1_15 || params.master || params.report_lib }
         }
         steps {
           sh 'cp ~/TEST_LIBS_BACKUP/sqlite3.db .'
@@ -475,7 +545,7 @@ pipeline {
         }
         when {
           beforeAgent true
-          expression { params.fmi_v1_9 || params.fmi_v1_11 || params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_master || params.daeMode || params.newInst_daeMode  || params.newInst || params.report_ripper }
+          expression { params.fmi_v1_9 || params.fmi_v1_11 || params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_v1_14 || params.fmi_v1_15 || params.fmi_master || params.daeMode || params.newInst_daeMode  || params.newInst || params.report_ripper }
         }
         steps {
           sh 'cp ~/TEST_LIBS_BACKUP/sqlite3.db .'
