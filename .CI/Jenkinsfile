@@ -202,7 +202,7 @@ pipeline {
           expression { params.v1_14 }
         }
         steps {
-          test('maintenance/v1.14', 'v1.14', '', '', 'LibraryTestingLibrariesDB', true)
+          test('maintenance/v1.14', 'v1.14', '', '', 'LibraryTestingLibrariesDB', false)
         }
       }
 
@@ -219,7 +219,7 @@ pipeline {
           expression { params.v1_15 }
         }
         steps {
-          test('maintenance/v1.15', 'v1.15', '', '', 'LibraryTestingLibrariesDB', true)
+          test('maintenance/v1.15', 'v1.15', '', '', 'LibraryTestingLibrariesDB', false)
         }
       }
 
@@ -317,7 +317,7 @@ pipeline {
           expression { params.fmi_v1_14 }
         }
         steps {
-          test('maintenance/v1.14', 'v1.14-fmi', '', omsimulatorHash(), 'LibraryTestingRipperDB', true)
+          test('maintenance/v1.14', 'v1.14-fmi', '', omsimulatorHash(), 'LibraryTestingRipperDB', false)
         }
       }
       stage('v1.15 FMI') {
@@ -333,7 +333,7 @@ pipeline {
           expression { params.fmi_v1_15 }
         }
         steps {
-          test('maintenance/v1.15', 'v1.15-fmi', '', omsimulatorHash(), 'LibraryTestingRipperDB', true)
+          test('maintenance/v1.15', 'v1.15-fmi', '', omsimulatorHash(), 'LibraryTestingRipperDB', false)
         }
       }
       stage('master FMI') {
