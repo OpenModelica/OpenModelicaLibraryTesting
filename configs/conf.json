@@ -6,7 +6,7 @@
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
     "referenceFiles":"$MSLREFERENCE/../../MAP-LIB_ReferenceResults/v3.2.3",
-    "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.2\") then exit(1); end if;"],
+    "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"],
     "optlevel":"-Os -march=native"
   },
   {
