@@ -61,8 +61,8 @@ def getTagOrVersion(v):
 def libraryLink(branch, libname):
   return '<a href="%s/%s/%s/%s.html">%s</a>' % (baseurl,branch,libname,libname,libname)
 
-def modelLink(libname, modelname, extension):
-  return '<a href="%s/%s/%s/files/%s_%s.%s">%s</a>' % (baseurl,branch,libname,libname,modelname,extension,modelname)
+def modelLink(libname, modelname, extension, text):
+  return '<a href="%s/%s/%s/files/%s_%s.%s">%s</a>' % (baseurl,branch,libname,libname,modelname,extension,text)
 
 emails_to_send = {}
 for branch in branches:
@@ -191,7 +191,7 @@ for branch in branches:
         msg = " ".join(msgs)
       else:
         msg = "" # Happens if we try to generate a report without previous results
-      regstrs.append('<tr><td>%s</td><td>%s</td><td class="%s">%s</td></tr>' % (libraryLink(branch, libname),modelLink(libname, model, "err"),color,msg))
+      regstrs.append('<tr><td>%s</td><td>%s %s</td><td class="%s">%s</td></tr>' % (libraryLink(branch, libname),modelLink(libname, model, "err", model),modelLink(libname, model, "sim", "(sim)"),color,msg))
     tpl = tpl.replace("#NUMIMPROVE#",str(numImproved)).replace("#NUMREGRESSION#",str(numRegression)).replace("#NUMPERFIMPROVE#",str(numPerformanceImproved)).replace("#NUMPERFREGRESSION#",str(numPerformanceRegression)).replace("#MODELCHANGES#", "\n".join(regstrs))
     tpl = tpl.replace("#BRANCH#",branch).replace("#DATE1#",dateStr(d1)).replace("#DATE2#",dateStr(d2))
 
