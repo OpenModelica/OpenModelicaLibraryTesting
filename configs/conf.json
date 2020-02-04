@@ -99,6 +99,9 @@
     "library":"Modelica_StateGraph2"
   },
   {
+    "library":"PowerGrids"
+  },
+  {
     "library":"PowerSystems",
     "optlevel":"-Os -march=native"
   },
