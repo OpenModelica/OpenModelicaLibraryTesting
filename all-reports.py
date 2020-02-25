@@ -72,7 +72,7 @@ for branch in branches:
   except:
     raise Exception("No such table '%s'; specify it using --branch=XXX" % branch)
   cursor.execute('''CREATE INDEX IF NOT EXISTS [idx_%s_date] ON [%s](date)''' % (branch,branch))
-  cursor.execute("SELECT date,omcversion FROM [omcversion] WHERE branch=? ORDER BY date ASC", (branch,))
+  cursor.execute("SELECT date,omcversion FROM [omcversion] WHERE branch LIKE ? COLLATE NOCASE ORDER BY date ASC", (branch,))
   entries = cursor.fetchall()
   n = len(entries)
   urlContents = urllib.request.urlopen("%s/%s/00_history.html" % (historyurl, branch)).read().decode('utf-8')
