@@ -197,10 +197,10 @@ for branch in branches:
 
     libstrs = []
     for libname in sorted(list(libs)):
-      cursor.execute("SELECT libversion,confighash FROM [libversion] WHERE branch=? AND date<=? AND libname=? ORDER BY date DESC LIMIT 1", (branch,d1,libname))
+      cursor.execute("SELECT libversion,confighash FROM [libversion] WHERE branch LIKE ? COLLATE NOCASE AND date<=? AND libname=? ORDER BY date DESC LIMIT 1", (branch,d1,libname))
       (lv1,lh1) = cursor.fetchone()
       lv1 = lv1.strip()
-      cursor.execute("SELECT libversion,confighash FROM [libversion] WHERE branch=? AND date<=? AND libname=? ORDER BY date DESC LIMIT 1", (branch,d2,libname))
+      cursor.execute("SELECT libversion,confighash FROM [libversion] WHERE branch LIKE ? COLLATE NOCASE AND date<=? AND libname=? ORDER BY date DESC LIMIT 1", (branch,d2,libname))
       (lv2,lh2) = cursor.fetchone()
       lv2 = lv2.strip()
       if lv1 != lv2:
