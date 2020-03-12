@@ -1,3 +1,3 @@
-loadFile("HelloWorld.mo");getErrorString();
-system("rm -f HelloWorld *HelloWorld*.o *HelloWorld*.c *HelloWorld*.c *HelloWorld*.so");
-buildModel(HelloWorld);getErrorString();
+loadFile("HelloWorld.mo"); getErrorString();
+system("rm -f HelloWorld *HelloWorld*.o *HelloWorld*.sh *HelloWorld*.bat *HelloWorld*.h *HelloWorld*.cpp *HelloWorld*.c *HelloWorld*.so OMCpp*HelloWorld* HelloWorld.cmd.mos HelloWorld_* HelloWorld.libs HelloWorld.makefile HelloWorld.log rm -f HelloWorld *HelloWorld*.o *HelloWorld*.sh *HelloWorld*.bat *HelloWorld*.h *HelloWorld*.cpp *HelloWorld*.c *HelloWorld*.so OMCpp*HelloWorld* HelloWorld.cmd.mos HelloWorld_* HelloWorld.libs HelloWorld.makefile HelloWorldX*");
+buildModel(HelloWorld); getErrorString();
