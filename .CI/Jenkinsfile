@@ -624,15 +624,15 @@ def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler) {
   if test ! -d OMLibraries; then
     git clone --recursive https://openmodelica.org/git-readonly/OMLibraries.git OMLibraries
   fi
-  cd OpenModelica
+  cd OMLibraries
+  git fetch
+  git reset --hard origin/master
+
+  cd ../OpenModelica
   git fetch
   rm -rf OMCompiler # Make sure the old submodule is not there
   git reset --hard origin/master
   git clean -fdx
-
-  cd ../OMLibraries
-  git fetch
-  git reset --hard origin/master
 
   cd ${OMCPATH}
 
