@@ -621,11 +621,18 @@ def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler) {
   if test ! -d OMCompiler; then
     git clone --recursive https://openmodelica.org/git-readonly/OMCompiler.git OMCompiler
   fi
+  if test ! -d OMLibraries; then
+    git clone --recursive https://openmodelica.org/git-readonly/OMLibraries.git OMLibraries
+  fi
   cd OpenModelica
   git fetch
   rm -rf OMCompiler # Make sure the old submodule is not there
   git reset --hard origin/master
   git clean -fdx
+
+  cd ../OMLibraries
+  git fetch
+  git reset --hard origin/master
 
   cd ${OMCPATH}
 
@@ -677,7 +684,8 @@ def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler) {
   cd OpenModelica
   rm -rf "`pwd`/${OMCPATH}/build/lib/omlibrary/"
   mkdir -p "`pwd`/${OMCPATH}/build/lib/omlibrary/"
-  if ! time make -j9 -C libraries all BUILD_DIR="`pwd`/${OMCPATH}/build/lib/omlibrary/" > log 2>&1; then
+  (cd ../OMLibraries && git rev-parse HEAD)
+  if ! time make -j9 -C ../OMLibraries all BUILD_DIR="`pwd`/${OMCPATH}/build/lib/omlibrary/" > log 2>&1; then
     cat log
     exit 1
   fi
