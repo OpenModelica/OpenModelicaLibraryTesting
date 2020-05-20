@@ -675,6 +675,8 @@ def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler) {
 
   sh """
   cd OpenModelica
+  rm -rf "`pwd`/${OMCPATH}/build/lib/omlibrary/"
+  mkdir -p "`pwd`/${OMCPATH}/build/lib/omlibrary/"
   if ! time make -j9 -C libraries all BUILD_DIR="`pwd`/${OMCPATH}/build/lib/omlibrary/" > log 2>&1; then
     cat log
     exit 1
