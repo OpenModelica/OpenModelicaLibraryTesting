@@ -182,6 +182,9 @@
     "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"]
   },
   {
+    "library":"MEV"
+  },  
+  {
     "library":"MessagePack"
   },
   {
