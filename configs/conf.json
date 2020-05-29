@@ -120,7 +120,11 @@
   },
   {
     "library":"Buildings",
-    "libraryVersion":"5.0.1"
+    "libraryVersion":"6.0.0"
+  },
+  {
+    "library":"Buildings",
+    "libraryVersion":"7.0.0"
   },
   {
     "library":"Buildings",
