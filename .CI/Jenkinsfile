@@ -412,7 +412,7 @@ pipeline {
         options { skipDefaultCheckout() }
         when {
           beforeAgent true
-          expression { params.newInst }
+          expression { params.cvode }
         }
         steps {
           test('master', 'cvode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'LibraryTestingRipperDB', false, '-s cvode')
