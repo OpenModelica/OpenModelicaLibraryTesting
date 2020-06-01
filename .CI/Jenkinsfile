@@ -402,7 +402,7 @@ pipeline {
           test('master', 'newInst', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'LibraryTestingRipperDB', false, '')
         }
       }
-      stage('newInst') {
+      stage('cvode') {
         agent {
           node {
             label 'ripper.openmodelica.org'
