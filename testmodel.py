@@ -388,7 +388,9 @@ try:
     #res = checkOutputTimeout("%s %s >> %s 2>&1" % (conf["fmisimulator"],cmd,simFile), conf["ulimitExe"])
     res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,conf["fmisimulator"],cmd,conf["fileName"]), 1.05*conf["ulimitExe"])
   else:
-    cmd = "./%s %s %s %s" % (conf["fileName"],conf["simFlags"],annotationSimFlags,emit_protected)
+    cmd = ("./%s %s %s %s" % (conf["fileName"],conf["simFlags"],annotationSimFlags,emit_protected)).strip()
+    if conf["simCodeTarget"]=="C":
+      cmd = cmd + " -lv LOG_STATS"
     with open(simFile,"w") as fp:
       fp.write("Regular simulation: %s\n" % cmd)
     res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,cmd,conf["fileName"]), conf["ulimitExe"])

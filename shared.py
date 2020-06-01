@@ -3,7 +3,7 @@
 import re, os, subprocess
 import simplejson as json
 
-def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCommands):
+def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCommands,extrasimflags):
   for (key,default) in overrideDefaults:
     if key not in data:
       data[key] = default
@@ -25,7 +25,12 @@ def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,overrideDefaults,default
     data["ulimitOmc"] = int(data.get("ulimitOmc") or 660) # 11 minutes to generate the C-code
     data["ulimitExe"] = int(data.get("ulimitExe") or 8*60) # 8 additional minutes to initialize and run the simulation
     data["ulimitLoadModel"] = int(data.get("ulimitLoadModel") or 90)
-    data["extraSimFlags"] = data.get("extraSimFlags") or "" # no extra sim flags
+    simflags = []
+    if data.get("extraSimFlags"):
+      simflags.append(data.get("extraSimFlags"))
+    if extrasimflags:
+      simflags.append(extrasimflags)
+    data["extraSimFlags"] = " ".join(simflags) # no extra sim flags
     data["libraryVersion"] = data.get("libraryVersion") or "default"
     data["alarmFlag"] = data.get("alarmFlag") or (alarmFlag if data["simCodeTarget"]=="C" else "")
     data["abortSlowSimulation"] = data.get("abortSlowSimulation") or (abortSimulationFlag if data["simCodeTarget"]=="C" else "")
@@ -36,8 +41,8 @@ def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,overrideDefaults,default
     print("Failed to fix data for: %s with extra args: %s" % (str(data),str((rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands))))
     raise
 
-def readConfig(c,rmlStyle=False,abortSimulationFlag="",alarmFlag="",overrideDefaults=[],defaultCustomCommands=[]):
-  return [fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCommands) for data in json.load(open(c))]
+def readConfig(c,rmlStyle=False,abortSimulationFlag="",alarmFlag="",overrideDefaults=[],defaultCustomCommands=[],extrasimflags=""):
+  return [fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCommands,extrasimflags) for data in json.load(open(c))]
 
 def libname(library, conf):
   return library+("_"+conf["libraryVersion"] if conf["libraryVersion"]!="default" else "")+(("_" + conf["configExtraName"]) if "configExtraName" in conf else "")

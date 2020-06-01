@@ -29,6 +29,8 @@ pipeline {
     booleanParam(name: 'newInst', defaultValue: false, description: 'master branch, with -d=newInst (ripper)')
     booleanParam(name: 'report_ripper', defaultValue: false, description: 'Generate a report for ripper without running the tests')
     booleanParam(name: 'report_lib', defaultValue: false, description: 'Generate a report for lib without running the tests')
+
+    booleanParam(name: 'cvode', defaultValue: false, description: 'master branch, with -d=newInst and -s cvode (ripper). This is an experimental job that does not run on a fixed schedule.')
   }
   environment {
     LC_ALL = 'C.UTF-8'
@@ -49,7 +51,7 @@ pipeline {
           expression { params.v1_8_1_rml }
         }
         steps {
-          test('maintenance/v1.8.1', 'v1.8.1', '', '', 'LibraryTestingLibrariesDB', true)
+          test('maintenance/v1.8.1', 'v1.8.1', '', '', 'LibraryTestingLibrariesDB', true, '')
         }
       }
 
@@ -66,7 +68,7 @@ pipeline {
           expression { params.v1_9_0_rml }
         }
         steps {
-          test('v1.9.0-rml', 'v1.9.0-rml', '', '', 'LibraryTestingLibrariesDB', true)
+          test('v1.9.0-rml', 'v1.9.0-rml', '', '', 'LibraryTestingLibrariesDB', true, '')
         }
       }
 
@@ -83,7 +85,7 @@ pipeline {
           expression { params.v1_9_1 }
         }
         steps {
-          test('v1.9.1', 'v1.9.1', '', '', 'LibraryTestingLibrariesDB', true)
+          test('v1.9.1', 'v1.9.1', '', '', 'LibraryTestingLibrariesDB', true, '')
         }
       }
 
@@ -100,7 +102,7 @@ pipeline {
           expression { params.v1_9_2 }
         }
         steps {
-          test('v1.9.2', 'v1.9.2', '', '', 'LibraryTestingLibrariesDB', true)
+          test('v1.9.2', 'v1.9.2', '', '', 'LibraryTestingLibrariesDB', true, '')
         }
       }
 
@@ -117,7 +119,7 @@ pipeline {
           expression { params.v1_9_3 }
         }
         steps {
-          test('v1.9.3', 'v1.9.3', '', '', 'LibraryTestingLibrariesDB', true)
+          test('v1.9.3', 'v1.9.3', '', '', 'LibraryTestingLibrariesDB', true, '')
         }
       }
 
@@ -134,7 +136,7 @@ pipeline {
           expression { params.v1_9 }
         }
         steps {
-          test('maintenance/v1.9', 'v1.9', '', '', 'LibraryTestingLibrariesDB', true)
+          test('maintenance/v1.9', 'v1.9', '', '', 'LibraryTestingLibrariesDB', true, '')
         }
       }
 
@@ -151,7 +153,7 @@ pipeline {
           expression { params.v1_11 }
         }
         steps {
-          test('maintenance/v1.11', 'v1.11', '', '', 'LibraryTestingLibrariesDB', true)
+          test('maintenance/v1.11', 'v1.11', '', '', 'LibraryTestingLibrariesDB', true, '')
         }
       }
 
@@ -168,7 +170,7 @@ pipeline {
           expression { params.v1_12 }
         }
         steps {
-          test('maintenance/v1.12', 'v1.12', '', '', 'LibraryTestingLibrariesDB', true)
+          test('maintenance/v1.12', 'v1.12', '', '', 'LibraryTestingLibrariesDB', true, '')
         }
       }
 
@@ -185,7 +187,7 @@ pipeline {
           expression { params.v1_13 }
         }
         steps {
-          test('maintenance/v1.13', 'v1.13', '', '', 'LibraryTestingLibrariesDB', true)
+          test('maintenance/v1.13', 'v1.13', '', '', 'LibraryTestingLibrariesDB', true, '')
         }
       }
 
@@ -202,7 +204,7 @@ pipeline {
           expression { params.v1_14 }
         }
         steps {
-          test('maintenance/v1.14', 'v1.14', '', '', 'LibraryTestingLibrariesDB', false)
+          test('maintenance/v1.14', 'v1.14', '', '', 'LibraryTestingLibrariesDB', false, '')
         }
       }
 
@@ -219,7 +221,7 @@ pipeline {
           expression { params.v1_15 }
         }
         steps {
-          test('maintenance/v1.15', 'v1.15', '', '', 'LibraryTestingLibrariesDB', false)
+          test('maintenance/v1.15', 'v1.15', '', '', 'LibraryTestingLibrariesDB', false, '')
         }
       }
 
@@ -236,7 +238,7 @@ pipeline {
           expression { params.master }
         }
         steps {
-          test('master', 'master', '', '', 'LibraryTestingLibrariesDB', false)
+          test('master', 'master', '', '', 'LibraryTestingLibrariesDB', false, '')
         }
       }
 
@@ -253,7 +255,7 @@ pipeline {
           expression { params.fmi_v1_9 }
         }
         steps {
-          test('maintenance/v1.9', 'v1.9-fmi', '', omsimulatorHash(), 'LibraryTestingRipperDB', true)
+          test('maintenance/v1.9', 'v1.9-fmi', '', omsimulatorHash(), 'LibraryTestingRipperDB', true, '')
         }
       }
       stage('v1.11 FMI') {
@@ -269,7 +271,7 @@ pipeline {
           expression { params.fmi_v1_11 }
         }
         steps {
-          test('maintenance/v1.11', 'v1.11-fmi', '', omsimulatorHash(), 'LibraryTestingRipperDB', true)
+          test('maintenance/v1.11', 'v1.11-fmi', '', omsimulatorHash(), 'LibraryTestingRipperDB', true, '')
         }
       }
       stage('v1.12 FMI') {
@@ -285,7 +287,7 @@ pipeline {
           expression { params.fmi_v1_12 }
         }
         steps {
-          test('maintenance/v1.12', 'v1.12-fmi', '', omsimulatorHash(), 'LibraryTestingRipperDB', true)
+          test('maintenance/v1.12', 'v1.12-fmi', '', omsimulatorHash(), 'LibraryTestingRipperDB', true, '')
         }
       }
       stage('v1.13 FMI') {
@@ -301,7 +303,7 @@ pipeline {
           expression { params.fmi_v1_13 }
         }
         steps {
-          test('maintenance/v1.13', 'v1.13-fmi', '', omsimulatorHash(), 'LibraryTestingRipperDB', true)
+          test('maintenance/v1.13', 'v1.13-fmi', '', omsimulatorHash(), 'LibraryTestingRipperDB', true, '')
         }
       }
       stage('v1.14 FMI') {
@@ -317,7 +319,7 @@ pipeline {
           expression { params.fmi_v1_14 }
         }
         steps {
-          test('maintenance/v1.14', 'v1.14-fmi', '', omsimulatorHash(), 'LibraryTestingRipperDB', false)
+          test('maintenance/v1.14', 'v1.14-fmi', '', omsimulatorHash(), 'LibraryTestingRipperDB', false, '')
         }
       }
       stage('v1.15 FMI') {
@@ -333,7 +335,7 @@ pipeline {
           expression { params.fmi_v1_15 }
         }
         steps {
-          test('maintenance/v1.15', 'v1.15-fmi', '', omsimulatorHash(), 'LibraryTestingRipperDB', false)
+          test('maintenance/v1.15', 'v1.15-fmi', '', omsimulatorHash(), 'LibraryTestingRipperDB', false, '')
         }
       }
       stage('master FMI') {
@@ -349,7 +351,7 @@ pipeline {
           expression { params.fmi_master }
         }
         steps {
-          test('master', 'master-fmi', '', 'origin/master', 'LibraryTestingRipperDB', false)
+          test('master', 'master-fmi', '', 'origin/master', 'LibraryTestingRipperDB', false, '')
         }
       }
       stage('daeMode') {
@@ -365,7 +367,7 @@ pipeline {
           expression { params.daeMode }
         }
         steps {
-          test('master', 'daeMode', 'setCommandLineOptions("--daeMode=true")', '', 'LibraryTestingRipperDB', false)
+          test('master', 'daeMode', 'setCommandLineOptions("--daeMode=true")', '', 'LibraryTestingRipperDB', false, '')
         }
       }
       stage('newInst-daeMode') {
@@ -381,7 +383,7 @@ pipeline {
           expression { params.newInst_daeMode }
         }
         steps {
-          test('master', 'newInst-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --daeMode=true")', '', 'LibraryTestingRipperDB', false)
+          test('master', 'newInst-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --daeMode=true")', '', 'LibraryTestingRipperDB', false, '')
         }
       }
       stage('newInst') {
@@ -397,7 +399,23 @@ pipeline {
           expression { params.newInst }
         }
         steps {
-          test('master', 'newInst', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'LibraryTestingRipperDB', false)
+          test('master', 'newInst', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'LibraryTestingRipperDB', false, '')
+        }
+      }
+      stage('newInst') {
+        agent {
+          node {
+            label 'ripper.openmodelica.org'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.newInst }
+        }
+        steps {
+          test('master', 'cvode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'LibraryTestingRipperDB', false, '-s cvode')
         }
       }
     } }
@@ -460,7 +478,7 @@ pipeline {
         }
         when {
           beforeAgent true
-          expression { params.fmi_v1_9 || params.fmi_v1_11 || params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_v1_14 || params.fmi_v1_15 || params.fmi_master || params.daeMode || params.newInst_daeMode  || params.newInst || params.report_ripper }
+          expression { params.fmi_v1_9 || params.fmi_v1_11 || params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_v1_14 || params.fmi_v1_15 || params.fmi_master || params.daeMode || params.newInst_daeMode  || params.newInst || params.report_ripper || params.cvode }
         }
         environment {
           GITBRANCHES_FMI = 'maintenance/v1.9-fmi maintenance/v1.11-fmi maintenance/v1.12-fmi maintenance/v1.13-fmi maintenance/v1.14-fmi maintenance/v1.15-fmi master-fmi'
@@ -509,6 +527,9 @@ pipeline {
           sh "mv overview.html overview-combined-dae.html"
           sh "./report.py --branches='${env.GITBRANCHES_DAE}' configs/conf-old.json"
           sh "mv overview.html overview-old-libs-dae.html"
+
+          sh "./report.py --branches='cvode' configs/conf.json"
+          sh "mv overview.html overview-cvode.html"
 
           sh 'date'
           sh 'find overview*.html history -type f | wc -l'
@@ -559,7 +580,7 @@ pipeline {
 def omsimulatorHash() {
   return '1552061d5fe27ecfa51f5289909717192b102263'
 }
-def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler) {
+def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler, extrasimflags) {
   sh '''
   find /tmp  -name "*openmodelica.hudson*" -exec rm {} ";" || true
   mkdir -p ~/TEST_LIBS_BACKUP

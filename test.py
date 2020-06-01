@@ -85,6 +85,7 @@ parser.add_argument('--branch', default='master')
 parser.add_argument('--fmi', default=False)
 parser.add_argument('--output', default='')
 parser.add_argument('--extraflags', default='')
+parser.add_argument('--extrasimflags', default='')
 parser.add_argument('--ompython_omhome', default='')
 parser.add_argument('--noclean', action="store_true", default=False)
 parser.add_argument('--fmisimulator', default='')
@@ -99,6 +100,7 @@ result_location = args.output
 n_jobs = args.n
 clean = not args.noclean
 extraflags = args.extraflags
+extrasimflags = args.extrasimflags
 ompython_omhome = args.ompython_omhome
 fmisimulator = args.fmisimulator or None
 allTestsFmi = args.fmi
@@ -281,7 +283,7 @@ assert(os.path.exists("HelloWorld"))
 abortSimulationFlag="-abortSlowSimulation" if simulationAcceptsFlag("-abortSlowSimulation") else ""
 alarmFlag="-alarm" if simulationAcceptsFlag("-alarm=480") else ""
 
-configs_lst = [readConfig(c, rmlStyle=rmlStyle, abortSimulationFlag=abortSimulationFlag, alarmFlag=alarmFlag, overrideDefaults=overrideDefaults, defaultCustomCommands=defaultCustomCommands) for c in configs]
+configs_lst = [readConfig(c, rmlStyle=rmlStyle, abortSimulationFlag=abortSimulationFlag, alarmFlag=alarmFlag, overrideDefaults=overrideDefaults, defaultCustomCommands=defaultCustomCommands, extrasimflags=extrasimflags) for c in configs]
 configs = []
 preparedReferenceDirs = {}
 for c in configs_lst:
