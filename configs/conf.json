@@ -1,7 +1,7 @@
 [
   {
     "library":"Modelica",
-    "libraryVersion":"trunk",
+    "libraryVersion":"4.0.0",
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
@@ -40,7 +40,7 @@
   },
   {
     "library":"ModelicaTest",
-    "libraryVersion":"trunk",
+    "libraryVersion":"4.0.0",
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
@@ -187,7 +187,7 @@
   },
   {
     "library":"MEV"
-  },  
+  },
   {
     "library":"MessagePack"
   },
