@@ -82,7 +82,7 @@
   },
   {
     "library":"Modelica_Synchronous",
-    "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;","if not loadModel(Modelica_LinearSystems2) then exit(1); end if;"],
+    "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"],
     "referenceFiles":"$REFERENCEFILES/Modelica_Synchronous"
   },
   {
