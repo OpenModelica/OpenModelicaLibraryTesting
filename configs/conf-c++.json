@@ -23,7 +23,7 @@
   },
   {
     "library":"ModelicaTest",
-    "libraryVersion":"4.0.0",
+    "libraryVersion":"trunk",
     "configExtraName":"cpp",
     "simCodeTarget":"Cpp",
     "alarmFlag":"--alarm",
@@ -34,7 +34,7 @@
   },
   {
     "library":"Modelica",
-    "libraryVersion":"4.0.0",
+    "libraryVersion":"trunk",
     "configExtraName":"cpp",
     "simCodeTarget":"Cpp",
     "alarmFlag":"--alarm",
