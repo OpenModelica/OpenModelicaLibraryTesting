@@ -439,7 +439,7 @@ for (library,conf) in configs:
   if os.path.exists(lastChange):
     conf["libraryLastChange"] = " %s (revision %s)" % (conf["libraryVersionRevision"],"\n".join(open(lastChange).readlines()).strip())
   else:
-    conf["libraryLastChange"] = conf["libraryVersionRevision"]
+    conf["libraryLastChange"] = "%s (%s)" % (conf["libraryVersionRevision"], librarySourceFile)
   if conf.get("fmi") and fmisimulatorversion:
     conf["libraryVersionRevision"] = conf["libraryVersionRevision"] + " " + fmisimulatorversion
     conf["libraryLastChange"] = conf["libraryLastChange"] + " " + fmisimulatorversion
