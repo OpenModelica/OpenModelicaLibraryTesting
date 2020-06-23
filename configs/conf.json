@@ -26,7 +26,7 @@
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
     "allReferenceFilesExist":false,
-    "referenceFiles":"$MSLREFERENCE/../../MAP-LIB_ReferenceResults/v3.2.3",
+    "referenceFiles":"$MSLREFERENCE/../../MAP-LIB_ReferenceResults/v3.2.3+build.4",
     "optlevel":"-Os -march=native"
   },
   {
@@ -72,7 +72,7 @@
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
-    "referenceFiles":"$MSLREFERENCE/../../MAP-LIB_ReferenceResults/v3.2.3"
+    "referenceFiles":"$MSLREFERENCE/../../MAP-LIB_ReferenceResults/v3.2.3+build.4"
   },
   {
     "library":"ModelicaTestOverdetermined",

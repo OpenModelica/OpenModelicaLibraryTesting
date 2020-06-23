@@ -30,7 +30,7 @@
     "abortSlowSimulation":"",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
-    "referenceFiles":"$MSLREFERENCE/v3.2.2+build.0-beta.3"
+    "referenceFiles":"$MSLREFERENCE/v4.0.0"
   },
   {
     "library":"Modelica",
@@ -41,7 +41,7 @@
     "abortSlowSimulation":"",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
-    "referenceFiles":"$MSLREFERENCE/v3.2.2+build.0-beta.3",
+    "referenceFiles":"$MSLREFERENCE/v4.0.0",
     "optlevel":"-Os -march=native"
   },
   {
