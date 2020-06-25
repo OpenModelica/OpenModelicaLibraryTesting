@@ -41,7 +41,7 @@
     "abortSlowSimulation":"",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
-    "referenceFiles":"$MSLREFERENCE/../../MAP-LIB_ReferenceResults/v4.0.0"
+    "referenceFiles":"$MSLREFERENCE/../../MAP-LIB_ReferenceResults/v4.0.0",
     "optlevel":"-Os -march=native"
   },
   {
