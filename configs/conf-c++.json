@@ -8,7 +8,7 @@
     "abortSlowSimulation":"",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
-    "allReferenceFilesExist":true,
+    "allReferenceFilesExist":false,
     "referenceFiles":"$MSLREFERENCE/v3.2.1+build.4"
   },
   {
@@ -77,6 +77,7 @@
     "abortSlowSimulation":"",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
+    "allReferenceFilesExist":false,
     "referenceFiles":"$MSLREFERENCE/v3.2.1+build.4"
   },
   {
