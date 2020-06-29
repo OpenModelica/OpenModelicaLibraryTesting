@@ -647,7 +647,7 @@ def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler, extrasimflags
   fi
   cd OMLibraries
   git fetch
-  git reset --hard origin/master
+  git reset --hard origin/library-coverage
 
   cd ../OpenModelica
   git fetch
