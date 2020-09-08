@@ -1,0 +1,275 @@
+pipeline {
+  agent none
+  parameters {
+    booleanParam(name: 'LINUX64BIONIC', defaultValue: true, description: 'Test on Ubuntu 18.04 LTS')
+    booleanParam(name: 'LINUX64FOCAL', defaultValue: true, description: 'Test on Ubuntu 20.04 LTS')
+    booleanParam(name: 'LINUX32', defaultValue: false, description: 'Test on some 32bit Linux')
+    booleanParam(name: 'WIN64', defaultValue: false, description: 'Test on Windows 10 64 bit')
+    booleanParam(name: 'WIN32', defaultValue: false, description: 'Test on Windows 10 32 bit')
+    booleanParam(name: 'DARWIN64', defaultValue: false, description: 'Test on some mac OS')
+    booleanParam(name: 'CCODE', defaultValue: false, description: 'Test on Ubuntu 18.04 LTS for self compiled C code')
+  }
+  options {
+    timeout(time: 30, unit: 'MINUTES')
+  }
+  stages {
+    stage('FMI Cross Check') {
+      parallel {
+        stage('linux64-bionic') {
+          when {
+            expression { return params.LINUX64BIONIC }
+            beforeAgent true
+          }
+          agent {
+            docker {
+              alwaysPull true
+              image 'anheuermann/ompython:bionic'
+              label 'libraries.openmodelica.org'
+            }
+          }
+          environment {
+            PLATFORM = 'linux-amd64'
+            def BUILD_DATE = sh(script: "echo `date -I`", returnStdout: true).trim()
+          }
+          steps {
+            installOMSArtifactsUnix()
+            cloneOMSGitRepo()
+            updateFmiCrossCheck()
+            runFmiCrossCheck()
+          }
+          post {
+            success {
+              sh """mkdir -p OMSimulator/testsuite/fmi-cross-check/linux64-bionic
+                mv OMSimulator/testsuite/fmi-cross-check/html/** OMSimulator/testsuite/fmi-cross-check/linux64-bionic
+                """
+              archiveArtifacts artifacts: 'OMSimulator/testsuite/fmi-cross-check/linux64-bionic/**/*.*', fingerprint: true
+              sshPublisher(
+                publishers: [
+                  sshPublisherDesc(
+                    configName: 'FMICrossCheck',
+                    transfers: [
+                      sshTransfer(
+                        sourceFiles: "OMSimulator/testsuite/fmi-cross-check/linux64-bionic/**/*.*",
+                        removePrefix: "OMSimulator/testsuite/",
+                        remoteDirectory: "OMSimulator/latest/${BUILD_DATE}/"
+                      )
+                    ]
+                  )
+                ]
+              )
+            }
+          }
+        }
+
+        stage('linux64-focal') {
+          when {
+            expression { return params.LINUX64FOCAL }
+            beforeAgent true
+          }
+          agent {
+            docker {
+              alwaysPull true
+              image 'anheuermann/ompython:focal'
+              label 'linux'
+            }
+          }
+          environment {
+            PLATFORM = 'linux-amd64'
+            def BUILD_DATE = sh(script: "echo `date -I`", returnStdout: true).trim()
+          }
+          steps {
+            installOMSArtifactsUnix()
+            cloneOMSGitRepo()
+            updateFmiCrossCheck()
+            runFmiCrossCheck()
+          }
+          post {
+            success {
+              sh """mkdir -p OMSimulator/testsuite/fmi-cross-check/linux64-focal
+                mv OMSimulator/testsuite/fmi-cross-check/html/** OMSimulator/testsuite/fmi-cross-check/linux64-focal
+                """
+              archiveArtifacts artifacts: "OMSimulator/testsuite/fmi-cross-check/linux64-focal/**/*.*", fingerprint: true
+              sshPublisher(
+                publishers: [
+                  sshPublisherDesc(
+                    configName: 'FMICrossCheck',
+                    transfers: [
+                      sshTransfer(
+                        sourceFiles: "OMSimulator/testsuite/fmi-cross-check/linux64-focal/**/*.*",
+                        removePrefix: "OMSimulator/testsuite/",
+                        remoteDirectory: "OMSimulator/latest/${BUILD_DATE}/"
+                      )
+                    ]
+                  )
+                ]
+              )
+            }
+          }
+        }
+
+        stage('win64') {
+          when {
+            expression { return params.WIN64 }
+            beforeAgent true
+          }
+          agent {
+            label 'windows'
+          }
+          environment {
+            PLATFORM = 'mingw64'
+            //def BUILD_DATE = sh(script: "echo `date -I`", returnStdout: true).trim()
+          }
+          steps {
+            bat "git --version"
+            bat "git clone https://github.com/OpenModelica/OMSimulator.git C:\\OMSimulator"    // TODO: Use a better location that is always the same for the project but can be remove with the worksapce when removing this job
+            bat "git clone https://github.com/modelica/fmi-cross-check.git C:\\fmi-cross-check"
+
+            /*
+            def pythonDocker = docker.image('python:3.8.5-windowsservercore-1809')
+            pythonDocker.inside {
+              bat "python --version"
+              bat "powershell -NoProfile -Comand pip.exe install pandas"
+              installOMSArtifactsWin()
+              bat """
+                python C:\\OMSimulator\\testsuite\\fmi-cross-check\\importFMUs.py fmi-cross-check \"win64\" \"OpenModelica/build/bin/OMSimulator\"
+              """
+            }
+            */
+          }
+          post {
+            success {
+              bat """mkdir -p OMSimulator/testsuite/fmi-cross-check/win64
+                mv OMSimulator/testsuite/fmi-cross-check/html/** OMSimulator/testsuite/fmi-cross-check/win64
+                """
+              archiveArtifacts artifacts: 'OMSimulator/testsuite/fmi-cross-check/fmi-cross-check/**/*.*', fingerprint: true
+              sshPublisher(
+                publishers: [
+                  sshPublisherDesc(
+                    configName: 'FMICrossCheck',
+                    transfers: [
+                      sshTransfer(
+                        sourceFiles: "OMSimulator/testsuite/fmi-cross-check/win64/**/*.*",
+                        removePrefix: "OMSimulator/testsuite/",
+                        remoteDirectory: "OMSimulator/latest/${BUILD_DATE}/"
+                      )
+                    ]
+                  )
+                ]
+              )
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+/*
+ *  Unzip latest OMSimulator binary from last successful build artifact
+ */
+def installOMSArtifactsUnix() {
+  echo "Unpacking OMSimulator binaries to OMSimulatorBinaries/OMSimulator-$PLATFORM"
+
+  sh '''
+    rm -rf archive/
+    wget -q "https://test.openmodelica.org/jenkins/job/OMSimulator/job/master/lastSuccessfulBuild/artifact/*zip*/archive.zip" -O archive.zip
+    unzip -qq -o archive.zip
+    mkdir -p OMSimulatorBinaries/OMSimulator-$PLATFORM
+    tar -xvz -f archive/OMSimulator-$PLATFORM-*.tar.gz -C OMSimulatorBinaries/OMSimulator-$PLATFORM
+    '''
+  echo "Check OMSimulator version"
+  echo "PATH is $PATH"
+  sh '''
+    echo $PATH
+    export PATH=OMSimulatorBinaries/OMSimulator-$PLATFORM/bin:\$PATH
+    OMSimulator --version
+    '''
+}
+
+def installOMSArtifactsWin() {
+  echo "Unpacking OMSimulator binaries to OMSimulatorBinaries/OMSimulator-$PLATFORM"
+  writeFile file: "installOMS.ps1", text: """
+    \$url = "https://test.openmodelica.org/jenkins/job/OMSimulator/job/master/lastSuccessfulBuild/artifact/*zip*/archive.zip"
+    \$output = "archive.zip"
+    Invoke-WebRequest -Uri \$url -OutFile \$output
+    echo 'Downloaded OMSimulator'
+    Expand-Archive -Path archive.zip
+    Expand-Archive -Path .\\archive\\archive\\OMSimulator-$PLATFORM*.zip -Destination C:\\OMSimulatorBinaries\\OMSimulator-$PLATFORM
+    """
+  bat "powershell -NoProfile -File installOMS.ps1"
+  echo "Check OMSimulator version"
+  bat "C:\\OMSimulatorBinaries\\OMSimulator-$PLATFORM\\bin\\OMSimulator.exe --version"
+}
+
+/*
+ *  Clone OMSimulator repo
+ */
+def cloneOMSGitRepo () {
+  echo "Cloning Git repo OpenModelica/OMSimulator"
+  sh '''
+  if [ -d "OMSimulator" ]; then
+    cd OMSimulator
+    git clean -df
+    git fetch origin
+    git reset --hard origin/master
+
+  else
+    git clone --recursive https://github.com/OpenModelica/OMSimulator.git OMSimulator
+    cd OMSimulator
+    git fetch origin
+    git reset --hard origin/master
+  fi
+  '''
+}
+
+def installGitWin () {
+  echo "Installing git"
+  writeFile file: "installOMS.ps1", text: """
+    \$url = "https://github.com/git-for-windows/git/releases/download/v2.28.0.windows.1/PortableGit-2.28.0-64-bit.7z.exe"
+    \$output = "PortableGit-2.28.0-64-bit.7z.exe"
+    Invoke-WebRequest -Uri \$url -OutFile \$output
+    echo 'Downloaded git installer'
+    """
+  bat "powershell -NoProfile -File installOMS.ps1"
+  bat ".\\PortableGit-2.28.0-64-bit.7z.exe /VERYSILENT /NORESTART /NOCANCEL /SP- /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS /COMPONENTS=\"icons,ext\\reg\\shellhere,assoc,assoc_sh\""
+  echo "Check git version"
+  bat "git.exe --version"
+}
+
+def cloneOMSGitRepoWin () {
+  echo "Cloning Git repo OpenModelica/OMSimulator" // TODO: Fix this, not working yet!
+  writeFile file: "cloneGitRepos.ps1", text: """
+    git clone https://github.com/OpenModelica/OMSimulator.git C:\\OMSimulator
+    """
+  bat "powershell -NoProfile -File installOMS.ps1"
+  echo "Check OMSimulator version"
+  bat "C:\\OMSimulatorBinaries\\OMSimulator-$OMSIMULATOR_PLATFORM\\bin\\OMSimulator.exe --version"
+}
+
+/*
+ *  Update fmi-cross-check repository from GitHub
+ */
+def updateFmiCrossCheck() {
+  echo "Update FMI Cross Check repo"
+  sh '''
+  cd OMSimulator/testsuite/fmi-cross-check
+  make fmi-cross-check-update
+  make clean
+  cd fmi-cross-check && git status && git log -1
+  '''
+}
+
+/*
+ *  Run FMI Cross Check test for import with OMSimulator
+ */
+def runFmiCrossCheck() {
+  echo "Run FMI Cross Check"
+  // TODO: Get this stupid PATH to work correctly
+  sh '''
+  export PATH=\"$(pwd)\"/OMSimulatorBinaries/OMSimulator-$PLATFORM/bin:\$PATH
+  echo $PATH
+  OMSimulator --version
+  cd OMSimulator/testsuite/fmi-cross-check
+  python3 runTest.py fmi-cross-check OMSimulator
+  '''
+}
