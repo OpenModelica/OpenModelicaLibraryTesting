@@ -75,7 +75,12 @@ for branch in branches:
   cursor.execute("SELECT date,omcversion FROM [omcversion] WHERE branch LIKE ? COLLATE NOCASE ORDER BY date ASC", (branch,))
   entries = cursor.fetchall()
   n = len(entries)
-  urlContents = urllib.request.urlopen("%s/%s/00_history.html" % (historyurl, branch)).read().decode('utf-8')
+  urlToOpen = "%s/%s/00_history.html" % (historyurl, branch)
+  try:
+    urlContents = urllib.request.urlopen(urlToOpen).read().decode('utf-8')
+  except:
+    print(urlToOpen + " failed to open")
+    raise
 
   generated = False
 
