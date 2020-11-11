@@ -1,12 +1,12 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
-import cgi, datetime, re
+import html, datetime, re
 
 def friendlyStr(f):
   if f>60:
-    return cgi.escape(str(datetime.timedelta(seconds=int(f))))
+    return html.escape(str(datetime.timedelta(seconds=int(f))))
   else:
-    return cgi.escape("%.2f" % f)
+    return html.escape("%.2f" % f)
 
 def multiple_replace(string, *key_values):
   def multiple_replacer(*key_values):

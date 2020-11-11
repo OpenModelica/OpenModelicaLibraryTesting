@@ -1,10 +1,10 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # TODO: When libraries hash changes, run with the old OMC against the new libs
 #       Then run with the new OMC against the new libs
 
-import cgi, shutil, sys, os, re, glob, time, argparse, sqlite3, datetime, math, platform
+import html, shutil, sys, os, re, glob, time, argparse, sqlite3, datetime, math, platform
 from joblib import Parallel, delayed
 import simplejson as json
 import psutil, subprocess, threading, hashlib
@@ -17,6 +17,8 @@ import shared
 
 import signal
 
+basestring = (str, bytes)
+
 def rmtree(f):
   try:
     shutil.rmtree(f)
@@ -25,7 +27,7 @@ def rmtree(f):
     subprocess.check_call(["rm", "-rf", f], stderr=subprocess.STDOUT)
 
 def print_linenum(signum, frame):
-    print "Currently at line", frame.f_lineno
+    print("Currently at line", frame.f_lineno)
 
 signal.signal(signal.SIGUSR1, print_linenum)
 
@@ -147,7 +149,7 @@ else:
 ompython_omc_version=ompython_omc_version.replace("OMCompiler","").strip()
 
 def timeSeconds(f):
-  return cgi.escape("%.2f" % f)
+  return html.escape("%.2f" % f)
 
 omc.sendExpression('setModelicaPath("%s/lib/omlibrary")' % omhome)
 omc_exe=os.path.join(omhome,"bin","omc")
@@ -228,7 +230,7 @@ def testHelloWorld(cmd):
   open("HelloWorld.cmd.mos","w").write(cmd + "\n" + helloWorldContents)
   try:
     out=subprocess.check_output(["%s/bin/omc" % omhome, "HelloWorld.cmd.mos"], stderr=subprocess.STDOUT)
-    if os.path.exists("HelloWorld") and not "Error:" in out:
+    if os.path.exists("HelloWorld") and not "Error:" in str(out):
       return True
   except subprocess.CalledProcessError as e:
     pass
@@ -257,7 +259,7 @@ fmiOK_C = False
 fmiOK_Cpp = False
 try:
   out=subprocess.check_output(["%s/bin/omc" % omhome, "--simCodeTarget=C", "FMI.mos"], stderr=subprocess.STDOUT)
-  if os.path.exists("HelloWorldX.fmu") and not "Error:" in out:
+  if os.path.exists("HelloWorldX.fmu") and not "Error:" in str(out):
     fmiOK_C = True
     print("C FMU OK")
   else:
@@ -362,7 +364,7 @@ cursor.execute('''DROP INDEX IF EXISTS idx_libversion_date''')
 cursor.execute("PRAGMA user_version=3")
 
 def strToHashInt(s):
-  return int(hashlib.sha1(s+"fixCorruptBuilds-2017-03-26").hexdigest()[0:8],16)
+  return int(hashlib.sha1((s+"fixCorruptBuilds-2017-03-26").encode("utf-8")).hexdigest()[0:8],16)
 
 def findAllFiles(d):
   res = []
@@ -484,7 +486,10 @@ for (modelName,library,libName,name,conf) in tests:
     (u"#referenceFileExtension#", conf["referenceFileExtension"]),
   )
   with open(name + ".conf.json", 'w') as fp:
-    newconf = dict(conf.items()+{"library":library, "modelName":modelName, "fileName":name}.items())
+    newconf = dict(conf.items())
+    newconf["library"] = library
+    newconf["modelName"] = modelName
+    newconf["fileName"] = name
     try:
       newconf["referenceFile"] = getReferenceFileName(newconf)
     except Exception as e:
@@ -673,7 +678,7 @@ for libname in stats_by_libname.keys():
   testsHTML = "\n".join(['<tr><td>%s%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td>%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td></tr>\n' %
     (lambda filename_prefix, diff:
       (
-      ('<a href="%s">%s</a>' % (filename_prefix + ".err", cgi.escape(s[1]))) if is_non_zero_file(filename_prefix + ".err") else cgi.escape(s[1]),
+      ('<a href="%s">%s</a>' % (filename_prefix + ".err", html.escape(s[1]))) if is_non_zero_file(filename_prefix + ".err") else html.escape(s[1]),
       (' (<a href="%s">sim</a>)' % (filename_prefix + ".sim")) if is_non_zero_file(filename_prefix + ".sim") else "",
       checkPhase(s[3]["phase"], 7) if s[3]["phase"]>=6 else "#FFFFFF",
       ("%s (%d verified)" % (timeSeconds(diff.get("time")), diff.get("numCompared"))) if s[3]["phase"]>=7 else ("&nbsp;" if diff is None else
@@ -697,21 +702,21 @@ for libname in stats_by_libname.keys():
     for s in natsorted(stats, key=lambda s: s[1])])
   numSucceeded = [len(stats)] + [sum(1 if s[3]["phase"]>=i else 0 for s in stats) for i in range(1,8)]
   replacements = (
-    (u"#sysInfo#", cgi.escape(sysInfo)),
-    (u"#omcVersion#", cgi.escape(omc_version)),
-    (u"#fmi#", ("<p>"+cgi.escape("FMI version: %s" % conf.get("fmi"))+"</p>") if conf.get("fmi") else ""),
-    (u"#optlevel#", cgi.escape(conf.get("optlevel")) if (canChangeOptLevel and conf.get("optlevel")) else "Tool default"),
-    (u"#timeStart#", cgi.escape(time.strftime('%Y-%m-%d %H:%M:%S', start_as_time))),
-    (u"#fileName#", cgi.escape(libname)),
-    (u"#customCommands#", cgi.escape("\n".join(conf["customCommands"]))),
-    (u"#libraryVersionRevision#", cgi.escape(conf["libraryVersionRevision"])),
-    (u"#ulimitOmc#", cgi.escape(str(conf["ulimitOmc"]))),
-    (u"#ulimitExe#", cgi.escape(str(conf["ulimitExe"]))),
-    (u"#default_tolerance#", cgi.escape(str(conf["default_tolerance"]))),
-    (u"#simFlags#", cgi.escape(conf.get("simFlags") or "")),
-    (u"#referenceFiles#", ('<p>Reference Files: %s</p>' % conf["referenceFilesURL"].replace(os.path.dirname(os.path.realpath(__file__)),"")) if ((conf.get("referenceFilesURL") or "") <> "") else ""),
-    (u"#referenceTool#", ('<p>Verified using: %s (diffSimulationResults)</p>' % cgi.escape(ompython_omc_version)) if ((conf.get("referenceFiles") or "") <> "") else ""),
-    (u"#Total#", cgi.escape(str(numSucceeded[0]))),
+    (u"#sysInfo#", html.escape(sysInfo)),
+    (u"#omcVersion#", html.escape(omc_version)),
+    (u"#fmi#", ("<p>"+html.escape("FMI version: %s" % conf.get("fmi"))+"</p>") if conf.get("fmi") else ""),
+    (u"#optlevel#", html.escape(conf.get("optlevel")) if (canChangeOptLevel and conf.get("optlevel")) else "Tool default"),
+    (u"#timeStart#", html.escape(time.strftime('%Y-%m-%d %H:%M:%S', start_as_time))),
+    (u"#fileName#", html.escape(libname)),
+    (u"#customCommands#", html.escape("\n".join(conf["customCommands"]))),
+    (u"#libraryVersionRevision#", html.escape(conf["libraryVersionRevision"])),
+    (u"#ulimitOmc#", html.escape(str(conf["ulimitOmc"]))),
+    (u"#ulimitExe#", html.escape(str(conf["ulimitExe"]))),
+    (u"#default_tolerance#", html.escape(str(conf["default_tolerance"]))),
+    (u"#simFlags#", html.escape(conf.get("simFlags") or "")),
+    (u"#referenceFiles#", ('<p>Reference Files: %s</p>' % conf["referenceFilesURL"].replace(os.path.dirname(os.path.realpath(__file__)),"")) if ((conf.get("referenceFilesURL") or "") != "") else ""),
+    (u"#referenceTool#", ('<p>Verified using: %s (diffSimulationResults)</p>' % html.escape(ompython_omc_version)) if ((conf.get("referenceFiles") or "") != "") else ""),
+    (u"#Total#", html.escape(str(numSucceeded[0]))),
     (u"#FrontendColor#", checkNumSucceeded(numSucceeded, 1)),
     (u"#BackendColor#", checkNumSucceeded(numSucceeded, 2)),
     (u"#SimCodeColor#", checkNumSucceeded(numSucceeded, 3)),
@@ -719,14 +724,14 @@ for libname in stats_by_libname.keys():
     (u"#CompilationColor#", checkNumSucceeded(numSucceeded, 5)),
     (u"#SimulationColor#", checkNumSucceeded(numSucceeded, 6)),
     (u"#VerificationColor#", checkNumSucceeded(numSucceeded, 7)),
-    (u"#Frontend#", cgi.escape(str(numSucceeded[1]))),
-    (u"#Backend#", cgi.escape(str(numSucceeded[2]))),
-    (u"#SimCode#", cgi.escape(str(numSucceeded[3]))),
-    (u"#Templates#", cgi.escape(str(numSucceeded[4]))),
-    (u"#Compilation#", cgi.escape(str(numSucceeded[5]))),
-    (u"#Simulation#", cgi.escape(str(numSucceeded[6]))),
-    (u"#Verification#", cgi.escape(str(numSucceeded[7]))),
-    (u"#totalTime#", cgi.escape(str(datetime.timedelta(seconds=int(sum(s[3].get("exectime") or 0.0 for s in stats)))))),
+    (u"#Frontend#", html.escape(str(numSucceeded[1]))),
+    (u"#Backend#", html.escape(str(numSucceeded[2]))),
+    (u"#SimCode#", html.escape(str(numSucceeded[3]))),
+    (u"#Templates#", html.escape(str(numSucceeded[4]))),
+    (u"#Compilation#", html.escape(str(numSucceeded[5]))),
+    (u"#Simulation#", html.escape(str(numSucceeded[6]))),
+    (u"#Verification#", html.escape(str(numSucceeded[7]))),
+    (u"#totalTime#", html.escape(str(datetime.timedelta(seconds=int(sum(s[3].get("exectime") or 0.0 for s in stats)))))),
     (u"#testsHTML#", testsHTML)
   )
   open("%s.html" % libname, "w").write(multiple_replace(htmltpl, *replacements))

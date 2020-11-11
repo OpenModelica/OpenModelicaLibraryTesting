@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import argparse, os, sys, signal, threading, psutil, subprocess, shutil
@@ -340,7 +340,7 @@ else:
   execstat["frontend"]=frontend
 
 with open(errFile, 'a+') as fp:
-  fp.write(err.encode('ascii', 'ignore'))
+  fp.write(err)
 
 if execstat["phase"] < 4:
   writeResultAndExit(0)
