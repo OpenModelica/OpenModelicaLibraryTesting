@@ -242,6 +242,9 @@
     "library":"PlanarMechanics"
   },
   {
+    "library":"PowerSysPro"
+  },
+  {
     "library":"ScalableTestSuite",
     "ulimitOmc":300,
     "ulimitExe":300,
