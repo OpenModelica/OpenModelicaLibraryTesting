@@ -17,7 +17,8 @@ import shared
 
 import signal
 
-basestring = (str, bytes)
+if (sys.version_info > (3, 0)):
+  basestring = (str, bytes)
 
 def rmtree(f):
   try:
@@ -86,10 +87,14 @@ parser.add_argument('configs', nargs='*')
 parser.add_argument('--branch', default='master')
 parser.add_argument('--fmi', default=False)
 parser.add_argument('--output', default='')
+parser.add_argument('--docker', default='')
+parser.add_argument('--libraries', default='')
 parser.add_argument('--extraflags', default='')
 parser.add_argument('--extrasimflags', default='')
 parser.add_argument('--ompython_omhome', default='')
 parser.add_argument('--noclean', action="store_true", default=False)
+parser.add_argument('--rml', action="store_true", default=False)
+parser.add_argument('--corba', action="store_true", default=False)
 parser.add_argument('--fmisimulator', default='')
 parser.add_argument('--ulimitvmem', help="Virtual memory limit (in kB)", type=int, default=8*1024*1024)
 parser.add_argument('--default', action='append', help="Add a default value for some configuration key, such as --default=ulimitExe=60. The equals sign is mandatory.", default=[])
@@ -107,11 +112,37 @@ ompython_omhome = args.ompython_omhome
 fmisimulator = args.fmisimulator or None
 allTestsFmi = args.fmi
 ulimitMemory = args.ulimitvmem
+docker = args.docker
+librariespath = args.libraries
+rmlStyle = args.rml
+corbaStyle = args.corba
 overrideDefaults = [arg.split("=", 1) for arg in args.default]
 print("branch: %s, n_jobs: %d" % (branch, n_jobs))
 if clean:
   print("Removing temporary files, etc to the best ability of the script")
 
+if not librariespath:
+  print("Error: --libraries is a mandatory argument")
+  sys.exit(1)
+
+if docker:
+  print("###")
+  print("###")
+  print("Warning: Using docker to run this will fail. It is not fully working and needs to be reworked to use docker exec instead of docker run")
+  print("###")
+  print("###")
+  dir_path = os.path.dirname(os.path.realpath(__file__))
+  subprocess.check_output(["docker", "pull", docker], stderr=subprocess.STDOUT).strip()
+  dockerExtraArgs = ["-w", dir_path, "-v", "%s:%s" % (dir_path,dir_path), "--env", "OPENMODELICALIBRARY=%s" % "/usr/lib/omlibrary", "--env", "GC_MARKERS=1", "-v", "%s:/usr/lib/omlibrary" % librariespath]
+  commands = ["docker", "run", "--user", str(os.getuid())] + dockerExtraArgs + [docker]
+  omc_cmd = commands + ["omc"]
+else:
+  commands = []
+  dockerExtraArgs = []
+  if os.environ.get("OPENMODELICAHOME"):
+    omc_cmd = ["%s/bin/omc" % os.environ.get("OPENMODELICAHOME")]
+  else:
+    omc_cmd = ["omc"]
 if result_location != "" and not os.path.exists(result_location):
   os.makedirs(result_location)
 
@@ -119,30 +150,34 @@ if configs == []:
   print("Error: Expected at least one configuration file to start the library test")
   sys.exit(1)
 
-from OMPython import OMCSessionZMQ, FindBestOMCSession
+from OMPython import OMCSession, OMCSessionZMQ
 
 version_cmd = "--version"
 single_thread="-n=1"
 rmlStyle=False
 
+
+
 # Try to make the processes a bit nicer...
 os.environ["GC_MARKERS"]="1"
+
+print("Start OMC version")
+
 if ompython_omhome != "":
   # Use a different OMC for running OMPython than for running the tests
   omhome = os.environ["OPENMODELICAHOME"]
-  try:
-    omc_version = subprocess.check_output(["%s/bin/omc" % omhome, "--version"], stderr=subprocess.STDOUT).strip()
-  except:
-    omc_version = subprocess.check_output(["%s/bin/omc" % omhome, "+version"], stderr=subprocess.STDOUT).strip()
+  if rmlStyle:
+    omc_version = subprocess.check_output(omc_cmd + ["+version"], stderr=subprocess.STDOUT).strip()
     version_cmd = "+version"
-    rmlStyle=True
     print("Work-around for RML-style command-line arguments (+version)")
+  else:
+    omc_version = subprocess.check_output(omc_cmd + ["--version"], stderr=subprocess.STDOUT).strip()
   os.environ["OPENMODELICAHOME"] = ompython_omhome
   omc = OMCSessionZMQ()
   ompython_omc_version=omc.sendExpression('getVersion()')
   os.environ["OPENMODELICAHOME"] = omhome
 else:
-  omc = FindBestOMCSession()
+  omc = OMCSession(docker=docker, dockerExtraArgs=dockerExtraArgs) if corbaStyle else OMCSessionZMQ(docker=docker, dockerExtraArgs=dockerExtraArgs)
   omhome=omc.sendExpression('getInstallationDirectoryPath()')
   omc_version=omc.sendExpression('getVersion()')
   ompython_omc_version=omc_version
@@ -151,7 +186,8 @@ ompython_omc_version=ompython_omc_version.replace("OMCompiler","").strip()
 def timeSeconds(f):
   return html.escape("%.2f" % f)
 
-omc.sendExpression('setModelicaPath("%s/lib/omlibrary")' % omhome)
+if not docker:
+  omc.sendExpression('setModelicaPath("%s")' % librariespath)
 omc_exe=os.path.join(omhome,"bin","omc")
 dygraphs=os.path.join(ompython_omhome or omhome,"share","doc","omc","testmodels","dygraph-combined.js")
 print(omc_exe,omc_version,dygraphs)
@@ -161,10 +197,10 @@ sys.stdout.flush()
 # Do feature checks. Handle things like old RML-style arguments...
 
 try:
-  subprocess.check_output(["%s/bin/omc" % omhome, "-n=1", version_cmd], stderr=subprocess.STDOUT).strip()
+  subprocess.check_output(omc_cmd + ["-n=1", version_cmd], stderr=subprocess.STDOUT).strip()
   single_thread="-n=1"
 except:
-  subprocess.check_output(["%s/bin/omc" % omhome, "+n=1", version_cmd], stderr=subprocess.STDOUT).strip()
+  subprocess.check_output(omc_cmd + ["+n=1", version_cmd], stderr=subprocess.STDOUT).strip()
   single_thread="+n=1"
   rmlStyle=True
   print("Work-around for RML-style command-line arguments (+n=1)")
@@ -186,7 +222,7 @@ try:
   os.unlink("HelloWorld")
 except OSError:
   pass
-subprocess.check_output(["%s/bin/omc" % omhome, "%ssimCodeTarget=Cpp" % ("+" if rmlStyle else "--"), "HelloWorld.mos"], stderr=subprocess.STDOUT)
+subprocess.check_output(omc_cmd + ["%ssimCodeTarget=Cpp" % ("+" if rmlStyle else "--"), "HelloWorld.mos"], stderr=subprocess.STDOUT)
 if os.path.exists("HelloWorld"):
   print("Have C++ HelloWorld simulation executable")
   haveCppRuntime=simulationAcceptsFlag("")
@@ -201,10 +237,10 @@ else:
 sys.stdout.flush()
 
 try:
-  subprocess.check_output(["%s/bin/omc" % omhome, "Architecture.mos"], stderr=subprocess.STDOUT)
+  subprocess.check_output(omc_cmd + ["Architecture.mo"], stderr=subprocess.STDOUT)
 except subprocess.CalledProcessError:
   print("Patching ModelicaServices for Architecture bug...")
-  for f in glob.glob(omhome + "/lib/omlibrary/ModelicaServices*/package.mo") + glob.glob(omhome + "/lib/omlibrary/Modelica */Constants.mo"):
+  for f in glob.glob(librariespath + "/ModelicaServices*/package.mo") + glob.glob(omhome + "/Modelica */Constants.mo"):
     with open(f) as fin:
       content = fin.read()
     assert(len(content) > 0)
@@ -212,6 +248,7 @@ except subprocess.CalledProcessError:
     assert(len(content) > 0)
     with open(f, "w") as fout:
       open(f,"w").write(content)
+  print("Done patching ModelicaServices...")
 
 sys.stdout.flush()
 
@@ -229,8 +266,8 @@ def testHelloWorld(cmd):
     pass
   open("HelloWorld.cmd.mos","w").write(cmd + "\n" + helloWorldContents)
   try:
-    out=subprocess.check_output(["%s/bin/omc" % omhome, "HelloWorld.cmd.mos"], stderr=subprocess.STDOUT)
-    if os.path.exists("HelloWorld") and not "Error:" in str(out):
+    out=subprocess.check_output(omc_cmd + ["HelloWorld.cmd.mos"], stderr=subprocess.STDOUT)
+    if os.path.exists("HelloWorld") and not "Error:" in out.decode():
       return True
   except subprocess.CalledProcessError as e:
     pass
@@ -258,8 +295,8 @@ else:
 fmiOK_C = False
 fmiOK_Cpp = False
 try:
-  out=subprocess.check_output(["%s/bin/omc" % omhome, "--simCodeTarget=C", "FMI.mos"], stderr=subprocess.STDOUT)
-  if os.path.exists("HelloWorldX.fmu") and not "Error:" in str(out):
+  out=subprocess.check_output(omc_cmd + ["--simCodeTarget=C", "FMI.mos"], stderr=subprocess.STDOUT)
+  if os.path.exists("HelloWorldX.fmu") and not "Error:" in out.decode():
     fmiOK_C = True
     print("C FMU OK")
   else:
@@ -267,8 +304,8 @@ try:
 except subprocess.CalledProcessError as e:
   pass
 try:
-  out=subprocess.check_output(["%s/bin/omc" % omhome, "--simCodeTarget=Cpp", "FMI.mos"], stderr=subprocess.STDOUT)
-  if os.path.exists("HelloWorldX.fmu") and not "Error:" in out:
+  out=subprocess.check_output(omc_cmd + ["--simCodeTarget=Cpp", "FMI.mos"], stderr=subprocess.STDOUT)
+  if os.path.exists("HelloWorldX.fmu") and not "Error:" in out.decode():
     fmiOK_Cpp = True
     print("C++ FMU OK")
   else:
@@ -280,7 +317,7 @@ try:
   os.unlink("HelloWorld")
 except OSError:
   pass
-print(subprocess.check_output(["%s/bin/omc" % omhome, "HelloWorld.mos"], stderr=subprocess.STDOUT))
+print(subprocess.check_output(omc_cmd + ["HelloWorld.mos"], stderr=subprocess.STDOUT).decode().strip())
 assert(os.path.exists("HelloWorld"))
 abortSimulationFlag="-abortSlowSimulation" if simulationAcceptsFlag("-abortSlowSimulation") else ""
 alarmFlag="-alarm" if simulationAcceptsFlag("-alarm=480") else ""
@@ -321,7 +358,7 @@ for (lib,c) in configs:
         c["referenceFilesURL"] = "%s (%s)" % (giturl,githash.strip())
       preparedReferenceDirs[destination] = (c["referenceFiles"],c["referenceFilesURL"])
     else:
-      raise Exception("Unknown referenceFiles in config: %s" % (str(c)))
+      raise Exception("Unknown referenceFiles in config: %s" % (str(c["referenceFiles"])))
 
 
   if allTestsFmi:
@@ -511,7 +548,7 @@ def runScript(c, timeout, memoryLimit):
     pass
   start=monotonic()
   # runCommand("%s %s %s.mos" % (omc_exe, single_thread, c), prefix=c, timeout=timeout)
-  if 0 != runCommand("ulimit -v %d; ./testmodel.py --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (memoryLimit, ompython_omhome, c, c), prefix=c, timeout=timeout):
+  if 0 != runCommand("ulimit -v %d; ./testmodel.py --libraries=%s %s --ompython_omhome=%s %s %s.conf.json > files/%s.cmdout 2>&1" % (memoryLimit, librariespath, ("--docker %s --dockerExtraArgs '%s'" % (docker, " ".join(dockerExtraArgs))) if docker else "", ompython_omhome, "--corba" if corbaStyle else "", c, c), prefix=c, timeout=timeout):
     print("files/%s.err" % c)
     with open("files/%s.err" % c, "a+") as errfile:
       errfile.write("Failed to read output from testmodel.py, exit status != 0:\n")
@@ -647,7 +684,13 @@ def cpu_name():
     if "model name" in line.strip():
       return (re.sub( ".*model name.*:", "", line,1)).strip()
 
-sysInfo = "%s, %d GB RAM, %s" % (cpu_name(), int(math.ceil(psutil.virtual_memory().total / (1024.0**3))), subprocess.check_output(["lsb_release","-sd"]).strip())
+try:
+  lsb_release = subprocess.check_output(commands + ["cat","/etc/lsb-release"]).decode().strip()
+  lsb_release = dict(a.split("=") for a in lsb_release.split("\n"))["DISTRIB_DESCRIPTION"].strip('"')
+except:
+  lsb_release = ""
+
+sysInfo = "%s, %d GB RAM, %s%s" % (cpu_name(), int(math.ceil(psutil.virtual_memory().total / (1024.0**3))), ("Docker " + docker + " ") if docker else "", lsb_release)
 
 htmltpl=open("library.html.tpl").read()
 for libname in stats_by_libname.keys():

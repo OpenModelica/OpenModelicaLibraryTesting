@@ -10,10 +10,18 @@ import shared
 parser = argparse.ArgumentParser(description='OpenModelica library testing tool helper (single model)')
 parser.add_argument('config')
 parser.add_argument('--ompython_omhome', default='')
+parser.add_argument('--libraries')
+parser.add_argument('--docker')
+parser.add_argument('--dockerExtraArgs')
+parser.add_argument('--corba', action="store_true", default=False)
 
 args = parser.parse_args()
 config = args.config
 ompython_omhome = args.ompython_omhome
+libraries = args.libraries
+docker = args.docker
+dockerExtraArgs = args.dockerExtraArgs.split(" ")
+corbaStyle = args.corba
 
 try:
   os.mkdir("files")
@@ -58,7 +66,7 @@ def sendExpressionTimeout(omc, cmd, timeout):
 def checkOutputTimeout(cmd, timeout):
   def target(res):
     try:
-      res[0] = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+      res[0] = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT).decode().strip()
     except subprocess.CalledProcessError as e:
       res[1] = cmd + " " + str(e.output)
     except Exception as e:
@@ -111,6 +119,8 @@ except OSError:
 os.mkdir(conf["fileName"])
 os.chdir(conf["fileName"])
 
+dockerExtraArgs = dockerExtraArgs + ["-w", conf["fileName"]]
+
 errFile="../files/%s.err" % conf["fileName"]
 simFile="../files/%s.sim" % conf["fileName"]
 statFile="../files/%s.stat.json" % conf["fileName"]
@@ -133,6 +143,9 @@ def writeResultAndExit(exitStatus):
   writeResult()
   sys.exit(exitStatus)
 
+with open(errFile, 'a+') as fp:
+  fp.write("Running: %s\n" % " ".join(sys.argv))
+
 if conf["simCodeTarget"] not in ["Cpp","C"]:
   with open(errFile, 'a+') as fp:
     fp.write("Unknown simCodeTarget in %s" % conf["simCodeTarget"])
@@ -154,7 +167,7 @@ if conf.get("fmi"):
 omhome = conf["omhome"]
 os.environ["OPENMODELICAHOME"] = omhome
 
-omc = FindBestOMCSession()
+omc = OMCSession(docker=docker, dockerExtraArgs=dockerExtraArgs, timeout=0.5) if corbaStyle else OMCSessionZMQ(docker=docker, dockerExtraArgs=dockerExtraArgs, timeout=0.5)
 if ompython_omhome != "":
   os.environ["OPENMODELICAHOME"] = ompython_omhome
   omc_new = OMCSessionZMQ()
@@ -218,6 +231,8 @@ if conf.get("optlevel"):
   cflags += " " + conf["optlevel"]
   omc.sendExpression(str("setCFlags(\"%s\")" % cflags), parsed = False)
 
+omc.sendExpression('setModelicaPath("%s")' % libraries, parsed = False)
+
 if conf.get("ulimitMemory"):
   # Use at most 80% of the vmem for the GC heap; some memory will be used for other purposes than the GC itself
   # Note: Only works on 1.13+ OpenModelica; we still need to ulimit the process for safety
@@ -231,7 +246,7 @@ def loadLibraryInNewOM():
     newOMLoaded = True
     # Broken/old getSimulationOptions; use new one (requires parsing again)
     assert(ompython_omhome!="")
-    assert(omc_new.sendExpression('setModelicaPath("%s/lib/omlibrary")' % omhome))
+    assert(omc_new.sendExpression('setModelicaPath("%s")' % libraries))
     if not omc_new.sendExpression(cmd):
       print(omc_new.sendExpression('OpenModelica.Scripting.getErrorString()'))
       sys.exit(1)
@@ -290,7 +305,7 @@ except TimeoutError as e:
       name = omc._omc_log_file.name
       del omc
       with open(name,"r") as fp2:
-        fp.write("\n\nOMC output: %s" % fp2.read())
+        fp.write("\n\nOMC output: %s" % fp2.read().decode().strip())
     except:
       pass
 
