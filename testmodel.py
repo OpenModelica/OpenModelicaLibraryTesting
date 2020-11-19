@@ -19,8 +19,8 @@ args = parser.parse_args()
 config = args.config
 ompython_omhome = args.ompython_omhome
 libraries = args.libraries
-docker = args.docker
-dockerExtraArgs = args.dockerExtraArgs.split(" ")
+docker = args.docker if args.docker else None
+dockerExtraArgs = args.dockerExtraArgs.split(" ") if args.dockerExtraArgs else []
 corbaStyle = args.corba
 
 try:
