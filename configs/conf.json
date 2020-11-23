@@ -242,7 +242,8 @@
     "library":"PlanarMechanics"
   },
   {
-    "library":"PowerSysPro"
+    "library":"PowerSysPro",
+    "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"],
   },
   {
     "library":"ScalableTestSuite",
