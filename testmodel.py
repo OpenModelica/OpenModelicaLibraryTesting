@@ -263,6 +263,23 @@ except TimeoutError as e:
   writeResultAndExit(0)
 execstat["parsing"]=monotonic()-start
 
+try:
+  classNames = omc.sendExpression('getClassNames()')
+except:
+  classNames = []
+
+for cl in classNames:
+  try:
+    classVersion = omc.sendExpression('getVersion(%s)' % cl)
+  except:
+    classVersion = "unknown"
+  try:
+    classSourceFile = omc.sendExpression('getSourceFile(%s)' % cl)
+  except:
+    classSourceFile = "??? unknown source location"
+  with open(errFile, 'a+') as fp:
+    fp.write("Using package %s with version %s (%s)\n" % (cl, classVersion, classSourceFile))
+
 def sendExpressionOldOrNew(cmd):
   try:
     return omc.sendExpression(cmd)
