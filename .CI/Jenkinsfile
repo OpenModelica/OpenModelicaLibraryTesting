@@ -382,7 +382,7 @@ pipeline {
           expression { params.oldInst }
         }
         steps {
-          test('master', 'oldInst', 'setCommandLineOptions("-d=nonewInst")', '', 'LibraryTestingRipperDB', false, '', false, false)
+          test('master', 'oldInst', 'setCommandLineOptions("-d=newInst")', '', 'LibraryTestingRipperDB', false, '', false, false)
         }
       }
       stage('cvode') {
