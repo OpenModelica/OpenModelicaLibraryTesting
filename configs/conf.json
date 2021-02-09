@@ -133,6 +133,10 @@
     "library":"AdvancedNoise"
   },
   {
+    "library":"AixLib",
+    "libraryVersion":"latest"
+  },
+  {
     "library":"IBPSA",
     "libraryVersion":"latest",
     "extraCustomCommands":["setCommandLineOptions(\"-d=ignoreCycles\")"]
@@ -244,6 +248,14 @@
   {
     "library":"PowerSysPro",
     "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"]
+  },
+  {
+    "library":"ScalableTestGrids",
+    "configExtraName":"noopt",
+    "ulimitOmc":500,
+    "ulimitExe":500,
+    "ulimitMemory":12582912,
+    "optlevel":"-O0"
   },
   {
     "library":"ScalableTestSuite",
