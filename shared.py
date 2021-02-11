@@ -4,6 +4,7 @@ import re, os, subprocess
 import simplejson as json
 
 def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCommands,extrasimflags):
+  data["configFromFile"] = dict(data)
   for (key,default) in overrideDefaults:
     if key not in data:
       data[key] = default

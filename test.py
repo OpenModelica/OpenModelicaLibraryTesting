@@ -433,12 +433,13 @@ stats_by_libname = {}
 skipped_libs = {}
 tests=[]
 for (library,conf) in configs:
-  if "referenceFiles" in conf:
-    c=conf.copy()
+  c=conf.copy()
+  del(c["configFromFile"])
+  if "referenceFiles" in c:
     del(c["referenceFilesURL"])
     confighash = strToHashInt(str(c)+hashReferenceFiles(conf["referenceFiles"]))
   else:
-    confighash = strToHashInt(str(conf)+hashReferenceFiles(""))
+    confighash = strToHashInt(str(c)+hashReferenceFiles(""))
   conf["confighash"] = confighash
   conf["omhome"] = omhome
   conf["single_thread_cmd"] = single_thread
@@ -778,6 +779,7 @@ for libname in stats_by_libname.keys():
     (u"#Simulation#", html.escape(str(numSucceeded[6]))),
     (u"#Verification#", html.escape(str(numSucceeded[7]))),
     (u"#totalTime#", html.escape(str(datetime.timedelta(seconds=int(sum(s[3].get("exectime") or 0.0 for s in stats)))))),
+    (u"#config#", html.escape(json.dumps(conf["configFromFile"], indent=1, sort_keys=True))),
     (u"#testsHTML#", testsHTML)
   )
   open("%s.html" % libname, "w").write(multiple_replace(htmltpl, *replacements))
