@@ -483,6 +483,9 @@ for (library,conf) in configs:
     conf["libraryVersionRevision"] = conf["libraryVersionRevision"] + " " + fmisimulatorversion
     conf["libraryLastChange"] = conf["libraryLastChange"] + " " + fmisimulatorversion
   res=omc.sendExpression('{c for c guard isExperiment(c) and not regexBool(typeNameString(x), "^Modelica_Synchronous\\.WorkInProgress") in getClassNames(%s, recursive=true)}' % library)
+  if conf.get("ignoreModelPrefix"):
+    prefix = conf["ignoreModelPrefix"]
+    res=list(filter(lambda x: not x.startswith(prefix), res))
   libName=shared.libname(library, conf)
   v = cursor.execute("""SELECT date,libversion,libname,branch,omcversion FROM [libversion] NATURAL JOIN [omcversion]
   WHERE libversion=? AND libname=? AND branch=? AND omcversion=? AND confighash=? ORDER BY date DESC LIMIT 1""", (conf["libraryLastChange"],libName,branch,omc_version,confighash)).fetchone()

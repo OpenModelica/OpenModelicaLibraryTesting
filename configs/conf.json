@@ -143,14 +143,17 @@
   },
   {
     "library":"Buildings",
+    "ignoreModelPrefix":"Buildings.Utilities.IO.BCVTB.Examples",
     "libraryVersion":"6.0.0"
   },
   {
     "library":"Buildings",
+    "ignoreModelPrefix":"Buildings.Utilities.IO.BCVTB.Examples",
     "libraryVersion":"7.0.0"
   },
   {
     "library":"Buildings",
+    "ignoreModelPrefix":"Buildings.Utilities.IO.BCVTB.Examples",
     "libraryVersion":"latest"
   },
   {
