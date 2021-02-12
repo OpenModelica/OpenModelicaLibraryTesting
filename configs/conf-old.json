@@ -15,5 +15,24 @@
     "library":"Modelica",
     "libraryVersion":"3.1",
     "referenceFiles":"$REFERENCEFILES/msl31"
+  },
+  {
+    "library":"Modelica",
+    "libraryVersion":"3.2.2",
+    "referenceFileExtension":"csv",
+    "referenceFileNameDelimiter":"/",
+    "referenceFileNameExtraName":"$ClassName",
+    "allReferenceFilesExist":false,
+    "referenceFiles":"$MSLREFERENCE/v3.2.2+build.0-beta.3",
+    "optlevel":"-Os -march=native"
+  },
+  {
+    "library":"Modelica",
+    "libraryVersion":"3.2.1",
+    "referenceFileExtension":"csv",
+    "referenceFileNameDelimiter":"/",
+    "referenceFileNameExtraName":"$ClassName",
+    "allReferenceFilesExist":true,
+    "referenceFiles":"$MSLREFERENCE/v3.2.1+build.4"
   }
 ]
