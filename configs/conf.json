@@ -234,7 +234,11 @@
   },
   {
     "library":"PowerSysPro",
-    "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"]
+    "extraCustomCommands":
+      [
+       "if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;",
+       "if not loadModel(Modelica) then exit(1); end if;"
+      ]
   },
   {
     "library":"ScalableTestGrids",
