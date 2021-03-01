@@ -298,7 +298,8 @@
     "extraCustomCommands":["setCommandLineOptions(\"-d=-NLSanalyticJacobian\")"]
   },
   {
-    "library":"TILMedia"
+    "library":"TILMedia",
+    "extraCustomCommands":["loadModel(ClaRa);"]
   },
   {
     "library":"ThermoPower",
