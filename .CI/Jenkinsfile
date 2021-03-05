@@ -565,7 +565,7 @@ def omsimulatorHash() {
 }
 def installLibraries() {
   sh "rm -rf '${env.HOME}/saved_omc/libraries/.openmodelica/libraries'"
-  sh "mkdir -p '${env.HOME}/saved_omc/libraries/"
+  sh "mkdir -p '${env.HOME}/saved_omc/libraries/'"
   sh "HOME='${env.HOME}/saved_omc/libraries/' /usr/bin/omc .CI/installLibraries.mos"
 }
 def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler, extrasimflags, corbaStyle, rmlStyle) {
