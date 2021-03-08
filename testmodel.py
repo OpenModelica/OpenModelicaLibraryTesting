@@ -238,7 +238,11 @@ if conf.get("ulimitMemory"):
   # Note: Only works on 1.13+ OpenModelica; we still need to ulimit the process for safety
   omc.sendExpression(str("GC_set_max_heap_size(%d);" % (int(conf["ulimitMemory"]*1024*0.8))), parsed = False)
 
-cmd = 'loadModel(%s, {"%s"})' % (conf["library"], conf["libraryVersion"])
+def loadModels(omc, conf):
+  for f in conf["loadFiles"]:
+    if not sendExpressionTimeout(omc, 'loadFile("%s", uses=false)' % f, conf["ulimitLoadModel"]):
+      print(omc.sendExpression('OpenModelica.Scripting.getErrorString()'))
+      sys.exit(1)
 newOMLoaded = False
 def loadLibraryInNewOM():
   global newOMLoaded
@@ -247,15 +251,11 @@ def loadLibraryInNewOM():
     # Broken/old getSimulationOptions; use new one (requires parsing again)
     assert(ompython_omhome!="")
     assert(omc_new.sendExpression('setModelicaPath("%s")' % libraries))
-    if not omc_new.sendExpression(cmd):
-      print(omc_new.sendExpression('OpenModelica.Scripting.getErrorString()'))
-      sys.exit(1)
+    loadModels(omc_new, conf)
 
 start=monotonic()
 try:
-  if not sendExpressionTimeout(omc, cmd, conf["ulimitLoadModel"]):
-    print(omc.sendExpression('OpenModelica.Scripting.getErrorString()'))
-    sys.exit(1)
+  loadModels(omc, conf)
 except TimeoutError as e:
   execstat["parsing"]=monotonic()-start
   with open(errFile, 'a+') as fp:

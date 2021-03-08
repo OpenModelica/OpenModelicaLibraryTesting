@@ -457,12 +457,14 @@ for (library,conf) in configs:
     print("Failed to set Modelica grammar")
     sys.exit(1)
   omc.sendExpression('clear()')
-  if not omc.sendExpression('loadModel(%s,{"%s"})' % (library,conf["libraryVersion"])):
-    try:
-      print("Failed to load library %s %s: %s" % (library,conf["libraryVersion"],omc.sendExpression('OpenModelica.Scripting.getErrorString()')))
-    except:
-      print("Failed to load library %s %s. OpenModelica.Scripting.getErrorString() failed..." % (library,conf["libraryVersion"]))
-    # sys.exit(1)
+  for (lib,version) in [[library,conf["libraryVersion"]]] + conf.get("extraLibraries", []):
+    if not omc.sendExpression('loadModel(%s,{"%s"})' % (lib,version)):
+      try:
+        print("Failed to load library %s %s: %s" % (library,conf["libraryVersion"],omc.sendExpression('OpenModelica.Scripting.getErrorString()')))
+      except:
+        print("Failed to load library %s %s. OpenModelica.Scripting.getErrorString() failed..." % (library,conf["libraryVersion"]))
+  conf["loadFiles"] = omc.sendExpression("{getSourceFile(cl) for cl in getClassNames()}")
+  
   if not (omc.sendExpression('setCommandLineOptions("-g=MetaModelica")') or omc.sendExpression('setCommandLineOptions("+g=Modelica")')):
     print("Failed to set MetaModelica grammar")
     sys.exit(1)
