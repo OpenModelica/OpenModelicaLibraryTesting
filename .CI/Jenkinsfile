@@ -169,7 +169,7 @@ pipeline {
           expression { params.v1_12 }
         }
         steps {
-          test('maintenance/v1.12', 'v1.12', '', '', 'LibraryTestingLibrariesDB', true, '', true, true)
+          test('maintenance/v1.12', 'v1.12', '', '', 'LibraryTestingLibrariesDB', true, '', false, true)
         }
       }
 
