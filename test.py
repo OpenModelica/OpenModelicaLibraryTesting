@@ -415,7 +415,7 @@ def getmd5(f):
   hf = f+".hash"
   if not os.path.exists(hf) or (os.path.getmtime(f) > os.path.getmtime(hf)):
     with open(hf, "w") as fout:
-      with open(f, "r") as fin:
+      with open(f, "rb") as fin:
         fout.write(hashlib.sha512(fin.read()).hexdigest())
   with open(hf) as fin:
     return fin.read()

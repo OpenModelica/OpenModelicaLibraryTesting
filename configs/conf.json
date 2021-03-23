@@ -221,7 +221,7 @@
   },
   {
     "library":"PNlib",
-    "referenceFiles":"$GITREPOS/PNlib/ReferenceFiles"
+    "referenceFiles":"$PNLIBREFS"
   },
   {
     "library":"Physiolibrary"
