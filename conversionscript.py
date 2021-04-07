@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from OMPython import OMCSessionZMQ
+from OMPython import OMCSessionZMQ, pyparsing
 import argparse
 import glob
 import json
@@ -14,11 +14,13 @@ from multiprocessing import Pool
 parser = argparse.ArgumentParser(description='OpenModelica library testing tool')
 parser.add_argument('libdir', nargs=1)
 parser.add_argument('--diff', action="store_true")
+parser.add_argument('--allowErrorsInDiff', action="store_true")
 parser.add_argument('-n', type=int, default=12)
 args = parser.parse_args()
 libdir = args.libdir[0]
 numThreads = args.n
 createDiff = args.diff
+allowErrorsInDiff = args.allowErrorsInDiff
 
 try:
   shutil.rmtree("converted-libraries")
@@ -31,6 +33,12 @@ def omcAssert(omc, cmd, extra=""):
   if not res:
     raise Exception(cmd + "\n" + extra + "\n" + (omc.sendExpression("getErrorString()") or ""))
 
+def omcSendExpression(omc, cmd, extra=""):
+  try:
+    return omc.sendExpression(cmd)
+  except pyparsing.ParseException as e:
+    raise Exception(str(e) + "\n" + cmd + "\n" + extra + "\n" + (omc.sendExpression("getErrorString()") or ""))
+
 mslPath = "%s/Modelica 4.0.0+maint.om/" % libdir
 with open("%s/openmodelica.metadata.json" % mslPath) as f:
   mslData = json.load(f)
@@ -38,6 +46,7 @@ with open("%s/openmodelica.metadata.json" % mslPath) as f:
 conversionScript = "%s/Resources/Scripts/Conversion/ConvertModelica_from_3.2.3_to_4.0.0.mos" % mslPath
 
 def convertPackage(p):
+  errorsInDiff = []
   with open(p) as f:
     data = json.load(f)
   uses=data.get('uses',{})
@@ -64,14 +73,15 @@ def convertPackage(p):
     return
   if libname in ["Modelica", "ModelicaServices", "Complex", "ModelicaTest", "ModelicaTestOverdetermined"]:
     return
-  if libname in ["AixLib", "FCSys", "SiemensPower", "ScalableTestSuite", "ThermoSysPro", "ThermoPower"]:
-    # conversion broken
-    return
   omc = OMCSessionZMQ()
-  omcAssert(omc, 'loadFile("converted-libraries/%s/package.mo", uses=false)' % libnameOnFile)
+  libnameOnFileFullPath = "converted-libraries/%s/package.mo" % libnameOnFile
+  omcAssert(omc, 'loadFile("%s", uses=false)' % libnameOnFileFullPath)
   errString = omc.sendExpression("getErrorString()")
   if errString:
     print(errString)
+  loadedFilePath = omc.sendExpression("getSourceFile(%s)" % libname)
+  if libnameOnFileFullPath not in loadedFilePath:
+    raise Exception("Expected to have loaded %s but got %s" % (libnameOnFileFullPath, loadedFilePath))
   omcAssert(omc, 'convertPackage(%s, "%s")' % (libname, conversionScript))
   uses = data["uses"]
   for (n,v) in data["uses"].items():
@@ -96,13 +106,26 @@ def convertPackage(p):
     if libname in []: # If we have libraries where the diff algorithm fails in the future
       res = omc.sendExpression('res := after') # Skip the diff
     else:
-      res = omc.sendExpression('res := diffModelicaFileListings(before, after, OpenModelica.Scripting.DiffFormat.plain)')
+      try:
+        res = omc.sendExpression('res := diffModelicaFileListings(before, after, OpenModelica.Scripting.DiffFormat.plain, failOnSemanticsChange=true)')
+      except pyparsing.ParseException as e:
+        errStr = omc.sendExpression('diffModelicaFileListings(before, after, OpenModelica.Scripting.DiffFormat.plain, failOnSemanticsChange=true)', parsed=False)
+        if errStr.strip():
+          print(errStr)
+        res = None
+        omc.sendExpression(omc, 'res := ""')
     if not res:
       omc.sendExpression('writeFile("%s", after)' % newFile)
-      print(omc.sendExpression("getErrorString()"))
-      raise Exception('before:=readFile("%s");\nafter:=readFile("%s");\ndiffModelicaFileListings(before, after, OpenModelica.Scripting.DiffFormat.plain);\ngetErrorString();' % (oldFile, newFile))
-      
-    omcAssert(omc, 'writeFile("%s", res)' % (newFile))
+      if allowErrorsInDiff:
+        errorsInDiff += [newFile]
+        res = after
+      else:
+        errStr = omc.sendExpression("getErrorString()")
+        if errStr:
+          print(errStr)
+        raise Exception('echo(false);before:=readFile("%s");\nafter:=readFile("%s");echo(true);\ndiffModelicaFileListings(before, after, OpenModelica.Scripting.DiffFormat.plain, failOnSemanticsChange=true);\ngetErrorString();' % (oldFile, newFile))
+    else:
+      omcAssert(omc, 'writeFile("%s", res)' % (newFile))
   path = "converted-libraries/%s/openmodelica.metadata.json" % libnameOnFile
   with open(path, "w") as f:
     print("Converted %s" % path)
@@ -116,7 +139,11 @@ def convertPackage(p):
     with open(diffOutputFile, "wb") as diffOut:
       diffOut.write(diffOutput.stdout)
   del omc
+  return errorsInDiff
   
 pat = "%s/*/openmodelica.metadata.json" % libdir
 with Pool(processes=numThreads) as pool:
   res = pool.map(convertPackage, sorted(glob.glob(pat)))
+  for r in res:
+    for f in r or []:
+      print("Ignored failed perform diff on %s" % f)
