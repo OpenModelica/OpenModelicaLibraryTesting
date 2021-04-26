@@ -9,6 +9,7 @@ import os
 import shutil
 import subprocess
 from multiprocessing import Pool
+import time
 
 
 parser = argparse.ArgumentParser(description='OpenModelica library testing tool')
@@ -68,11 +69,11 @@ def convertPackage(p):
   if libname in ["Modelica", "ModelicaServices", "Complex", "ModelicaTest", "ModelicaTestOverdetermined"]:
     ver = libnameOnFile.split(" ")[1]
     if ver.startswith("1.") or ver.startswith("3."):
-      return
+      return None
   if not uses.get('Modelica','0.0.0') in convertFromVersion:
-    return
+    return None
   if libname in ["Modelica", "ModelicaServices", "Complex", "ModelicaTest", "ModelicaTestOverdetermined"]:
-    return
+    return None
   omc = OMCSessionZMQ()
   libnameOnFileFullPath = "converted-libraries/%s/package.mo" % libnameOnFile
   omcAssert(omc, 'loadFile("%s", uses=false)' % libnameOnFileFullPath)
@@ -82,6 +83,8 @@ def convertPackage(p):
   loadedFilePath = omc.sendExpression("getSourceFile(%s)" % libname)
   if libnameOnFileFullPath not in loadedFilePath:
     raise Exception("Expected to have loaded %s but got %s" % (libnameOnFileFullPath, loadedFilePath))
+  gcProfStatsBeforeConversion = omc.sendExpression("GC_get_prof_stats()")
+  timeBeforeConvert = time.time()
   omcAssert(omc, 'convertPackage(%s, "%s")' % (libname, conversionScript))
   uses = data["uses"]
   for (n,v) in data["uses"].items():
@@ -95,6 +98,12 @@ def convertPackage(p):
   for n in names:
     f = omc.sendExpression('getSourceFile(%s)' % n)
     fileMapping[f] = n
+  statsByFile = []
+  nFail = 0
+  nDiff = 0
+  gcProfStatsBefore = omc.sendExpression("GC_get_prof_stats()")
+  timeAfterConvert = time.time()
+  timeForConversion = timeAfterConvert - timeBeforeConvert
   for (newFile, newClass) in fileMapping.items():
     oldFile = os.path.join(libdir, newFile.split("converted-libraries/")[1])
     assert(newFile != oldFile)
@@ -103,6 +112,7 @@ def convertPackage(p):
     if (not before) or (not after):
       raise Exception("%s %s (%s). %s. before: %s after: %s" % (oldFile, newFile, newClass, omc.sendExpression('getErrorString()'), str(type(before)), str(type(after))))
     omc.sendExpression("getErrorString()")
+    start = time.time()
     if libname in []: # If we have libraries where the diff algorithm fails in the future
       res = omc.sendExpression('res := after') # Skip the diff
     else:
@@ -114,11 +124,15 @@ def convertPackage(p):
           print(errStr)
         res = None
         omc.sendExpression(omc, 'res := ""')
+    end = time.time()
+    isFail = False
     if not res:
       omc.sendExpression('writeFile("%s", after)' % newFile)
       if allowErrorsInDiff:
         errorsInDiff += [newFile]
         res = after
+        nFail += 1
+        isFail = True
       else:
         errStr = omc.sendExpression("getErrorString()")
         if errStr:
@@ -126,9 +140,13 @@ def convertPackage(p):
         raise Exception('echo(false);before:=readFile("%s");\nafter:=readFile("%s");echo(true);\ndiffModelicaFileListings(before, after, OpenModelica.Scripting.DiffFormat.plain, failOnSemanticsChange=true);\ngetErrorString();' % (oldFile, newFile))
     else:
       omcAssert(omc, 'writeFile("%s", res)' % (newFile))
+    isDiff = before != res
+    if before != res:
+      nDiff += 1
+    statsByFile +=[{"time": end-start, "size": len(before), "isDiff": isDiff, "fail": isFail}]
   path = "converted-libraries/%s/openmodelica.metadata.json" % libnameOnFile
   with open(path, "w") as f:
-    print("Converted %s" % path)
+    gcProfStats = omc.sendExpression("GC_get_prof_stats()")
     data["uses"] = dict(uses)
     data["extraInfo"] = "Conversion script %s was applied" % conversionScript
     json.dump(data, f)
@@ -139,11 +157,15 @@ def convertPackage(p):
     with open(diffOutputFile, "wb") as diffOut:
       diffOut.write(diffOutput.stdout)
   del omc
-  return errorsInDiff
+  return {"errorsInDiff": errorsInDiff, "path": path, "timeForConversion": timeForConversion, "statsByFile": statsByFile, "gcProfStatsBeforeConversion": gcProfStatsBeforeConversion, "gcProfStatsBefore": gcProfStatsBefore, "gcProfStats": gcProfStats}
   
 pat = "%s/*/openmodelica.metadata.json" % libdir
 with Pool(processes=numThreads) as pool:
   res = pool.map(convertPackage, sorted(glob.glob(pat)))
-  for r in res:
-    for f in r or []:
-      print("Ignored failed perform diff on %s" % f)
+for r in res:
+  if r is None:
+    continue
+  for f in r["errorsInDiff"]:
+    print("Ignored failed perform diff on %s" % f)
+with open("result.json", "w") as fout:
+  json.dump([r for r in res if r], fout)
