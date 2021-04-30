@@ -25,7 +25,7 @@ for lib in {"AdvancedNoise", "AixLib", "BioChem", "BuildingSystems", "BuildSysPr
   end if;
 end for;
 
-for l in {{"ExtendedPetriNets", ""}, {"iPSL", ""}, {"PowerSystems","master"}, {"PowerSystems",""}, {"SiemensPower",""}, {"SiemensPower","OMCtest"}, {"ObjectStab","Dev"}, {"TILMedia","ClaRa"}, {"ThermoSysPro", ""}, {"Modelica_StateGraph2", ""}, {"OpenIPSL", ""}, {"OpenIPSL", "master"}, {"Physiomodel", ""}} loop
+for l in {{"ExtendedPetriNets", ""}, {"iPSL", ""}, {"PowerSystems","master"}, {"PowerSystems",""}, {"SiemensPower",""}, {"SiemensPower","OMCtest"}, {"ObjectStab","Dev"}, {"TILMedia","ClaRa"}, {"ThermoSysPro", ""}, {"Modelica_StateGraph2", ""}, {"OpenIPSL", ""}, {"Physiomodel", ""}} loop
   if not installPackage(stringTypeName(l[1]), l[2]) then
     print(l[1] + " " + l[2] + getErrorString() + "\n");
     exit(1);
