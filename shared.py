@@ -33,6 +33,7 @@ def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,overrideDefaults,default
       simflags.append(extrasimflags)
     data["extraSimFlags"] = " ".join(simflags) # no extra sim flags
     data["libraryVersion"] = data.get("libraryVersion") or "default"
+    data["libraryVersionLatestInPackageManager"] = data.get("libraryVersionLatestInPackageManager") or False
     data["alarmFlag"] = data.get("alarmFlag") or (alarmFlag if data["simCodeTarget"]=="C" else "")
     data["abortSlowSimulation"] = data.get("abortSlowSimulation") or (abortSimulationFlag if data["simCodeTarget"]=="C" else "")
     if "changeHash" in data: # Force rebuilding the library due to change in the testing script

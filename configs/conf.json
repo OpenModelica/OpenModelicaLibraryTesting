@@ -107,7 +107,7 @@
   },
   {
     "library":"PowerSystems",
-    "libraryVersion":"latest",
+    "libraryVersion":"master",
     "optlevel":"-Os -march=native"
   },
   {
@@ -115,27 +115,29 @@
   },
   {
     "library":"AixLib",
-    "libraryVersion":"latest"
+    "libraryVersion":"master"
   },
   {
     "library":"IBPSA",
-    "libraryVersion":"latest",
+    "libraryVersion":"master",
     "extraCustomCommands":["setCommandLineOptions(\"-d=ignoreCycles\")"]
   },
   {
     "library":"Buildings",
     "ignoreModelPrefix":"Buildings.Utilities.IO.BCVTB.Examples",
-    "libraryVersion":"6.0.0"
+    "libraryVersion":"7.0.0",
+    "libraryVersionLatestInPackageManager":true
   },
   {
     "library":"Buildings",
     "ignoreModelPrefix":"Buildings.Utilities.IO.BCVTB.Examples",
-    "libraryVersion":"7.0.0"
+    "libraryVersion":"8.0.0",
+    "libraryVersionLatestInPackageManager":true
   },
   {
     "library":"Buildings",
     "ignoreModelPrefix":"Buildings.Utilities.IO.BCVTB.Examples",
-    "libraryVersion":"latest"
+    "libraryVersion":"master"
   },
   {
     "library":"BuildingSystems"

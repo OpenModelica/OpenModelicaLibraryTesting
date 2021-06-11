@@ -167,11 +167,11 @@ if ompython_omhome != "":
   # Use a different OMC for running OMPython than for running the tests
   omhome = os.environ["OPENMODELICAHOME"]
   if rmlStyle:
-    omc_version = subprocess.check_output(omc_cmd + ["+version"], stderr=subprocess.STDOUT).strip()
+    omc_version = subprocess.check_output(omc_cmd + ["+version"], stderr=subprocess.STDOUT).decode("ascii").strip()
     version_cmd = "+version"
     print("Work-around for RML-style command-line arguments (+version)")
   else:
-    omc_version = subprocess.check_output(omc_cmd + ["--version"], stderr=subprocess.STDOUT).strip()
+    omc_version = subprocess.check_output(omc_cmd + ["--version"], stderr=subprocess.STDOUT).decode("ascii").strip()
   os.environ["OPENMODELICAHOME"] = ompython_omhome
   omc = OMCSessionZMQ()
   ompython_omc_version=omc.sendExpression('getVersion()')
@@ -458,12 +458,22 @@ for (library,conf) in configs:
     sys.exit(1)
   omc.sendExpression('clear()')
   for (lib,version) in [[library,conf["libraryVersion"]]] + conf.get("extraLibraries", []):
-    if not omc.sendExpression('loadModel(%s,{"%s"})' % (lib,version)):
+    if conf["libraryVersionLatestInPackageManager"]:
+      availableVersions = omc.sendExpression('getAvailablePackageVersions(%s,"%s")' % (lib,version))
+      if not availableVersions:
+        try:
+          print("Failed to getAvailablePackageVersions %s %s: %s" % (library,version,omc.sendExpression('OpenModelica.Scripting.getErrorString()')))
+        except:
+          print("Failed to getAvailablePackageVersions %s %s. OpenModelica.Scripting.getErrorString() failed..." % (library,conf["libraryVersion"]))
+      versions = "{" + ",".join(['"'+v+'"' for v in availableVersions]) + "}"
+    else:
+      versions = '{"%s"}' % version
+    if not omc.sendExpression('loadModel(%s,%s)' % (lib,versions)):
       try:
-        print("Failed to load library %s %s: %s" % (library,conf["libraryVersion"],omc.sendExpression('OpenModelica.Scripting.getErrorString()')))
+        print("Failed to load library %s %s: %s" % (library,versions,omc.sendExpression('OpenModelica.Scripting.getErrorString()')))
       except:
         print("Failed to load library %s %s. OpenModelica.Scripting.getErrorString() failed..." % (library,conf["libraryVersion"]))
-  conf["loadFiles"] = omc.sendExpression("{getSourceFile(cl) for cl in getClassNames()}")
+  conf["loadFiles"] = sorted(omc.sendExpression("{getSourceFile(cl) for cl in getClassNames()}"))
   
   if not (omc.sendExpression('setCommandLineOptions("-g=MetaModelica")') or omc.sendExpression('setCommandLineOptions("+g=Modelica")')):
     print("Failed to set MetaModelica grammar")

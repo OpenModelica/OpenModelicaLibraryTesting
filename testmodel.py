@@ -167,7 +167,7 @@ if conf.get("fmi"):
 omhome = conf["omhome"]
 os.environ["OPENMODELICAHOME"] = omhome
 
-omc = OMCSession(docker=docker, dockerExtraArgs=dockerExtraArgs, timeout=0.5) if corbaStyle else OMCSessionZMQ(docker=docker, dockerExtraArgs=dockerExtraArgs, timeout=0.5)
+omc = OMCSession(docker=docker, dockerExtraArgs=dockerExtraArgs, timeout=5) if corbaStyle else OMCSessionZMQ(docker=docker, dockerExtraArgs=dockerExtraArgs, timeout=5)
 if ompython_omhome != "":
   os.environ["OPENMODELICAHOME"] = ompython_omhome
   omc_new = OMCSessionZMQ()
@@ -243,6 +243,10 @@ def loadModels(omc, conf):
     if not sendExpressionTimeout(omc, 'loadFile("%s", uses=false)' % f, conf["ulimitLoadModel"]):
       print(omc.sendExpression('OpenModelica.Scripting.getErrorString()'))
       sys.exit(1)
+  loadedFiles = sorted(omc.sendExpression("{getSourceFile(cl) for cl in getClassNames()}"))
+  if conf["loadFiles"] != loadedFiles:
+    print("Loaded the wrong files. Expected:\n%s\nActual:\n%s", ("\n".join(conf["loadFiles"]), "\n".join(loadedFiles)))
+    sys.exit(1)
 newOMLoaded = False
 def loadLibraryInNewOM():
   global newOMLoaded

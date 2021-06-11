@@ -620,7 +620,7 @@ def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler, extrasimflags
   export PNLIBREFS="${PNLIBREFS}"
   cd OpenModelicaLibraryTesting
   # Force /usr/bin/omc as being used for generating the mos-files. Ensures consistent behavior among all tested OMC versions
-  stdbuf -oL -eL time python2 ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags='${extraFlags}' --extrasimflags='${extrasimflags}' --branch="${name}" --output="libraries.openmodelica.org:/var/www/branches/${name}/" --libraries='${WORKSPACE}/OpenModelica/${OMCPATH}/build/lib/omlibrary/' configs/conf.json configs/conf-c++.json ${params.OLD_LIBS ? "configs/conf-old.json" : ""} || (killall omc ; false) || exit 1
+  stdbuf -oL -eL time python2 ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags='${extraFlags}' --extrasimflags='${extrasimflags}' --branch="${name}" --output="libraries.openmodelica.org:/var/www/branches/${name}/" --libraries='${env.HOME}/saved_omc/libraries/.openmodelica/libraries' configs/conf.json configs/conf-c++.json ${params.OLD_LIBS ? "configs/conf-old.json" : ""} || (killall omc ; false) || exit 1
   """
   sh 'date'
   sh 'rm -f OpenModelicaLibraryTesting/sqlite3.db.tmp'
