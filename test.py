@@ -515,7 +515,7 @@ for (library,conf) in configs:
   if v is None:
     stats_by_libname[libName] = {"conf":conf, "stats":[]}
     tests = tests + [(r,library,libName,libName+"_"+r,conf) for r in res]
-    print("Running library %s" % libName)
+    print("Running library %s (%d tests)" % (libName, len(res)))
   else:
     print("Skipping %s as we already have results for it: %s" % (libName,str(v)))
     skipped_libs[libName] = v[0]
