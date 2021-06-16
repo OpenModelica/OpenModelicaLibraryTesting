@@ -83,14 +83,14 @@
   {
     "library":"Modelica_Synchronous",
     "libraryVersion":"master",
-    "libraryVersionNameForTests":""
+    "libraryVersionNameForTests":"",
     "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"],
     "referenceFiles":"$REFERENCEFILES/Modelica_Synchronous"
   },
   {
     "library":"Modelica_DeviceDrivers",
     "libraryVersion":"master",
-    "libraryVersionNameForTests":""
+    "libraryVersionNameForTests":"",
     "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"]
   },
   {
@@ -273,7 +273,7 @@
   {
     "library":"ScalableTestSuite",
     "libraryVersion":"master",
-    "libraryVersionNameForTests":""
+    "libraryVersionNameForTests":"",
     "ulimitOmc":300,
     "ulimitExe":300,
     "ulimitMemory":12582912,
@@ -289,7 +289,7 @@
   {
     "library":"ScalableTestSuite",
     "libraryVersion":"master",
-    "libraryVersionNameForTests":""
+    "libraryVersionNameForTests":"",
     "configExtraName":"noopt",
     "ulimitOmc":300,
     "ulimitExe":300,
