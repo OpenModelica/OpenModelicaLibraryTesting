@@ -289,8 +289,7 @@
   {
     "library":"ScalableTestSuite",
     "libraryVersion":"master",
-    "libraryVersionNameForTests":"",
-    "configExtraName":"noopt",
+    "libraryVersionNameForTests":"noopt",
     "ulimitOmc":300,
     "ulimitExe":300,
     "ulimitMemory":12582912,
