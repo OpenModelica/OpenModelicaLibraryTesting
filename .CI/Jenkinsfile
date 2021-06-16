@@ -441,6 +441,8 @@ def installLibraries() {
   sh "rm -rf '${env.HOME}/saved_omc/libraries/.openmodelica/libraries'"
   sh "mkdir -p '${env.HOME}/saved_omc/libraries/'"
   sh "HOME='${env.HOME}/saved_omc/libraries/' /usr/bin/omc OpenModelicaLibraryTesting/.CI/installLibraries.mos"
+  // These exist (better packaged? on the machines)
+  sh "rm -rf '${env.HOME}/saved_omc/libraries/ClaRa' '${env.HOME}/saved_omc/libraries/ClaRa_Obsolete' '${env.HOME}/saved_omc/libraries/TILMedia'"
   sh "cp -ai /mnt/ReferenceFiles/ExtraLibs/packaged/* '${env.HOME}/saved_omc/libraries/'"
 }
 def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler, extrasimflags) {
