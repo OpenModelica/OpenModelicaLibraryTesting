@@ -494,7 +494,7 @@ for (library,conf) in configs:
   if os.path.exists(metadataFile):
     with open(metadataFile) as metadataIn:
       metadata = json.load(metadataIn)
-      conf["libraryLastChange"] = "%s (%s)" % (metadata["version"],metadata["sha"])
+      conf["libraryLastChange"] = "%s (%s)" % (metadata["version"],metadata.get("sha") or metadata["zipfile"])
       conf["metadata"] = json.dumps(metadata, indent=1)
   else:
     conf["metadata"] = ""
