@@ -82,11 +82,15 @@
   },
   {
     "library":"Modelica_Synchronous",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":""
     "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"],
     "referenceFiles":"$REFERENCEFILES/Modelica_Synchronous"
   },
   {
     "library":"Modelica_DeviceDrivers",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":""
     "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"]
   },
   {
@@ -108,18 +112,23 @@
   {
     "library":"PowerSystems",
     "libraryVersion":"master",
+    "libraryVersionNameForTests":"latest",
     "optlevel":"-Os -march=native"
   },
   {
-    "library":"AdvancedNoise"
+    "library":"AdvancedNoise",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":""
   },
   {
     "library":"AixLib",
-    "libraryVersion":"master"
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":"latest"
   },
   {
     "library":"IBPSA",
     "libraryVersion":"master",
+    "libraryVersionNameForTests":"latest",
     "extraCustomCommands":["setCommandLineOptions(\"-d=ignoreCycles\")"]
   },
   {
@@ -137,10 +146,13 @@
   {
     "library":"Buildings",
     "ignoreModelPrefix":"Buildings.Utilities.IO.BCVTB.Examples",
-    "libraryVersion":"master"
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":"latest"
   },
   {
-    "library":"BuildingSystems"
+    "library":"BuildingSystems",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":""
   },
   {
     "library":"BuildSysPro"
@@ -155,7 +167,9 @@
     "library":"ClaRa"
   },
   {
-    "library":"ConPNlib"
+    "library":"ConPNlib",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":""
   },
   {
     "library":"ElectricalEnergyStorage"
@@ -179,7 +193,9 @@
     "library":"HanserModelica"
   },
   {
-    "library":"HelmholtzMedia"
+    "library":"HelmholtzMedia",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":""
   },
   {
     "library":"IndustrialControlSystems"
@@ -210,7 +226,9 @@
     "library":"ObjectStab"
   },
   {
-    "library":"OpenHydraulics"
+    "library":"OpenHydraulics",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":""
   },
   {
     "library":"OpenIPSL"
@@ -254,6 +272,8 @@
   },
   {
     "library":"ScalableTestSuite",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":""
     "ulimitOmc":300,
     "ulimitExe":300,
     "ulimitMemory":12582912,
@@ -268,6 +288,8 @@
   },
   {
     "library":"ScalableTestSuite",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":""
     "configExtraName":"noopt",
     "ulimitOmc":300,
     "ulimitExe":300,
@@ -295,7 +317,9 @@
     "library":"Spot"
   },
   {
-    "library":"SystemDynamics"
+    "library":"SystemDynamics",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":""
   },
   {
     "library":"ThermalSeparation",
@@ -312,7 +336,9 @@
     "optlevel":"-Os -march=native"
   },
   {
-    "library":"ThermoSysPro"
+    "library":"ThermoSysPro",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":""
   },
   {
     "library":"VehicleInterfaces"

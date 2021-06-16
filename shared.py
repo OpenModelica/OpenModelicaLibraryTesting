@@ -47,6 +47,8 @@ def readConfig(c,rmlStyle=False,abortSimulationFlag="",alarmFlag="",overrideDefa
   return [fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCommands,extrasimflags) for data in json.load(open(c))]
 
 def libname(library, conf):
+  if "libraryVersionNameForTests" in conf:
+    return library+"_"+conf["libraryVersionNameForTests"] if conf["libraryVersionNameForTests"] else library
   return library+("_"+conf["libraryVersion"] if conf["libraryVersion"]!="default" else "")+(("_" + conf["configExtraName"]) if "configExtraName" in conf else "")
 
 def finalphaseName(finalphase):

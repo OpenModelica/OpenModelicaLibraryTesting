@@ -34,7 +34,8 @@
 <p>OpenModelica Version: #omcVersion#</p>
 #fmi#
 <p>Test started: #timeStart#</p>
-<p>Tested Library: #libraryVersionRevision#</p>
+<p>Tested Library: #libraryVersionRevision#<pre>
+#metadata#</pre></p>
 <p>BuildModel time limit: #ulimitOmc#s</p>
 <p>Simulation time limit: #ulimitExe#s</p>
 <p>Default tolerance: #default_tolerance#</p>

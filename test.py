@@ -484,14 +484,22 @@ for (library,conf) in configs:
     conf["resourceLocation"]=""
 
   conf["libraryVersionRevision"]=omc.sendExpression('getVersion(%s)' % library)
-  if conf.get("fmi") and fmisimulatorversion:
-    conf["libraryVersionRevision"] = conf["libraryVersionRevision"] + " " + fmisimulatorversion
   librarySourceFile=omc.sendExpression('getSourceFile(%s)' % library)
   lastChange=(librarySourceFile[:-3]+".last_change") if not librarySourceFile.endswith("package.mo") else (os.path.dirname(librarySourceFile)+".last_change")
   if os.path.exists(lastChange):
     conf["libraryLastChange"] = " %s (revision %s)" % (conf["libraryVersionRevision"],"\n".join(open(lastChange).readlines()).strip())
   else:
     conf["libraryLastChange"] = "%s (%s)" % (conf["libraryVersionRevision"], librarySourceFile)
+  metadataFile = os.path.join(os.path.dirname(librarySourceFile), "openmodelica.metadata.json")
+  if os.path.exists(metadataFile):
+    with open(metadataFile) as metadataIn:
+      metadata = json.load(metadataIn)
+      conf["libraryLastChange"] = "%s (%s)" % (metadata["version"],metadata["sha"])
+      conf["metadata"] = json.dumps(metadata, indent=1)
+  else:
+    conf["metadata"] = ""
+  if not conf["libraryVersionRevision"]:
+    conf["libraryVersionRevision"] = conf["libraryLastChange"]
   if conf.get("fmi") and fmisimulatorversion:
     conf["libraryVersionRevision"] = conf["libraryVersionRevision"] + " " + fmisimulatorversion
     conf["libraryLastChange"] = conf["libraryLastChange"] + " " + fmisimulatorversion
@@ -769,6 +777,7 @@ for libname in stats_by_libname.keys():
     (u"#fileName#", html.escape(libname)),
     (u"#customCommands#", html.escape("\n".join(conf["customCommands"]))),
     (u"#libraryVersionRevision#", html.escape(conf["libraryVersionRevision"])),
+    (u"#metadata#", html.escape(conf["metadata"])),
     (u"#ulimitOmc#", html.escape(str(conf["ulimitOmc"]))),
     (u"#ulimitExe#", html.escape(str(conf["ulimitExe"]))),
     (u"#default_tolerance#", html.escape(str(conf["default_tolerance"]))),
