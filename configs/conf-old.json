@@ -12,11 +12,6 @@
     "libraryVersion":"3.0.0"
   },
   {
-    "library":"Buildings",
-    "ignoreModelPrefix":"Buildings.Utilities.IO.BCVTB.Examples",
-    "libraryVersion":"6.0.0"
-  },
-  {
     "library":"Modelica",
     "libraryVersion":"3.1",
     "referenceFiles":"$REFERENCEFILES/msl31"
