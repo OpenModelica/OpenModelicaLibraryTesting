@@ -121,6 +121,11 @@
     "libraryVersionNameForTests":""
   },
   {
+    "library":"AES",
+    "libraryVersion":"main",
+    "libraryVersionNameForTests":""
+  },
+  {
     "library":"AixLib",
     "libraryVersion":"master",
     "libraryVersionNameForTests":"latest"
@@ -319,6 +324,28 @@
     "library":"SystemDynamics",
     "libraryVersion":"master",
     "libraryVersionNameForTests":""
+  },
+  {
+    "library":"TAeZoSysPro",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":""
+  },
+  {
+    "library":"TAeZoSysPro_testsuite",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":"",
+    "extraLibraries":[
+      ["TAeZoSysPro", "master"]
+    ]
+  },
+  {
+    "library":"ThermofluidStream",
+    "libraryVersion":"main",
+    "libraryVersionNameForTests":""
+  },
+  {
+    "library":"ThermofluidStream",
+    "libraryVersion":"OM_adaptions"
   },
   {
     "library":"ThermalSeparation",

@@ -18,14 +18,14 @@ end for;
 
 // "KeyWordIO" master? Fixa master+X.X som version
 
-for lib in {"AdvancedNoise", "AixLib", "BioChem", "BuildingSystems", "BuildSysPro", "Chemical", "ClaRa_Obsolete", "ClaRa", "ConPNlib", "ElectricalEnergyStorage", "ExternData", "ExternalMemoryLib", "FastBuildings", "FCSys", "HanserModelica", "HelmholtzMedia", "IBPSA", "IdealizedContact", "IndustrialControlSystems", "KeyWordIO", "LibRAS", "MEV", "MessagePack", "ModelicaByExample", "ModelicaTestOverdetermined", "Modelica_Synchronous", "Modelica_DeviceDrivers", "Modelica_LinearSystems2", "Modelica_Noise", "OpenHydraulics", "PhotoVoltaics", "PhotoVoltaics_TGM", "PNlib", "Physiolibrary", "PlanarMechanics", "PowerGrids", "PowerSysPro", "ScalableTestGrids", "ScalableTestSuite", "SolarTherm", "Spot", "SystemDynamics", "ThermalSeparation", "ThermoPower", "ThermoSysPro", "VehicleInterfaces"} loop
+for lib in {"AdvancedNoise", "AixLib", "BioChem", "BuildingSystems", "BuildSysPro", "Chemical", "ClaRa_Obsolete", "ClaRa", "ConPNlib", "ElectricalEnergyStorage", "ExternData", "ExternalMemoryLib", "FastBuildings", "FCSys", "HanserModelica", "HelmholtzMedia", "IBPSA", "IdealizedContact", "IndustrialControlSystems", "KeyWordIO", "LibRAS", "MEV", "MessagePack", "ModelicaByExample", "ModelicaTestOverdetermined", "Modelica_Synchronous", "Modelica_DeviceDrivers", "Modelica_LinearSystems2", "Modelica_Noise", "OpenHydraulics", "PhotoVoltaics", "PhotoVoltaics_TGM", "PNlib", "Physiolibrary", "PlanarMechanics", "PowerGrids", "PowerSysPro", "ScalableTestGrids", "ScalableTestSuite", "SolarTherm", "Spot", "SystemDynamics", "TAeZoSysPro", "TAeZoSysPro_testsuite", "ThermalSeparation", "ThermoPower", "ThermoSysPro", "VehicleInterfaces"} loop
   if not installPackage(stringTypeName(lib), "master") then
     print(lib + " " + getErrorString() + "\n");
     exit(1);
   end if;
 end for;
 
-for l in {{"Annex60", ""}, {"ExtendedPetriNets", ""}, {"iPSL", ""}, {"PowerSystems","master"}, {"PowerSystems",""}, {"SiemensPower",""}, {"SiemensPower","OMCtest"}, {"ObjectStab","Dev"}, {"TILMedia","ClaRa"}, {"Modelica_StateGraph2", ""}, {"OpenIPSL", ""}, {"Physiomodel", ""}} loop
+for l in {{"AES", "main"}, {"Annex60", ""}, {"ExtendedPetriNets", ""}, {"iPSL", ""}, {"PowerSystems","master"}, {"PowerSystems",""}, {"SiemensPower",""}, {"SiemensPower","OMCtest"}, {"ObjectStab","Dev"}, {"TILMedia","ClaRa"}, {"Modelica_StateGraph2", ""}, {"OpenIPSL", ""}, {"Physiomodel", ""}, {"ThermofluidStream", "main"}, {"ThermofluidStream", "0.1.0-OM_adaptions"}} loop
   if not installPackage(stringTypeName(l[1]), l[2]) then
     print(l[1] + " " + l[2] + getErrorString() + "\n");
     exit(1);
