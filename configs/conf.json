@@ -341,11 +341,13 @@
   {
     "library":"ThermofluidStream",
     "libraryVersion":"main",
-    "libraryVersionNameForTests":""
+    "libraryVersionNameForTests":"",
+    "ulimitExe":1200
   },
   {
     "library":"ThermofluidStream",
-    "libraryVersion":"OM_adaptions"
+    "libraryVersion":"OM_adaptions",
+    "ulimitExe":1200
   },
   {
     "library":"ThermalSeparation",
