@@ -320,9 +320,6 @@
     "library":"SolarTherm"
   },
   {
-    "library":"Spot"
-  },
-  {
     "library":"SystemDynamics",
     "libraryVersion":"master",
     "libraryVersionNameForTests":""
