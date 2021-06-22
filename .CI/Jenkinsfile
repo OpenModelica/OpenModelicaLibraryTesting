@@ -18,8 +18,8 @@ pipeline {
     booleanParam(name: 'fmi_master', defaultValue: false, description: 'master branch with FMI (ripper)')
     booleanParam(name: 'newInst_daeMode', defaultValue: false, description: 'master branch, --daeMode with -d=newInst (ripper)')
     booleanParam(name: 'oldInst', defaultValue: false, description: 'master branch, with -d=nonewInst (ripper)')
-    booleanParam(name: 'report_ripper', defaultValue: false, description: 'Generate a report for ripper without running the tests')
-    booleanParam(name: 'report_lib', defaultValue: false, description: 'Generate a report for lib without running the tests')
+    booleanParam(name: 'report_ripper1', defaultValue: false, description: 'Generate a report for ripper1 without running the tests')
+    booleanParam(name: 'report_ripper2', defaultValue: false, description: 'Generate a report for ripper2 without running the tests')
 
     booleanParam(name: 'cvode', defaultValue: false, description: 'master branch, with -d=newInst and -s cvode (ripper). This is an experimental job that does not run on a fixed schedule.')
   }
@@ -32,7 +32,7 @@ pipeline {
       stage('v1.12') {
         agent {
           node {
-            label 'libraries.openmodelica.org'
+            label 'ripper.openmodelica.org'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -42,14 +42,14 @@ pipeline {
           expression { params.v1_12 }
         }
         steps {
-          test('maintenance/v1.12', 'v1.12', '', '', 'LibraryTestingLibrariesDB', true, '')
+          test('maintenance/v1.12', 'v1.12', '', '', 'LibraryTestingRipper1DB', true, '')
         }
       }
 
       stage('v1.13') {
         agent {
           node {
-            label 'libraries.openmodelica.org'
+            label 'ripper.openmodelica.org'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -59,14 +59,14 @@ pipeline {
           expression { params.v1_13 }
         }
         steps {
-          test('maintenance/v1.13', 'v1.13', '', '', 'LibraryTestingLibrariesDB', true, '')
+          test('maintenance/v1.13', 'v1.13', '', '', 'LibraryTestingRipper1DB', true, '')
         }
       }
 
       stage('v1.14') {
         agent {
           node {
-            label 'libraries.openmodelica.org'
+            label 'ripper.openmodelica.org'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -76,14 +76,14 @@ pipeline {
           expression { params.v1_14 }
         }
         steps {
-          test('maintenance/v1.14', 'v1.14', '', '', 'LibraryTestingLibrariesDB', false, '')
+          test('maintenance/v1.14', 'v1.14', '', '', 'LibraryTestingRipper1DB', false, '')
         }
       }
 
       stage('v1.16') {
         agent {
           node {
-            label 'libraries.openmodelica.org'
+            label 'ripper.openmodelica.org'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -93,14 +93,14 @@ pipeline {
           expression { params.v1_16 }
         }
         steps {
-          test('maintenance/v1.16', 'v1.16', '', '', 'LibraryTestingLibrariesDB', false, '')
+          test('maintenance/v1.16', 'v1.16', '', '', 'LibraryTestingRipper1DB', false, '')
         }
       }
 
       stage('v1.17') {
         agent {
           node {
-            label 'libraries.openmodelica.org'
+            label 'ripper.openmodelica.org'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -110,14 +110,14 @@ pipeline {
           expression { params.v1_17 }
         }
         steps {
-          test('maintenance/v1.17', 'v1.17', '', '', 'LibraryTestingLibrariesDB', false, '')
+          test('maintenance/v1.17', 'v1.17', '', '', 'LibraryTestingRipper1DB', false, '')
         }
       }
 
       stage('master') {
         agent {
           node {
-            label 'libraries.openmodelica.org'
+            label 'ripper.openmodelica.org'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -127,14 +127,14 @@ pipeline {
           expression { params.master }
         }
         steps {
-          test('master', 'master', '', '', 'LibraryTestingLibrariesDB', false, '')
+          test('master', 'master', '', '', 'LibraryTestingRipper1DB', false, '')
         }
       }
 
       stage('v1.12 FMI') {
         agent {
           node {
-            label 'ripper.openmodelica.org'
+            label 'ripper2-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -144,13 +144,13 @@ pipeline {
           expression { params.fmi_v1_12 }
         }
         steps {
-          test('maintenance/v1.12', 'v1.12-fmi', '', omsimulatorHash(), 'LibraryTestingRipperDB', true, '')
+          test('maintenance/v1.12', 'v1.12-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', true, '')
         }
       }
       stage('v1.13 FMI') {
         agent {
           node {
-            label 'ripper.openmodelica.org'
+            label 'ripper2-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -160,13 +160,13 @@ pipeline {
           expression { params.fmi_v1_13 }
         }
         steps {
-          test('maintenance/v1.13', 'v1.13-fmi', '', omsimulatorHash(), 'LibraryTestingRipperDB', true, '')
+          test('maintenance/v1.13', 'v1.13-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', true, '')
         }
       }
       stage('v1.14 FMI') {
         agent {
           node {
-            label 'ripper.openmodelica.org'
+            label 'ripper2-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -176,13 +176,13 @@ pipeline {
           expression { params.fmi_v1_14 }
         }
         steps {
-          test('maintenance/v1.14', 'v1.14-fmi', '', omsimulatorHash(), 'LibraryTestingRipperDB', false, '')
+          test('maintenance/v1.14', 'v1.14-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', false, '')
         }
       }
       stage('v1.16 FMI') {
         agent {
           node {
-            label 'ripper.openmodelica.org'
+            label 'ripper2-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -192,13 +192,13 @@ pipeline {
           expression { params.fmi_v1_16 }
         }
         steps {
-          test('maintenance/v1.16', 'v1.16-fmi', '', omsimulatorHash(), 'LibraryTestingRipperDB', false, '')
+          test('maintenance/v1.16', 'v1.16-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', false, '')
         }
       }
       stage('v1.17 FMI') {
         agent {
           node {
-            label 'ripper.openmodelica.org'
+            label 'ripper2-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -208,13 +208,13 @@ pipeline {
           expression { params.fmi_v1_17 }
         }
         steps {
-          test('maintenance/v1.17', 'v1.17-fmi', '', omsimulatorHash(), 'LibraryTestingRipperDB', false, '')
+          test('maintenance/v1.17', 'v1.17-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', false, '')
         }
       }
       stage('master FMI') {
         agent {
           node {
-            label 'ripper.openmodelica.org'
+            label 'ripper2-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -224,13 +224,13 @@ pipeline {
           expression { params.fmi_master }
         }
         steps {
-          test('master', 'master-fmi', '', 'origin/master', 'LibraryTestingRipperDB', false, '')
+          test('master', 'master-fmi', '', 'origin/master', 'LibraryTestingRipper2DB', false, '')
         }
       }
       stage('newInst-daeMode') {
         agent {
           node {
-            label 'ripper.openmodelica.org'
+            label 'ripper2-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -240,13 +240,13 @@ pipeline {
           expression { params.newInst_daeMode }
         }
         steps {
-          test('master', 'newInst-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --daeMode=true")', '', 'LibraryTestingRipperDB', false, '')
+          test('master', 'newInst-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --daeMode=true")', '', 'LibraryTestingRipper2DB', false, '')
         }
       }
       stage('oldInst') {
         agent {
           node {
-            label 'ripper.openmodelica.org'
+            label 'ripper2-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -256,13 +256,13 @@ pipeline {
           expression { params.oldInst }
         }
         steps {
-          test('master', 'oldInst', 'setCommandLineOptions("-d=nonewInst")', '', 'LibraryTestingRipperDB', false, '')
+          test('master', 'oldInst', 'setCommandLineOptions("-d=nonewInst")', '', 'LibraryTestingRipper2DB', false, '')
         }
       }
       stage('cvode') {
         agent {
           node {
-            label 'ripper.openmodelica.org'
+            label 'ripper2-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -272,7 +272,7 @@ pipeline {
           expression { params.cvode }
         }
         steps {
-          test('master', 'cvode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'LibraryTestingRipperDB', false, '-s cvode')
+          test('master', 'cvode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'LibraryTestingRipper2DB', false, '-s cvode')
         }
       }
     } }
@@ -287,7 +287,7 @@ pipeline {
         }
         when {
           beforeAgent true
-          expression { params.v1_12 || params.v1_13 || params.v1_14 || params.v1_16 || params.v1_17 || params.master || params.report_lib }
+          expression { params.v1_12 || params.v1_13 || params.v1_14 || params.v1_16 || params.v1_17 || params.master || params.report_ripper1 }
         }
         environment {
           GITBRANCHES = 'maintenance/v1.12 maintenance/v1.13 maintenance/v1.14 maintenance/v1.16 maintenance/v1.17 master'
@@ -302,7 +302,7 @@ pipeline {
           cd OpenModelica
           git fetch
           '''
-          sh 'wget -q https://libraries.openmodelica.org/sqlite3/lib/sqlite3.db'
+          sh 'wget -q https://libraries.openmodelica.org/sqlite3/ripper1/sqlite3.db'
           sh './clean-empty-omcversion-dates.py'
 
           sh "./all-reports.py --email --omcgitdir=OpenModelica ${env.GITBRANCHES}"
@@ -335,7 +335,7 @@ pipeline {
         }
         when {
           beforeAgent true
-          expression { params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_v1_14 || params.fmi_v1_16 || params.fmi_v1_17 || params.fmi_master || params.newInst_daeMode  || params.oldInst || params.report_ripper || params.cvode }
+          expression { params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_v1_14 || params.fmi_v1_16 || params.fmi_v1_17 || params.fmi_master || params.newInst_daeMode  || params.oldInst || params.report_ripper2 || params.cvode }
         }
         environment {
           GITBRANCHES_FMI = 'maintenance/v1.12-fmi maintenance/v1.13-fmi maintenance/v1.14-fmi maintenance/v1.16-fmi maintenance/v1.17-fmi master-fmi'
@@ -352,7 +352,7 @@ pipeline {
           cd OpenModelica
           git fetch
           '''
-          sh 'wget -q https://libraries.openmodelica.org/sqlite3/ripper/sqlite3.db'
+          sh 'wget -q https://libraries.openmodelica.org/sqlite3/ripper2/sqlite3.db'
           sh './clean-empty-omcversion-dates.py'
 
           sh "./all-reports.py --email --omcgitdir=OpenModelica ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE}"
@@ -407,7 +407,7 @@ pipeline {
         }
         when {
           beforeAgent true
-          expression { params.v1_12 || params.v1_13 || params.v1_14 || params.v1_16 || params.v1_17 || params.master || params.report_lib }
+          expression { params.v1_12 || params.v1_13 || params.v1_14 || params.v1_16 || params.v1_17 || params.master || params.report_ripper1 }
         }
         steps {
           sh 'cp ~/TEST_LIBS_BACKUP/sqlite3.db .'
@@ -415,15 +415,15 @@ pipeline {
           sh 'cp sqlite3.db ~/TEST_LIBS_BACKUP/'
         }
       }
-      stage('ripper') {
+      stage('ripper2') {
         agent {
           node {
-            label 'ripper.openmodelica.org'
+            label 'ripper2-1'
           }
         }
         when {
           beforeAgent true
-          expression { params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_v1_14 || params.fmi_v1_16 || params.fmi_v1_17 || params.fmi_master || params.newInst_daeMode  || params.oldInst || params.report_ripper }
+          expression { params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_v1_14 || params.fmi_v1_16 || params.fmi_v1_17 || params.fmi_master || params.newInst_daeMode  || params.oldInst || params.report_ripper2 }
         }
         steps {
           sh 'cp ~/TEST_LIBS_BACKUP/sqlite3.db .'
