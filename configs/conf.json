@@ -248,7 +248,9 @@
   },
   {
     "library":"PNlib",
-    "referenceFiles":"$PNLIBREFS"
+    "referenceFiles":"$PNLIBREFS",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":""
   },
   {
     "library":"Physiolibrary"
