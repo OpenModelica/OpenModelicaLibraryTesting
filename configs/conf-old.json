@@ -12,6 +12,9 @@
     "libraryVersion":"3.0.0"
   },
   {
+    "library":"iPSL"
+  },
+  {
     "library":"Modelica",
     "libraryVersion":"3.1",
     "referenceFiles":"$REFERENCEFILES/msl31"
@@ -50,5 +53,15 @@
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
     "referenceFiles":"$MSLREFERENCE/v3.2.1+build.4"
+  },
+  {
+    "library":"ObjectStab"
+  },
+  {
+    "library":"SiemensPower"
+  },
+  {
+    "library":"SiemensPower",
+    "libraryVersion":"OMCtest"
   }
 ]

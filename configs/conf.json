@@ -78,13 +78,9 @@
     "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"]
   },
   {
-    "library":"Modelica_LinearSystems2"
-  },
-  {
-    "library":"Modelica_Noise"
-  },
-  {
-    "library":"Modelica_StateGraph2"
+    "library":"Modelica_Noise",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":""
   },
   {
     "library":"PowerGrids"
@@ -195,9 +191,6 @@
     "library":"IdealizedContact"
   },
   {
-    "library":"iPSL"
-  },
-  {
     "library":"KeyWordIO"
   },
   {
@@ -214,15 +207,19 @@
     "library":"ModelicaByExample"
   },
   {
-    "library":"ObjectStab"
-  },
-  {
     "library":"OpenHydraulics",
     "libraryVersion":"master",
     "libraryVersionNameForTests":""
   },
   {
-    "library":"OpenIPSL"
+    "library":"OpenIPSL",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":""
+  },
+  {
+    "library":"OpenIPSL",
+    "libraryVersion":"",
+    "libraryVersionNameForTests":"release"
   },
   {
     "library":"PhotoVoltaics"
@@ -294,13 +291,6 @@
       "giturl":"https://github.com/casella/ScalableTestSuite-ref",
       "destination":"ReferenceFiles/ScalableTestSuite"
     }
-  },
-  {
-    "library":"SiemensPower"
-  },
-  {
-    "library":"SiemensPower",
-    "libraryVersion":"OMCtest"
   },
   {
     "library":"SolarTherm"

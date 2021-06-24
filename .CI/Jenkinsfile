@@ -310,10 +310,12 @@ pipeline {
 
           sh "./report.py --branches='${env.GITBRANCHES}' configs/conf-c++.json"
           sh 'mv overview.html overview-c++.html'
-          sh "./report.py --branches='${env.GITBRANCHES}' configs/conf.json configs/conf-c++.json configs/conf-old.json"
+          sh "./report.py --branches='${env.GITBRANCHES}' configs/conf.json configs/conf-c++.json configs/conf-old.json configs/conf-nonstandard.json"
           sh 'mv overview.html overview-combined.html'
           sh "./report.py --branches='${env.GITBRANCHES}' configs/conf-old.json"
           sh "mv overview.html overview-old-libs.html"
+          sh "./report.py --branches='${env.GITBRANCHES}' configs/conf-nonstandard.json"
+          sh "mv overview.html overview-nonstandard-libs.html"
           sh "./report.py --branches='${env.GITBRANCHES}' configs/conf.json"
 
           sh 'date'
@@ -359,31 +361,37 @@ pipeline {
           sh "./all-plots.py ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE}"
 
           sh "./report.py --branches='${env.GITBRANCHES_NEWINST}' configs/conf.json"
-          sh "mv overview.html overview-newinst.html"
-          sh "./report.py --branches='${env.GITBRANCHES_NEWINST}' configs/conf.json configs/conf-c++.json configs/conf-old.json"
-          sh "mv overview.html overview-combined-newinst.html"
+          sh "mv overview.html overview-oldinst.html"
+          sh "./report.py --branches='${env.GITBRANCHES_NEWINST}' configs/conf.json configs/conf-c++.json configs/conf-old.json configs/conf-nonstandard.json"
+          sh "mv overview.html overview-combined-oldinst.html"
           sh "./report.py --branches='${env.GITBRANCHES_NEWINST}' configs/conf-old.json"
-          sh "mv overview.html overview-old-libs-newinst.html"
+          sh "mv overview.html overview-old-libs-oldinst.html"
+          sh "./report.py --branches='${env.GITBRANCHES_NEWINST}' configs/conf-nonstandard.json"
+          sh "mv overview.html overview-nonstandard-libs-oldinst.html"
           sh "./report.py --branches='${env.GITBRANCHES_NEWINST}' configs/conf-c++.json"
-          sh "mv overview.html overview-c++-newinst.html"
+          sh "mv overview.html overview-c++-oldinst.html"
 
           sh "./report.py --branches='${env.GITBRANCHES_FMI}' configs/conf.json"
           sh "mv overview.html overview-fmi.html"
           sh "./report.py --branches='${env.GITBRANCHES_FMI}' configs/conf-c++.json"
           sh "mv overview.html overview-c++-fmi.html"
-          sh "./report.py --branches='${env.GITBRANCHES_FMI}' configs/conf.json configs/conf-c++.json configs/conf-old.json"
+          sh "./report.py --branches='${env.GITBRANCHES_FMI}' configs/conf.json configs/conf-c++.json configs/conf-old.json configs/conf-nonstandard.json"
           sh "mv overview.html overview-combined-fmi.html"
           sh "./report.py --branches='${env.GITBRANCHES_FMI}' configs/conf-old.json"
           sh "mv overview.html overview-old-libs-fmi.html"
+          sh "./report.py --branches='${env.GITBRANCHES_FMI}' configs/conf-nonstandard.json"
+          sh "mv overview.html overview-nonstandard-libs-fmi.html"
 
           sh "./report.py --branches='${env.GITBRANCHES_DAE}' configs/conf.json"
           sh "mv overview.html overview-dae.html"
           sh "./report.py --branches='${env.GITBRANCHES_DAE}' configs/conf-c++.json"
           sh "mv overview.html overview-c++-dae.html"
-          sh "./report.py --branches='${env.GITBRANCHES_DAE}' configs/conf.json configs/conf-c++.json configs/conf-old.json"
+          sh "./report.py --branches='${env.GITBRANCHES_DAE}' configs/conf.json configs/conf-c++.json configs/conf-old.json  configs/conf-nonstandard.json"
           sh "mv overview.html overview-combined-dae.html"
           sh "./report.py --branches='${env.GITBRANCHES_DAE}' configs/conf-old.json"
           sh "mv overview.html overview-old-libs-dae.html"
+          sh "./report.py --branches='${env.GITBRANCHES_DAE}' configs/conf-nonstandard.json"
+          sh "mv overview.html overview-nonstandard-libs-dae.html"
 
           sh "./report.py --branches='cvode' configs/conf.json"
           sh "mv overview.html overview-cvode.html"
@@ -623,7 +631,7 @@ def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler, extrasimflags
   export HOME="${env.HOME}/saved_omc/libraries"
   cd OpenModelicaLibraryTesting
   # Force /usr/bin/omc as being used for generating the mos-files. Ensures consistent behavior among all tested OMC versions
-  stdbuf -oL -eL time python2 ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags='${extraFlags}' --extrasimflags='${extrasimflags}' --branch="${name}" --output="libraries.openmodelica.org:/var/www/branches/${name}/" --libraries='${env.HOME}/saved_omc/libraries/.openmodelica/libraries/' configs/conf.json configs/conf-c++.json ${params.OLD_LIBS ? "configs/conf-old.json" : ""} || (killall omc ; false) || exit 1
+  stdbuf -oL -eL time python2 ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags='${extraFlags}' --extrasimflags='${extrasimflags}' --branch="${name}" --output="libraries.openmodelica.org:/var/www/branches/${name}/" --libraries='${env.HOME}/saved_omc/libraries/.openmodelica/libraries/' configs/conf.json configs/conf-c++.json ${params.OLD_LIBS ? "configs/conf-old.json configs/conf-nonstandard.json" : ""} || (killall omc ; false) || exit 1
   """
   sh 'date'
   sh 'rm -f OpenModelicaLibraryTesting/sqlite3.db.tmp'
