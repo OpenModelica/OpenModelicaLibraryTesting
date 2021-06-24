@@ -51,14 +51,6 @@
   },
   {
     "library":"ModelicaTest",
-    "libraryVersion":"3.2.2",
-    "referenceFileExtension":"csv",
-    "referenceFileNameDelimiter":"/",
-    "referenceFileNameExtraName":"$ClassName",
-    "referenceFiles":"$MSLREFERENCE/v3.2.2+build.0-beta.3"
-  },
-  {
-    "library":"ModelicaTest",
     "libraryVersion":"3.2.3",
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
@@ -71,14 +63,6 @@
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
     "referenceFiles":"$MSLREFERENCE/v4.0.0"
-  },
-  {
-    "library":"ModelicaTest",
-    "libraryVersion":"3.2.1",
-    "referenceFileExtension":"csv",
-    "referenceFileNameDelimiter":"/",
-    "referenceFileNameExtraName":"$ClassName",
-    "referenceFiles":"$MSLREFERENCE/v3.2.1+build.4"
   },
   {
     "library":"Modelica_Synchronous",

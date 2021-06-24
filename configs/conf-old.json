@@ -27,12 +27,28 @@
     "optlevel":"-Os -march=native"
   },
   {
+    "library":"ModelicaTest",
+    "libraryVersion":"3.2.2",
+    "referenceFileExtension":"csv",
+    "referenceFileNameDelimiter":"/",
+    "referenceFileNameExtraName":"$ClassName",
+    "referenceFiles":"$MSLREFERENCE/v3.2.2+build.0-beta.3"
+  },
+  {
     "library":"Modelica",
     "libraryVersion":"3.2.1",
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
     "allReferenceFilesExist":true,
+    "referenceFiles":"$MSLREFERENCE/v3.2.1+build.4"
+  },
+  {
+    "library":"ModelicaTest",
+    "libraryVersion":"3.2.1",
+    "referenceFileExtension":"csv",
+    "referenceFileNameDelimiter":"/",
+    "referenceFileNameExtraName":"$ClassName",
     "referenceFiles":"$MSLREFERENCE/v3.2.1+build.4"
   }
 ]
