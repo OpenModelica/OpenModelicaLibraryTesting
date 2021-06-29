@@ -245,8 +245,9 @@ if conf.get("ulimitMemory"):
 def loadModels(omc, conf):
   for f in conf["loadFiles"]:
     if not sendExpressionTimeout(omc, 'loadFile("%s", uses=false)' % f, conf["ulimitLoadModel"]):
-      print(omc.sendExpression('OpenModelica.Scripting.getErrorString()'))
-      sys.exit(1)
+      with open(errFile, 'a+') as fp:
+        fp.write(omc.sendExpression('OpenModelica.Scripting.getErrorString()'))
+      writeResultAndExit(0)
   loadedFiles = sorted(omc.sendExpression("{getSourceFile(cl) for cl in getClassNames()}"))
   if conf["loadFiles"] != loadedFiles:
     print("Loaded the wrong files. Expected:\n%s\nActual:\n%s", ("\n".join(conf["loadFiles"]), "\n".join(loadedFiles)))

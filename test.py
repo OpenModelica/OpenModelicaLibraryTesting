@@ -579,6 +579,8 @@ def runScript(c, timeout, memoryLimit):
       try:
         with open("files/%s.cmdout" % c) as cmdout:
           errfile.write(cmdout.read())
+      except IOError:
+        pass
       except OSError:
         pass
   if clean:
