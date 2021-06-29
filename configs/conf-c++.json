@@ -9,6 +9,7 @@
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
     "allReferenceFilesExist":false,
+    "referenceFileExtension":"csv",
     "referenceFiles":"$MSLREFERENCE/../../MAP-LIB_ReferenceResults/v3.2.3+build.4"
   },
   {
@@ -21,6 +22,7 @@
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
     "allReferenceFilesExist":false,
+    "referenceFileExtension":"csv",
     "referenceFiles":"$MSLREFERENCE/../../MAP-LIB_ReferenceResults/v4.0.0"
   },
   {
@@ -33,6 +35,7 @@
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
     "allReferenceFilesExist":false,
+    "referenceFileExtension":"csv",
     "referenceFiles":"$MSLREFERENCE/../../MAP-LIB_ReferenceResults/v4.0.0",
     "optlevel":"-Os -march=native"
   },
@@ -45,6 +48,7 @@
     "abortSlowSimulation":"",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
+    "referenceFileExtension":"csv",
     "referenceFiles":"$MSLREFERENCE/../../MAP-LIB_ReferenceResults/v3.2.3+build.4"
   },
   {
