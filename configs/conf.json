@@ -110,7 +110,8 @@
   {
     "library":"AixLib",
     "libraryVersion":"master",
-    "libraryVersionNameForTests":"latest"
+    "libraryVersionNameForTests":"latest",
+    "forceNewHash":20210701,
   },
   {
     "library":"IBPSA",

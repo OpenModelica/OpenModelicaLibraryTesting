@@ -42,7 +42,7 @@ pipeline {
           expression { params.v1_12 }
         }
         steps {
-          test('maintenance/v1.12', 'v1.12', '', '', 'LibraryTestingRipper1DB', true, '')
+          test('maintenance/v1.12', 'v1.12', '', '', 'LibraryTestingRipper1DB', true, '', true)
         }
       }
 
@@ -59,7 +59,7 @@ pipeline {
           expression { params.v1_13 }
         }
         steps {
-          test('maintenance/v1.13', 'v1.13', '', '', 'LibraryTestingRipper1DB', true, '')
+          test('maintenance/v1.13', 'v1.13', '', '', 'LibraryTestingRipper1DB', true, '', true)
         }
       }
 
@@ -76,7 +76,7 @@ pipeline {
           expression { params.v1_14 }
         }
         steps {
-          test('maintenance/v1.14', 'v1.14', '', '', 'LibraryTestingRipper1DB', false, '')
+          test('maintenance/v1.14', 'v1.14', '', '', 'LibraryTestingRipper1DB', false, '', true)
         }
       }
 
@@ -93,7 +93,7 @@ pipeline {
           expression { params.v1_16 }
         }
         steps {
-          test('maintenance/v1.16', 'v1.16', '', '', 'LibraryTestingRipper1DB', false, '')
+          test('maintenance/v1.16', 'v1.16', '', '', 'LibraryTestingRipper1DB', false, '', false)
         }
       }
 
@@ -110,7 +110,7 @@ pipeline {
           expression { params.v1_17 }
         }
         steps {
-          test('maintenance/v1.17', 'v1.17', '', '', 'LibraryTestingRipper1DB', false, '')
+          test('maintenance/v1.17', 'v1.17', '', '', 'LibraryTestingRipper1DB', false, '', false)
         }
       }
 
@@ -127,7 +127,7 @@ pipeline {
           expression { params.master }
         }
         steps {
-          test('master', 'master', '', '', 'LibraryTestingRipper1DB', false, '')
+          test('master', 'master', '', '', 'LibraryTestingRipper1DB', false, '', false)
         }
       }
 
@@ -144,7 +144,7 @@ pipeline {
           expression { params.fmi_v1_12 }
         }
         steps {
-          test('maintenance/v1.12', 'v1.12-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', true, '')
+          test('maintenance/v1.12', 'v1.12-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', true, '', true)
         }
       }
       stage('v1.13 FMI') {
@@ -160,7 +160,7 @@ pipeline {
           expression { params.fmi_v1_13 }
         }
         steps {
-          test('maintenance/v1.13', 'v1.13-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', true, '')
+          test('maintenance/v1.13', 'v1.13-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', true, '', true)
         }
       }
       stage('v1.14 FMI') {
@@ -176,7 +176,7 @@ pipeline {
           expression { params.fmi_v1_14 }
         }
         steps {
-          test('maintenance/v1.14', 'v1.14-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', false, '')
+          test('maintenance/v1.14', 'v1.14-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', false, '', true)
         }
       }
       stage('v1.16 FMI') {
@@ -192,7 +192,7 @@ pipeline {
           expression { params.fmi_v1_16 }
         }
         steps {
-          test('maintenance/v1.16', 'v1.16-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', false, '')
+          test('maintenance/v1.16', 'v1.16-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', false, '', false)
         }
       }
       stage('v1.17 FMI') {
@@ -208,7 +208,7 @@ pipeline {
           expression { params.fmi_v1_17 }
         }
         steps {
-          test('maintenance/v1.17', 'v1.17-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', false, '')
+          test('maintenance/v1.17', 'v1.17-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', false, '', false)
         }
       }
       stage('master FMI') {
@@ -224,7 +224,7 @@ pipeline {
           expression { params.fmi_master }
         }
         steps {
-          test('master', 'master-fmi', '', 'origin/master', 'LibraryTestingRipper2DB', false, '')
+          test('master', 'master-fmi', '', 'origin/master', 'LibraryTestingRipper2DB', false, '', false)
         }
       }
       stage('newInst-daeMode') {
@@ -240,7 +240,7 @@ pipeline {
           expression { params.newInst_daeMode }
         }
         steps {
-          test('master', 'newInst-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --daeMode=true")', '', 'LibraryTestingRipper2DB', false, '')
+          test('master', 'newInst-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --daeMode=true")', '', 'LibraryTestingRipper2DB', false, '', false)
         }
       }
       stage('oldInst') {
@@ -256,7 +256,7 @@ pipeline {
           expression { params.oldInst }
         }
         steps {
-          test('master', 'oldInst', 'setCommandLineOptions("-d=nonewInst")', '', 'LibraryTestingRipper2DB', false, '')
+          test('master', 'oldInst', 'setCommandLineOptions("-d=nonewInst")', '', 'LibraryTestingRipper2DB', false, '', false)
         }
       }
       stage('cvode') {
@@ -272,7 +272,7 @@ pipeline {
           expression { params.cvode }
         }
         steps {
-          test('master', 'cvode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'LibraryTestingRipper2DB', false, '-s cvode')
+          test('master', 'cvode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'LibraryTestingRipper2DB', false, '-s cvode', false)
         }
       }
     } }
@@ -445,15 +445,18 @@ pipeline {
 def omsimulatorHash() {
   return '1552061d5fe27ecfa51f5289909717192b102263'
 }
-def installLibraries() {
+def installLibraries(boolean removePackageOrder) {
   sh "rm -rf '${env.HOME}/saved_omc/libraries/.openmodelica/libraries'"
   sh "mkdir -p '${env.HOME}/saved_omc/libraries/'"
   sh "HOME='${env.HOME}/saved_omc/libraries/' /usr/bin/omc OpenModelicaLibraryTesting/.CI/installLibraries.mos"
+  if (removePackageOrder) {
+    sh "find '${env.HOME}/saved_omc/libraries/' -name package.order -exec rm '{}' ';'"
+  }
   // These exist (better packaged? on the machines)
   sh "rm -rf '${env.HOME}/saved_omc/libraries/ClaRa' '${env.HOME}/saved_omc/libraries/ClaRa_Obsolete' '${env.HOME}/saved_omc/libraries/TILMedia'"
   sh "cp -ai /mnt/ReferenceFiles/ExtraLibs/packaged/* '${env.HOME}/saved_omc/libraries/'"
 }
-def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler, extrasimflags) {
+def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler, extrasimflags, boolean removePackageOrder) {
   sh '''
   find /tmp  -name "*openmodelica.hudson*" -exec rm {} ";" || true
   mkdir -p ~/TEST_LIBS_BACKUP
@@ -613,7 +616,7 @@ def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler, extrasimflags
   mkdir -p "/var/www/branches/${name}/"
   """
   
-  installLibraries()
+  installLibraries(removePackageOrder)
 
   sh '''
   cp ~/TEST_LIBS_BACKUP/sqlite3.db OpenModelicaLibraryTesting/sqlite3.db
