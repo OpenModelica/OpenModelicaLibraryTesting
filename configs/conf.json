@@ -111,7 +111,7 @@
     "library":"AixLib",
     "libraryVersion":"master",
     "libraryVersionNameForTests":"latest",
-    "forceNewHash":20210701,
+    "forceNewHash":20210701
   },
   {
     "library":"IBPSA",
