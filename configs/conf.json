@@ -314,12 +314,22 @@
     "library":"ThermofluidStream",
     "libraryVersion":"main",
     "libraryVersionNameForTests":"",
-    "ulimitExe":1200
+    "ulimitExe":1200,
+    "referenceFileExtension":"mat",
+    "referenceFileNameDelimiter":".",
+    "referenceFinalDot":"_ref.",
+    "allReferenceFilesExist":false,
+    "referenceFiles":"$THERMOFLUIDSTREAMREFS"
   },
   {
     "library":"ThermofluidStream",
     "libraryVersion":"OM_adaptions",
-    "ulimitExe":1200
+    "ulimitExe":1200,
+    "referenceFileExtension":"mat",
+    "referenceFileNameDelimiter":".",
+    "referenceFinalDot":"_ref.",
+    "allReferenceFilesExist":false,
+    "referenceFiles":"$THERMOFLUIDSTREAMREFSOM"
   },
   {
     "library":"ThermalSeparation",

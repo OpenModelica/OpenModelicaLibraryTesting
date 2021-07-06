@@ -601,6 +601,8 @@ def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler, extrasimflags
   REFERENCEFILES="${WORKSPACE}/OpenModelica/testsuite/ReferenceFiles"
   GITREPOS="${WORKSPACE}/OpenModelica/libraries/git"
   PNLIBREFS="/mnt/ReferenceFiles/PNlib/ReferenceFiles"
+  THERMOFLUIDSTREAMREFS="/mnt/ReferenceFiles/ThermofluidStream-main/ReferenceData"
+  THERMOFLUIDSTREAMREFSOM="/mnt/ReferenceFiles/ThermofluidStream-OM/ReferenceData"
 
   sh """
   test -f "${MSLREFERENCE}/MAP-LIB_ReferenceResults/v4.0.0/README.md" || exit 1
@@ -630,6 +632,8 @@ def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler, extrasimflags
   export REFERENCEFILES="${REFERENCEFILES}"
   export GITREPOS="${GITREPOS}"
   export PNLIBREFS="${PNLIBREFS}"
+  export THERMOFLUIDSTREAMREFS="${THERMOFLUIDSTREAMREFS}"
+  export THERMOFLUIDSTREAMREFSOM="{THERMOFLUIDSTREAMREFSOM}"
   export HOME="${env.HOME}/saved_omc/libraries"
   cd OpenModelicaLibraryTesting
   # Force /usr/bin/omc as being used for generating the mos-files. Ensures consistent behavior among all tested OMC versions
