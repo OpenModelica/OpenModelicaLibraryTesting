@@ -633,7 +633,7 @@ def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler, extrasimflags
   export GITREPOS="${GITREPOS}"
   export PNLIBREFS="${PNLIBREFS}"
   export THERMOFLUIDSTREAMREFS="${THERMOFLUIDSTREAMREFS}"
-  export THERMOFLUIDSTREAMREFSOM="{THERMOFLUIDSTREAMREFSOM}"
+  export THERMOFLUIDSTREAMREFSOM="${THERMOFLUIDSTREAMREFSOM}"
   export HOME="${env.HOME}/saved_omc/libraries"
   cd OpenModelicaLibraryTesting
   # Force /usr/bin/omc as being used for generating the mos-files. Ensures consistent behavior among all tested OMC versions
