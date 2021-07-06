@@ -5,7 +5,7 @@
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
-    "referenceFiles":"$MSLREFERENCE/../../MAP-LIB_ReferenceResults/v4.0.0",
+    "referenceFiles":"$MSLREFERENCE/MAP-LIB_ReferenceResults/v4.0.0",
     "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"],
     "optlevel":"-Os -march=native"
   },
@@ -16,7 +16,7 @@
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
     "allReferenceFilesExist":false,
-    "referenceFiles":"$MSLREFERENCE/../../MAP-LIB_ReferenceResults/v4.0.0",
+    "referenceFiles":"$MSLREFERENCE/MAP-LIB_ReferenceResults/v4.0.0",
     "optlevel":"-Os -march=native"
   },
   {
@@ -26,7 +26,7 @@
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
     "allReferenceFilesExist":false,
-    "referenceFiles":"$MSLREFERENCE/../../MAP-LIB_ReferenceResults/v3.2.3+build.4",
+    "referenceFiles":"$MSLREFERENCE/MAP-LIB_ReferenceResults/v3.2.3+build.4",
     "optlevel":"-Os -march=native"
   },
   {
@@ -35,7 +35,7 @@
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
-    "referenceFiles":"$MSLREFERENCE/../../MAP-LIB_ReferenceResults/v4.0.0",
+    "referenceFiles":"$MSLREFERENCE/MAP-LIB_ReferenceResults/v4.0.0",
     "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"],
     "optlevel":"-Os -march=native"
   },
@@ -45,7 +45,7 @@
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
-    "referenceFiles":"$MSLREFERENCE/../../MAP-LIB_ReferenceResults/v4.0.0",
+    "referenceFiles":"$MSLREFERENCE/MAP-LIB_ReferenceResults/v4.0.0",
     "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"],
     "optlevel":"-Os -march=native"
   },
@@ -55,14 +55,10 @@
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
-    "referenceFiles":"$MSLREFERENCE/../../MAP-LIB_ReferenceResults/v3.2.3+build.4"
+    "referenceFiles":"$MSLREFERENCE/MAP-LIB_ReferenceResults/v3.2.3+build.4"
   },
   {
-    "library":"ModelicaTestOverdetermined",
-    "referenceFileExtension":"csv",
-    "referenceFileNameDelimiter":"/",
-    "referenceFileNameExtraName":"$ClassName",
-    "referenceFiles":"$MSLREFERENCE/v4.0.0"
+    "library":"ModelicaTestOverdetermined"
   },
   {
     "library":"Modelica_Synchronous",

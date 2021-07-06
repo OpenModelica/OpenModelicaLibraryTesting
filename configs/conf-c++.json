@@ -10,7 +10,7 @@
     "referenceFileNameExtraName":"$ClassName",
     "allReferenceFilesExist":false,
     "referenceFileExtension":"csv",
-    "referenceFiles":"$MSLREFERENCE/../../MAP-LIB_ReferenceResults/v3.2.3+build.4"
+    "referenceFiles":"$MSLREFERENCE/MAP-LIB_ReferenceResults/v3.2.3+build.4"
   },
   {
     "library":"ModelicaTest",
@@ -23,7 +23,7 @@
     "referenceFileNameExtraName":"$ClassName",
     "allReferenceFilesExist":false,
     "referenceFileExtension":"csv",
-    "referenceFiles":"$MSLREFERENCE/../../MAP-LIB_ReferenceResults/v4.0.0"
+    "referenceFiles":"$MSLREFERENCE/MAP-LIB_ReferenceResults/v4.0.0"
   },
   {
     "library":"Modelica",
@@ -36,7 +36,7 @@
     "referenceFileNameExtraName":"$ClassName",
     "allReferenceFilesExist":false,
     "referenceFileExtension":"csv",
-    "referenceFiles":"$MSLREFERENCE/../../MAP-LIB_ReferenceResults/v4.0.0",
+    "referenceFiles":"$MSLREFERENCE/MAP-LIB_ReferenceResults/v4.0.0",
     "optlevel":"-Os -march=native"
   },
   {
@@ -49,7 +49,7 @@
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
     "referenceFileExtension":"csv",
-    "referenceFiles":"$MSLREFERENCE/../../MAP-LIB_ReferenceResults/v3.2.3+build.4"
+    "referenceFiles":"$MSLREFERENCE/MAP-LIB_ReferenceResults/v3.2.3+build.4"
   },
   {
     "library":"Modelica_Synchronous",

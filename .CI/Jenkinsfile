@@ -597,14 +597,13 @@ def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler, extrasimflags
   """
   // sh 'rsync -av modelica-ro:/files/RegressionTesting/ReferenceResults Reference-modelica.org || true # exit 1'
 
-  MSLREFERENCE="${WORKSPACE}/Reference-modelica.org/ReferenceResults/MSL/tags"
+  MSLREFERENCE="${WORKSPACE}/Reference-modelica.org/ReferenceResults"
   REFERENCEFILES="${WORKSPACE}/OpenModelica/testsuite/ReferenceFiles"
   GITREPOS="${WORKSPACE}/OpenModelica/libraries/git"
   PNLIBREFS="/mnt/ReferenceFiles/PNlib/ReferenceFiles"
 
   sh """
-  test -d "${MSLREFERENCE}/v3.2.2+build.0-beta.3" || exit 1
-  test -d "${MSLREFERENCE}/v3.2.1+build.4" || exit 1
+  test -f "${REFERENCEFILES}/../../MAP-LIB_ReferenceResults/v4.0.0/README.md" || exit 1
 
   if test ! -d OpenModelicaLibraryTesting; then
     git clone --recursive https://openmodelica.org/git-readonly/OpenModelicaLibraryTesting.git OpenModelicaLibraryTesting

@@ -16,43 +16,24 @@
   },
   {
     "library":"Modelica",
-    "libraryVersion":"3.1",
-    "referenceFiles":"$REFERENCEFILES/msl31"
+    "libraryVersion":"3.1"
   },
   {
     "library":"Modelica",
     "libraryVersion":"3.2.2",
-    "referenceFileExtension":"csv",
-    "referenceFileNameDelimiter":"/",
-    "referenceFileNameExtraName":"$ClassName",
-    "allReferenceFilesExist":false,
-    "referenceFiles":"$MSLREFERENCE/v3.2.2+build.0-beta.3",
     "optlevel":"-Os -march=native"
   },
   {
     "library":"ModelicaTest",
-    "libraryVersion":"3.2.2",
-    "referenceFileExtension":"csv",
-    "referenceFileNameDelimiter":"/",
-    "referenceFileNameExtraName":"$ClassName",
-    "referenceFiles":"$MSLREFERENCE/v3.2.2+build.0-beta.3"
+    "libraryVersion":"3.2.2"
   },
   {
     "library":"Modelica",
-    "libraryVersion":"3.2.1",
-    "referenceFileExtension":"csv",
-    "referenceFileNameDelimiter":"/",
-    "referenceFileNameExtraName":"$ClassName",
-    "allReferenceFilesExist":true,
-    "referenceFiles":"$MSLREFERENCE/v3.2.1+build.4"
+    "libraryVersion":"3.2.1"
   },
   {
     "library":"ModelicaTest",
-    "libraryVersion":"3.2.1",
-    "referenceFileExtension":"csv",
-    "referenceFileNameDelimiter":"/",
-    "referenceFileNameExtraName":"$ClassName",
-    "referenceFiles":"$MSLREFERENCE/v3.2.1+build.4"
+    "libraryVersion":"3.2.1"
   },
   {
     "library":"ObjectStab"
