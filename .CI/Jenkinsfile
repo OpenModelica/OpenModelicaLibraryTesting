@@ -603,7 +603,7 @@ def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler, extrasimflags
   PNLIBREFS="/mnt/ReferenceFiles/PNlib/ReferenceFiles"
 
   sh """
-  test -f "${REFERENCEFILES}/../../MAP-LIB_ReferenceResults/v4.0.0/README.md" || exit 1
+  test -f "${MSLREFERENCE}/MAP-LIB_ReferenceResults/v4.0.0/README.md" || exit 1
 
   if test ! -d OpenModelicaLibraryTesting; then
     git clone --recursive https://openmodelica.org/git-readonly/OpenModelicaLibraryTesting.git OpenModelicaLibraryTesting
