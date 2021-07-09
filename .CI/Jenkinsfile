@@ -465,7 +465,7 @@ pipeline {
 def omsimulatorHash() {
   return '1552061d5fe27ecfa51f5289909717192b102263'
 }
-def installLibraries(boolean removePackageOrder, boolean conversionScript, branch) {
+def installLibraries(boolean removePackageOrder, boolean conversionScript, name) {
   sh "rm -rf '${env.HOME}/saved_omc/libraries/.openmodelica/libraries'"
   sh "mkdir -p '${env.HOME}/saved_omc/libraries/'"
   sh "HOME='${env.HOME}/saved_omc/libraries/' /usr/bin/omc OpenModelicaLibraryTesting/.CI/installLibraries.mos"
@@ -475,12 +475,12 @@ def installLibraries(boolean removePackageOrder, boolean conversionScript, branc
   // These exist (better packaged? on the machines)
   sh "rm -rf '${env.HOME}/saved_omc/libraries/ClaRa' '${env.HOME}/saved_omc/libraries/ClaRa_Obsolete' '${env.HOME}/saved_omc/libraries/TILMedia'"
   sh "cp -ai /mnt/ReferenceFiles/ExtraLibs/packaged/* '${env.HOME}/saved_omc/libraries/'"
-  echo "installLibraries removePackageOrder: ${removePackageOrder} conversionScript: ${conversionScript} branch: ${branch}"
+  echo "installLibraries removePackageOrder: ${removePackageOrder} conversionScript: ${conversionScript} name: ${name}"
   if (conversionScript) {
     sh """
     cd '${WORKSPACE}/OpenModelicaLibraryTesting'
     ./conversionscript.py --diff --allowErrorsInDiff '${env.HOME}/saved_omc/libraries/.openmodelica/libraries'
-    scp converted-libraries/.openmodelica/libraries/*.diff 'libraries.openmodelica.org:/var/www/branches/${branch}'
+    scp converted-libraries/.openmodelica/libraries/*.diff 'libraries.openmodelica.org:/var/www/branches/${name}'
     """
     return "${WORKSPACE}/OpenModelicaLibraryTesting/converted-libraries"
   } else {
@@ -648,7 +648,7 @@ def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler, extrasimflags
   mkdir -p "/var/www/branches/${name}/"
   """
   
-  def libraryPath = installLibraries(removePackageOrder, conversionScript, branch)
+  def libraryPath = installLibraries(removePackageOrder, conversionScript, name)
   
   sh "test -d '${libraryPath}/.openmodelica/libraries/Modelica trunk'"
 
