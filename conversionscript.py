@@ -154,7 +154,7 @@ def convertPackage(p):
   if createDiff:
     diffOutputFile = "converted-libraries/%s.diff" % libnameOnFile
     print("Creating %s" % diffOutputFile)
-    with open(, "wb") as diffOut:
+    with open(diffOutputFile, "wb") as diffOut:
       diffOutput = subprocess.check_call(["diff", "-ur", os.path.dirname(p), "converted-libraries/%s" % libnameOnFile], stdout=diffOut)
   del omc
   return {"errorsInDiff": errorsInDiff, "path": path, "timeForConversion": timeForConversion, "statsByFile": statsByFile, "gcProfStatsBeforeConversion": gcProfStatsBeforeConversion, "gcProfStatsBefore": gcProfStatsBefore, "gcProfStats": gcProfStats}
