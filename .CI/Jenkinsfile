@@ -482,9 +482,9 @@ def installLibraries(boolean removePackageOrder, boolean conversionScript, branc
     ./conversionscript.py --diff --allowErrorsInDiff '${env.HOME}/saved_omc/libraries/.openmodelica/libraries'
     scp converted-libraries/.openmodelica/libraries/*.diff 'libraries.openmodelica.org:/var/www/branches/${branch}'
     """
-    return "${WORKSPACE}/OpenModelicaLibraryTesting/converted-libraries/"
+    return "${WORKSPACE}/OpenModelicaLibraryTesting/converted-libraries"
   } else {
-    return "${env.HOME}/saved_omc/libraries/"
+    return "${env.HOME}/saved_omc/libraries"
   }
 }
 def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler, extrasimflags, boolean removePackageOrder, boolean conversionScript) {
@@ -670,7 +670,7 @@ def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler, extrasimflags
   export HOME="${libraryPath}"
   cd OpenModelicaLibraryTesting
   # Force /usr/bin/omc as being used for generating the mos-files. Ensures consistent behavior among all tested OMC versions
-  stdbuf -oL -eL time python2 ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags='${extraFlags}' --extrasimflags='${extrasimflags}' --branch="${name}" --output="libraries.openmodelica.org:/var/www/branches/${name}/" --libraries='${libraryPath}/.openmodelica/libraries' configs/conf.json ${conversionScript ? "" : "configs/conf-c++.json"} ${params.OLD_LIBS ? "configs/conf-old.json configs/conf-nonstandard.json" : ""} || (killall omc ; false) || exit 1
+  stdbuf -oL -eL time python2 ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags='${extraFlags}' --extrasimflags='${extrasimflags}' --branch="${name}" --output="libraries.openmodelica.org:/var/www/branches/${name}/" --libraries='${libraryPath}/.openmodelica/libraries/' configs/conf.json ${conversionScript ? "" : "configs/conf-c++.json"} ${params.OLD_LIBS ? "configs/conf-old.json configs/conf-nonstandard.json" : ""} || (killall omc ; false) || exit 1
   """
   sh 'date'
   sh 'rm -f OpenModelicaLibraryTesting/sqlite3.db.tmp'
