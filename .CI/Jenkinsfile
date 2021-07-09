@@ -480,7 +480,7 @@ def installLibraries(boolean removePackageOrder, boolean conversionScript, branc
     sh """
     cd '${WORKSPACE}/OpenModelicaLibraryTesting'
     ./conversionscript.py --diff --allowErrorsInDiff '${env.HOME}/saved_omc/libraries/.openmodelica/libraries'
-    scp converted-libraries/*.diff 'libraries.openmodelica.org:/var/www/branches/${branch}'
+    scp converted-libraries/.openmodelica/libraries/*.diff 'libraries.openmodelica.org:/var/www/branches/${branch}'
     """
     return "${WORKSPACE}/OpenModelicaLibraryTesting/converted-libraries/"
   } else {
