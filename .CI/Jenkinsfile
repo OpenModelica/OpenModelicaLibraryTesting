@@ -474,7 +474,7 @@ def installLibraries(boolean removePackageOrder, boolean conversionScript, branc
   }
   // These exist (better packaged? on the machines)
   sh "rm -rf '${env.HOME}/saved_omc/libraries/ClaRa' '${env.HOME}/saved_omc/libraries/ClaRa_Obsolete' '${env.HOME}/saved_omc/libraries/TILMedia'"
-  sh "cp -ai /mnt/ReferenceFiles/ExtraLibs/packaged/* '${env.HOME}/saved_omc/libraries/'"
+  sh "cp -ai /mnt/ReferenceFiles/ExtraLibs/packaged/* '${env.HOME}/saved_omc/libraries/.openmodelica/libraries'"
   echo "installLibraries removePackageOrder: ${removePackageOrder} conversionScript: ${conversionScript} branch: ${branch}"
   if (conversionScript) {
     sh """
