@@ -29,6 +29,8 @@ try:
 except:
   pass
 os.mkdir("converted-libraries")
+os.mkdir("converted-libraries/.openmodelica")
+os.mkdir("converted-libraries/.openmodelica/libraries")
 
 def omcAssert(omc, cmd, extra=""):
   res = omc.sendExpression(cmd)
@@ -54,8 +56,8 @@ def convertPackage(p):
   uses=data.get('uses',{})
   libnameOnFile = os.path.basename(os.path.dirname(p))
   libname = libnameOnFile.split(" ")[0]
-  shutil.copytree(os.path.dirname(p), "converted-libraries/%s" % libnameOnFile)
-  for root, dir, files in os.walk("converted-libraries/%s" % libnameOnFile):
+  shutil.copytree(os.path.dirname(p), "converted-libraries/.openmodelica/libraries/%s" % libnameOnFile)
+  for root, dir, files in os.walk("converted-libraries/.openmodelica/libraries/%s" % libnameOnFile):
     for file in files:
       if file.endswith(".mo"):
         try:
@@ -76,7 +78,7 @@ def convertPackage(p):
   if libname in ["Modelica", "ModelicaServices", "Complex", "ModelicaTest", "ModelicaTestOverdetermined"]:
     return None
   omc = OMCSessionZMQ()
-  libnameOnFileFullPath = "converted-libraries/%s/package.mo" % libnameOnFile
+  libnameOnFileFullPath = "converted-libraries/.openmodelica/libraries/%s/package.mo" % libnameOnFile
   omcAssert(omc, 'loadFile("%s", uses=false)' % libnameOnFileFullPath)
   errString = omc.sendExpression("getErrorString()")
   if errString:
@@ -106,7 +108,7 @@ def convertPackage(p):
   timeAfterConvert = time.time()
   timeForConversion = timeAfterConvert - timeBeforeConvert
   for (newFile, newClass) in fileMapping.items():
-    oldFile = os.path.join(libdir, newFile.split("converted-libraries/")[1])
+    oldFile = os.path.join(libdir, newFile.split("converted-libraries/.openmodelica/libraries/")[1])
     assert(newFile != oldFile)
     before = omc.sendExpression('before := readFile("%s")' % newFile)
     after = omc.sendExpression('after := listFile(%s)' % newClass)
@@ -145,17 +147,17 @@ def convertPackage(p):
     if before != res:
       nDiff += 1
     statsByFile +=[{"time": end-start, "size": len(before), "isDiff": isDiff, "fail": isFail}]
-  path = "converted-libraries/%s/openmodelica.metadata.json" % libnameOnFile
+  path = "converted-libraries/.openmodelica/libraries/%s/openmodelica.metadata.json" % libnameOnFile
   with open(path, "w") as f:
     gcProfStats = omc.sendExpression("GC_get_prof_stats()")
     data["uses"] = dict(uses)
     data["extraInfo"] = "Conversion script %s was applied" % conversionScript
     json.dump(data, f)
   if createDiff:
-    diffOutputFile = "converted-libraries/%s.diff" % libnameOnFile
+    diffOutputFile = "converted-libraries/.openmodelica/libraries/%s.diff" % libnameOnFile
     print("Creating %s" % diffOutputFile)
     with open(diffOutputFile, "wb") as diffOut:
-      diffOutput = subprocess.call(["diff", "-ur", os.path.dirname(p), "converted-libraries/%s" % libnameOnFile], stdout=diffOut)
+      diffOutput = subprocess.call(["diff", "-ur", os.path.dirname(p), "converted-libraries/.openmodelica/libraries/%s" % libnameOnFile], stdout=diffOut)
   del omc
   return {"errorsInDiff": errorsInDiff, "path": path, "timeForConversion": timeForConversion, "statsByFile": statsByFile, "gcProfStatsBeforeConversion": gcProfStatsBeforeConversion, "gcProfStatsBefore": gcProfStatsBefore, "gcProfStats": gcProfStats}
   
@@ -167,5 +169,6 @@ for r in res:
     continue
   for f in r["errorsInDiff"]:
     print("Ignored failed perform diff on %s" % f)
+shutil.copyfile("%s/index.json" % libdir, "converted-libraries/.openmodelica/libraries/index.json")
 with open("result.json", "w") as fout:
   json.dump([r for r in res if r], fout)
