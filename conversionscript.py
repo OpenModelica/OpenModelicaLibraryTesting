@@ -152,11 +152,10 @@ def convertPackage(p):
     data["extraInfo"] = "Conversion script %s was applied" % conversionScript
     json.dump(data, f)
   if createDiff:
-    diffOutput = subprocess.run(["diff", "-ur", os.path.dirname(p), "converted-libraries/%s" % libnameOnFile], capture_output=True)
     diffOutputFile = "converted-libraries/%s.diff" % libnameOnFile
     print("Creating %s" % diffOutputFile)
-    with open(diffOutputFile, "wb") as diffOut:
-      diffOut.write(diffOutput.stdout)
+    with open(, "wb") as diffOut:
+      diffOutput = subprocess.check_call(["diff", "-ur", os.path.dirname(p), "converted-libraries/%s" % libnameOnFile], stdout=diffOut)
   del omc
   return {"errorsInDiff": errorsInDiff, "path": path, "timeForConversion": timeForConversion, "statsByFile": statsByFile, "gcProfStatsBeforeConversion": gcProfStatsBeforeConversion, "gcProfStatsBefore": gcProfStatsBefore, "gcProfStats": gcProfStats}
   
