@@ -21,6 +21,7 @@ pipeline {
     booleanParam(name: 'report_ripper1', defaultValue: false, description: 'Generate a report for ripper1 without running the tests')
     booleanParam(name: 'report_ripper2', defaultValue: false, description: 'Generate a report for ripper2 without running the tests')
 
+    booleanParam(name: 'conversion_script', defaultValue: false, description: 'master branch with conversion script from MSL 3 to 4 (ripper1). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'cvode', defaultValue: false, description: 'master branch, with -d=newInst and -s cvode (ripper2). This is an experimental job that does not run on a fixed schedule.')
   }
   environment {
@@ -42,7 +43,7 @@ pipeline {
           expression { params.v1_12 }
         }
         steps {
-          test('maintenance/v1.12', 'v1.12', '', '', 'LibraryTestingRipper1DB', true, '', true)
+          test('maintenance/v1.12', 'v1.12', '', '', 'LibraryTestingRipper1DB', true, '', true, false)
         }
       }
 
@@ -59,7 +60,7 @@ pipeline {
           expression { params.v1_13 }
         }
         steps {
-          test('maintenance/v1.13', 'v1.13', '', '', 'LibraryTestingRipper1DB', true, '', true)
+          test('maintenance/v1.13', 'v1.13', '', '', 'LibraryTestingRipper1DB', true, '', true, false)
         }
       }
 
@@ -76,7 +77,7 @@ pipeline {
           expression { params.v1_14 }
         }
         steps {
-          test('maintenance/v1.14', 'v1.14', '', '', 'LibraryTestingRipper1DB', false, '', true)
+          test('maintenance/v1.14', 'v1.14', '', '', 'LibraryTestingRipper1DB', false, '', true, false)
         }
       }
 
@@ -93,7 +94,7 @@ pipeline {
           expression { params.v1_16 }
         }
         steps {
-          test('maintenance/v1.16', 'v1.16', '', '', 'LibraryTestingRipper1DB', false, '', false)
+          test('maintenance/v1.16', 'v1.16', '', '', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
 
@@ -110,7 +111,7 @@ pipeline {
           expression { params.v1_17 }
         }
         steps {
-          test('maintenance/v1.17', 'v1.17', '', '', 'LibraryTestingRipper1DB', false, '', false)
+          test('maintenance/v1.17', 'v1.17', '', '', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
 
@@ -127,7 +128,24 @@ pipeline {
           expression { params.master }
         }
         steps {
-          test('master', 'master', '', '', 'LibraryTestingRipper1DB', false, '', false)
+          test('master', 'master', '', '', 'LibraryTestingRipper1DB', false, '', false, false)
+        }
+      }
+
+      stage('conversion script') {
+        agent {
+          node {
+            label 'ripper.openmodelica.org'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.master }
+        }
+        steps {
+          test('master', 'conversion', '', '', 'LibraryTestingRipper1DB', false, '', false, true)
         }
       }
 
@@ -144,7 +162,7 @@ pipeline {
           expression { params.fmi_v1_12 }
         }
         steps {
-          test('maintenance/v1.12', 'v1.12-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', true, '', true)
+          test('maintenance/v1.12', 'v1.12-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', true, '', true, false)
         }
       }
       stage('v1.13 FMI') {
@@ -160,7 +178,7 @@ pipeline {
           expression { params.fmi_v1_13 }
         }
         steps {
-          test('maintenance/v1.13', 'v1.13-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', true, '', true)
+          test('maintenance/v1.13', 'v1.13-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', true, '', true, false)
         }
       }
       stage('v1.14 FMI') {
@@ -176,7 +194,7 @@ pipeline {
           expression { params.fmi_v1_14 }
         }
         steps {
-          test('maintenance/v1.14', 'v1.14-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', false, '', true)
+          test('maintenance/v1.14', 'v1.14-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', false, '', true, false)
         }
       }
       stage('v1.16 FMI') {
@@ -192,7 +210,7 @@ pipeline {
           expression { params.fmi_v1_16 }
         }
         steps {
-          test('maintenance/v1.16', 'v1.16-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', false, '', false)
+          test('maintenance/v1.16', 'v1.16-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('v1.17 FMI') {
@@ -208,7 +226,7 @@ pipeline {
           expression { params.fmi_v1_17 }
         }
         steps {
-          test('maintenance/v1.17', 'v1.17-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', false, '', false)
+          test('maintenance/v1.17', 'v1.17-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('master FMI') {
@@ -224,7 +242,7 @@ pipeline {
           expression { params.fmi_master }
         }
         steps {
-          test('master', 'master-fmi', '', 'origin/master', 'LibraryTestingRipper2DB', false, '', false)
+          test('master', 'master-fmi', '', 'origin/master', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('newInst-daeMode') {
@@ -240,7 +258,7 @@ pipeline {
           expression { params.newInst_daeMode }
         }
         steps {
-          test('master', 'newInst-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --daeMode=true")', '', 'LibraryTestingRipper2DB', false, '', false)
+          test('master', 'newInst-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --daeMode=true")', '', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('oldInst') {
@@ -256,7 +274,7 @@ pipeline {
           expression { params.oldInst }
         }
         steps {
-          test('master', 'oldInst', 'setCommandLineOptions("-d=nonewInst")', '', 'LibraryTestingRipper2DB', false, '', false)
+          test('master', 'oldInst', 'setCommandLineOptions("-d=nonewInst")', '', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('cvode') {
@@ -272,7 +290,7 @@ pipeline {
           expression { params.cvode }
         }
         steps {
-          test('master', 'cvode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'LibraryTestingRipper2DB', false, '-s cvode', false)
+          test('master', 'cvode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'LibraryTestingRipper2DB', false, '-s cvode', false, false)
         }
       }
     } }
@@ -287,7 +305,7 @@ pipeline {
         }
         when {
           beforeAgent true
-          expression { params.v1_12 || params.v1_13 || params.v1_14 || params.v1_16 || params.v1_17 || params.master || params.report_ripper1 }
+          expression { params.v1_12 || params.v1_13 || params.v1_14 || params.v1_16 || params.v1_17 || params.master || params.conversion_script || params.report_ripper1 }
         }
         environment {
           GITBRANCHES = 'maintenance/v1.12 maintenance/v1.13 maintenance/v1.14 maintenance/v1.16 maintenance/v1.17 master'
@@ -316,6 +334,8 @@ pipeline {
           sh "mv overview.html overview-old-libs.html"
           sh "./report.py --branches='${env.GITBRANCHES}' configs/conf-nonstandard.json"
           sh "mv overview.html overview-nonstandard-libs.html"
+          sh "./report.py --branches='master conversion_script' configs/conf.json"
+          sh "mv overview.html overview-special-jobs.html"
           sh "./report.py --branches='${env.GITBRANCHES}' configs/conf.json"
 
           sh 'date'
@@ -445,7 +465,7 @@ pipeline {
 def omsimulatorHash() {
   return '1552061d5fe27ecfa51f5289909717192b102263'
 }
-def installLibraries(boolean removePackageOrder) {
+def installLibraries(boolean removePackageOrder, boolean conversionScript, branch) {
   sh "rm -rf '${env.HOME}/saved_omc/libraries/.openmodelica/libraries'"
   sh "mkdir -p '${env.HOME}/saved_omc/libraries/'"
   sh "HOME='${env.HOME}/saved_omc/libraries/' /usr/bin/omc OpenModelicaLibraryTesting/.CI/installLibraries.mos"
@@ -455,8 +475,18 @@ def installLibraries(boolean removePackageOrder) {
   // These exist (better packaged? on the machines)
   sh "rm -rf '${env.HOME}/saved_omc/libraries/ClaRa' '${env.HOME}/saved_omc/libraries/ClaRa_Obsolete' '${env.HOME}/saved_omc/libraries/TILMedia'"
   sh "cp -ai /mnt/ReferenceFiles/ExtraLibs/packaged/* '${env.HOME}/saved_omc/libraries/'"
+  if (conversionScript) {
+    """
+    cd '${WORKSPACE}/OpenModelicaLibraryTesting'
+    ./conversionscript.py --diff --allowErrorsInDiff '${env.HOME}/saved_omc/libraries/'
+    scp converted-libraries/*.diff 'libraries.openmodelica.org:/var/www/branches/${branch}'
+    """
+    return "${WORKSPACE}/OpenModelicaLibraryTesting/converted-libraries/"
+  } else {
+    return "${env.HOME}/saved_omc/libraries/.openmodelica/libraries/"
+  }
 }
-def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler, extrasimflags, boolean removePackageOrder) {
+def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler, extrasimflags, boolean removePackageOrder, boolean conversionScript) {
   sh '''
   find /tmp  -name "*openmodelica.hudson*" -exec rm {} ";" || true
   mkdir -p ~/TEST_LIBS_BACKUP
@@ -617,7 +647,7 @@ def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler, extrasimflags
   mkdir -p "/var/www/branches/${name}/"
   """
   
-  installLibraries(removePackageOrder)
+  def libraryPath = installLibraries(removePackageOrder, conversionScript, branch)
 
   sh '''
   cp ~/TEST_LIBS_BACKUP/sqlite3.db OpenModelicaLibraryTesting/sqlite3.db
@@ -637,7 +667,7 @@ def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler, extrasimflags
   export HOME="${env.HOME}/saved_omc/libraries"
   cd OpenModelicaLibraryTesting
   # Force /usr/bin/omc as being used for generating the mos-files. Ensures consistent behavior among all tested OMC versions
-  stdbuf -oL -eL time python2 ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags='${extraFlags}' --extrasimflags='${extrasimflags}' --branch="${name}" --output="libraries.openmodelica.org:/var/www/branches/${name}/" --libraries='${env.HOME}/saved_omc/libraries/.openmodelica/libraries/' configs/conf.json configs/conf-c++.json ${params.OLD_LIBS ? "configs/conf-old.json configs/conf-nonstandard.json" : ""} || (killall omc ; false) || exit 1
+  stdbuf -oL -eL time python2 ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags='${extraFlags}' --extrasimflags='${extrasimflags}' --branch="${name}" --output="libraries.openmodelica.org:/var/www/branches/${name}/" --libraries='${libraryPath}' configs/conf.json ${conversionScript ? "" : "configs/conf-c++.json"} ${params.OLD_LIBS ? "configs/conf-old.json configs/conf-nonstandard.json" : ""} || (killall omc ; false) || exit 1
   """
   sh 'date'
   sh 'rm -f OpenModelicaLibraryTesting/sqlite3.db.tmp'

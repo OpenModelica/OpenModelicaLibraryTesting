@@ -433,6 +433,7 @@ try:
     if conf["simCodeTarget"]=="C":
       cmd = cmd + " -lv LOG_STATS"
     with open(simFile,"w") as fp:
+      fp.write("startTime=%g\nstopTime=%g\ntolerance=%g\nnumberOfIntervals=%d\nstepSize=%g\n" % (startTime,stopTime,tolerance,numberOfIntervals,stepSize))
       fp.write("Regular simulation: %s\n" % cmd)
     res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,cmd,conf["fileName"]), conf["ulimitExe"])
   execstat["sim"] = monotonic()-start

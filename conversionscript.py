@@ -6,6 +6,7 @@ import argparse
 import glob
 import json
 import os
+import psutil
 import shutil
 import subprocess
 from multiprocessing import Pool
@@ -16,7 +17,7 @@ parser = argparse.ArgumentParser(description='OpenModelica library testing tool'
 parser.add_argument('libdir', nargs=1)
 parser.add_argument('--diff', action="store_true")
 parser.add_argument('--allowErrorsInDiff', action="store_true")
-parser.add_argument('-n', type=int, default=12)
+parser.add_argument('-n', type=int, default=psutil.cpu_count(logical=False))
 args = parser.parse_args()
 libdir = args.libdir[0]
 numThreads = args.n
