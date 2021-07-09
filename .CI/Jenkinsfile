@@ -582,12 +582,12 @@ def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler, extrasimflags
   if ! (cmp ~/saved_omc/${name}/.githash .newhash || test -f ~/saved_omc/${name}/.nogit); then
     autoconf
     ./configure --with-cppruntime --without-omc --disable-modelica3d CC=clang CXX=clang++ FC=gfortran CFLAGS='-O2 -march=native' --with-omlibrary=all --with-omniORB
-    time make -j9 clean
+    time make -j16 clean
     if ! time make -j9 omc > log 2>&1; then
       cat log
       exit 1
     fi
-    if ! time make -j9 runtimeCPPinstall > log 2>&1; then
+    if ! time make -j16 runtimeCPPinstall > log 2>&1; then
       cat log
       if test "${name}" = "master"; then
         exit 1
@@ -612,11 +612,11 @@ def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler, extrasimflags
   rm -rf "`pwd`/${OMCPATH}/build/lib/omlibrary/"
   mkdir -p "`pwd`/${OMCPATH}/build/lib/omlibrary/"
   # (cd ../OMLibraries && git rev-parse HEAD)
-  # if ! time make -j9 -C ../OMLibraries all BUILD_DIR="`pwd`/${OMCPATH}/build/lib/omlibrary/" > log 2>&1; then
+  # if ! time make -j16 -C ../OMLibraries all BUILD_DIR="`pwd`/${OMCPATH}/build/lib/omlibrary/" > log 2>&1; then
   #   cat log
   #   exit 1
   # fi
-  if ! time make -j9 -C testsuite/ReferenceFiles > log 2>&1; then
+  if ! time make -j16 -C testsuite/ReferenceFiles > log 2>&1; then
     cat log
     exit 1
   fi
