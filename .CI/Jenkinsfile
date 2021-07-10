@@ -334,7 +334,7 @@ pipeline {
           sh "mv overview.html overview-old-libs.html"
           sh "./report.py --branches='${env.GITBRANCHES}' configs/conf-nonstandard.json"
           sh "mv overview.html overview-nonstandard-libs.html"
-          sh "./report.py --branches='master conversion_script' configs/conf.json"
+          sh "./report.py --branches='master conversion' configs/conf.json"
           sh "mv overview.html overview-special-jobs.html"
           sh "./report.py --branches='${env.GITBRANCHES}' configs/conf.json"
 
