@@ -190,9 +190,6 @@
     "library":"IdealizedContact"
   },
   {
-    "library":"KeyWordIO"
-  },
-  {
     "library":"LibRAS",
     "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"]
   },
