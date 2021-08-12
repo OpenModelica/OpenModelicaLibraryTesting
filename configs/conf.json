@@ -150,9 +150,6 @@
     "library":"Chemical"
   },
   {
-    "library":"ClaRa"
-  },
-  {
     "library":"ConPNlib",
     "libraryVersion":"master",
     "libraryVersionNameForTests":""
@@ -222,9 +219,6 @@
   },
   {
     "library":"PhotoVoltaics"
-  },
-  {
-    "library":"PhotoVoltaics_TGM"
   },
   {
     "library":"PNlib",
