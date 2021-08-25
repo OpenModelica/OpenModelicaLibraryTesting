@@ -36,8 +36,11 @@ def runCommand(cmd, prefix, timeout):
   process = [None]
   def target():
     with open(os.devnull, 'w')  as FNULL:
-      process[0] = subprocess.Popen(cmd, shell=True, stdout=FNULL, stderr=subprocess.STDOUT, preexec_fn=os.setpgrp)
-      process[0].communicate()
+      process[0] = subprocess.Popen(cmd, shell=True, stdin=FNULL, stdout=FNULL, stderr=FNULL, preexec_fn=os.setpgrp)
+      while process[0].poll() is None:
+        process[0].communicate(1)
+        process[0].wait(1)
+      
 
   thread = threading.Thread(target=target)
   thread.start()
@@ -519,6 +522,11 @@ for (library,conf) in configs:
   else:
     print("Skipping %s as we already have results for it: %s" % (libName,str(v)))
     skipped_libs[libName] = v[0]
+
+try:
+  del omc
+except:
+  pass
 
 print("Checked which libraries to run")
 sys.stdout.flush()

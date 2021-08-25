@@ -31,7 +31,19 @@ except OSError:
 class TimeoutError(Exception):
   pass
 
+def writeResult():
+  with open(statFile, 'w') as fp:
+    json.dump(execstat, fp)
+    fp.flush()
+    os.fsync(fp.fileno())
+
+def writeResultAndExit(exitStatus):
+  writeResult()
+  sys.exit(exitStatus)
+  
 def sendExpressionTimeout(omc, cmd, timeout):
+  with open(errFile, 'a+') as fp:
+    fp.write(cmd + "\n")
   def target(res):
     try:
       res[0] = omc.sendExpression(cmd)
@@ -44,6 +56,14 @@ def sendExpressionTimeout(omc, cmd, timeout):
   thread.join(timeout)
 
   if thread.is_alive():
+    with open(errFile, 'a+') as fp:
+      fp.write("Thread is still alive.\n")
+      if omc._omc_process.poll() is not None:
+        fp.write("OMC died, but the thread is still running? This will end badly. The log-file of omc:\n")
+        with open(omc._omc_log_file.name) as omcLog:
+          for line in omcLog:
+            fp.write(line)
+        print("OMC died, but the thread is still running? This will end badly.\n")
     for process in psutil.Process().children(recursive=True):
       try:
         os.kill(process.pid, signal.SIGINT)
@@ -56,7 +76,9 @@ def sendExpressionTimeout(omc, cmd, timeout):
           os.kill(process.pid, signal.SIGKILL)
         except OSError:
           pass
-      thread.join()
+      with open(errFile, 'a+') as fp:
+        fp.write("Aborted the command.\n")
+      writeResultAndExit(0)
     if res[1] is None:
       res[1] = ""
   if res[1] is not None:
@@ -64,6 +86,8 @@ def sendExpressionTimeout(omc, cmd, timeout):
   return res[0]
 
 def checkOutputTimeout(cmd, timeout):
+  with open(errFile, 'a+') as fp:
+    fp.write(cmd + "\n")
   def target(res):
     try:
       res[0] = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT).decode().strip()
@@ -137,16 +161,6 @@ try:
 except OSError:
   pass
 
-def writeResult():
-  with open(statFile, 'w') as fp:
-    json.dump(execstat, fp)
-    fp.flush()
-    os.fsync(fp.fileno())
-
-def writeResultAndExit(exitStatus):
-  writeResult()
-  sys.exit(exitStatus)
-
 with open(errFile, 'a+') as fp:
   fp.write("Running: %s\n" % " ".join(sys.argv))
 
@@ -171,12 +185,16 @@ if conf.get("fmi"):
 omhome = conf["omhome"]
 os.environ["OPENMODELICAHOME"] = omhome
 
-omc = OMCSession(docker=docker, dockerExtraArgs=dockerExtraArgs, timeout=5) if corbaStyle else OMCSessionZMQ(docker=docker, dockerExtraArgs=dockerExtraArgs, timeout=5)
-if ompython_omhome != "":
-  os.environ["OPENMODELICAHOME"] = ompython_omhome
-  omc_new = OMCSessionZMQ()
-else:
-  omc_new = omc
+def createOmcSession():
+  return OMCSession(docker=docker, dockerExtraArgs=dockerExtraArgs, timeout=5) if corbaStyle else OMCSessionZMQ(docker=docker, dockerExtraArgs=dockerExtraArgs, timeout=5)
+def createOmcSessionNew():
+  if ompython_omhome != "":
+    os.environ["OPENMODELICAHOME"] = ompython_omhome
+    return OMCSessionZMQ()
+  else:
+    return createOmcSession()
+omc = createOmcSession()
+omc_new = createOmcSessionNew()
 
 cmd = 'setCommandLineOptions("%s")' % conf["single_thread_cmd"]
 if not omc.sendExpression(cmd):
@@ -350,6 +368,10 @@ frontend = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(Op
 
 writeResult()
 try:
+  omc.sendExpression("quit()")
+except:
+  pass
+try:
   del omc
 except:
   pass
@@ -398,6 +420,7 @@ try:
         writeResultAndExit(0)
       execstat["phase"] = 5
   else:
+    
     res = checkOutputTimeout("make -j1 -f %s.makefile" % conf["fileName"], conf["ulimitOmc"])
     execstat["build"] = monotonic()-start
     execstat["phase"] = 5
@@ -459,11 +482,29 @@ if not os.path.exists(resFile):
   writeResultAndExit(0)
 
 start=monotonic()
-(referenceOK,diffVars) = sendExpressionTimeout(omc_new, 'diffSimulationResults("%s","%s","%s",relTol=%g,relTolDiffMinMax=%g,rangeDelta=%g)' %
+if False and conf["simCodeTarget"] in ["Cpp"]: # This is a work-around for older C++ runtime not supporting variable filters. We don't really need it for master, so let's no use it.
+  if not sendExpressionTimeout(omc_new, 'filterSimulationResults("%s", "updated%s", vars={%s}, removeDescription=false, hintReadAllVars=false)' % (resFile, resFile, ", ".join(['"%s"' % s for s in referenceVars])), conf["ulimitOmc"]):
+    with open(errFile, 'a+') as fp:
+      fp.write("Failed to filter simulation results. Took time: %.2f\n" % (monotonic()-start))
+    writeResultAndExit(0)
+  os.remove(resFile)
+  os.rename("updated" + resFile, resFile)
+  with open(errFile, 'a+') as fp:
+    fp.write("Filtered simulation results in time: %.2f\n" % (monotonic()-start))
+start=monotonic()
+try:
+  (referenceOK,diffVars) = sendExpressionTimeout(omc_new, 'diffSimulationResults("%s","%s","%s",relTol=%g,relTolDiffMinMax=%g,rangeDelta=%g)' %
                              (resFile, referenceFile, prefix, conf["reference_reltol"],conf["reference_reltolDiffMinMax"], conf["reference_rangeDelta"]), conf["ulimitOmc"])
+except TimeoutError as e:
+  with open(errFile, 'a+') as fp:
+    fp.write("Timeout error for diffSimulationResults")
+  writeResultAndExit(0)
+
 execstat["diff"] = {"time":monotonic()-start, "vars":[], "numCompared":len(referenceVars)}
 if len(diffVars)==0 and referenceOK:
   execstat["phase"]=7
+  with open(errFile, 'a+') as fp:
+    fp.write("Reference file matches\n")
 else:
   with open(errFile, 'a+') as fp:
     fp.write(omc_new.sendExpression('OpenModelica.Scripting.getErrorString()', parsed = False))
