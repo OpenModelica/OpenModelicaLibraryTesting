@@ -465,7 +465,7 @@ pipeline {
 def omsimulatorHash() {
   return '1552061d5fe27ecfa51f5289909717192b102263'
 }
-def installLibraries(boolean removePackageOrder, boolean conversionScript, name) {
+def installLibraries(boolean removePackageOrder, boolean conversionScript, name, string omhomeTestedOMC) {
   sh "rm -rf '${env.HOME}/saved_omc/libraries/.openmodelica/libraries'"
   sh "mkdir -p '${env.HOME}/saved_omc/libraries/'"
   sh "HOME='${env.HOME}/saved_omc/libraries/' /usr/bin/omc OpenModelicaLibraryTesting/.CI/installLibraries.mos"
@@ -479,7 +479,7 @@ def installLibraries(boolean removePackageOrder, boolean conversionScript, name)
   if (conversionScript) {
     sh """
     cd '${WORKSPACE}/OpenModelicaLibraryTesting'
-    ./conversionscript.py --diff --allowErrorsInDiff '${env.HOME}/saved_omc/libraries/.openmodelica/libraries'
+    OPENMODELICAHOME="${omhomeTestedOMC}" ./conversionscript.py --diff --allowErrorsInDiff '${env.HOME}/saved_omc/libraries/.openmodelica/libraries'
     scp converted-libraries/.openmodelica/libraries/*.diff 'libraries.openmodelica.org:/var/www/branches/${name}'
     """
     return "${WORKSPACE}/OpenModelicaLibraryTesting/converted-libraries"
@@ -648,7 +648,7 @@ def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler, extrasimflags
   mkdir -p "/var/www/branches/${name}/"
   """
   
-  def libraryPath = installLibraries(removePackageOrder, conversionScript, name)
+  def libraryPath = installLibraries(removePackageOrder, conversionScript, name, "${WORKSPACE}/OpenModelica/${OMCPATH}/build")
   
   sh "test -d '${libraryPath}/.openmodelica/libraries/Modelica trunk'"
 
