@@ -465,7 +465,7 @@ pipeline {
 def omsimulatorHash() {
   return '1552061d5fe27ecfa51f5289909717192b102263'
 }
-def installLibraries(boolean removePackageOrder, boolean conversionScript, name, string omhomeTestedOMC) {
+def installLibraries(boolean removePackageOrder, boolean conversionScript, name, String omhomeTestedOMC) {
   sh "rm -rf '${env.HOME}/saved_omc/libraries/.openmodelica/libraries'"
   sh "mkdir -p '${env.HOME}/saved_omc/libraries/'"
   sh "HOME='${env.HOME}/saved_omc/libraries/' /usr/bin/omc OpenModelicaLibraryTesting/.CI/installLibraries.mos"
