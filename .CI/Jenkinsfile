@@ -8,6 +8,7 @@ pipeline {
     booleanParam(name: 'v1_14', defaultValue: false, description: 'maintenance/v1.14 branch (ripper1)')
     booleanParam(name: 'v1_16', defaultValue: false, description: 'maintenance/v1.16 branch (ripper1)')
     booleanParam(name: 'v1_17', defaultValue: false, description: 'maintenance/v1.17 branch (ripper1)')
+    booleanParam(name: 'v1_18', defaultValue: false, description: 'maintenance/v1.18 branch (ripper1)')
     booleanParam(name: 'master', defaultValue: false, description: 'master branch (ripper1)')
 
     booleanParam(name: 'fmi_v1_12', defaultValue: false, description: 'maintenance/v1.12 branch with FMI (ripper2)')
@@ -15,6 +16,7 @@ pipeline {
     booleanParam(name: 'fmi_v1_14', defaultValue: false, description: 'maintenance/v1.14 branch with FMI (ripper2)')
     booleanParam(name: 'fmi_v1_16', defaultValue: false, description: 'maintenance/v1.16 branch with FMI (ripper2)')
     booleanParam(name: 'fmi_v1_17', defaultValue: false, description: 'maintenance/v1.17 branch with FMI (ripper2)')
+    booleanParam(name: 'fmi_v1_18', defaultValue: false, description: 'maintenance/v1.18 branch with FMI (ripper2)')
     booleanParam(name: 'fmi_master', defaultValue: false, description: 'master branch with FMI (ripper2)')
     booleanParam(name: 'newInst_daeMode', defaultValue: false, description: 'master branch, --daeMode with -d=newInst (ripper2)')
     booleanParam(name: 'oldInst', defaultValue: false, description: 'master branch, with -d=nonewInst (ripper2)')
@@ -112,6 +114,23 @@ pipeline {
         }
         steps {
           test('maintenance/v1.17', 'v1.17', '', '', 'LibraryTestingRipper1DB', false, '', false, false)
+        }
+      }
+
+      stage('v1.18') {
+        agent {
+          node {
+            label 'ripper.openmodelica.org'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.v1_18 }
+        }
+        steps {
+          test('maintenance/v1.18', 'v1.18', '', '', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
 
@@ -229,6 +248,22 @@ pipeline {
           test('maintenance/v1.17', 'v1.17-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
+      stage('v1.18 FMI') {
+        agent {
+          node {
+            label 'ripper2-1'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.fmi_v1_18 }
+        }
+        steps {
+          test('maintenance/v1.18', 'v1.18-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', false, '', false, false)
+        }
+      }
       stage('master FMI') {
         agent {
           node {
@@ -308,7 +343,7 @@ pipeline {
           expression { params.v1_12 || params.v1_13 || params.v1_14 || params.v1_16 || params.v1_17 || params.master || params.conversion_script || params.report_ripper1 }
         }
         environment {
-          GITBRANCHES = 'maintenance/v1.12 maintenance/v1.13 maintenance/v1.14 maintenance/v1.16 maintenance/v1.17 master'
+          GITBRANCHES = 'maintenance/v1.12 maintenance/v1.13 maintenance/v1.14 maintenance/v1.16 maintenance/v1.17 maintenance/v1.18 master'
           PYTHONIOENCODING = 'utf-8'
         }
         steps {
@@ -360,7 +395,7 @@ pipeline {
           expression { params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_v1_14 || params.fmi_v1_16 || params.fmi_v1_17 || params.fmi_master || params.newInst_daeMode  || params.oldInst || params.report_ripper2 || params.cvode }
         }
         environment {
-          GITBRANCHES_FMI = 'maintenance/v1.12-fmi maintenance/v1.13-fmi maintenance/v1.14-fmi maintenance/v1.16-fmi maintenance/v1.17-fmi master-fmi'
+          GITBRANCHES_FMI = 'maintenance/v1.12-fmi maintenance/v1.13-fmi maintenance/v1.14-fmi maintenance/v1.16-fmi maintenance/v1.17-fmi maintenance/v1.18-fmi master-fmi'
           GITBRANCHES_NEWINST = 'oldInst'
           GITBRANCHES_DAE = 'daemode newInst-daemode'
           PYTHONIOENCODING = 'utf-8'
