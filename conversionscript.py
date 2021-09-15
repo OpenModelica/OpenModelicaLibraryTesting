@@ -77,6 +77,7 @@ def convertPackage(p):
     return None
   if libname in ["Modelica", "ModelicaServices", "Complex", "ModelicaTest", "ModelicaTestOverdetermined"]:
     return None
+  print("Start working on %s" % libnameOnFile)
   omc = OMCSessionZMQ()
   libnameOnFileFullPath = "converted-libraries/.openmodelica/libraries/%s/package.mo" % libnameOnFile
   omcAssert(omc, 'loadFile("%s", uses=false)' % libnameOnFileFullPath)
@@ -89,6 +90,7 @@ def convertPackage(p):
   gcProfStatsBeforeConversion = omc.sendExpression("GC_get_prof_stats()")
   timeBeforeConvert = time.time()
   omcAssert(omc, 'convertPackage(%s, "%s")' % (libname, conversionScript))
+  print("convertPackage(%s, %s) OK" % (libnameOnFile, conversionScript))
   uses = data["uses"]
   for (n,v) in data["uses"].items():
     if n in ["Modelica", "ModelicaServices", "Complex"]:
