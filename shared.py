@@ -3,7 +3,7 @@
 import re, os, subprocess
 import simplejson as json
 
-def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCommands,extrasimflags):
+def fixData(data,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCommands,extrasimflags):
   data["configFromFile"] = dict(data)
   for (key,default) in overrideDefaults:
     if key not in data:
@@ -16,10 +16,9 @@ def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,overrideDefaults,default
     data["reference_reltol"] = float(data.get("reference_reltol") or 3e-3)
     data["reference_reltolDiffMinMax"] = float(data.get("reference_reltolDiffMinMax") or 3e-3)
     data["reference_rangeDelta"] = float(data.get("reference_rangeDelta") or 1e-3)
-    debug = "+d" if rmlStyle else "-d"
     if data["simCodeTarget"]=="Cpp":
       defaultCustomCommands2 = defaultCustomCommands[:]
-      defaultCustomCommands2.append('setCommandLineOptions("%ssimCodeTarget=Cpp")' % ("+" if rmlStyle else "--"))
+      defaultCustomCommands2.append('setCommandLineOptions("--simCodeTarget=Cpp")')
     else:
       defaultCustomCommands2 = defaultCustomCommands
     data["customCommands"] = (data.get("customCommands") or defaultCustomCommands2) + (data.get("extraCustomCommands") or [])
@@ -40,11 +39,11 @@ def fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,overrideDefaults,default
       data["changeHash"] = data["changeHash"]
     return (data["library"],data)
   except:
-    print("Failed to fix data for: %s with extra args: %s" % (str(data),str((rmlStyle,abortSimulationFlag,alarmFlag,defaultCustomCommands))))
+    print("Failed to fix data for: %s with extra args: %s" % (str(data),str((abortSimulationFlag,alarmFlag,defaultCustomCommands))))
     raise
 
-def readConfig(c,rmlStyle=False,abortSimulationFlag="",alarmFlag="",overrideDefaults=[],defaultCustomCommands=[],extrasimflags=""):
-  return [fixData(data,rmlStyle,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCommands,extrasimflags) for data in json.load(open(c))]
+def readConfig(c,abortSimulationFlag="",alarmFlag="",overrideDefaults=[],defaultCustomCommands=[],extrasimflags=""):
+  return [fixData(data,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCommands,extrasimflags) for data in json.load(open(c))]
 
 def libname(library, conf):
   if "libraryVersionNameForTests" in conf:

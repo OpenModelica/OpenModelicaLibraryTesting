@@ -4,6 +4,9 @@
 # TODO: When libraries hash changes, run with the old OMC against the new libs
 #       Then run with the new OMC against the new libs
 
+if (sys.version_info < (3, 0)):
+  raise Exception("Python2 is no longer supported")
+
 import html, shutil, sys, os, re, glob, time, argparse, sqlite3, datetime, math, platform
 from joblib import Parallel, delayed
 import simplejson as json
@@ -16,9 +19,6 @@ from shared import readConfig, getReferenceFileName, simulationAcceptsFlag
 import shared
 
 import signal
-
-if (sys.version_info > (3, 0)):
-  basestring = (str, bytes)
 
 def rmtree(f):
   try:
@@ -96,8 +96,6 @@ parser.add_argument('--extraflags', default='')
 parser.add_argument('--extrasimflags', default='')
 parser.add_argument('--ompython_omhome', default='')
 parser.add_argument('--noclean', action="store_true", default=False)
-parser.add_argument('--rml', action="store_true", default=False)
-parser.add_argument('--corba', action="store_true", default=False)
 parser.add_argument('--fmisimulator', default='')
 parser.add_argument('--ulimitvmem', help="Virtual memory limit (in kB)", type=int, default=8*1024*1024)
 parser.add_argument('--default', action='append', help="Add a default value for some configuration key, such as --default=ulimitExe=60. The equals sign is mandatory.", default=[])
@@ -117,8 +115,6 @@ allTestsFmi = args.fmi
 ulimitMemory = args.ulimitvmem
 docker = args.docker
 librariespath = args.libraries
-rmlStyle = args.rml
-corbaStyle = args.corba
 overrideDefaults = [arg.split("=", 1) for arg in args.default]
 print("branch: %s, n_jobs: %d" % (branch, n_jobs))
 if clean:
@@ -157,9 +153,6 @@ from OMPython import OMCSession, OMCSessionZMQ
 
 version_cmd = "--version"
 single_thread="-n=1"
-rmlStyle=False
-
-
 
 # Try to make the processes a bit nicer...
 os.environ["GC_MARKERS"]="1"
@@ -169,18 +162,13 @@ print("Start OMC version")
 if ompython_omhome != "":
   # Use a different OMC for running OMPython than for running the tests
   omhome = os.environ["OPENMODELICAHOME"]
-  if rmlStyle:
-    omc_version = subprocess.check_output(omc_cmd + ["+version"], stderr=subprocess.STDOUT).decode("ascii").strip()
-    version_cmd = "+version"
-    print("Work-around for RML-style command-line arguments (+version)")
-  else:
-    omc_version = subprocess.check_output(omc_cmd + ["--version"], stderr=subprocess.STDOUT).decode("ascii").strip()
+  omc_version = subprocess.check_output(omc_cmd + ["--version"], stderr=subprocess.STDOUT).decode("ascii").strip()
   os.environ["OPENMODELICAHOME"] = ompython_omhome
   omc = OMCSessionZMQ()
   ompython_omc_version=omc.sendExpression('getVersion()')
   os.environ["OPENMODELICAHOME"] = omhome
 else:
-  omc = OMCSession(docker=docker, dockerExtraArgs=dockerExtraArgs) if corbaStyle else OMCSessionZMQ(docker=docker, dockerExtraArgs=dockerExtraArgs)
+  omc = OMCSessionZMQ(docker=docker, dockerExtraArgs=dockerExtraArgs)
   omhome=omc.sendExpression('getInstallationDirectoryPath()')
   omc_version=omc.sendExpression('getVersion()')
   ompython_omc_version=omc_version
@@ -199,14 +187,8 @@ sys.stdout.flush()
 
 # Do feature checks. Handle things like old RML-style arguments...
 
-try:
-  subprocess.check_output(omc_cmd + ["-n=1", version_cmd], stderr=subprocess.STDOUT).strip()
-  single_thread="-n=1"
-except:
-  subprocess.check_output(omc_cmd + ["+n=1", version_cmd], stderr=subprocess.STDOUT).strip()
-  single_thread="+n=1"
-  rmlStyle=True
-  print("Work-around for RML-style command-line arguments (+n=1)")
+subprocess.check_output(omc_cmd + ["-n=1", version_cmd], stderr=subprocess.STDOUT).strip()
+single_thread="-n=1"
 
 sys.stdout.flush()
 
@@ -225,7 +207,7 @@ try:
   os.unlink("HelloWorld")
 except OSError:
   pass
-subprocess.check_output(omc_cmd + ["%ssimCodeTarget=Cpp" % ("+" if rmlStyle else "--"), "HelloWorld.mos"], stderr=subprocess.STDOUT)
+subprocess.check_output(omc_cmd + ["--simCodeTarget=Cpp", "HelloWorld.mos"], stderr=subprocess.STDOUT)
 if os.path.exists("HelloWorld"):
   print("Have C++ HelloWorld simulation executable")
   haveCppRuntime=simulationAcceptsFlag("")
@@ -258,7 +240,6 @@ sys.stdout.flush()
 defaultCustomCommands = []
 if extraflags:
   defaultCustomCommands += [extraflags]
-debug = "+d" if rmlStyle else "-d"
 
 def testHelloWorld(cmd):
   with open("HelloWorld.mos") as fin:
@@ -277,12 +258,12 @@ def testHelloWorld(cmd):
   return False
 
 for cmd in [
-  'setCommandLineOptions("%s=nogen");' % debug,
-  'setCommandLineOptions("%s=initialization");' % debug,
-  'setCommandLineOptions("%s=backenddaeinfo");' % debug,
-  'setCommandLineOptions("%s=discreteinfo");' % debug,
-  'setCommandLineOptions("%s=stateselection");' % debug,
-  'setCommandLineOptions("%s=execstat");' % debug,
+  'setCommandLineOptions("-d=nogen");',
+  'setCommandLineOptions("-d=initialization");',
+  'setCommandLineOptions("-d=backenddaeinfo");',
+  'setCommandLineOptions("-d=discreteinfo");',
+  'setCommandLineOptions("-d=stateselection");',
+  'setCommandLineOptions("-d=execstat");',
   'setMatchingAlgorithm("PFPlusExt");',
   'setIndexReductionMethod("dynamicStateSelection");'
 ]:
@@ -325,7 +306,7 @@ assert(os.path.exists("HelloWorld"))
 abortSimulationFlag="-abortSlowSimulation" if simulationAcceptsFlag("-abortSlowSimulation") else ""
 alarmFlag="-alarm" if simulationAcceptsFlag("-alarm=480") else ""
 
-configs_lst = [readConfig(c, rmlStyle=rmlStyle, abortSimulationFlag=abortSimulationFlag, alarmFlag=alarmFlag, overrideDefaults=overrideDefaults, defaultCustomCommands=defaultCustomCommands, extrasimflags=extrasimflags) for c in configs]
+configs_lst = [readConfig(c, abortSimulationFlag=abortSimulationFlag, alarmFlag=alarmFlag, overrideDefaults=overrideDefaults, defaultCustomCommands=defaultCustomCommands, extrasimflags=extrasimflags) for c in configs]
 configs = []
 preparedReferenceDirs = {}
 for c in configs_lst:
@@ -333,7 +314,7 @@ for c in configs_lst:
 for (lib,c) in configs:
   if "referenceFiles" in c:
     c["referenceFilesURL"] = c["referenceFiles"]
-    if isinstance(c["referenceFiles"], basestring):
+    if isinstance(c["referenceFiles"], (str, bytes)):
       m = re.search("^[$][A-Z]+", c["referenceFiles"])
       if m:
         k = m.group(0)[1:]
@@ -580,7 +561,7 @@ def runScript(c, timeout, memoryLimit):
     pass
   start=monotonic()
   # runCommand("%s %s %s.mos" % (omc_exe, single_thread, c), prefix=c, timeout=timeout)
-  if 0 != runCommand("ulimit -v %d; ./testmodel.py --libraries=%s %s --ompython_omhome=%s %s %s.conf.json > files/%s.cmdout 2>&1" % (memoryLimit, librariespath, ("--docker %s --dockerExtraArgs '%s'" % (docker, " ".join(dockerExtraArgs))) if docker else "", ompython_omhome, "--corba" if corbaStyle else "", c, c), prefix=c, timeout=timeout):
+  if 0 != runCommand("ulimit -v %d; ./testmodel.py --libraries=%s %s --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (memoryLimit, librariespath, ("--docker %s --dockerExtraArgs '%s'" % (docker, " ".join(dockerExtraArgs))) if docker else "", ompython_omhome, c, c), prefix=c, timeout=timeout):
     print("files/%s.err" % c)
     with open("files/%s.err" % c, "a+") as errfile:
       errfile.write("Failed to read output from testmodel.py, exit status != 0:\n")
