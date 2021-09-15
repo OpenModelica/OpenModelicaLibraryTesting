@@ -120,7 +120,7 @@
   {
     "library":"Buildings",
     "ignoreModelPrefix":"Buildings.Utilities.IO.BCVTB.Examples",
-    "libraryVersion":"7.0.0",
+    "libraryVersion":"maint.7.0.x",
     "libraryVersionLatestInPackageManager":true
   },
   {
