@@ -4,10 +4,11 @@
 # TODO: When libraries hash changes, run with the old OMC against the new libs
 #       Then run with the new OMC against the new libs
 
+import sys
 if (sys.version_info < (3, 0)):
   raise Exception("Python2 is no longer supported")
 
-import html, shutil, sys, os, re, glob, time, argparse, sqlite3, datetime, math, platform
+import html, shutil, os, re, glob, time, argparse, sqlite3, datetime, math, platform
 from joblib import Parallel, delayed
 import simplejson as json
 import psutil, subprocess, threading, hashlib
