@@ -41,7 +41,7 @@ def runCommand(cmd, prefix, timeout):
       while process[0].poll() is None:
         process[0].communicate(1)
         process[0].wait(1)
-      
+
 
   thread = threading.Thread(target=target)
   thread.start()
@@ -459,7 +459,7 @@ for (library,conf) in configs:
       except:
         print("Failed to load library %s %s. OpenModelica.Scripting.getErrorString() failed..." % (library,conf["libraryVersion"]))
   conf["loadFiles"] = sorted(omc.sendExpression("{getSourceFile(cl) for cl in getClassNames()}"))
-  
+
   if not (omc.sendExpression('setCommandLineOptions("-g=MetaModelica")') or omc.sendExpression('setCommandLineOptions("+g=Modelica")')):
     print("Failed to set MetaModelica grammar")
     sys.exit(1)
@@ -486,8 +486,8 @@ for (library,conf) in configs:
   if not conf["libraryVersionRevision"]:
     conf["libraryVersionRevision"] = conf["libraryLastChange"]
   if conf.get("fmi") and fmisimulatorversion:
-    conf["libraryVersionRevision"] = conf["libraryVersionRevision"] + " " + fmisimulatorversion
-    conf["libraryLastChange"] = conf["libraryLastChange"] + " " + fmisimulatorversion
+    conf["libraryVersionRevision"] = conf["libraryVersionRevision"] + " " + fmisimulatorversion.decode("ascii")
+    conf["libraryLastChange"] = conf["libraryLastChange"] + " " + fmisimulatorversion.decode("ascii")
   res=omc.sendExpression('{c for c guard isExperiment(c) and not regexBool(typeNameString(x), "^Modelica_Synchronous\\.WorkInProgress") in getClassNames(%s, recursive=true)}' % library)
   if conf.get("ignoreModelPrefix"):
     prefix = conf["ignoreModelPrefix"]
