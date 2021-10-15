@@ -93,7 +93,11 @@
     "library":"PowerSystems",
     "libraryVersion":"master",
     "libraryVersionNameForTests":"latest",
-    "optlevel":"-Os -march=native"
+    "optlevel":"-Os -march=native",
+    "referenceFiles":{
+      "giturl":"https://github.com/rfranke/PowerSystems_ReferenceResults",
+      "destination":"ReferenceFiles/PowerSystems"
+    }
   },
   {
     "library":"AdvancedNoise",
