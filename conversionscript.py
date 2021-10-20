@@ -68,11 +68,13 @@ def convertPackage(p):
             latin1Data = fin.read()
           with open(os.path.join(root, file), "w", encoding="UTF-8") as fout:
             fout.write(latin1Data)
-  
+
   if libname in ["Modelica", "ModelicaServices", "Complex", "ModelicaTest", "ModelicaTestOverdetermined"]:
     ver = libnameOnFile.split(" ")[1]
     if ver.startswith("1.") or ver.startswith("3."):
       return None
+  if libname in ["TAeZoSysPro_testsuite"] and "Modelica" not in uses:
+    uses['Modelica'] = '3.2.3'
   if not uses.get('Modelica','0.0.0') in convertFromVersion:
     return None
   if libname in ["Modelica", "ModelicaServices", "Complex", "ModelicaTest", "ModelicaTestOverdetermined"]:
@@ -162,7 +164,7 @@ def convertPackage(p):
       diffOutput = subprocess.call(["diff", "-ur", os.path.dirname(p), "converted-libraries/.openmodelica/libraries/%s" % libnameOnFile], stdout=diffOut)
   del omc
   return {"errorsInDiff": errorsInDiff, "path": path, "timeForConversion": timeForConversion, "statsByFile": statsByFile, "gcProfStatsBeforeConversion": gcProfStatsBeforeConversion, "gcProfStatsBefore": gcProfStatsBefore, "gcProfStats": gcProfStats}
-  
+
 pat = "%s/*/openmodelica.metadata.json" % libdir
 with Pool(processes=numThreads) as pool:
   res = pool.map(convertPackage, sorted(glob.glob(pat)))
