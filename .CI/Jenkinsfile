@@ -45,7 +45,7 @@ pipeline {
           expression { params.v1_12 }
         }
         steps {
-          test('maintenance/v1.12', 'v1.12', '', '', 'LibraryTestingRipper1DB', true, '', true, false)
+          test('maintenance/v1.12', 'v1.12', '', '', 'ripper1', 'LibraryTestingRipper1DB', true, '', true, false)
         }
       }
 
@@ -62,7 +62,7 @@ pipeline {
           expression { params.v1_13 }
         }
         steps {
-          test('maintenance/v1.13', 'v1.13', '', '', 'LibraryTestingRipper1DB', true, '', true, false)
+          test('maintenance/v1.13', 'v1.13', '', '', 'ripper1', 'LibraryTestingRipper1DB', true, '', true, false)
         }
       }
 
@@ -79,7 +79,7 @@ pipeline {
           expression { params.v1_14 }
         }
         steps {
-          test('maintenance/v1.14', 'v1.14', '', '', 'LibraryTestingRipper1DB', false, '', true, false)
+          test('maintenance/v1.14', 'v1.14', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', true, false)
         }
       }
 
@@ -96,7 +96,7 @@ pipeline {
           expression { params.v1_16 }
         }
         steps {
-          test('maintenance/v1.16', 'v1.16', '', '', 'LibraryTestingRipper1DB', false, '', false, false)
+          test('maintenance/v1.16', 'v1.16', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
 
@@ -113,7 +113,7 @@ pipeline {
           expression { params.v1_17 }
         }
         steps {
-          test('maintenance/v1.17', 'v1.17', '', '', 'LibraryTestingRipper1DB', false, '', false, false)
+          test('maintenance/v1.17', 'v1.17', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
 
@@ -130,7 +130,7 @@ pipeline {
           expression { params.v1_18 }
         }
         steps {
-          test('maintenance/v1.18', 'v1.18', '', '', 'LibraryTestingRipper1DB', false, '', false, false)
+          test('maintenance/v1.18', 'v1.18', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
 
@@ -147,7 +147,7 @@ pipeline {
           expression { params.master }
         }
         steps {
-          test('master', 'master', '', '', 'LibraryTestingRipper1DB', false, '', false, false)
+          test('master', 'master', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
 
@@ -164,7 +164,7 @@ pipeline {
           expression { params.conversion_script }
         }
         steps {
-          test('master', 'conversion', '', '', 'LibraryTestingRipper1DB', false, '', false, true)
+          test('master', 'conversion', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, true)
         }
       }
 
@@ -181,7 +181,7 @@ pipeline {
           expression { params.fmi_v1_12 }
         }
         steps {
-          test('maintenance/v1.12', 'v1.12-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', true, '', true, false)
+          test('maintenance/v1.12', 'v1.12-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', true, '', true, false)
         }
       }
       stage('v1.13 FMI') {
@@ -197,7 +197,7 @@ pipeline {
           expression { params.fmi_v1_13 }
         }
         steps {
-          test('maintenance/v1.13', 'v1.13-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', true, '', true, false)
+          test('maintenance/v1.13', 'v1.13-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', true, '', true, false)
         }
       }
       stage('v1.14 FMI') {
@@ -213,7 +213,7 @@ pipeline {
           expression { params.fmi_v1_14 }
         }
         steps {
-          test('maintenance/v1.14', 'v1.14-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', false, '', true, false)
+          test('maintenance/v1.14', 'v1.14-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', true, false)
         }
       }
       stage('v1.16 FMI') {
@@ -229,7 +229,7 @@ pipeline {
           expression { params.fmi_v1_16 }
         }
         steps {
-          test('maintenance/v1.16', 'v1.16-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', false, '', false, false)
+          test('maintenance/v1.16', 'v1.16-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('v1.17 FMI') {
@@ -245,7 +245,7 @@ pipeline {
           expression { params.fmi_v1_17 }
         }
         steps {
-          test('maintenance/v1.17', 'v1.17-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', false, '', false, false)
+          test('maintenance/v1.17', 'v1.17-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('v1.18 FMI') {
@@ -261,7 +261,7 @@ pipeline {
           expression { params.fmi_v1_18 }
         }
         steps {
-          test('maintenance/v1.18', 'v1.18-fmi', '', omsimulatorHash(), 'LibraryTestingRipper2DB', false, '', false, false)
+          test('maintenance/v1.18', 'v1.18-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('master FMI') {
@@ -277,7 +277,7 @@ pipeline {
           expression { params.fmi_master }
         }
         steps {
-          test('master', 'master-fmi', '', 'origin/master', 'LibraryTestingRipper2DB', false, '', false, false)
+          test('master', 'master-fmi', '', 'origin/master', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('newInst-daeMode') {
@@ -293,7 +293,7 @@ pipeline {
           expression { params.newInst_daeMode }
         }
         steps {
-          test('master', 'newInst-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --daeMode=true")', '', 'LibraryTestingRipper2DB', false, '', false, false)
+          test('master', 'newInst-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --daeMode=true")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('oldInst') {
@@ -309,7 +309,7 @@ pipeline {
           expression { params.oldInst }
         }
         steps {
-          test('master', 'oldInst', 'setCommandLineOptions("-d=nonewInst")', '', 'LibraryTestingRipper2DB', false, '', false, false)
+          test('master', 'oldInst', 'setCommandLineOptions("-d=nonewInst")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('cvode') {
@@ -325,7 +325,7 @@ pipeline {
           expression { params.cvode }
         }
         steps {
-          test('master', 'cvode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'LibraryTestingRipper2DB', false, '-s cvode', false, false)
+          test('master', 'cvode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '-s cvode', false, false)
         }
       }
     } }
@@ -462,10 +462,10 @@ pipeline {
     } }
     stage('cleanup') { parallel {
       // The cleanup is needed because we can't save the cleanup done in the report stage
-      stage('lib') {
+      stage('ripper1') {
         agent {
           node {
-            label 'libraries.openmodelica.org'
+            label 'ripper.openmodelica.org'
           }
         }
         when {
@@ -473,9 +473,9 @@ pipeline {
           expression { params.v1_12 || params.v1_13 || params.v1_14 || params.v1_16 || params.v1_17 || params.master || params.report_ripper1 }
         }
         steps {
-          sh 'cp ~/TEST_LIBS_BACKUP/sqlite3.db .'
+          sh 'cp ~/TEST_LIBS_BACKUP/ripper1-sqlite3.db sqlite3.db'
           sh './clean-empty-omcversion-dates.py'
-          sh 'cp sqlite3.db ~/TEST_LIBS_BACKUP/'
+          sh 'cp sqlite3.db ~/TEST_LIBS_BACKUP/ripper1-sqlite3.db'
         }
       }
       stage('ripper2') {
@@ -489,9 +489,9 @@ pipeline {
           expression { params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_v1_14 || params.fmi_v1_16 || params.fmi_v1_17 || params.fmi_master || params.newInst_daeMode  || params.oldInst || params.report_ripper2 }
         }
         steps {
-          sh 'cp ~/TEST_LIBS_BACKUP/sqlite3.db .'
+          sh 'cp ~/TEST_LIBS_BACKUP/ripper2-sqlite3.db sqlite3.db'
           sh './clean-empty-omcversion-dates.py'
-          sh 'cp sqlite3.db ~/TEST_LIBS_BACKUP/'
+          sh 'cp ripper2-sqlite3.db ~/TEST_LIBS_BACKUP/ripper2-sqlite3.db'
         }
       }
     } }
@@ -522,11 +522,11 @@ def installLibraries(boolean removePackageOrder, boolean conversionScript, name,
     return "${env.HOME}/saved_omc/libraries"
   }
 }
-def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler, extrasimflags, boolean removePackageOrder, boolean conversionScript) {
+def test(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, omcompiler, extrasimflags, boolean removePackageOrder, boolean conversionScript) {
   sh '''
   find /tmp  -name "*openmodelica.hudson*" -exec rm {} ";" || true
   mkdir -p ~/TEST_LIBS_BACKUP
-  find ~/TEST_LIBS_BACKUP -name sqlite3.*.db -mtime +7 -exec rm {} ";"
+  find ~/TEST_LIBS_BACKUP -name *sqlite3.*.db -mtime +7 -exec rm {} ";"
 
   if test -z "$WORKSPACE"; then
     echo "Odd workspace"
@@ -687,10 +687,10 @@ def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler, extrasimflags
   
   sh "test -d '${libraryPath}/.openmodelica/libraries/Modelica trunk'"
 
-  sh '''
-  cp ~/TEST_LIBS_BACKUP/sqlite3.db OpenModelicaLibraryTesting/sqlite3.db
+  sh """
+  cp ~/TEST_LIBS_BACKUP/${dbPrefix}-sqlite3.db OpenModelicaLibraryTesting/sqlite3.db
   test -s OpenModelicaLibraryTesting/sqlite3.db
-  '''
+  """
 
   sh 'date'
 
@@ -708,11 +708,11 @@ def test(branch, name, extraFlags, omsHash, sshConfig, omcompiler, extrasimflags
   stdbuf -oL -eL time ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags='${extraFlags}' --extrasimflags='${extrasimflags}' --branch="${name}" --output="libraries.openmodelica.org:/var/www/branches/${name}/" --libraries='${libraryPath}/.openmodelica/libraries/' configs/conf.json ${conversionScript ? "" : "configs/conf-c++.json"} ${params.OLD_LIBS ? "configs/conf-old.json configs/conf-nonstandard.json" : ""} || (killall omc ; false) || exit 1
   """
   sh 'date'
-  sh 'rm -f OpenModelicaLibraryTesting/sqlite3.db.tmp'
-  sh 'ln OpenModelicaLibraryTesting/sqlite3.db OpenModelicaLibraryTesting/sqlite3.db.tmp'
+  sh "rm -f OpenModelicaLibraryTesting/${dbPrefix}-sqlite3.db.tmp"
+  sh "ln OpenModelicaLibraryTesting/sqlite3.db OpenModelicaLibraryTesting/${dbPrefix}-sqlite3.db.tmp"
 
-  sh 'cp OpenModelicaLibraryTesting/sqlite3.db ~/TEST_LIBS_BACKUP/sqlite3.db'
-  sh 'rm -f ~/TEST_LIBS_BACKUP/`date +sqlite3.%Y%m%d.db`'
+  sh "cp OpenModelicaLibraryTesting/sqlite3.db ~/TEST_LIBS_BACKUP/${dbPrefix}-sqlite3.db"
+  sh "rm -f ~/TEST_LIBS_BACKUP/${dbPrefix}-`date +sqlite3.%Y%m%d.db`"
 
   sshPublisher(publishers: [sshPublisherDesc(configName: sshConfig, transfers: [sshTransfer(removePrefix: 'OpenModelicaLibraryTesting', sourceFiles: 'OpenModelicaLibraryTesting/sqlite3.db', failOnError: true)])])
 
