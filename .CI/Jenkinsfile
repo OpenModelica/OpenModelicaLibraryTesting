@@ -688,6 +688,10 @@ def test(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, omcompiler, ext
   sh "test -d '${libraryPath}/.openmodelica/libraries/Modelica trunk'"
 
   sh """
+  if ! test -f ~/TEST_LIBS_BACKUP/${dbPrefix}-sqlite3.db; then
+    wget -O ~/TEST_LIBS_BACKUP/${dbPrefix}-sqlite3.db.tmp -q https://libraries.openmodelica.org/sqlite3/${dbPrefix}/sqlite3.db
+	mv ~/TEST_LIBS_BACKUP/${dbPrefix}-sqlite3.db.tmp ~/TEST_LIBS_BACKUP/${dbPrefix}-sqlite3.db
+  fi
   cp ~/TEST_LIBS_BACKUP/${dbPrefix}-sqlite3.db OpenModelicaLibraryTesting/sqlite3.db
   test -s OpenModelicaLibraryTesting/sqlite3.db
   """
