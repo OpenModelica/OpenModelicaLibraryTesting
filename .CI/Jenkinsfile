@@ -491,7 +491,7 @@ pipeline {
         steps {
           sh 'cp ~/TEST_LIBS_BACKUP/ripper2-sqlite3.db sqlite3.db'
           sh './clean-empty-omcversion-dates.py'
-          sh 'cp ripper2-sqlite3.db ~/TEST_LIBS_BACKUP/ripper2-sqlite3.db'
+          sh 'cp sqlite3.db ~/TEST_LIBS_BACKUP/ripper2-sqlite3.db'
         }
       }
     } }
