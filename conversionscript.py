@@ -75,6 +75,7 @@ def convertPackage(p):
       return None
   if libname in ["TAeZoSysPro_testsuite"] and "Modelica" not in uses:
     uses['Modelica'] = '3.2.3'
+    data['uses'] = uses
   if not uses.get('Modelica','0.0.0') in convertFromVersion:
     return None
   if libname in ["Modelica", "ModelicaServices", "Complex", "ModelicaTest", "ModelicaTestOverdetermined"]:
@@ -144,7 +145,7 @@ def convertPackage(p):
         errStr = omc.sendExpression("getErrorString()")
         if errStr:
           print(errStr)
-        raise Exception('echo(false);before:=readFile("%s");\nafter:=readFile("%s");echo(true);\ndiffModelicaFileListings(before, after, OpenModelica.Scripting.DiffFormat.plain, failOnSemanticsChange=true);\ngetErrorString();' % (oldFile, newFile))
+        raise Exception('--allowErrorsInDiff is not active:\necho(false);before:=readFile("%s");\nafter:=readFile("%s");echo(true);\ndiffModelicaFileListings(before, after, OpenModelica.Scripting.DiffFormat.plain, failOnSemanticsChange=true);\ngetErrorString();' % (oldFile, newFile))
     else:
       omcAssert(omc, 'writeFile("%s", res)' % (newFile))
     isDiff = before != res
