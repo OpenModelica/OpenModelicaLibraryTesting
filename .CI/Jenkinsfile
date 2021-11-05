@@ -3,28 +3,28 @@ pipeline {
   parameters {
     booleanParam(name: 'OLDLIBS', defaultValue: false, description: 'Also test some outdated libraries')
 
-    booleanParam(name: 'v1_12', defaultValue: false, description: 'maintenance/v1.12 branch (ripper1)')
-    booleanParam(name: 'v1_13', defaultValue: false, description: 'maintenance/v1.13 branch (ripper1)')
-    booleanParam(name: 'v1_14', defaultValue: false, description: 'maintenance/v1.14 branch (ripper1)')
-    booleanParam(name: 'v1_16', defaultValue: false, description: 'maintenance/v1.16 branch (ripper1)')
-    booleanParam(name: 'v1_17', defaultValue: false, description: 'maintenance/v1.17 branch (ripper1)')
-    booleanParam(name: 'v1_18', defaultValue: false, description: 'maintenance/v1.18 branch (ripper1)')
-    booleanParam(name: 'master', defaultValue: false, description: 'master branch (ripper1)')
+    booleanParam(name: 'v1_12', defaultValue: false, description: 'maintenance/v1.12 branch (ryzen-5950x-1)')
+    booleanParam(name: 'v1_13', defaultValue: false, description: 'maintenance/v1.13 branch (ryzen-5950x-1)')
+    booleanParam(name: 'v1_14', defaultValue: false, description: 'maintenance/v1.14 branch (ryzen-5950x-1)')
+    booleanParam(name: 'v1_16', defaultValue: false, description: 'maintenance/v1.16 branch (ryzen-5950x-1)')
+    booleanParam(name: 'v1_17', defaultValue: false, description: 'maintenance/v1.17 branch (ryzen-5950x-1)')
+    booleanParam(name: 'v1_18', defaultValue: false, description: 'maintenance/v1.18 branch (ryzen-5950x-1)')
+    booleanParam(name: 'master', defaultValue: false, description: 'master branch (ryzen-5950x-1)')
 
-    booleanParam(name: 'fmi_v1_12', defaultValue: false, description: 'maintenance/v1.12 branch with FMI (ripper2)')
-    booleanParam(name: 'fmi_v1_13', defaultValue: false, description: 'maintenance/v1.13 branch with FMI (ripper2)')
-    booleanParam(name: 'fmi_v1_14', defaultValue: false, description: 'maintenance/v1.14 branch with FMI (ripper2)')
-    booleanParam(name: 'fmi_v1_16', defaultValue: false, description: 'maintenance/v1.16 branch with FMI (ripper2)')
-    booleanParam(name: 'fmi_v1_17', defaultValue: false, description: 'maintenance/v1.17 branch with FMI (ripper2)')
-    booleanParam(name: 'fmi_v1_18', defaultValue: false, description: 'maintenance/v1.18 branch with FMI (ripper2)')
-    booleanParam(name: 'fmi_master', defaultValue: false, description: 'master branch with FMI (ripper2)')
-    booleanParam(name: 'newInst_daeMode', defaultValue: false, description: 'master branch, --daeMode with -d=newInst (ripper2)')
-    booleanParam(name: 'oldInst', defaultValue: false, description: 'master branch, with -d=nonewInst (ripper2)')
-    booleanParam(name: 'report_ripper1', defaultValue: false, description: 'Generate a report for ripper1 without running the tests')
-    booleanParam(name: 'report_ripper2', defaultValue: false, description: 'Generate a report for ripper2 without running the tests')
+    booleanParam(name: 'fmi_v1_12', defaultValue: false, description: 'maintenance/v1.12 branch with FMI (ryzen-5950x-2)')
+    booleanParam(name: 'fmi_v1_13', defaultValue: false, description: 'maintenance/v1.13 branch with FMI (ryzen-5950x-2)')
+    booleanParam(name: 'fmi_v1_14', defaultValue: false, description: 'maintenance/v1.14 branch with FMI (ryzen-5950x-2)')
+    booleanParam(name: 'fmi_v1_16', defaultValue: false, description: 'maintenance/v1.16 branch with FMI (ryzen-5950x-2)')
+    booleanParam(name: 'fmi_v1_17', defaultValue: false, description: 'maintenance/v1.17 branch with FMI (ryzen-5950x-2)')
+    booleanParam(name: 'fmi_v1_18', defaultValue: false, description: 'maintenance/v1.18 branch with FMI (ryzen-5950x-2)')
+    booleanParam(name: 'fmi_master', defaultValue: false, description: 'master branch with FMI (ryzen-5950x-2)')
+    booleanParam(name: 'newInst_daeMode', defaultValue: false, description: 'master branch, --daeMode with -d=newInst (ryzen-5950x-2)')
+    booleanParam(name: 'oldInst', defaultValue: false, description: 'master branch, with -d=nonewInst (ryzen-5950x-2)')
+    booleanParam(name: 'report_ryzen_5950x_1', defaultValue: false, description: 'Generate a report for ryzen-5950x-1 without running the tests')
+    booleanParam(name: 'report_ryzen-5950x-2', defaultValue: false, description: 'Generate a report for ryzen-5950x-2 without running the tests')
 
-    booleanParam(name: 'conversion_script', defaultValue: false, description: 'master branch with conversion script from MSL 3 to 4 (ripper1). This is an experimental job that does not run on a fixed schedule.')
-    booleanParam(name: 'cvode', defaultValue: false, description: 'master branch, with -d=newInst and -s cvode (ripper2). This is an experimental job that does not run on a fixed schedule.')
+    booleanParam(name: 'conversion_script', defaultValue: false, description: 'master branch with conversion script from MSL 3 to 4 (ryzen-5950x-1). This is an experimental job that does not run on a fixed schedule.')
+    booleanParam(name: 'cvode', defaultValue: false, description: 'master branch, with -d=newInst and -s cvode (ryzen-5950x-2). This is an experimental job that does not run on a fixed schedule.')
   }
   environment {
     LC_ALL = 'C.UTF-8'
@@ -35,7 +35,7 @@ pipeline {
       stage('v1.12') {
         agent {
           node {
-            label 'ripper.openmodelica.org'
+            label 'ryzen-5950x-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -52,7 +52,7 @@ pipeline {
       stage('v1.13') {
         agent {
           node {
-            label 'ripper.openmodelica.org'
+            label 'ryzen-5950x-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -69,7 +69,7 @@ pipeline {
       stage('v1.14') {
         agent {
           node {
-            label 'ripper.openmodelica.org'
+            label 'ryzen-5950x-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -86,7 +86,7 @@ pipeline {
       stage('v1.16') {
         agent {
           node {
-            label 'ripper.openmodelica.org'
+            label 'ryzen-5950x-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -103,7 +103,7 @@ pipeline {
       stage('v1.17') {
         agent {
           node {
-            label 'ripper.openmodelica.org'
+            label 'ryzen-5950x-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -120,7 +120,7 @@ pipeline {
       stage('v1.18') {
         agent {
           node {
-            label 'ripper.openmodelica.org'
+            label 'ryzen-5950x-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -137,7 +137,7 @@ pipeline {
       stage('master') {
         agent {
           node {
-            label 'ripper.openmodelica.org'
+            label 'ryzen-5950x-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -154,7 +154,7 @@ pipeline {
       stage('conversion script') {
         agent {
           node {
-            label 'ripper.openmodelica.org'
+            label 'ryzen-5950x-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -171,7 +171,7 @@ pipeline {
       stage('v1.12 FMI') {
         agent {
           node {
-            label 'ripper2-1'
+            label 'ryzen-5950x-2-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -187,7 +187,7 @@ pipeline {
       stage('v1.13 FMI') {
         agent {
           node {
-            label 'ripper2-1'
+            label 'ryzen-5950x-2-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -203,7 +203,7 @@ pipeline {
       stage('v1.14 FMI') {
         agent {
           node {
-            label 'ripper2-1'
+            label 'ryzen-5950x-2-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -219,7 +219,7 @@ pipeline {
       stage('v1.16 FMI') {
         agent {
           node {
-            label 'ripper2-1'
+            label 'ryzen-5950x-2-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -235,7 +235,7 @@ pipeline {
       stage('v1.17 FMI') {
         agent {
           node {
-            label 'ripper2-1'
+            label 'ryzen-5950x-2-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -251,7 +251,7 @@ pipeline {
       stage('v1.18 FMI') {
         agent {
           node {
-            label 'ripper2-1'
+            label 'ryzen-5950x-2-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -267,7 +267,7 @@ pipeline {
       stage('master FMI') {
         agent {
           node {
-            label 'ripper2-1'
+            label 'ryzen-5950x-2-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -283,7 +283,7 @@ pipeline {
       stage('newInst-daeMode') {
         agent {
           node {
-            label 'ripper2-1'
+            label 'ryzen-5950x-2-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -299,7 +299,7 @@ pipeline {
       stage('oldInst') {
         agent {
           node {
-            label 'ripper2-1'
+            label 'ryzen-5950x-2-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -315,7 +315,7 @@ pipeline {
       stage('cvode') {
         agent {
           node {
-            label 'ripper2-1'
+            label 'ryzen-5950x-2-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -465,7 +465,7 @@ pipeline {
       stage('ripper1') {
         agent {
           node {
-            label 'ripper.openmodelica.org'
+            label 'ryzen-5950x-1'
           }
         }
         when {
@@ -481,7 +481,7 @@ pipeline {
       stage('ripper2') {
         agent {
           node {
-            label 'ripper2-1'
+            label 'ryzen-5950x-2-1'
           }
         }
         when {
