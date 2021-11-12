@@ -3,6 +3,10 @@
     "library":"Modelica_LinearSystems2"
   },
   {
+    "library":"Modelica_LinearSystems2",
+    "libraryVersion":"dev"
+  },
+  {
     "library":"Modelica_StateGraph2"
   }
 ]
