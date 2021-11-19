@@ -92,8 +92,8 @@ def convertPackage(p):
     raise Exception("Expected to have loaded %s but got %s" % (libnameOnFileFullPath, loadedFilePath))
   gcProfStatsBeforeConversion = omc.sendExpression("GC_get_prof_stats()")
   timeBeforeConvert = time.time()
-  omcAssert(omc, 'convertPackage(%s, "%s")' % (libname, conversionScript))
-  print("convertPackage(%s, %s) OK" % (libnameOnFile, conversionScript))
+  omcAssert(omc, 'runConversionScript(%s, "%s")' % (libname, conversionScript))
+  print("runConversionScript(%s, %s) OK" % (libnameOnFile, conversionScript))
   uses = data["uses"]
   for (n,v) in data["uses"].items():
     if n in ["Modelica", "ModelicaServices", "Complex"]:
