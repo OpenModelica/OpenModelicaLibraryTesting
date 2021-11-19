@@ -1,6 +1,14 @@
 [
   {
-    "library":"Modelica_LinearSystems2"
+    "library":"FCSys"
+  },
+  {
+    "library":"IdealizedContact"
+  },
+  {
+    "library":"Modelica_LinearSystems2",
+    "libraryVersionNameForTests":"",
+    "libraryVersion":"master"
   },
   {
     "library":"Modelica_LinearSystems2",

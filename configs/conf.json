@@ -173,9 +173,6 @@
     "library":"FastBuildings"
   },
   {
-    "library":"FCSys"
-  },
-  {
     "library":"HanserModelica"
   },
   {
@@ -185,9 +182,6 @@
   },
   {
     "library":"IndustrialControlSystems"
-  },
-  {
-    "library":"IdealizedContact"
   },
   {
     "library":"KeyWordIO"
@@ -236,7 +230,9 @@
     "library":"Physiolibrary"
   },
   {
-    "library":"Physiomodel"
+    "library":"Physiomodel",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":""
   },
   {
     "library":"PlanarMechanics"

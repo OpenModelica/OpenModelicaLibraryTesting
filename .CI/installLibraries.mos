@@ -23,7 +23,7 @@ for lib in {"AdvancedNoise", "AixLib", "BioChem", "BuildingSystems", "BuildSysPr
   end if;
 end for;
 
-for l in {{"AES", "main"}, {"Annex60", ""}, {"ExtendedPetriNets", ""}, {"iPSL", ""}, {"PhotoVoltaics", ""}, {"PhotoVoltaics_TGM", ""}, {"PowerSystems","master"}, {"PowerSystems",""}, {"SiemensPower",""}, {"SiemensPower","OMCtest"}, {"Modelica_LinearSystems2", "dev"}, {"Modelica_StateGraph2", ""}, {"OpenIPSL", ""}, {"Physiomodel", ""}, {"ThermofluidStream", "main"}, {"ThermofluidStream", "0.2.0-OM_adaptions"}, {"TILMedia", "ClaRa"}} loop
+for l in {{"AES", "main"}, {"Annex60", ""}, {"ExtendedPetriNets", ""}, {"iPSL", ""}, {"PhotoVoltaics", ""}, {"PhotoVoltaics_TGM", ""}, {"PowerSystems","master"}, {"PowerSystems",""}, {"SiemensPower",""}, {"SiemensPower","OMCtest"}, {"Modelica_LinearSystems2", "dev"}, {"Modelica_StateGraph2", ""}, {"OpenIPSL", ""}, {"Physiomodel", "master"}, {"ThermofluidStream", "main"}, {"ThermofluidStream", "0.2.0-OM_adaptions"}, {"TILMedia", "ClaRa"}} loop
   if not installPackage(stringTypeName(l[1]), l[2]) then
     print(l[1] + " " + l[2] + getErrorString() + "\n");
     exit(1);
