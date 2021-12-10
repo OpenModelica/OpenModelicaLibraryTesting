@@ -92,10 +92,7 @@ def checkOutputTimeout(cmd, timeout):
     try:
       res[0] = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT).decode().strip()
     except subprocess.CalledProcessError as e:
-      try:
-        outputStr = str(e.output).decode("utf-8")
-      except:
-        outputStr = str(e.output)
+      outputStr = e.output.decode("utf-8","backslashreplace")
       res[1] = cmd + " " + outputStr
     except Exception as e:
       res[1] = cmd + " " + str(e)
