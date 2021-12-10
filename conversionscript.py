@@ -138,6 +138,8 @@ def convertPackage(p):
       omc.sendExpression('writeFile("%s", after)' % newFile)
       if allowErrorsInDiff:
         errorsInDiff += [newFile]
+        omc.sendExpression('writeFile("%s.before",before)' % newFile)
+        omc.sendExpression('writeFile("%s.after",after)' % newFile)
         res = after
         nFail += 1
         isFail = True
