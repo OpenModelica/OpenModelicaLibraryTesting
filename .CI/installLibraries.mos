@@ -26,6 +26,7 @@ end for;
 for l in {
   {"AES", "main"},
   {"Annex60", ""},
+  {"BLDC", ""},
   {"ExtendedPetriNets", ""},
   {"iPSL", ""},
   {"PhotoVoltaics", ""},

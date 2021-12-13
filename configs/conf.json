@@ -118,6 +118,10 @@
     "extraCustomCommands":["setCommandLineOptions(\"-d=ignoreCycles\")"]
   },
   {
+    "library":"BLDC",
+    "libraryVersionNameForTests":""
+  },
+  {
     "library":"Buildings",
     "ignoreModelPrefix":"Buildings.Utilities.IO.BCVTB.Examples",
     "libraryVersion":"maint.7.0.x",
