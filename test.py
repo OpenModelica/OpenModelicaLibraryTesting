@@ -442,7 +442,17 @@ for (library,conf) in configs:
     print("Failed to set Modelica grammar")
     sys.exit(1)
   omc.sendExpression('clear()')
-  for (lib,version) in [[library,conf["libraryVersion"]]] + conf.get("extraLibraries", []):
+  if "loadFileCommands" in conf:
+    for command in conf["loadFileCommands"]:
+      if not omc.sendExpression(command):
+        try:
+          print("Failed to run command %s: %s" % (command,omc.sendExpression('OpenModelica.Scripting.getErrorString()')))
+        except:
+          print("Failed to run command %s OpenModelica.Scripting.getErrorString() failed..." % command)
+    librariesToLoad = []
+  else:
+    librariesToLoad = [[library,conf["libraryVersion"]]] + conf.get("extraLibraries", [])
+  for (lib,version) in librariesToLoad:
     if conf["libraryVersionLatestInPackageManager"]:
       availableVersions = omc.sendExpression('getAvailablePackageVersions(%s,"%s")' % (lib,version))
       if not availableVersions:
