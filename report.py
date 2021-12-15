@@ -7,7 +7,7 @@ import shared
 
 parser = argparse.ArgumentParser(description='OpenModelica library testing report generation tool')
 parser.add_argument('configs', nargs='*')
-parser.add_argument('--branches', default='')
+parser.add_argument('--branches', default='master')
 args = parser.parse_args()
 configs = args.configs
 
@@ -23,7 +23,7 @@ entryhead = "<tr><th>Branch</th><th>Total</th><th>Parsing</th><th>Frontend</th><
 
 libs = {}
 
-import cgi, sqlite3, time, datetime
+import html, sqlite3, time, datetime
 from omcommon import friendlyStr, multiple_replace
 
 configs_lst = [shared.readConfig(c) for c in configs]
@@ -129,9 +129,9 @@ for lib in sorted(libs.keys()):
   # print(sorted(list(libs[lib])))
 
 nummodels = sum(len(l) for l in libs.values())
-branches_lines = [("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td%s>%d</td><td>%d</td></tr>\n" % (cgi.escape(branch), cgi.escape(
+branches_lines = [("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td%s>%d</td><td>%d</td></tr>\n" % (html.escape(branch), html.escape(
   (cursor.execute("SELECT omcversion FROM [omcversion] WHERE date=? AND branch=?", (max(dates[branch][lib] for lib in libnames),branch)).fetchone() or ["unknown"])[0]
-  ), cgi.escape(dates_str[branch]), friendlyStr(exectime[branch]),
+  ), html.escape(dates_str[branch]), friendlyStr(exectime[branch]),
   " class=\"warning\"" if nummodels!=nmodels[branch] else "",
   nsimulate[branch],
   nmodels[branch]
