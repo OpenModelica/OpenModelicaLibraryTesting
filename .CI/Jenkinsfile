@@ -20,6 +20,7 @@ pipeline {
     booleanParam(name: 'fmi_master', defaultValue: false, description: 'master branch with FMI (ryzen-5950x-2)')
     booleanParam(name: 'newInst_daeMode', defaultValue: false, description: 'master branch, --daeMode with -d=newInst (ryzen-5950x-2)')
     booleanParam(name: 'oldInst', defaultValue: false, description: 'master branch, with -d=nonewInst (ryzen-5950x-2)')
+    booleanParam(name: 'cpp', defaultValue: false, description: 'master branch, with --simCodeTarget=Cpp (ryzen-5950x-2).')
     booleanParam(name: 'report_ryzen_5950x_1', defaultValue: false, description: 'Generate a report for ryzen-5950x-1 without running the tests')
     booleanParam(name: 'report_ryzen-5950x-2', defaultValue: false, description: 'Generate a report for ryzen-5950x-2 without running the tests')
 
