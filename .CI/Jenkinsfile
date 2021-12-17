@@ -20,6 +20,7 @@ pipeline {
     booleanParam(name: 'fmi_master', defaultValue: false, description: 'master branch with FMI (ryzen-5950x-2)')
     booleanParam(name: 'newInst_daeMode', defaultValue: false, description: 'master branch, --daeMode with -d=newInst (ryzen-5950x-2)')
     booleanParam(name: 'oldInst', defaultValue: false, description: 'master branch, with -d=nonewInst (ryzen-5950x-2)')
+    booleanParam(name: 'cpp_v1_18', defaultValue: false, description: 'maintenance/v1.18 branch, with --simCodeTarget=Cpp (ryzen-5950x-2).')
     booleanParam(name: 'cpp', defaultValue: false, description: 'master branch, with --simCodeTarget=Cpp (ryzen-5950x-2).')
     booleanParam(name: 'report_ryzen_5950x_1', defaultValue: false, description: 'Generate a report for ryzen-5950x-1 without running the tests')
     booleanParam(name: 'report_ryzen-5950x-2', defaultValue: false, description: 'Generate a report for ryzen-5950x-2 without running the tests')
@@ -329,6 +330,22 @@ pipeline {
           test('master', 'cvode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '-s cvode', false, false)
         }
       }
+      stage('C++ v1.18') {
+        agent {
+          node {
+            label 'ryzen-5950x-2-1'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.cpp_v1_18 }
+        }
+        steps {
+          test('maintenance/v1.18', 'v1.18-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+        }
+      }
       stage('C++') {
         agent {
           node {
@@ -413,6 +430,7 @@ pipeline {
           GITBRANCHES_FMI = 'maintenance/v1.12-fmi maintenance/v1.13-fmi maintenance/v1.14-fmi maintenance/v1.16-fmi maintenance/v1.17-fmi maintenance/v1.18-fmi master-fmi'
           GITBRANCHES_NEWINST = 'oldInst'
           GITBRANCHES_DAE = 'daemode newInst-daemode'
+          GITBRANCHES_CPP = 'cpp v1.18-fmi'
           PYTHONIOENCODING = 'utf-8'
         }
         steps {
@@ -460,7 +478,7 @@ pipeline {
           sh "./report.py --branches='cvode' configs/conf.json"
           sh "mv overview.html overview-cvode.html"
 
-          sh "./report.py --branches='cpp' configs/conf.json"
+          sh "./report.py --branches='${env.GITBRANCHES_CPP}' configs/conf.json"
           sh "mv overview.html overview-c++.html"
 
           sh 'date'
