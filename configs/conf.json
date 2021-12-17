@@ -161,7 +161,6 @@
     "library":"ClaRa",
     "libraryVersionNameForTests":"dev",
     "loadFileCommands":[
-      "loadFile(\"/mnt/ReferenceFiles/ExtraLibs/packaged/ClaRa_Obsolete/package.mo\", uses=false)",
       "loadFile(\"/mnt/ReferenceFiles/ExtraLibs/packaged/TILMedia/package.mo\", uses=false)",
       "loadFile(\"/mnt/ReferenceFiles/ExtraLibs/packaged/ClaRa/package.mo\")"
     ]
