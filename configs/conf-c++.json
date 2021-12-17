@@ -67,6 +67,10 @@
     "configExtraName":"cpp",
     "simCodeTarget":"Cpp",
     "alarmFlag":"--alarm",
-    "abortSlowSimulation":""
+    "abortSlowSimulation":"",
+    "referenceFiles":{
+      "giturl":"https://github.com/rfranke/PowerSystems_ReferenceResults",
+      "destination":"ReferenceFiles/PowerSystems"
+    }
   }
 ]
