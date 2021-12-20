@@ -23,7 +23,7 @@ pipeline {
     booleanParam(name: 'cpp_v1_18', defaultValue: false, description: 'maintenance/v1.18 branch, with --simCodeTarget=Cpp (ryzen-5950x-2).')
     booleanParam(name: 'cpp', defaultValue: false, description: 'master branch, with --simCodeTarget=Cpp (ryzen-5950x-2).')
     booleanParam(name: 'report_ryzen_5950x_1', defaultValue: false, description: 'Generate a report for ryzen-5950x-1 without running the tests')
-    booleanParam(name: 'report_ryzen-5950x-2', defaultValue: false, description: 'Generate a report for ryzen-5950x-2 without running the tests')
+    booleanParam(name: 'report_ryzen-5950x_2', defaultValue: false, description: 'Generate a report for ryzen-5950x-2 without running the tests')
 
     booleanParam(name: 'conversion_script', defaultValue: false, description: 'master branch with conversion script from MSL 3 to 4 (ryzen-5950x-1). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'cvode', defaultValue: false, description: 'master branch, with -d=newInst and -s cvode (ryzen-5950x-2). This is an experimental job that does not run on a fixed schedule.')
@@ -374,7 +374,7 @@ pipeline {
         }
         when {
           beforeAgent true
-          expression { params.v1_12 || params.v1_13 || params.v1_14 || params.v1_16 || params.v1_17 || params.master || params.conversion_script || params.report_ripper1 }
+          expression { params.v1_12 || params.v1_13 || params.v1_14 || params.v1_16 || params.v1_17 || params.master || params.conversion_script || params.report_ryzen_5950x_1 }
         }
         environment {
           GITBRANCHES = 'maintenance/v1.12 maintenance/v1.13 maintenance/v1.14 maintenance/v1.16 maintenance/v1.17 maintenance/v1.18 master'
@@ -424,7 +424,7 @@ pipeline {
         }
         when {
           beforeAgent true
-          expression { params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_v1_14 || params.fmi_v1_16 || params.fmi_v1_17 || params.fmi_master || params.newInst_daeMode  || params.oldInst || params.report_ripper2 || params.cvode || params.cpp }
+          expression { params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_v1_14 || params.fmi_v1_16 || params.fmi_v1_17 || params.fmi_master || params.newInst_daeMode  || params.oldInst || params.report_ryzen_5950x_2 || params.cvode || params.cpp }
         }
         environment {
           GITBRANCHES_FMI = 'maintenance/v1.12-fmi maintenance/v1.13-fmi maintenance/v1.14-fmi maintenance/v1.16-fmi maintenance/v1.17-fmi maintenance/v1.18-fmi master-fmi'
