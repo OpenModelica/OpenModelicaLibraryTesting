@@ -430,7 +430,7 @@ pipeline {
           GITBRANCHES_FMI = 'maintenance/v1.12-fmi maintenance/v1.13-fmi maintenance/v1.14-fmi maintenance/v1.16-fmi maintenance/v1.17-fmi maintenance/v1.18-fmi master-fmi'
           GITBRANCHES_NEWINST = 'oldInst'
           GITBRANCHES_DAE = 'daemode newInst-daemode'
-          GITBRANCHES_CPP = 'cpp v1.18-fmi'
+          GITBRANCHES_CPP = 'v1.18-cpp cpp'
           PYTHONIOENCODING = 'utf-8'
         }
         steps {
