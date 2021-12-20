@@ -445,7 +445,7 @@ pipeline {
           sh 'wget -q https://libraries.openmodelica.org/sqlite3/ripper2/sqlite3.db'
           sh './clean-empty-omcversion-dates.py'
 
-          sh "./all-reports.py --email --omcgitdir=OpenModelica ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE}"
+          sh "./all-reports.py --email --omcgitdir=OpenModelica ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_CPP}"
           sh "./all-plots.py ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE}"
 
           sh "./report.py --branches='${env.GITBRANCHES_NEWINST}' configs/conf.json"
