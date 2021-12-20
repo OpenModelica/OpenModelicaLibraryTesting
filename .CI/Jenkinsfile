@@ -446,7 +446,7 @@ pipeline {
           sh './clean-empty-omcversion-dates.py'
 
           sh "./all-reports.py --email --omcgitdir=OpenModelica ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_CPP}"
-          sh "./all-plots.py ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE}"
+          sh "./all-plots.py ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_CPP}"
 
           sh "./report.py --branches='${env.GITBRANCHES_NEWINST}' configs/conf.json"
           sh "mv overview.html overview-oldinst.html"
