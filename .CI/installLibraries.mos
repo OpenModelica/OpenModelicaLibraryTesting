@@ -41,7 +41,7 @@ for l in {
   {"Physiomodel", ""},
   {"ThermofluidStream", "main"},
   {"ThermofluidStream", "0.3.1-OM_adaptions"},
-  {"TILMedia", "ClaRa"}
+  {"TILMedia", "main"}
 } loop
   if not installPackage(stringTypeName(l[1]), l[2]) then
     print(l[1] + " " + l[2] + getErrorString() + "\n");

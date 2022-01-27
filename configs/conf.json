@@ -165,7 +165,7 @@
     "library":"ClaRa",
     "libraryVersionNameForTests":"dev",
     "loadFileCommands":[
-      "loadFile(\"/mnt/ReferenceFiles/ExtraLibs/packaged/TILMedia/package.mo\", uses=false)",
+      "loadModel(TILMedia, {\"main\"})",
       "loadFile(\"/mnt/ReferenceFiles/ExtraLibs/packaged/ClaRa/package.mo\")"
     ]
   },
@@ -352,6 +352,8 @@
   },
   {
     "library":"TILMedia",
+    "libraryVersion":"main",
+    "libraryVersionNameForTests":"",
     "extraLibraries":[
       ["ClaRa", "default"]
     ]
