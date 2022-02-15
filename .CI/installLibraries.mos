@@ -40,7 +40,7 @@ for l in {
   {"OpenIPSL", ""},
   {"Physiomodel", ""},
   {"ThermofluidStream", "main"},
-  {"ThermofluidStream", "0.3.1-OM_adaptions"},
+  {"ThermofluidStream", "0.4.0-OM_adaptions"},
   {"TILMedia", "main"}
 } loop
   if not installPackage(stringTypeName(l[1]), l[2]) then
