@@ -1,5 +1,4 @@
 pipeline {
-pipeline {
   agent none
   parameters {
     booleanParam(name: 'OLDLIBS', defaultValue: false, description: 'Also test some outdated libraries')
