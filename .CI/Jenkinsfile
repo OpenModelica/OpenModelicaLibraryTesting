@@ -1,4 +1,5 @@
 pipeline {
+pipeline {
   agent none
   parameters {
     booleanParam(name: 'OLDLIBS', defaultValue: false, description: 'Also test some outdated libraries')
@@ -19,6 +20,7 @@ pipeline {
     booleanParam(name: 'fmi_v1_18', defaultValue: false, description: 'maintenance/v1.18 branch with FMI (ryzen-5950x-2)')
     booleanParam(name: 'fmi_master', defaultValue: false, description: 'master branch with FMI (ryzen-5950x-2)')
     booleanParam(name: 'newInst_daeMode', defaultValue: false, description: 'master branch, --daeMode with -d=newInst (ryzen-5950x-2)')
+    booleanParam(name: 'newInst_newBackend', defaultValue: false, description: 'master branch, -d=newInst --newBackend, (ryzen-5950x-1)')
     booleanParam(name: 'oldInst', defaultValue: false, description: 'master branch, with -d=nonewInst (ryzen-5950x-2)')
     booleanParam(name: 'cpp_v1_18', defaultValue: false, description: 'maintenance/v1.18 branch, with --simCodeTarget=Cpp (ryzen-5950x-2).')
     booleanParam(name: 'cpp', defaultValue: false, description: 'master branch, with --simCodeTarget=Cpp (ryzen-5950x-2).')
@@ -167,6 +169,23 @@ pipeline {
         }
         steps {
           test('master', 'conversion', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, true)
+        }
+      }
+
+      stage('newInst-newBackend') {
+        agent {
+          node {
+            label 'ryzen-5950x-1'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.newInst_newBackend }
+        }
+        steps {
+          test('master', 'newInst-newBackend', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --newBackend")', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
 
