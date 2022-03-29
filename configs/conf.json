@@ -167,7 +167,11 @@
     "loadFileCommands":[
       "loadModel(TILMedia, {\"main\"})",
       "loadFile(\"/mnt/ReferenceFiles/ExtraLibs/packaged/ClaRa/package.mo\")"
-    ]
+    ],
+    "referenceFileExtension":"mat",
+    "referenceFileNameDelimiter":".",
+    "referenceFileNameExtraName":"$ClassName",
+    "referenceFiles":"$/mnt/ReferenceFiles/ExtraLibs/packaged/ReferenceResults"
   },
   {
     "library":"ConPNlib",
