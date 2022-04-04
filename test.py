@@ -83,7 +83,7 @@ def runCommand(cmd, prefix, timeout):
 try:
   subprocess.check_output(["./testmodel.py", "--help"], stderr=subprocess.STDOUT)
 except subprocess.CalledProcessError as e:
-  print("Sanity check failed (./testmodel.py --help):\n" + e.output)
+  print("Sanity check failed (./testmodel.py --help):\n" + e.output.decode())
   sys.exit(1)
 
 parser = argparse.ArgumentParser(description='OpenModelica library testing tool')
