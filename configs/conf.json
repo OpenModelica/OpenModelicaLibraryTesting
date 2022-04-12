@@ -207,6 +207,16 @@
     "library":"KeyWordIO"
   },
   {
+    "library":"IDEAS",
+    "libraryVersionNameForTests":"",
+    "libraryVersionLatestInPackageManager":true
+  },
+  {
+    "library":"IDEAS",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":"dev"
+  },
+  {
     "library":"LibRAS",
     "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"]
   },
