@@ -1,18 +1,27 @@
 # OpenModelica Library Testing
 
+This repository provides scripts and documentation to run the nightly Modelica library tests for OpenModelica.
+
+## Using the OpenModelica nightly testsuite
+
+Some of the open-source Modelica libraries managed by the [Open Modelica Package Manager](https://github.com/OpenModelica/OMPackageManager) are tested on a daily basis on the OSMC servers. Test results are [publicly available](testresults.md).
+
+The configuration files for the OSMC nightly testsuite jobs are [conf.json](configs/conf.json) for the regular tests using the C runtime, and [conf-c++.json](configs/conf-c%2B%2B.json) for the tests using the C++ runtime. The setup of the configuration files is discussed in [conf-howto.md](conf-howto.md).
+
+If you want to include your open-source library in the testsuite, please open a pull request on [conf.json](configs/conf.json), or open an issue on the [OpenModelica issue tracker](https://github.com/OpenModelica/OpenModelica/issues/new/choose) and ask us to do it for you.
+
+## Running the library testing infrastructure on your own server
 [![License: OSMC-PL](https://img.shields.io/badge/license-OSMC--PL-lightgrey.svg)](OSMC-License.txt)
 
-This repository provides scripts to run the nightly Modelica library tests for OpenModelica.
+The scripts from this repository can be used to run regression tests for public, private, and commercial Modelica libraries to keep track of coverage with different OpenModelica versions, according to the conditions of the [OSMC-PL license](OSMC-License.txt).
 
-The scripts from this repository can be uses to run regression tests for public, non-public or commercial Modelica libraries to keep track of coverage with different OpenModelica versions.
-
-## Dependencies (Linux)
+### Dependencies (Linux)
 - [OpenModelica](https://openmodelica.org)
 - [Python](https://www.python.org/)
-- [Optional] Reference Files
+- [Optional] Reference simulation result files
 
 
-## Set-Up
+### Set-Up
 
 - Install or build OpenModelica
   - [Install instructions](https://openmodelica.org/download/download-linux)
