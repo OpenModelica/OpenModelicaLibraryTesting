@@ -1,4 +1,4 @@
-# Open-Source Modelica Library Testing using OpenModelica
+# Test Results of Open-Source Modelica Libraries using OpenModelica
 
 The library testsuite job is run every night on the OSMC servers, testing open-source Modelica libraries covered by the
 [Package Manager](https://github.com/OpenModelica/OMPackageManager#readme) with various versions of OpenModelica,
