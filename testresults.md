@@ -1,22 +1,6 @@
 # Test Results of Open-Source Modelica Libraries using OpenModelica
 
-The library testsuite job is run every night on the OSMC servers, testing open-source Modelica libraries covered by the
-[Package Manager](https://github.com/OpenModelica/OMPackageManager#readme) with various versions of OpenModelica,
-including the development version on the master branch. The simulations are run with the C-runtime, unless specified differently.
-
-Within each library, all models with an experiment(StopTime) annotations are run. For each tested model, the results of the following steps are reported:
-- _parsing_
-- _frontend_: flattening the model
-- _backend_: structural analysis, index reduction, causalization, tearing, and all kind of symbolic manipulations and optimization to solve the model efficiently
-- _simcode_: intermediate stap towards simulation code generation
-- _templates_: generation of the actual C code
-- _compilation_: compilation of the C code into a simulation executable
-- _simulation_: the simulation is actually run to produce simulation results
-- _verification_: if reference results file are available, they are compared with the simulation results
-
-Clicking on the model name shows the log of phases from parsing to compilation. Clicking on the (sim) link shows the log of the runtime simulation.
-
-Many different reports are available:
+## Test reports
 
 - **Overview with library test results across OMC versions**: These reports shows how libraries with full or partial support level
   (see [here](https://github.com/OpenModelica/OMPackageManager/blob/master/README.md#library-support-levels-in-openmodelica) for more details)
@@ -35,6 +19,25 @@ Many different reports are available:
   - [C++](https://libraries.openmodelica.org/branches/history/cpp/): simulation with C++ runtime
   - [FMI](https://libraries.openmodelica.org/branches/history/master-fmi/): simulation with FMI, C runtime
 
-If you are actively developing a library, it is recommended to have two tests for it: one testing the latest official release, which can be used
-to check if changes to OMC cause regressions to the existing library, another one testing the development version, which also checks regressions
-caused by changes to the library code. You can then bookmark the page with regression reports, and the page with the test results with your favourite settings
+## How to read the test reports
+
+The library testsuite job is run every night on the OSMC servers, testing open-source Modelica libraries covered by the
+[Package Manager](https://github.com/OpenModelica/OMPackageManager#readme) with various versions of OpenModelica,
+including the development version on the master branch. The simulations are run with the C-runtime, unless specified differently.
+
+Within each library, all models with an experiment(StopTime) annotations are run. For each tested model, the results of the following steps are reported:
+- _parsing_
+- _frontend_: flattening the model
+- _backend_: structural analysis, index reduction, causalization, tearing, and all kind of symbolic manipulations and optimization to solve the model efficiently
+- _simcode_: intermediate stap towards simulation code generation
+- _templates_: generation of the actual C code
+- _compilation_: compilation of the C code into a simulation executable
+- _simulation_: the simulation is actually run to produce simulation results
+- _verification_: if reference results file are available, they are compared with the simulation results
+
+Clicking on the model name shows the log of phases from parsing to compilation. Clicking on the (sim) link shows the log of the runtime simulation.
+
+## How to get your open-source library in the testsuite
+
+If you are actively developing an open-source Modelica library using a GIT repository, you can easily get it included in the OpenModelica library testsuite. Please open a request on the [OpenModelica issue tracker](https://github.com/OpenModelica/OpenModelica/issues/new/choose).
+Ideally, you should have two tests for it: one testing the latest official release, which can be used to check if changes to OMC cause regressions to the existing library, another one testing the development version, which also checks regressions caused by changes to the library code. You can then bookmark the page with the regression reports and the page with the test results obtained with your favourite settings.
