@@ -4,7 +4,7 @@ This repository provides scripts and documentation to run the nightly Modelica l
 
 ## Using the OpenModelica nightly testsuite
 
-Some of the open-source Modelica libraries managed by the [Open Modelica Package Manager](https://github.com/OpenModelica/OMPackageManager) are tested on a daily basis on the OSMC servers. Test results are [publicly available](testresults.md).
+Some of the open-source Modelica libraries managed by the [Open Modelica Package Manager](https://github.com/OpenModelica/OMPackageManager) are tested on a daily basis on the OSMC servers. Test results are [publicly available](testresults.md#open-source-modelica-library-testing-using-openmodelica).
 
 The configuration files for the OSMC nightly testsuite jobs are [conf.json](configs/conf.json) for the regular tests using the C runtime, and [conf-c++.json](configs/conf-c%2B%2B.json) for the tests using the C++ runtime. The setup of the configuration files is discussed in [conf-howto.md](conf-howto.md).
 
