@@ -563,7 +563,7 @@ def installLibraries(boolean removePackageOrder, boolean conversionScript, name,
     sh """
     cd '${WORKSPACE}/OpenModelicaLibraryTesting'
     OPENMODELICAHOME="${omhomeTestedOMC}" ./conversionscript.py --diff --allowErrorsInDiff '${env.HOME}/saved_omc/libraries/.openmodelica/libraries'
-    scp converted-libraries/.openmodelica/libraries/*.diff 'libraries.openmodelica.org:/var/www/branches/${name}'
+    scp converted-libraries/.openmodelica/libraries/*.diff 'libraries.openmodelica.org:/var/www/libraries.openmodelica.org/branches/${name}'
     """
     return "${WORKSPACE}/OpenModelicaLibraryTesting/converted-libraries"
   } else {
@@ -728,7 +728,7 @@ def test(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, omcompiler, ext
   git fetch
   git reset --hard origin/master
 
-  mkdir -p "/var/www/branches/${name}/"
+  mkdir -p "/var/www/libraries.openmodelica.org/branches/${name}/"
   """
   
   def libraryPath = installLibraries(removePackageOrder, conversionScript, name, "${WORKSPACE}/OpenModelica/${OMCPATH}/build")
@@ -757,7 +757,7 @@ def test(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, omcompiler, ext
   export HOME="${libraryPath}"
   cd OpenModelicaLibraryTesting
   # Force /usr/bin/omc as being used for generating the mos-files. Ensures consistent behavior among all tested OMC versions
-  stdbuf -oL -eL time ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags='${extraFlags}' --extrasimflags='${extrasimflags}' --branch="${name}" --output="libraries.openmodelica.org:/var/www/branches/${name}/" --libraries='${libraryPath}/.openmodelica/libraries/' configs/conf.json ${params.OLDLIBS ? "configs/conf-old.json configs/conf-nonstandard.json" : ""} || (killall omc ; false) || exit 1
+  stdbuf -oL -eL time ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags='${extraFlags}' --extrasimflags='${extrasimflags}' --branch="${name}" --output="libraries.openmodelica.org:/var/www/branches/libraries.openmodelica.org/${name}/" --libraries='${libraryPath}/.openmodelica/libraries/' configs/conf.json ${params.OLDLIBS ? "configs/conf-old.json configs/conf-nonstandard.json" : ""} || (killall omc ; false) || exit 1
   """
   sh 'date'
   sh "rm -f OpenModelicaLibraryTesting/${dbPrefix}-sqlite3.db.tmp"
