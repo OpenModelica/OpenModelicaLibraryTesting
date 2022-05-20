@@ -14,3 +14,5 @@ and for providing extra flags and settings to OMC when running the tests. Please
 the [master result directory](https://libraries.openmodelica.org/branches/master/) for an example of the corresponding output. Please
 note that some files and/or directory there may be leftovers of old test runs, only consider recent ones if you want to understand what the outcome
 of a certain test configuration is.
+
+Note that in order to test a library it is also necessary to have it installed by the CI. In order to do that, it needs to be added to the [installLibraries.mos](https://github.com/OpenModelica/OpenModelicaLibraryTesting/blob/master/.CI/installLibraries.mos) file.
