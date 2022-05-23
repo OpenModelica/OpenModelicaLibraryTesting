@@ -4,7 +4,7 @@ The [conf.json](configs/conf.json) file specifies which versions of the librarie
 For each test entry, there are several fields:
 - `library`: name of the library
 - `libraryVersion`: version of the library; this is the content of the library version annotation for tagged versions, or the name of the branch
-  as specified in one of the `branches` field of the [repos.json](https://github.com/OpenModelica/OMPackageManager/blob/master/repos.json) file,
+  as specified in one of the `branches` field of the Package Manager server [repos.json](https://github.com/OpenModelica/OMPackageManager/blob/master/repos.json) file,
   in case a non-tagged version needs to be tested. If no version is provided, the latest tagged version is tested automatically
 - `libraryVersionNameForTests`: this is appended with an underscore to the name of the library in the test report name
 - `ignoreModelPrefix`: skips testing all models that start with that string
@@ -15,4 +15,6 @@ the [master result directory](https://libraries.openmodelica.org/branches/master
 note that some files and/or directory there may be leftovers of old test runs, only consider recent ones if you want to understand what the outcome
 of a certain test configuration is.
 
-Note that in order to test a library it is also necessary to have it installed by the CI. In order to do that, it needs to be added to the [installLibraries.mos](https://github.com/OpenModelica/OpenModelicaLibraryTesting/blob/master/.CI/installLibraries.mos) file.
+Note that in order to test a library it is also necessary to
+- include it in the package manager (see the [OMPackageManager Instructions](https://github.com/OpenModelica/OMPackageManager#readme)), where it is possible to configure branches that may be tested besides the tagged released versions, e.g. the master branch or some maintenance branch
+- have it installed by the CI. In order to do that, it needs to be added to the [installLibraries.mos](https://github.com/OpenModelica/OpenModelicaLibraryTesting/blob/master/.CI/installLibraries.mos) file.
