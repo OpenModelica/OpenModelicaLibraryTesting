@@ -8,7 +8,9 @@ Some of the open-source Modelica libraries managed by the [Open Modelica Package
 
 [Test results reports](testresults.md#open-source-modelica-library-testing-using-openmodelica) are publicly available.
 
-The configuration files for the OSMC nightly testsuite jobs are [conf.json](configs/conf.json) for the regular tests using the C runtime, and [conf-c++.json](configs/conf-c%2B%2B.json) for the tests using the C++ runtime. The setup of the configuration files is discussed in [conf-howto.md](conf-howto.md).
+The configuration file for the regular library nightly testsuite is [conf.json](configs/conf.json). Additional old and non-standard libraries are listed in [conf-old.json](configs/conf-old.json) and [conf-nonstandard.json](configs/conf-nonstandard.json), note that failures in those libraries may be due to the fact that they are not fully complying with the Modelica standard, rather than to OpenModelica issues. The setup of the configuration files is discussed in [conf-howto.md](conf-howto.md).
+
+Test results reports are collected in the https://libraries.openmodelica.org/branches/ directory. The [overview.html](https://libraries.openmodelica.org/branches/overview.html) report gives the results of the regular testsuite with the default C runtime and solvers. Other reports contain the results using the C++ runtime, FMI, daeMode, and the old frontend. Combined reports also include results from the old and nonstandard libraries. The https://libraries.openmodelica.org/branches/history/ directory contains regression reports and plots using different versions (including master) and simulation runtime configurations (C++, daeMode, FMI, old frontend) of OpenModelica.
 
 If you want to include your open-source library in the testsuite, please open a pull request on [conf.json](configs/conf.json), or open an issue on the [OpenModelica issue tracker](https://github.com/OpenModelica/OpenModelica/issues/new/choose) and ask us to do it for you.
 
