@@ -12,6 +12,12 @@
     "libraryVersion":"3.0.0"
   },
   {
+    "library":"Buildings",
+    "ignoreModelPrefix":"Buildings.Utilities.IO.BCVTB.Examples",
+    "libraryVersion":"maint.7.0.x",
+    "libraryVersionLatestInPackageManager":true
+  },
+  {
     "library":"iPSL"
   },
   {
