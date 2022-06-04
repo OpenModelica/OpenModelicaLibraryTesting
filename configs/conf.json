@@ -69,11 +69,6 @@
     "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"]
   },
   {
-    "library":"Modelica_Noise",
-    "libraryVersion":"master",
-    "libraryVersionNameForTests":""
-  },
-  {
     "library":"PowerGrids"
   },
   {
@@ -160,11 +155,6 @@
     "referenceFiles":"/mnt/ReferenceFiles/ExtraLibs/clara_om.git/ReferenceResults"
   },
   {
-    "library":"ConPNlib",
-    "libraryVersion":"master",
-    "libraryVersionNameForTests":""
-  },
-  {
     "library":"ElectricalEnergyStorage"
   },
   {
@@ -172,9 +162,6 @@
   },
   {
     "library":"ExternData"
-  },
-  {
-    "library":"ExternalMemoryLib"
   },
   {
     "library":"FastBuildings"
