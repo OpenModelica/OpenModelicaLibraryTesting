@@ -63,13 +63,6 @@
     "library":"ModelicaTestOverdetermined"
   },
   {
-    "library":"Modelica_Synchronous",
-    "libraryVersion":"master",
-    "libraryVersionNameForTests":"",
-    "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"],
-    "referenceFiles":"$REFERENCEFILES/Modelica_Synchronous"
-  },
-  {
     "library":"Modelica_DeviceDrivers",
     "libraryVersion":"master",
     "libraryVersionNameForTests":"",
