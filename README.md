@@ -67,10 +67,17 @@ The scripts from this repository can be used to run regression tests for public,
   ```
 
   You can add extra compiler settings
+
   ```json
   "extraCustomCommands":["setCommandLineOptions(\"--std=3.2\");"]
   ```
-  and more. Check `config/conf.json` for more.
+  and extra simulation flags
+
+  ```json
+  "extraSimFlags": "-s=ida -nls=kinsol"
+  ```
+
+  Check `config/conf.json` for more.
 - If you used `.CI/installLibraries.mos` to test all libraries you'll need to install reference results and set environment variables, see [Reference Results](#reference-results).
   ```bash
   export MSLREFERENCE="/path/to/ReferenceFiles/"
