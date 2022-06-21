@@ -215,13 +215,16 @@
   },
   {
     "library":"OpenIPSL",
-    "libraryVersion":"master",
-    "libraryVersionNameForTests":""
+    "libraryVersion":"2.0.0",
   },
   {
     "library":"OpenIPSL",
-    "libraryVersion":"",
-    "libraryVersionNameForTests":"release"
+    "libraryVersion":"3.0.0",
+  },
+  {
+    "library":"OpenIPSL",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":"dev"
   },
   {
     "library":"PhotoVoltaics"
