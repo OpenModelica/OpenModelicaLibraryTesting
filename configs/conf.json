@@ -166,6 +166,11 @@
   {
     "library":"FastBuildings"
   },
+    {
+    "library":"FluxTubesExtension",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":""
+  },
   {
     "library":"HanserModelica"
   },
