@@ -28,6 +28,7 @@ for l in {
   {"Annex60", ""},
   {"BLDC", ""},
   {"ExtendedPetriNets", ""},
+  {"FluxTubesExtension","master"},
   {"IDEAS", ""},
   {"IDEAS", "master"},
   {"iPSL", ""},
