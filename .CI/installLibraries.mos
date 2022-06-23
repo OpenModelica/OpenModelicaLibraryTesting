@@ -34,7 +34,7 @@ for l in {
   {"Annex60", ""},
   {"BLDC", ""},
   {"ExtendedPetriNets", ""},
-  {"FluxTubesExtension","master"},
+  {"FluxTubesExtension","main"},
   {"IDEAS", ""},
   {"IDEAS", "master"},
   {"iPSL", ""},
