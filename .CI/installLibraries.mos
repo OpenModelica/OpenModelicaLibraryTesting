@@ -15,12 +15,6 @@ for v in {"1.6", "3.0.0", "maint.7.0.x", "maint.8.1.x", "master"} loop
     exit(1);
   end if;
 end for;
-for v in {"2.0.0", "3.0.0", "master"} loop
-  if not installPackage(OpenIPSL, v) then
-    print("OpenIPSL " + v + " " + getErrorString() + "\n");
-    exit(1);
-  end if;
-end for;
 
 for lib in {"AdvancedNoise", "AixLib", "BioChem", "BuildingSystems", "BuildSysPro", "Chemical", "ClaRa_Obsolete", "ClaRa", "ConPNlib", "ElectricalEnergyStorage", "ExternData", "ExternalMemoryLib", "FastBuildings", "FCSys", "HanserModelica", "HelmholtzMedia", "IBPSA", "IdealizedContact", "IndustrialControlSystems", "KeyWordIO", "LibRAS", "MEV", "MessagePack", "ModelicaByExample", "ModelicaTestOverdetermined", "Modelica_Synchronous", "Modelica_DeviceDrivers", "Modelica_LinearSystems2", "Modelica_Noise", "ObjectStab", "OpenHydraulics", "OpenIPSL", "PNlib", "Physiolibrary", "PlanarMechanics", "PowerGrids", "PowerSysPro", "ScalableTestGrids", "ScalableTestSuite", "SolarTherm", "Spot", "SystemDynamics", "TAeZoSysPro", "TAeZoSysPro_testsuite", "ThermalSeparation", "ThermoPower", "ThermoSysPro", "VehicleInterfaces"} loop
   if not installPackage(stringTypeName(lib), "master") then
@@ -38,6 +32,9 @@ for l in {
   {"IDEAS", ""},
   {"IDEAS", "master"},
   {"iPSL", ""},
+  {"OpenIPSL, "2.0.0"},
+  {"OpenIPSL, ""},
+  {"OpenIPSL, "master"},
   {"PhotoVoltaics", ""},
   {"PhotoVoltaics_TGM", ""},
   {"PowerSystems","master"},
