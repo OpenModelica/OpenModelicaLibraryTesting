@@ -219,8 +219,8 @@
   },
   {
     "library":"OpenIPSL",
-    "libraryVersion":"3.0.1"
-    "libraryVersionNameForTests":"3.0.x",   
+    "libraryVersion":"3.0.1",
+    "libraryVersionNameForTests":"3.0.x"
   },
   {
     "library":"OpenIPSL",
