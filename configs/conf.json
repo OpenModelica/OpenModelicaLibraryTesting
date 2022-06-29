@@ -218,7 +218,10 @@
     "libraryVersion":"2.0.0"
   },
   {
-    "library":"OpenIPSL"
+    "library":"OpenIPSL",
+    "libraryVersion":"",
+    "libraryVersionNameForTests":"",
+    "libraryVersionLatestInPackageManager":true
   },
   {
     "library":"OpenIPSL",
