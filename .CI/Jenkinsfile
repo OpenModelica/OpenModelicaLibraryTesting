@@ -398,7 +398,7 @@ pipeline {
           expression { params.gbode }
         }
         steps {
-          test('master', 'gbode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '-override="solver=gbode"', false, false)
+          test('master', 'gbode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '-s gbode', false, false)
         }
       }
       stage('C++ v1.18') {
