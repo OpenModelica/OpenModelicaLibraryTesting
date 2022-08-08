@@ -466,6 +466,7 @@ pipeline {
         environment {
           GITBRANCHES = 'maintenance/v1.12 maintenance/v1.13 maintenance/v1.14 maintenance/v1.16 maintenance/v1.17 maintenance/v1.18 maintenance/v1.19 master'
           PYTHONIOENCODING = 'utf-8'
+          IDA_EMAIL = credentials('IDA email')
         }
         steps {
           sh 'rm -rf sqlite3.db *.html history'
@@ -519,6 +520,7 @@ pipeline {
           GITBRANCHES_DAE = 'daemode newInst-daemode'
           GITBRANCHES_CPP = 'v1.18-cpp v1.19-cpp cpp'
           PYTHONIOENCODING = 'utf-8'
+          IDA_EMAIL = credentials('IDA email')
         }
         steps {
           sh 'rm -f sqlite3.db *.html'

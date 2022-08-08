@@ -261,5 +261,8 @@ The following reports contain regressions your account was involved with:
 </body>
 </html>
 """ % "\n".join(reversed(emails_to_send[email]["html"])), subtype='html')
-  with smtplib.SMTP('test.openmodelica.org') as s:
+  with smtplib.SMTP('smtp.office365.com') as s:
+    s.starttls()
+    s.ehlo()
+    s.login(os.environ["$IDA_EMAIL_USR"],os.environ["$IDA_EMAIL_PSW"])
     s.send_message(msg)
