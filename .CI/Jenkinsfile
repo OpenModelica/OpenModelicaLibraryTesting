@@ -467,6 +467,7 @@ pipeline {
           GITBRANCHES = 'maintenance/v1.12 maintenance/v1.13 maintenance/v1.14 maintenance/v1.16 maintenance/v1.17 maintenance/v1.18 maintenance/v1.19 master'
           PYTHONIOENCODING = 'utf-8'
           IDA_EMAIL = credentials('IDA email')
+          args '-e IDA_EMAIL_USR=$IDA_EMAIL_USR -e IDA_EMAIL_PSW=$IDA_EMAIL_PSW'
         }
         steps {
           sh 'rm -rf sqlite3.db *.html history'
@@ -508,6 +509,7 @@ pipeline {
             label 'linux'
             dir '.CI/build-dep'
             customWorkspace 'ws/OpenModelicaLibraryTestingReport'
+            args '-e IDA_EMAIL_USR=$IDA_EMAIL_USR -e IDA_EMAIL_PSW=$IDA_EMAIL_PSW'
           }
         }
         when {
