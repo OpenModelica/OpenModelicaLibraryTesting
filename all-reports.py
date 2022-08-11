@@ -264,5 +264,5 @@ The following reports contain regressions your account was involved with:
   with smtplib.SMTP('smtp.office365.com') as s:
     s.starttls()
     s.ehlo()
-    s.login(os.environ["$IDA_EMAIL_USR"],os.environ["$IDA_EMAIL_PSW"])
+    s.login(os.environ["IDA_EMAIL_USR"],os.environ["IDA_EMAIL_PSW"])
     s.send_message(msg)
