@@ -164,13 +164,16 @@ def convertPackage(p):
     diffOutputFile = "converted-libraries/.openmodelica/libraries/%s.diff" % libnameOnFile
     print("Creating %s" % diffOutputFile)
     with open(diffOutputFile, "wb") as diffOut:
-      diffOutput = subprocess.call(["diff", "-ur", os.path.dirname(p), "converted-libraries/.openmodelica/libraries/%s" % libnameOnFile], stdout=diffOut)
+      diffOutput = subprocess.call(["diff", "-ur", "--exclude", "openmodelica.metadata.json", os.path.dirname(p), "converted-libraries/.openmodelica/libraries/%s" % libnameOnFile], stdout=diffOut)
   del omc
   return {"errorsInDiff": errorsInDiff, "path": path, "timeForConversion": timeForConversion, "statsByFile": statsByFile, "gcProfStatsBeforeConversion": gcProfStatsBeforeConversion, "gcProfStatsBefore": gcProfStatsBefore, "gcProfStats": gcProfStats}
 
 pat = "%s/*/openmodelica.metadata.json" % libdir
-with Pool(processes=numThreads) as pool:
-  res = pool.map(convertPackage, sorted(glob.glob(pat)))
+if numThreads==1:
+  res = [convertPackage(p) for p in sorted(glob.glob(pat))]
+else:
+  with Pool(processes=numThreads) as pool:
+    res = pool.map(convertPackage, sorted(glob.glob(pat)))
 for r in res:
   if r is None:
     continue
