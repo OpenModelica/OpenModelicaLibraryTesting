@@ -99,9 +99,8 @@
   },
   {
     "library":"AixLib",
-    "libraryVersion":"master",
-    "libraryVersionNameForTests":"latest",
-    "forceNewHash":20210701
+    "libraryVersion":"development",
+    "libraryVersionNameForTests":"latest"
   },
   {
     "library":"IBPSA",
