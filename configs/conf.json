@@ -154,6 +154,9 @@
     "referenceFiles":"/mnt/ReferenceFiles/ExtraLibs/clara_om.git/ReferenceResults"
   },
   {
+    "library":"Credibility"
+  },
+  {
     "library":"ElectricalEnergyStorage"
   },
   {

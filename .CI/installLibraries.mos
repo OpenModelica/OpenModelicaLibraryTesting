@@ -28,6 +28,7 @@ for l in {
   {"AixLib", "development"},
   {"Annex60", ""},
   {"BLDC", ""},
+  {"Credibility", ""},
   {"ExtendedPetriNets", ""},
   {"FluxTubesExtension","main"},
   {"IDEAS", ""},
