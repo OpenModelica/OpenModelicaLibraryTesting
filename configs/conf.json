@@ -123,7 +123,8 @@
     "library":"Buildings",
     "ignoreModelPrefix":"Buildings.Utilities.IO.BCVTB.Examples",
     "libraryVersion":"master",
-    "libraryVersionNameForTests":"latest"
+    "libraryVersionNameForTests":"latest",
+    "runOnceBeforeTesting":[["$resourceLocation/src/ThermalZones/install.py", "--binaries-for-os-only"]]
   },
   {
     "library":"BuildingSystems",

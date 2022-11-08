@@ -474,10 +474,17 @@ for (library,conf) in configs:
   if not (omc.sendExpression('setCommandLineOptions("-g=MetaModelica")') or omc.sendExpression('setCommandLineOptions("+g=Modelica")')):
     print("Failed to set MetaModelica grammar")
     sys.exit(1)
+  
   try:
-    conf["resourceLocation"]=omc.sendExpression('uriToFilename("modelica://%s/Resources")' % library)[0]
+    conf["resourceLocation"]=omc.sendExpression('uriToFilename("modelica://%s/Resources")' % library)
   except:
     conf["resourceLocation"]=""
+  
+  if "runOnceBeforeTesting" in conf:
+    for cmd in conf["runOnceBeforeTesting"]:
+      # replace the resource location in the command if present
+      cmd = [c.replace("$resourceLocation", conf["resourceLocation"]) for c in cmd]
+      subprocess.check_call(cmd, stderr=subprocess.STDOUT)
 
   conf["libraryVersionRevision"]=omc.sendExpression('getVersion(%s)' % library)
   librarySourceFile=omc.sendExpression('getSourceFile(%s)' % library)

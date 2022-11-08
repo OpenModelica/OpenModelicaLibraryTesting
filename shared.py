@@ -9,6 +9,7 @@ def fixData(data,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCom
     if key not in data:
       data[key] = default
   try:
+    data["runOnceBeforeTesting"] = (data.get("runOnceBeforeTesting") or [])
     data["simCodeTarget"] = data.get("simCodeTarget") or "C"
     data["referenceFileExtension"] = data.get("referenceFileExtension") or "mat"
     data["referenceFileNameDelimiter"] = data.get("referenceFileNameDelimiter") or "."
