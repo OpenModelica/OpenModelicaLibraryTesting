@@ -117,14 +117,20 @@
     "ignoreModelPrefix":"Buildings.Utilities.IO.BCVTB.Examples",
     "libraryVersionNameForTests":"8",
     "libraryVersion":"maint.8.1.x",
-    "libraryVersionLatestInPackageManager":true
+    "libraryVersionLatestInPackageManager":true,
+    "referenceFileExtension":"csv",
+    "referenceFileNameDelimiter":"_",
+    "referenceFiles":"/mnt/ReferenceFiles/Buildings/csv"
   },
   {
     "library":"Buildings",
     "ignoreModelPrefix":"Buildings.Utilities.IO.BCVTB.Examples",
     "libraryVersion":"master",
     "libraryVersionNameForTests":"latest",
-    "runOnceBeforeTesting":[["$resourceLocation/src/ThermalZones/install.py", "--binaries-for-os-only"]]
+    "runOnceBeforeTesting":[["$resourceLocation/src/ThermalZones/install.py", "--binaries-for-os-only"]],
+    "referenceFileExtension":"csv",
+    "referenceFileNameDelimiter":"_",
+    "referenceFiles":"/mnt/ReferenceFiles/Buildings/csv"
   },
   {
     "library":"BuildingSystems",
