@@ -117,10 +117,7 @@
     "ignoreModelPrefix":"Buildings.Utilities.IO.BCVTB.Examples",
     "libraryVersionNameForTests":"8",
     "libraryVersion":"maint.8.1.x",
-    "libraryVersionLatestInPackageManager":true,
-    "referenceFileExtension":"csv",
-    "referenceFileNameDelimiter":"_",
-    "referenceFiles":"/mnt/ReferenceFiles/Buildings/csv"
+    "libraryVersionLatestInPackageManager":true
   },
   {
     "library":"Buildings",

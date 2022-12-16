@@ -15,10 +15,7 @@
     "library":"Buildings",
     "ignoreModelPrefix":"Buildings.Utilities.IO.BCVTB.Examples",
     "libraryVersion":"maint.7.0.x",
-    "libraryVersionLatestInPackageManager":true,
-    "referenceFileExtension":"csv",
-    "referenceFileNameDelimiter":"_",
-    "referenceFiles":"/mnt/ReferenceFiles/Buildings/csv"
+    "libraryVersionLatestInPackageManager":true
   },
   {
     "library":"iPSL"
