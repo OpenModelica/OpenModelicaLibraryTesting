@@ -122,6 +122,13 @@
   {
     "library":"Buildings",
     "ignoreModelPrefix":"Buildings.Utilities.IO.BCVTB.Examples",
+    "libraryVersionNameForTests":"9",
+    "libraryVersion":"maint.9.1.x",
+    "libraryVersionLatestInPackageManager":true
+  },
+  {
+    "library":"Buildings",
+    "ignoreModelPrefix":"Buildings.Utilities.IO.BCVTB.Examples",
     "libraryVersion":"master",
     "libraryVersionNameForTests":"latest",
     "runOnceBeforeTesting":[["$resourceLocation/src/ThermalZones/install.py", "--binaries-for-os-only"]],
