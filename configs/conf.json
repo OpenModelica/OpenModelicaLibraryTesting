@@ -99,6 +99,9 @@
   },
   {
     "library":"AixLib",
+  },
+  {
+    "library":"AixLib",
     "libraryVersion":"development",
     "libraryVersionNameForTests":"latest"
   },
