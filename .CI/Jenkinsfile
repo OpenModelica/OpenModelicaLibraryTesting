@@ -10,7 +10,7 @@ pipeline {
     booleanParam(name: 'v1_17', defaultValue: false, description: 'maintenance/v1.17 branch (ryzen-5950x-1)')
     booleanParam(name: 'v1_18', defaultValue: false, description: 'maintenance/v1.18 branch (ryzen-5950x-1)')
     booleanParam(name: 'v1_19', defaultValue: false, description: 'maintenance/v1.19 branch (ryzen-5950x-1)')
-    booleanParam(name: 'v1_20', defaultValue: false, description: 'maintenance/v1.20 branch (ryzen-5950x-1)')    
+    booleanParam(name: 'v1_20', defaultValue: false, description: 'maintenance/v1.20 branch (ryzen-5950x-1)')
     booleanParam(name: 'master', defaultValue: false, description: 'master branch (ryzen-5950x-1)')
 
     booleanParam(name: 'fmi_v1_12', defaultValue: false, description: 'maintenance/v1.12 branch with FMI (ryzen-5950x-2)')
@@ -144,7 +144,7 @@ pipeline {
           test('maintenance/v1.18', 'v1.18', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
-      
+
       stage('v1.19') {
         agent {
           node {
@@ -641,7 +641,7 @@ pipeline {
 
           sh "./report.py --branches='cvode' configs/conf.json"
           sh "mv overview.html overview-cvode.html"
-          
+
           sh "./report.py --branches='gbode' configs/conf.json"
           sh "mv overview.html overview-gbode.html"
 
@@ -879,9 +879,9 @@ def test(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, omcompiler, ext
 
   mkdir -p "/var/www/libraries.openmodelica.org/branches/${name}/"
   """
-  
+
   def libraryPath = installLibraries(removePackageOrder, conversionScript, name, "${WORKSPACE}/OpenModelica/${OMCPATH}/build")
-  
+
   sh "test -d '${libraryPath}/.openmodelica/libraries/Modelica trunk'"
 
   sh """
