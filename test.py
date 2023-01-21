@@ -118,12 +118,20 @@ docker = args.docker
 librariespath = args.libraries
 overrideDefaults = [arg.split("=", 1) for arg in args.default]
 
+
 # If -j=0 is specified (or -j is not specified, defaults to 0) then use all available physical CPUS.
 if n_jobs == 0:
   n_jobs = psutil.cpu_count(logical=False)
 
-print("branch: %s, n_jobs: %d" % (branch, n_jobs))
+# If we are running one test at a time assume that omc is allowed to use multiple
+# threads for each individual test.
+if n_jobs == 1:
+  single_thread="" # Alternative: single_thread="-n=0"
+else:
+  single_thread="-n=1"
 
+
+print("branch: %s, n_jobs: %d" % (branch, n_jobs))
 
 if clean:
   print("Removing temporary files, etc to the best ability of the script")
@@ -160,7 +168,6 @@ if configs == []:
 from OMPython import OMCSession, OMCSessionZMQ
 
 version_cmd = "--version"
-single_thread="-n=1"
 
 # Try to make the processes a bit nicer...
 os.environ["GC_MARKERS"]="1"
@@ -196,7 +203,6 @@ sys.stdout.flush()
 # Do feature checks. Handle things like old RML-style arguments...
 
 subprocess.check_output(omc_cmd + ["-n=1", version_cmd], stderr=subprocess.STDOUT).strip()
-single_thread="-n=1"
 
 sys.stdout.flush()
 
