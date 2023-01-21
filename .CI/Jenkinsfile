@@ -56,7 +56,7 @@ pipeline {
           expression { params.v1_12 }
         }
         steps {
-          test('maintenance/v1.12', 'v1.12', '', '', 'ripper1', 'LibraryTestingRipper1DB', true, '', true, false)
+          runRegressiontest('maintenance/v1.12', 'v1.12', '', '', 'ripper1', 'LibraryTestingRipper1DB', true, '', true, false)
         }
       }
 
@@ -73,7 +73,7 @@ pipeline {
           expression { params.v1_13 }
         }
         steps {
-          test('maintenance/v1.13', 'v1.13', '', '', 'ripper1', 'LibraryTestingRipper1DB', true, '', true, false)
+          runRegressiontest('maintenance/v1.13', 'v1.13', '', '', 'ripper1', 'LibraryTestingRipper1DB', true, '', true, false)
         }
       }
 
@@ -90,7 +90,7 @@ pipeline {
           expression { params.v1_14 }
         }
         steps {
-          test('maintenance/v1.14', 'v1.14', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', true, false)
+          runRegressiontest('maintenance/v1.14', 'v1.14', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', true, false)
         }
       }
 
@@ -107,7 +107,7 @@ pipeline {
           expression { params.v1_16 }
         }
         steps {
-          test('maintenance/v1.16', 'v1.16', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
+          runRegressiontest('maintenance/v1.16', 'v1.16', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
 
@@ -124,7 +124,7 @@ pipeline {
           expression { params.v1_17 }
         }
         steps {
-          test('maintenance/v1.17', 'v1.17', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
+          runRegressiontest('maintenance/v1.17', 'v1.17', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
 
@@ -141,7 +141,7 @@ pipeline {
           expression { params.v1_18 }
         }
         steps {
-          test('maintenance/v1.18', 'v1.18', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
+          runRegressiontest('maintenance/v1.18', 'v1.18', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
 
@@ -158,7 +158,7 @@ pipeline {
           expression { params.v1_19 }
         }
         steps {
-          test('maintenance/v1.19', 'v1.19', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
+          runRegressiontest('maintenance/v1.19', 'v1.19', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
 
@@ -175,7 +175,7 @@ pipeline {
           expression { params.v1_20 }
         }
         steps {
-          test('maintenance/v1.20', 'v1.20', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
+          runRegressiontest('maintenance/v1.20', 'v1.20', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
 
@@ -192,7 +192,7 @@ pipeline {
           expression { params.master }
         }
         steps {
-          test('master', 'master', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
+          runRegressiontest('master', 'master', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
 
@@ -209,7 +209,7 @@ pipeline {
           expression { params.conversion_script }
         }
         steps {
-          test('master', 'conversion', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, true)
+          runRegressiontest('master', 'conversion', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, true)
         }
       }
 
@@ -226,7 +226,7 @@ pipeline {
           expression { params.newInst_newBackend }
         }
         steps {
-          test('master', 'newInst-newBackend', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --newBackend")', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
+          runRegressiontest('master', 'newInst-newBackend', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --newBackend")', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
 
@@ -243,7 +243,7 @@ pipeline {
           expression { params.fmi_v1_12 }
         }
         steps {
-          test('maintenance/v1.12', 'v1.12-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', true, '', true, false)
+          runRegressiontest('maintenance/v1.12', 'v1.12-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', true, '', true, false)
         }
       }
       stage('v1.13 FMI') {
@@ -259,7 +259,7 @@ pipeline {
           expression { params.fmi_v1_13 }
         }
         steps {
-          test('maintenance/v1.13', 'v1.13-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', true, '', true, false)
+          runRegressiontest('maintenance/v1.13', 'v1.13-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', true, '', true, false)
         }
       }
       stage('v1.14 FMI') {
@@ -275,7 +275,7 @@ pipeline {
           expression { params.fmi_v1_14 }
         }
         steps {
-          test('maintenance/v1.14', 'v1.14-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', true, false)
+          runRegressiontest('maintenance/v1.14', 'v1.14-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', true, false)
         }
       }
       stage('v1.16 FMI') {
@@ -291,7 +291,7 @@ pipeline {
           expression { params.fmi_v1_16 }
         }
         steps {
-          test('maintenance/v1.16', 'v1.16-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('maintenance/v1.16', 'v1.16-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('v1.17 FMI') {
@@ -307,7 +307,7 @@ pipeline {
           expression { params.fmi_v1_17 }
         }
         steps {
-          test('maintenance/v1.17', 'v1.17-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('maintenance/v1.17', 'v1.17-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('v1.18 FMI') {
@@ -323,7 +323,7 @@ pipeline {
           expression { params.fmi_v1_18 }
         }
         steps {
-          test('maintenance/v1.18', 'v1.18-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('maintenance/v1.18', 'v1.18-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('v1.19 FMI') {
@@ -339,7 +339,7 @@ pipeline {
           expression { params.fmi_v1_19 }
         }
         steps {
-          test('maintenance/v1.19', 'v1.19-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('maintenance/v1.19', 'v1.19-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('v1.20 FMI') {
@@ -355,7 +355,7 @@ pipeline {
           expression { params.fmi_v1_20 }
         }
         steps {
-          test('maintenance/v1.20', 'v1.20-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('maintenance/v1.20', 'v1.20-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('master FMI') {
@@ -371,7 +371,7 @@ pipeline {
           expression { params.fmi_master }
         }
         steps {
-          test('master', 'master-fmi', '', 'origin/master', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('master', 'master-fmi', '', 'origin/master', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('newInst-daeMode') {
@@ -387,7 +387,7 @@ pipeline {
           expression { params.newInst_daeMode }
         }
         steps {
-          test('master', 'newInst-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --daeMode=true")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('master', 'newInst-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --daeMode=true")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('oldInst') {
@@ -403,7 +403,7 @@ pipeline {
           expression { params.oldInst }
         }
         steps {
-          test('master', 'oldInst', 'setCommandLineOptions("-d=nonewInst")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('master', 'oldInst', 'setCommandLineOptions("-d=nonewInst")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('cvode') {
@@ -419,7 +419,7 @@ pipeline {
           expression { params.cvode }
         }
         steps {
-          test('master', 'cvode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '-s cvode', false, false)
+          runRegressiontest('master', 'cvode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '-s cvode', false, false)
         }
       }
       stage('gbode') {
@@ -435,7 +435,7 @@ pipeline {
           expression { params.gbode }
         }
         steps {
-          test('master', 'gbode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '-s gbode', false, false)
+          runRegressiontest('master', 'gbode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '-s gbode', false, false)
         }
       }
       stage('generateSymbolicJacobian') {
@@ -451,7 +451,7 @@ pipeline {
           expression { params.generateSymbolicJacobian }
         }
         steps {
-          test('master', 'generateSymbolicJacobian', 'setCommandLineOptions("--generateSymbolicJacobian")', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
+          runRegressiontest('master', 'generateSymbolicJacobian', 'setCommandLineOptions("--generateSymbolicJacobian")', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
       stage('C++ v1.18') {
@@ -467,7 +467,7 @@ pipeline {
           expression { params.cpp_v1_18 }
         }
         steps {
-          test('maintenance/v1.18', 'v1.18-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('maintenance/v1.18', 'v1.18-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('C++ v1.19') {
@@ -483,7 +483,7 @@ pipeline {
           expression { params.cpp_v1_19 }
         }
         steps {
-          test('maintenance/v1.19', 'v1.19-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('maintenance/v1.19', 'v1.19-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('C++ v1.20') {
@@ -499,7 +499,7 @@ pipeline {
           expression { params.cpp_v1_20 }
         }
         steps {
-          test('maintenance/v1.20', 'v1.20-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('maintenance/v1.20', 'v1.20-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('C++') {
@@ -515,7 +515,7 @@ pipeline {
           expression { params.cpp }
         }
         steps {
-          test('master', 'cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('master', 'cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
     } }
@@ -719,7 +719,7 @@ def installLibraries(boolean removePackageOrder, boolean conversionScript, name,
     return "${env.HOME}/saved_omc/libraries"
   }
 }
-def test(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, omcompiler, extrasimflags, boolean removePackageOrder, boolean conversionScript) {
+def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, omcompiler, extrasimflags, boolean removePackageOrder, boolean conversionScript) {
   sh '''
   find /tmp  -name "*openmodelica.hudson*" -exec rm {} ";" || true
   mkdir -p ~/TEST_LIBS_BACKUP
