@@ -36,6 +36,7 @@ pipeline {
     booleanParam(name: 'cvode', defaultValue: false, description: 'master branch, with -d=newInst and -s cvode (ryzen-5950x-2). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'gbode', defaultValue: false, description: 'master branch, with -d=newInst and -s gbode (ryzen-5950x-2). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'generateSymbolicJacobian', defaultValue: false, description: 'master branch, with --generateSymbolicJacobian (ryzen-5950x-1). This is an experimental job that does not run on a fixed schedule.')
+    booleanParam(name: 'heavy_tests', defaultValue: false, description: 'master branch, runs one test at a time. That is, no parallel launching of tests. omc will use multiple threads for each test (-n=1 is not set unlike the other regression tests.), (ryzen-5950x-2). This is an experimental job that does not run on a fixed schedule.')
   }
   environment {
     LC_ALL = 'C.UTF-8'
@@ -454,6 +455,22 @@ pipeline {
           runRegressiontest('master', 'generateSymbolicJacobian', 'setCommandLineOptions("--generateSymbolicJacobian")', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
+      stage('heavy_tests') {
+        agent {
+          node {
+            label 'ryzen-5950x-2-1'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.heavy_tests }
+        }
+        steps {
+          runRegressiontest('master', 'heavy_tests', '', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false, 1)
+        }
+      }
       stage('C++ v1.18') {
         agent {
           node {
@@ -587,7 +604,7 @@ pipeline {
         }
         when {
           beforeAgent true
-          expression { params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_v1_14 || params.fmi_v1_16 || params.fmi_v1_17 || params.fmi_master || params.newInst_daeMode  || params.oldInst || params.report_ryzen_5950x_2 || params.cpp || params.cvode || params.gbode}
+          expression { params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_v1_14 || params.fmi_v1_16 || params.fmi_v1_17 || params.fmi_master || params.newInst_daeMode  || params.oldInst || params.report_ryzen_5950x_2 || params.cpp || params.cvode || params.gbode || params.heavy_tests}
         }
         environment {
           GITBRANCHES_FMI = 'maintenance/v1.12-fmi maintenance/v1.13-fmi maintenance/v1.14-fmi maintenance/v1.16-fmi maintenance/v1.17-fmi maintenance/v1.18-fmi maintenance/v1.19-fmi maintenance/v1.20-fmi master-fmi'
@@ -644,6 +661,9 @@ pipeline {
 
           sh "./report.py --branches='gbode' configs/conf.json"
           sh "mv overview.html overview-gbode.html"
+
+          sh "./report.py --branches='heavy_tests' configs/conf.json"
+          sh "mv overview.html overview-heavy_tests.html"
 
           sh "./report.py --branches='${env.GITBRANCHES_CPP}' configs/conf.json"
           sh "mv overview.html overview-c++.html"
