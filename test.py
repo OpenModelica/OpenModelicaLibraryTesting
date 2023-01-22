@@ -100,13 +100,13 @@ parser.add_argument('--noclean', action="store_true", default=False)
 parser.add_argument('--fmisimulator', default='')
 parser.add_argument('--ulimitvmem', help="Virtual memory limit (in kB)", type=int, default=8*1024*1024)
 parser.add_argument('--default', action='append', help="Add a default value for some configuration key, such as --default=ulimitExe=60. The equals sign is mandatory.", default=[])
-parser.add_argument('-n', default=psutil.cpu_count(logical=False))
+parser.add_argument('-j', '--jobs', default=0)
 
 args = parser.parse_args()
 configs = args.configs
 branch = args.branch
 result_location = args.output
-n_jobs = int(args.n)
+n_jobs = int(args.jobs)
 clean = not args.noclean
 extraflags = args.extraflags
 extrasimflags = args.extrasimflags
@@ -117,7 +117,22 @@ ulimitMemory = args.ulimitvmem
 docker = args.docker
 librariespath = args.libraries
 overrideDefaults = [arg.split("=", 1) for arg in args.default]
+
+
+# If -j=0 is specified (or -j is not specified, defaults to 0) then use all available physical CPUS.
+if n_jobs == 0:
+  n_jobs = psutil.cpu_count(logical=False)
+
+# If we are running one test at a time assume that omc is allowed to use multiple
+# threads for each individual test.
+if n_jobs == 1:
+  single_thread="" # Alternative: single_thread="-n=0"
+else:
+  single_thread="-n=1"
+
+
 print("branch: %s, n_jobs: %d" % (branch, n_jobs))
+
 if clean:
   print("Removing temporary files, etc to the best ability of the script")
 
@@ -153,7 +168,6 @@ if configs == []:
 from OMPython import OMCSession, OMCSessionZMQ
 
 version_cmd = "--version"
-single_thread="-n=1"
 
 # Try to make the processes a bit nicer...
 os.environ["GC_MARKERS"]="1"
@@ -189,7 +203,6 @@ sys.stdout.flush()
 # Do feature checks. Handle things like old RML-style arguments...
 
 subprocess.check_output(omc_cmd + ["-n=1", version_cmd], stderr=subprocess.STDOUT).strip()
-single_thread="-n=1"
 
 sys.stdout.flush()
 
@@ -474,12 +487,12 @@ for (library,conf) in configs:
   if not (omc.sendExpression('setCommandLineOptions("-g=MetaModelica")') or omc.sendExpression('setCommandLineOptions("+g=Modelica")')):
     print("Failed to set MetaModelica grammar")
     sys.exit(1)
-  
+
   try:
     conf["resourceLocation"]=omc.sendExpression('uriToFilename("modelica://%s/Resources")' % library)
   except:
     conf["resourceLocation"]=""
-  
+
   if "runOnceBeforeTesting" in conf:
     for cmd in conf["runOnceBeforeTesting"]:
       # replace the resource location in the command if present
