@@ -111,7 +111,7 @@ defining `MSLREFERENCE` and `REFERENCEFILES`.
 Some result file locations:
   - Modelica Association: https://github.com/modelica/MAP-LIB_ReferenceResults
   - PNLib: https://github.com/AMIT-FHBielefeld/PNlib
-  - DLR-SR: https://github.com/DLR-SR/ThermoFluidStream-Regression.git and https://github.com/DLR-SR/ThermoFluidStream-Regression.git
+  - DLR-SR: https://github.com/DLR-SR/ThermoFluidStream-Regression.git and https://github.com/DLR-SR/PlanarMechanics_ReferenceResults.git
 
 
 To download the MSL reference files create a file
