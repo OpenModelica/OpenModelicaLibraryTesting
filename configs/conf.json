@@ -127,7 +127,10 @@
     "ignoreModelPrefix":"Buildings.Utilities.IO.BCVTB.Examples",
     "libraryVersionNameForTests":"9",
     "libraryVersion":"maint.9.1.x",
-    "libraryVersionLatestInPackageManager":true
+    "libraryVersionLatestInPackageManager":true,
+    "referenceFileExtension":"csv",
+    "referenceFileNameDelimiter":"_",
+    "referenceFiles":"/mnt/ReferenceFiles/Buildings/csv/maint_9.1.x"
   },
   {
     "library":"Buildings",
@@ -137,7 +140,7 @@
     "runOnceBeforeTesting":[["$resourceLocation/src/ThermalZones/install.py", "--binaries-for-os-only"]],
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"_",
-    "referenceFiles":"/mnt/ReferenceFiles/Buildings/csv"
+    "referenceFiles":"/mnt/ReferenceFiles/Buildings/csv/master"
   },
   {
     "library":"BuildingSystems",
