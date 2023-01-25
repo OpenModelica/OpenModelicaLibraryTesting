@@ -468,7 +468,7 @@ pipeline {
           expression { params.heavy_tests }
         }
         steps {
-            runRegressiontest('master', 'heavy_tests', '', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false, 'configs/conf.json', 1)
+            runRegressiontest('master', 'heavy_tests', '', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false, 1)
         }
       }
       stage('C++ v1.18') {
@@ -746,7 +746,7 @@ def installLibraries(boolean removePackageOrder, boolean conversionScript, name,
   * @param jobs: The number of tests/jobs to launch in parallel.
                  By default this is set to 0 which means launch as many tests as there are available physical cpus on the machine'.
   */
-def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, omcompiler, extrasimflags, boolean removePackageOrder, boolean conversionScript, libs_config_file = 'configs/conf.json', int jobs=0) {
+def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, omcompiler, extrasimflags, boolean removePackageOrder, boolean conversionScript, int jobs=0) {
   sh '''
   find /tmp  -name "*openmodelica.hudson*" -exec rm {} ";" || true
   mkdir -p ~/TEST_LIBS_BACKUP
@@ -933,7 +933,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
   export HOME="${libraryPath}"
   cd OpenModelicaLibraryTesting
   # Force /usr/bin/omc as being used for generating the mos-files. Ensures consistent behavior among all tested OMC versions
-  stdbuf -oL -eL time ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags='${extraFlags}' --extrasimflags='${extrasimflags}' --branch="${name}" --output="libraries.openmodelica.org:/var/www/libraries.openmodelica.org/branches/${name}/" --libraries='${libraryPath}/.openmodelica/libraries/' --jobs=${jobs} ${libs_config_file} ${params.OLDLIBS ? "configs/conf-old.json configs/conf-nonstandard.json" : ""} || (killall omc ; false) || exit 1
+  stdbuf -oL -eL time ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags='${extraFlags}' --extrasimflags='${extrasimflags}' --branch="${name}" --output="libraries.openmodelica.org:/var/www/libraries.openmodelica.org/branches/${name}/" --libraries='${libraryPath}/.openmodelica/libraries/' --jobs=${jobs} configs/conf.json ${params.OLDLIBS ? "configs/conf-old.json configs/conf-nonstandard.json" : ""} || (killall omc ; false) || exit 1
   """
   sh 'date'
   sh "rm -f OpenModelicaLibraryTesting/${dbPrefix}-sqlite3.db.tmp"
