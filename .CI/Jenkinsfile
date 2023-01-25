@@ -57,18 +57,7 @@ pipeline {
           expression { params.v1_12 }
         }
         steps {
-          runRegressiontest(branch: 'maintenance/v1.12',
-                            name: 'v1.12',
-                            extraFlags: '',
-                            omsHash: '',
-                            dbPrefix: 'ripper1',
-                            sshConfig: 'LibraryTestingRipper1DB',
-                            omcompiler: true,
-                            extrasimflags: '',
-                            removePackageOrder: true,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('maintenance/v1.12', 'v1.12', '', '', 'ripper1', 'LibraryTestingRipper1DB', true, '', true, false)
         }
       }
 
@@ -85,18 +74,7 @@ pipeline {
           expression { params.v1_13 }
         }
         steps {
-          runRegressiontest(branch: 'maintenance/v1.13',
-                            name: 'v1.13',
-                            extraFlags: '',
-                            omsHash: '',
-                            dbPrefix: 'ripper1',
-                            sshConfig: 'LibraryTestingRipper1DB',
-                            omcompiler: true,
-                            extrasimflags: '',
-                            removePackageOrder: true,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('maintenance/v1.13', 'v1.13', '', '', 'ripper1', 'LibraryTestingRipper1DB', true, '', true, false)
         }
       }
 
@@ -113,18 +91,7 @@ pipeline {
           expression { params.v1_14 }
         }
         steps {
-          runRegressiontest(branch: 'maintenance/v1.14',
-                            name: 'v1.14',
-                            extraFlags: '',
-                            omsHash: '',
-                            dbPrefix: 'ripper1',
-                            sshConfig: 'LibraryTestingRipper1DB',
-                            omcompiler: false,
-                            extrasimflags: '',
-                            removePackageOrder: true,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('maintenance/v1.14', 'v1.14', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', true, false)
         }
       }
 
@@ -141,18 +108,7 @@ pipeline {
           expression { params.v1_16 }
         }
         steps {
-          runRegressiontest(branch: 'maintenance/v1.16',
-                            name: 'v1.16',
-                            extraFlags: '',
-                            omsHash: '',
-                            dbPrefix: 'ripper1',
-                            sshConfig: 'LibraryTestingRipper1DB',
-                            omcompiler: false,
-                            extrasimflags: '',
-                            removePackageOrder: false,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('maintenance/v1.16', 'v1.16', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
 
@@ -169,18 +125,7 @@ pipeline {
           expression { params.v1_17 }
         }
         steps {
-          runRegressiontest(branch: 'maintenance/v1.17',
-                            name: 'v1.17',
-                            extraFlags: '',
-                            omsHash: '',
-                            dbPrefix: 'ripper1',
-                            sshConfig: 'LibraryTestingRipper1DB',
-                            omcompiler: false,
-                            extrasimflags: '',
-                            removePackageOrder: false,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('maintenance/v1.17', 'v1.17', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
 
@@ -197,18 +142,7 @@ pipeline {
           expression { params.v1_18 }
         }
         steps {
-          runRegressiontest(branch: 'maintenance/v1.18',
-                            name: 'v1.18',
-                            extraFlags: '',
-                            omsHash: '',
-                            dbPrefix: 'ripper1',
-                            sshConfig: 'LibraryTestingRipper1DB',
-                            omcompiler: false,
-                            extrasimflags: '',
-                            removePackageOrder: false,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('maintenance/v1.18', 'v1.18', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
 
@@ -225,18 +159,7 @@ pipeline {
           expression { params.v1_19 }
         }
         steps {
-          runRegressiontest(branch: 'maintenance/v1.19',
-                            name: 'v1.19',
-                            extraFlags: '',
-                            omsHash: '',
-                            dbPrefix: 'ripper1',
-                            sshConfig: 'LibraryTestingRipper1DB',
-                            omcompiler: false,
-                            extrasimflags: '',
-                            removePackageOrder: false,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('maintenance/v1.19', 'v1.19', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
 
@@ -253,18 +176,7 @@ pipeline {
           expression { params.v1_20 }
         }
         steps {
-          runRegressiontest(branch: 'maintenance/v1.20',
-                            name: 'v1.20',
-                            extraFlags: '',
-                            omsHash: '',
-                            dbPrefix: 'ripper1',
-                            sshConfig: 'LibraryTestingRipper1DB',
-                            omcompiler: false,
-                            extrasimflags: '',
-                            removePackageOrder: false,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('maintenance/v1.20', 'v1.20', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
 
@@ -281,18 +193,7 @@ pipeline {
           expression { params.master }
         }
         steps {
-          runRegressiontest(branch: 'master',
-                            name: 'master',
-                            extraFlags: '',
-                            omsHash: '',
-                            dbPrefix: 'ripper1',
-                            sshConfig: 'LibraryTestingRipper1DB',
-                            omcompiler: false,
-                            extrasimflags: '',
-                            removePackageOrder: false,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('master', 'master', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
 
@@ -309,18 +210,7 @@ pipeline {
           expression { params.conversion_script }
         }
         steps {
-          runRegressiontest(branch: 'master',
-                            name: 'conversion',
-                            extraFlags: '',
-                            omsHash: '',
-                            dbPrefix: 'ripper1',
-                            sshConfig: 'LibraryTestingRipper1DB',
-                            omcompiler: false,
-                            extrasimflags: '',
-                            removePackageOrder: false,
-                            conversionScript: true,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('master', 'conversion', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, true)
         }
       }
 
@@ -337,18 +227,7 @@ pipeline {
           expression { params.newInst_newBackend }
         }
         steps {
-          runRegressiontest(branch: 'master',
-                            name: 'newInst-newBackend',
-                            extraFlags: 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --newBackend")',
-                            omsHash: '',
-                            dbPrefix: 'ripper1',
-                            sshConfig: 'LibraryTestingRipper1DB',
-                            omcompiler: false,
-                            extrasimflags: '',
-                            removePackageOrder: false,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('master', 'newInst-newBackend', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --newBackend")', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
 
@@ -365,18 +244,7 @@ pipeline {
           expression { params.fmi_v1_12 }
         }
         steps {
-          runRegressiontest(branch: 'maintenance/v1.12',
-                            name: 'v1.12-fmi',
-                            extraFlags: '',
-                            omsHash: omsimulatorHash(),
-                            dbPrefix: 'ripper2',
-                            sshConfig: 'LibraryTestingRipper2DB',
-                            omcompiler: true,
-                            extrasimflags: '',
-                            removePackageOrder: true,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('maintenance/v1.12', 'v1.12-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', true, '', true, false)
         }
       }
       stage('v1.13 FMI') {
@@ -392,18 +260,7 @@ pipeline {
           expression { params.fmi_v1_13 }
         }
         steps {
-          runRegressiontest(branch: 'maintenance/v1.13',
-                            name: 'v1.13-fmi',
-                            extraFlags: '',
-                            omsHash: omsimulatorHash(),
-                            dbPrefix: 'ripper2',
-                            sshConfig: 'LibraryTestingRipper2DB',
-                            omcompiler: true,
-                            extrasimflags: '',
-                            removePackageOrder: true,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('maintenance/v1.13', 'v1.13-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', true, '', true, false)
         }
       }
       stage('v1.14 FMI') {
@@ -419,18 +276,7 @@ pipeline {
           expression { params.fmi_v1_14 }
         }
         steps {
-          runRegressiontest(branch: 'maintenance/v1.14',
-                            name: 'v1.14-fmi',
-                            extraFlags: '',
-                            omsHash: omsimulatorHash(),
-                            dbPrefix: 'ripper2',
-                            sshConfig: 'LibraryTestingRipper2DB',
-                            omcompiler: false,
-                            extrasimflags: '',
-                            removePackageOrder: true,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('maintenance/v1.14', 'v1.14-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', true, false)
         }
       }
       stage('v1.16 FMI') {
@@ -446,18 +292,7 @@ pipeline {
           expression { params.fmi_v1_16 }
         }
         steps {
-          runRegressiontest(branch: 'maintenance/v1.16',
-                            name: 'v1.16-fmi',
-                            extraFlags: '',
-                            omsHash: omsimulatorHash(),
-                            dbPrefix: 'ripper2',
-                            sshConfig: 'LibraryTestingRipper2DB',
-                            omcompiler: false,
-                            extrasimflags: '',
-                            removePackageOrder: false,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('maintenance/v1.16', 'v1.16-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('v1.17 FMI') {
@@ -473,18 +308,7 @@ pipeline {
           expression { params.fmi_v1_17 }
         }
         steps {
-          runRegressiontest(branch: 'maintenance/v1.17',
-                            name: 'v1.17-fmi',
-                            extraFlags: '',
-                            omsHash: omsimulatorHash(),
-                            dbPrefix: 'ripper2',
-                            sshConfig: 'LibraryTestingRipper2DB',
-                            omcompiler: false,
-                            extrasimflags: '',
-                            removePackageOrder: false,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('maintenance/v1.17', 'v1.17-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('v1.18 FMI') {
@@ -500,18 +324,7 @@ pipeline {
           expression { params.fmi_v1_18 }
         }
         steps {
-          runRegressiontest(branch: 'maintenance/v1.18',
-                            name: 'v1.18-fmi',
-                            extraFlags: '',
-                            omsHash: omsimulatorHash(),
-                            dbPrefix: 'ripper2',
-                            sshConfig: 'LibraryTestingRipper2DB',
-                            omcompiler: false,
-                            extrasimflags: '',
-                            removePackageOrder: false,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('maintenance/v1.18', 'v1.18-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('v1.19 FMI') {
@@ -527,18 +340,7 @@ pipeline {
           expression { params.fmi_v1_19 }
         }
         steps {
-          runRegressiontest(branch: 'maintenance/v1.19',
-                            name: 'v1.19-fmi',
-                            extraFlags: '',
-                            omsHash: omsimulatorHash(),
-                            dbPrefix: 'ripper2',
-                            sshConfig: 'LibraryTestingRipper2DB',
-                            omcompiler: false,
-                            extrasimflags: '',
-                            removePackageOrder: false,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('maintenance/v1.19', 'v1.19-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('v1.20 FMI') {
@@ -554,18 +356,7 @@ pipeline {
           expression { params.fmi_v1_20 }
         }
         steps {
-          runRegressiontest(branch: 'maintenance/v1.20',
-                            name: 'v1.20-fmi',
-                            extraFlags: '',
-                            omsHash: omsimulatorHash(),
-                            dbPrefix: 'ripper2',
-                            sshConfig: 'LibraryTestingRipper2DB',
-                            omcompiler: false,
-                            extrasimflags: '',
-                            removePackageOrder: false,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('maintenance/v1.20', 'v1.20-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('master FMI') {
@@ -581,18 +372,7 @@ pipeline {
           expression { params.fmi_master }
         }
         steps {
-          runRegressiontest(branch: 'master',
-                            name: 'master-fmi',
-                            extraFlags: '',
-                            omsHash: 'origin/master',
-                            dbPrefix: 'ripper2',
-                            sshConfig: 'LibraryTestingRipper2DB',
-                            omcompiler: false,
-                            extrasimflags: '',
-                            removePackageOrder: false,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('master', 'master-fmi', '', 'origin/master', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('newInst-daeMode') {
@@ -608,18 +388,7 @@ pipeline {
           expression { params.newInst_daeMode }
         }
         steps {
-          runRegressiontest(branch: 'master',
-                            name: 'newInst-daeMode',
-                            extraFlags: 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --daeMode=true")',
-                            omsHash: '',
-                            dbPrefix: 'ripper2',
-                            sshConfig: 'LibraryTestingRipper2DB',
-                            omcompiler: false,
-                            extrasimflags: '',
-                            removePackageOrder: false,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('master', 'newInst-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --daeMode=true")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('oldInst') {
@@ -635,18 +404,7 @@ pipeline {
           expression { params.oldInst }
         }
         steps {
-          runRegressiontest(branch: 'master',
-                            name: 'oldInst',
-                            extraFlags: 'setCommandLineOptions("-d=nonewInst")',
-                            omsHash: '',
-                            dbPrefix: 'ripper2',
-                            sshConfig: 'LibraryTestingRipper2DB',
-                            omcompiler: false,
-                            extrasimflags: '',
-                            removePackageOrder: false,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('master', 'oldInst', 'setCommandLineOptions("-d=nonewInst")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('cvode') {
@@ -662,18 +420,7 @@ pipeline {
           expression { params.cvode }
         }
         steps {
-          runRegressiontest(branch: 'master',
-                            name: 'cvode',
-                            extraFlags: 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")',
-                            omsHash: '',
-                            dbPrefix: 'ripper2',
-                            sshConfig: 'LibraryTestingRipper2DB',
-                            omcompiler: false,
-                            extrasimflags: '-s cvode',
-                            removePackageOrder: false,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('master', 'cvode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '-s cvode', false, false)
         }
       }
       stage('gbode') {
@@ -689,18 +436,7 @@ pipeline {
           expression { params.gbode }
         }
         steps {
-          runRegressiontest(branch: 'master',
-                            name: 'gbode',
-                            extraFlags: 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")',
-                            omsHash: '',
-                            dbPrefix: 'ripper2',
-                            sshConfig: 'LibraryTestingRipper2DB',
-                            omcompiler: false,
-                            extrasimflags: '-s gbode',
-                            removePackageOrder: false,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('master', 'gbode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '-s gbode', false, false)
         }
       }
       stage('generateSymbolicJacobian') {
@@ -716,18 +452,7 @@ pipeline {
           expression { params.generateSymbolicJacobian }
         }
         steps {
-          runRegressiontest(branch: 'master',
-                            name: 'generateSymbolicJacobian',
-                            extraFlags: 'setCommandLineOptions("--generateSymbolicJacobian")',
-                            omsHash: '',
-                            dbPrefix: 'ripper1',
-                            sshConfig: 'LibraryTestingRipper1DB',
-                            omcompiler: false,
-                            extrasimflags: '',
-                            removePackageOrder: false,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('master', 'generateSymbolicJacobian', 'setCommandLineOptions("--generateSymbolicJacobian")', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
       stage('heavy_tests') {
@@ -743,18 +468,18 @@ pipeline {
           expression { params.heavy_tests }
         }
         steps {
-          runRegressiontest(branch: 'master',
-                            name: 'heavy_tests',
-                            extraFlags: '',
-                            omsHash: '',
-                            dbPrefix: 'ripper2',
-                            sshConfig: 'LibraryTestingRipper2DB',
-                            omcompiler: false,
-                            extrasimflags: '',
-                            removePackageOrder: false,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 1)
+            runRegressiontest(branch: 'master',
+                              name: 'heavy_tests',
+                              extraFlags: '',
+                              omsHash: '',
+                              dbPrefix: 'ripper2',
+                              sshConfig: 'LibraryTestingRipper2DB',
+                              omcompiler: false,
+                              extrasimflags: '',
+                              removePackageOrder: false,
+                              conversionScript: false,
+                              libs_config_file: 'configs/conf.json',
+                              jobs: 1)
         }
       }
       stage('C++ v1.18') {
@@ -770,18 +495,7 @@ pipeline {
           expression { params.cpp_v1_18 }
         }
         steps {
-          runRegressiontest(branch: 'maintenance/v1.18',
-                            name: 'v1.18-cpp',
-                            extraFlags: 'setCommandLineOptions("--simCodeTarget=Cpp")',
-                            omsHash: '',
-                            dbPrefix: 'ripper2',
-                            sshConfig: 'LibraryTestingRipper2DB',
-                            omcompiler: false,
-                            extrasimflags: '',
-                            removePackageOrder: false,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('maintenance/v1.18', 'v1.18-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('C++ v1.19') {
@@ -797,18 +511,7 @@ pipeline {
           expression { params.cpp_v1_19 }
         }
         steps {
-          runRegressiontest(branch: 'maintenance/v1.19',
-                            name: 'v1.19-cpp',
-                            extraFlags: 'setCommandLineOptions("--simCodeTarget=Cpp")',
-                            omsHash: '',
-                            dbPrefix: 'ripper2',
-                            sshConfig: 'LibraryTestingRipper2DB',
-                            omcompiler: false,
-                            extrasimflags: '',
-                            removePackageOrder: false,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('maintenance/v1.19', 'v1.19-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('C++ v1.20') {
@@ -824,18 +527,7 @@ pipeline {
           expression { params.cpp_v1_20 }
         }
         steps {
-          runRegressiontest(branch: 'maintenance/v1.20',
-                            name: 'v1.20-cpp',
-                            extraFlags: 'setCommandLineOptions("--simCodeTarget=Cpp")',
-                            omsHash: '',
-                            dbPrefix: 'ripper2',
-                            sshConfig: 'LibraryTestingRipper2DB',
-                            omcompiler: false,
-                            extrasimflags: '',
-                            removePackageOrder: false,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('maintenance/v1.20', 'v1.20-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('C++') {
@@ -851,18 +543,7 @@ pipeline {
           expression { params.cpp }
         }
         steps {
-          runRegressiontest(branch: 'master',
-                            name: 'cpp',
-                            extraFlags: 'setCommandLineOptions("--simCodeTarget=Cpp")',
-                            omsHash: '',
-                            dbPrefix: 'ripper2',
-                            sshConfig: 'LibraryTestingRipper2DB',
-                            omcompiler: false,
-                            extrasimflags: '',
-                            removePackageOrder: false,
-                            conversionScript: false,
-                            libs_config_file: 'configs/conf.json',
-                            jobs: 0)
+          runRegressiontest('master', 'cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
     } }
@@ -1073,7 +754,6 @@ def installLibraries(boolean removePackageOrder, boolean conversionScript, name,
 /**
   * Launches the test.py script with the given options.
   *
-  * @param libs_config_file: The config file to be used for testing. This file specifies which libraries to test and what options to use for them.
   * @param jobs: The number of tests/jobs to launch in parallel.
                  By default this is set to 0 which means launch as many tests as there are available physical cpus on the machine'.
   */
