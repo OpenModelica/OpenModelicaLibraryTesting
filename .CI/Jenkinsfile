@@ -468,18 +468,7 @@ pipeline {
           expression { params.heavy_tests }
         }
         steps {
-            runRegressiontest(branch: 'master',
-                              name: 'heavy_tests',
-                              extraFlags: '',
-                              omsHash: '',
-                              dbPrefix: 'ripper2',
-                              sshConfig: 'LibraryTestingRipper2DB',
-                              omcompiler: false,
-                              extrasimflags: '',
-                              removePackageOrder: false,
-                              conversionScript: false,
-                              libs_config_file: 'configs/conf.json',
-                              jobs: 1)
+            runRegressiontest('master', 'heavy_tests', '', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false, 'configs/conf.json', 1)
         }
       }
       stage('C++ v1.18') {
