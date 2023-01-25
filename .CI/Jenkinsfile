@@ -757,7 +757,7 @@ def installLibraries(boolean removePackageOrder, boolean conversionScript, name,
   * @param jobs: The number of tests/jobs to launch in parallel.
                  By default this is set to 0 which means launch as many tests as there are available physical cpus on the machine'.
   */
-def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, omcompiler, extrasimflags, boolean removePackageOrder, boolean conversionScript, String libs_config_file = 'configs/conf.json', int jobs=0) {
+def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, omcompiler, extrasimflags, boolean removePackageOrder, boolean conversionScript, libs_config_file = 'configs/conf.json', int jobs=0) {
   sh '''
   find /tmp  -name "*openmodelica.hudson*" -exec rm {} ";" || true
   mkdir -p ~/TEST_LIBS_BACKUP
