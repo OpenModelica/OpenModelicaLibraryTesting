@@ -468,7 +468,7 @@ pipeline {
           expression { params.heavy_tests }
         }
         steps {
-            runRegressiontest('master', 'heavy_tests', '', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false, 'configs/conf.json', 1)
+            runRegressiontest('master', 'heavy_tests', '', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false, 'configs/heavy_tests.json', 1)
         }
       }
       stage('C++ v1.18') {
