@@ -1,5 +1,22 @@
 [
   {
+    "library":"ScalableTestSuite",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":"NB",
+    "ulimitOmc":300,
+    "ulimitExe":300,
+    "ulimitMemory":60000000,
+    "optlevel":"-Ofast -march=native",
+    "referenceFileExtension":"mat",
+    "referenceFileNameDelimiter":".",
+    "referenceFinalDot":"_res.",
+    "referenceFiles":{
+      "giturl":"https://github.com/casella/ScalableTestSuite-ref",
+      "destination":"ReferenceFiles/ScalableTestSuite"
+    },
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend\")"]
+  },
+  {
     "library":"LargeTestSuite",
     "libraryVersion":"master",
     "libraryVersionNameForTests":"NB",
