@@ -8,5 +8,24 @@
     "ulimitMemory":60000000,
     "optlevel":"-O0 -march=native",
     "extraCustomCommands":["setCommandLineOptions(\"--newBackend\")"]
+  },
+  {
+    "library":"ScalableTestGrids",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":"NumericalJacobian",
+    "ulimitOmc":300,
+    "ulimitExe":300,
+    "ulimitMemory":60000000,
+    "optlevel":"-O0 -march=native"
+  },
+  {
+    "library":"ScalableTestGrids",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":"AnalyticJacobian",
+    "ulimitOmc":300,
+    "ulimitExe":300,
+    "ulimitMemory":60000000,
+    "optlevel":"-O0 -march=native",
+    "extraCustomCommands":["setCommandLineOptions(\"--generateSymbolicJacobian\")"]
   }
 ]
