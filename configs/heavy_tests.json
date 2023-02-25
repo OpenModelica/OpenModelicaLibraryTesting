@@ -39,7 +39,7 @@
     "ulimitOmc":300,
     "ulimitExe":600,
     "ulimitMemory":60000000,
-    "optlevel":"-O0 -march=native",
+    "optlevel":"-Ofast -march=native",
     "extraCustomCommands":["setCommandLineOptions(\"--newBackend\")"]
   }
 ]
