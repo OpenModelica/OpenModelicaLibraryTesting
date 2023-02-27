@@ -69,7 +69,8 @@
     "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"]
   },
   {
-    "library":"PowerGrids"
+    "library":"PowerGrids",
+    "extraCustomCommands":["setCommandLineOptions(\"--generateSymbolicJacobian\")"]
   },
   {
     "library":"PowerSystems",
@@ -289,7 +290,8 @@
     "ulimitOmc":500,
     "ulimitExe":500,
     "ulimitMemory":12582912,
-    "optlevel":"-O0"
+    "optlevel":"-O0",
+    "extraCustomCommands":["setCommandLineOptions(\"--generateSymbolicJacobian\")"]
   },
   {
     "library":"ScalableTestSuite",
