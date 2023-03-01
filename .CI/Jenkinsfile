@@ -841,7 +841,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
   cat ~/saved_omc/${name}/.githash || true
   # TODO: Create a docker image for these things instead?
   if ! (cmp ~/saved_omc/${name}/.githash .newhash || test -f ~/saved_omc/${name}/.nogit); then
-    autoconf
+    autoreconf --install
     ./configure --with-cppruntime --without-omc --disable-modelica3d CC=clang CXX=clang++ FC=gfortran CFLAGS='-O2 -march=native' --with-omlibrary=all --with-omniORB
     time make -j16 clean
     if ! time make -j9 omc > log 2>&1; then
