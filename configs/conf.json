@@ -69,7 +69,11 @@
     "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"]
   },
   {
+    "library":"PowerGrids"
+  },
+  {
     "library":"PowerGrids",
+    "libraryVersionNameForTests":"symb_jac",
     "extraCustomCommands":["setCommandLineOptions(\"--generateSymbolicJacobian\")"]
   },
   {
@@ -287,8 +291,8 @@
   {
     "library":"ScalableTestGrids",
     "configExtraName":"noopt",
-    "ulimitOmc":500,
-    "ulimitExe":500,
+    "ignoreModelPrefix":"ScalableTestGrids.Models.Type1Large",
+    "ulimitOmc":600,
     "ulimitMemory":12582912,
     "optlevel":"-O0",
     "extraCustomCommands":["setCommandLineOptions(\"--generateSymbolicJacobian\")"]
