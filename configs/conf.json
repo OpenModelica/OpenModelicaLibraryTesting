@@ -286,7 +286,8 @@
   },
   {
     "library":"ScalableTestGrids",
-    "configExtraName":"noopt",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":"noopt",
     "ulimitOmc":500,
     "ulimitExe":500,
     "ulimitMemory":12582912,
