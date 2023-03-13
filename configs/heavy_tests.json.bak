@@ -3,7 +3,7 @@
     "library":"ScalableTestSuite",
     "libraryVersion":"master",
     "libraryVersionNameForTests":"OB",
-    "ulimitOmc":600,
+    "ulimitOmc":400,
     "ulimitExe":600,
     "ulimitMemory":62914560,
     "optlevel":"-O0 -march=native",
@@ -19,7 +19,7 @@
     "library":"ScalableTestSuite",
     "libraryVersion":"master",
     "libraryVersionNameForTests":"NB",
-    "ulimitOmc":600,
+    "ulimitOmc":400,
     "ulimitExe":600,
     "ulimitMemory":62914560,
     "optlevel":"-Ofast -march=native",
@@ -31,14 +31,14 @@
       "destination":"ReferenceFiles/ScalableTestSuite"
     },
     "extraCustomCommands":["setCommandLineOptions(\"--newBackend\")"]
-  }, 
+  },
   {
     "library":"LargeTestSuite",
     "libraryVersion":"master",
     "libraryVersionNameForTests":"NB",
-    "ulimitOmc":600,
-    "ulimitExe":900,
-    "ulimitMemory":62914560,
+    "ulimitOmc":300,
+    "ulimitExe":600,
+    "ulimitMemory":60000000,
     "optlevel":"-Ofast -march=native",
     "extraCustomCommands":["setCommandLineOptions(\"--newBackend\")"]
   }
