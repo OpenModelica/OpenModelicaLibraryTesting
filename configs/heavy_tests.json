@@ -6,17 +6,17 @@
     "ignoreModelPrefix":"ScalableTestGrids.Models.Type1Large",
     "ulimitOmc":800,
     "ulimitExe":300,
-    "ulimitMemory":60000000,
+    "ulimitMemory":62000000,
     "optlevel":"-O0 -march=native"
   },
   {
     "library":"ScalableTestGrids",
     "libraryVersion":"master",
-    "libraryVersionNameForTests":"AnalyticJacobian",
+    "libraryVersionNameForTests":"SymbolicJacobian",
     "ignoreModelPrefix":"ScalableTestGrids.Models.Type1Large",
     "ulimitOmc":800,
     "ulimitExe":300,
-    "ulimitMemory":60000000,
+    "ulimitMemory":62000000,
     "optlevel":"-O0 -march=native",
     "extraCustomCommands":["setCommandLineOptions(\"--generateSymbolicJacobian\")"]
   }
