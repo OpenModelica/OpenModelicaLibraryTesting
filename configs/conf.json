@@ -77,6 +77,11 @@
     "extraCustomCommands":["setCommandLineOptions(\"--generateSymbolicJacobian\")"]
   },
   {
+    "library":"PowerGrids",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":"dev"
+  },
+  {
     "library":"PowerSystems",
     "libraryVersionNameForTests":"",
     "libraryVersionLatestInPackageManager":true,
