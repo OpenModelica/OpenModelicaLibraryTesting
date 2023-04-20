@@ -1,23 +1,45 @@
 [
   {
-    "library":"ScalableTestGrids",
+    "library":"ScalableTestSuite",
     "libraryVersion":"master",
-    "libraryVersionNameForTests":"NumericalJacobian",
-    "ignoreModelPrefix":"ScalableTestGrids.Models.Type1Large",
-    "ulimitOmc":800,
-    "ulimitExe":300,
-    "ulimitMemory":62000000,
-    "optlevel":"-O0 -march=native"
+    "libraryVersionNameForTests":"OB",
+    "ulimitOmc":400,
+    "ulimitExe":600,
+    "ulimitMemory":62914560,
+    "optlevel":"-O0 -march=native",
+    "referenceFileExtension":"mat",
+    "referenceFileNameDelimiter":".",
+    "referenceFinalDot":"_res.",
+    "referenceFiles":{
+      "giturl":"https://github.com/casella/ScalableTestSuite-ref",
+      "destination":"ReferenceFiles/ScalableTestSuite"
+    }
   },
   {
-    "library":"ScalableTestGrids",
+    "library":"ScalableTestSuite",
     "libraryVersion":"master",
-    "libraryVersionNameForTests":"SymbolicJacobian",
-    "ignoreModelPrefix":"ScalableTestGrids.Models.Type1Large",
-    "ulimitOmc":800,
-    "ulimitExe":300,
-    "ulimitMemory":62000000,
-    "optlevel":"-O0 -march=native",
-    "extraCustomCommands":["setCommandLineOptions(\"--generateSymbolicJacobian\")"]
+    "libraryVersionNameForTests":"NB",
+    "ulimitOmc":400,
+    "ulimitExe":600,
+    "ulimitMemory":62914560,
+    "optlevel":"-Ofast -march=native",
+    "referenceFileExtension":"mat",
+    "referenceFileNameDelimiter":".",
+    "referenceFinalDot":"_res.",
+    "referenceFiles":{
+      "giturl":"https://github.com/casella/ScalableTestSuite-ref",
+      "destination":"ReferenceFiles/ScalableTestSuite"
+    },
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend\")"]
+  },
+  {
+    "library":"LargeTestSuite",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":"NB",
+    "ulimitOmc":600,
+    "ulimitExe":800,
+    "ulimitMemory":62914560,
+    "optlevel":"-Ofast -march=native",
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend\")"]
   }
 ]
