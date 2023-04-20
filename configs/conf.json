@@ -78,7 +78,7 @@
   },
   {
     "library":"PowerGrids",
-    "libraryVersion":"master",
+    "libraryVersion":"develop",
     "libraryVersionNameForTests":"dev"
   },
   {
