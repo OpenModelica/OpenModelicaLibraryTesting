@@ -193,7 +193,8 @@
     "library":"ExtendedPetriNets"
   },
   {
-    "library":"ExternalMedia"
+    "library":"ExternalMedia",
+    "ignoreModelPrefix":"ExternalMedia.Test.FluidProp"
   },
   {
     "library":"ExternData"
