@@ -222,9 +222,7 @@
     "library":"KeyWordIO"
   },
   {
-    "library":"IDEAS",
-    "libraryVersionNameForTests":"",
-    "libraryVersionLatestInPackageManager":true
+    "library":"IDEAS"
   },
   {
     "library":"IDEAS",
