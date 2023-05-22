@@ -664,7 +664,7 @@ pipeline {
         environment {
           GITBRANCHES_FMI = 'maintenance/v1.12-fmi maintenance/v1.13-fmi maintenance/v1.14-fmi maintenance/v1.16-fmi maintenance/v1.17-fmi maintenance/v1.18-fmi maintenance/v1.19-fmi maintenance/v1.20-fmi maintenance/v1.21-fmi master-fmi'
           GITBRANCHES_NEWINST = 'oldInst'
-          GITBRANCHES_DAE = 'daemode newInst-daemode'
+          GITBRANCHES_DAE = 'newInst-daeMode'
           GITBRANCHES_CPP = 'v1.19-cpp v1.20-cpp v1.21-cpp cpp'
           PYTHONIOENCODING = 'utf-8'
           IDA_EMAIL = credentials('IDA email')
