@@ -11,6 +11,7 @@ pipeline {
     booleanParam(name: 'v1_18', defaultValue: false, description: 'maintenance/v1.18 branch (ryzen-5950x-1)')
     booleanParam(name: 'v1_19', defaultValue: false, description: 'maintenance/v1.19 branch (ryzen-5950x-1)')
     booleanParam(name: 'v1_20', defaultValue: false, description: 'maintenance/v1.20 branch (ryzen-5950x-1)')
+    booleanParam(name: 'v1_21', defaultValue: false, description: 'maintenance/v1.21 branch (ryzen-5950x-1)')
     booleanParam(name: 'master', defaultValue: false, description: 'master branch (ryzen-5950x-1)')
 
     booleanParam(name: 'fmi_v1_12', defaultValue: false, description: 'maintenance/v1.12 branch with FMI (ryzen-5950x-2)')
@@ -21,6 +22,7 @@ pipeline {
     booleanParam(name: 'fmi_v1_18', defaultValue: false, description: 'maintenance/v1.18 branch with FMI (ryzen-5950x-2)')
     booleanParam(name: 'fmi_v1_19', defaultValue: false, description: 'maintenance/v1.19 branch with FMI (ryzen-5950x-2)')
     booleanParam(name: 'fmi_v1_20', defaultValue: false, description: 'maintenance/v1.20 branch with FMI (ryzen-5950x-2)')
+    booleanParam(name: 'fmi_v1_21', defaultValue: false, description: 'maintenance/v1.21 branch with FMI (ryzen-5950x-2)')
     booleanParam(name: 'fmi_master', defaultValue: false, description: 'master branch with FMI (ryzen-5950x-2)')
     booleanParam(name: 'newInst_daeMode', defaultValue: false, description: 'master branch, --daeMode with -d=newInst (ryzen-5950x-2)')
     booleanParam(name: 'newInst_newBackend', defaultValue: false, description: 'master branch, -d=newInst --newBackend, (ryzen-5950x-1)')
@@ -28,6 +30,7 @@ pipeline {
     booleanParam(name: 'cpp_v1_18', defaultValue: false, description: 'maintenance/v1.18 branch, with --simCodeTarget=Cpp (ryzen-5950x-2).')
     booleanParam(name: 'cpp_v1_19', defaultValue: false, description: 'maintenance/v1.19 branch, with --simCodeTarget=Cpp (ryzen-5950x-2).')
     booleanParam(name: 'cpp_v1_20', defaultValue: false, description: 'maintenance/v1.20 branch, with --simCodeTarget=Cpp (ryzen-5950x-2).')
+    booleanParam(name: 'cpp_v1_21', defaultValue: false, description: 'maintenance/v1.21 branch, with --simCodeTarget=Cpp (ryzen-5950x-2).')
     booleanParam(name: 'cpp', defaultValue: false, description: 'master branch, with --simCodeTarget=Cpp (ryzen-5950x-2).')
     booleanParam(name: 'report_ryzen_5950x_1', defaultValue: false, description: 'Generate a report for ryzen-5950x-1 without running the tests')
     booleanParam(name: 'report_ryzen_5950x_2', defaultValue: false, description: 'Generate a report for ryzen-5950x-2 without running the tests')
@@ -177,6 +180,23 @@ pipeline {
         }
         steps {
           runRegressiontest('maintenance/v1.20', 'v1.20', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
+        }
+      }
+
+      stage('v1.21') {
+        agent {
+          node {
+            label 'ryzen-5950x-1'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.v1_21 }
+        }
+        steps {
+          runRegressiontest('maintenance/v1.21', 'v1.21', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
 
@@ -359,6 +379,22 @@ pipeline {
           runRegressiontest('maintenance/v1.20', 'v1.20-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
+      stage('v1.21 FMI') {
+        agent {
+          node {
+            label 'ryzen-5950x-2-1'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.fmi_v1_21 }
+        }
+        steps {
+          runRegressiontest('maintenance/v1.21', 'v1.21-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+        }
+      }
       stage('master FMI') {
         agent {
           node {
@@ -519,6 +555,22 @@ pipeline {
           runRegressiontest('maintenance/v1.20', 'v1.20-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
+      stage('C++ v1.21') {
+        agent {
+          node {
+            label 'ryzen-5950x-2-1'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.cpp_v1_21 }
+        }
+        steps {
+          runRegressiontest('maintenance/v1.21', 'v1.21-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+        }
+      }
       stage('C++') {
         agent {
           node {
@@ -548,10 +600,10 @@ pipeline {
         }
         when {
           beforeAgent true
-          expression { params.v1_12 || params.v1_13 || params.v1_14 || params.v1_16 || params.v1_17 || params.master || params.conversion_script || params.report_ryzen_5950x_1 | params.newInst_newBackend || params.generateSymbolicJacobian || params.heavy_tests}
+          expression { params.v1_12 || params.v1_13 || params.v1_14 || params.v1_16 || params.v1_17 || params.v1_18 || params.v1_19 || params.v1_20 || params.v1_21 || params.master || params.conversion_script || params.report_ryzen_5950x_1 | params.newInst_newBackend || params.generateSymbolicJacobian || params.heavy_tests}
         }
         environment {
-          GITBRANCHES = 'maintenance/v1.12 maintenance/v1.13 maintenance/v1.14 maintenance/v1.16 maintenance/v1.17 maintenance/v1.18 maintenance/v1.19 maintenance/v1.20 master'
+          GITBRANCHES = 'maintenance/v1.12 maintenance/v1.13 maintenance/v1.14 maintenance/v1.16 maintenance/v1.17 maintenance/v1.18 maintenance/v1.19 maintenance/v1.20 master maintenance/v1.21 master'
           PYTHONIOENCODING = 'utf-8'
           IDA_EMAIL = credentials('IDA email')
         }
@@ -607,13 +659,13 @@ pipeline {
         }
         when {
           beforeAgent true
-          expression { params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_v1_14 || params.fmi_v1_16 || params.fmi_v1_17 || params.fmi_master || params.newInst_daeMode  || params.oldInst || params.report_ryzen_5950x_2 || params.cpp || params.cvode || params.gbode}
+          expression { params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_v1_14 || params.fmi_v1_16 || params.fmi_v1_17 || params.fmi_v1_18 || params.fmi_v1_19 || params.fmi_v1_20 || params.fmi_v1_21 || params.fmi_master || params.newInst_daeMode  || params.oldInst || params.report_ryzen_5950x_2 || params.cpp || params.cvode || params.gbode}
         }
         environment {
-          GITBRANCHES_FMI = 'maintenance/v1.12-fmi maintenance/v1.13-fmi maintenance/v1.14-fmi maintenance/v1.16-fmi maintenance/v1.17-fmi maintenance/v1.18-fmi maintenance/v1.19-fmi maintenance/v1.20-fmi master-fmi'
+          GITBRANCHES_FMI = 'maintenance/v1.12-fmi maintenance/v1.13-fmi maintenance/v1.14-fmi maintenance/v1.16-fmi maintenance/v1.17-fmi maintenance/v1.18-fmi maintenance/v1.19-fmi maintenance/v1.20-fmi maintenance/v1.21-fmi master-fmi'
           GITBRANCHES_NEWINST = 'oldInst'
           GITBRANCHES_DAE = 'daemode newInst-daemode'
-          GITBRANCHES_CPP = 'v1.19-cpp v1.20-cpp cpp'
+          GITBRANCHES_CPP = 'v1.19-cpp v1.20-cpp v1.21-cpp cpp'
           PYTHONIOENCODING = 'utf-8'
           IDA_EMAIL = credentials('IDA email')
         }
@@ -687,7 +739,7 @@ pipeline {
         }
         when {
           beforeAgent true
-          expression { params.v1_12 || params.v1_13 || params.v1_14 || params.v1_16 || params.v1_17 || params.v1_18 || params.v1_19 || params.v1_20 || params.master || params.report_ripper1 || params.generateSymbolicJacobian }
+          expression { params.v1_12 || params.v1_13 || params.v1_14 || params.v1_16 || params.v1_17 || params.v1_18 || params.v1_19 || params.v1_20 || params.v1_21 || params.master || params.report_ripper1 || params.generateSymbolicJacobian }
         }
         steps {
           sh 'cp ~/TEST_LIBS_BACKUP/ripper1-sqlite3.db sqlite3.db'
