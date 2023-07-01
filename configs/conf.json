@@ -395,10 +395,7 @@
   {
     "library":"TransiEnt",
     "libraryVersion":"master",
-    "libraryVersionNameForTests":"",
-    "extraLibraries":[
-      ["TILMedia", "ClaRa"]
-    ]
+    "libraryVersionNameForTests":""
   },
   {
     "library":"VehicleInterfaces"
