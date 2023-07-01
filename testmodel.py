@@ -264,8 +264,8 @@ def loadModels(omc, conf):
         fp.write(omc.sendExpression('OpenModelica.Scripting.getErrorString()'))
       writeResultAndExit(0)
   loadedFiles = sorted(omc.sendExpression("{getSourceFile(cl) for cl in getClassNames()}"))
-  if conf["loadFiles"] != loadedFiles:
-    print("Loaded the wrong files. Expected:\n%s\nActual:\n%s", ("\n".join(conf["loadFiles"]), "\n".join(loadedFiles)))
+  if sorted(conf["loadFiles"]) != loadedFiles:
+    print("Loaded the wrong files. Expected:\n%s\nActual:\n%s" % ("\n".join(sorted(conf["loadFiles"])), "\n".join(loadedFiles)))
     sys.exit(1)
 newOMLoaded = False
 def loadLibraryInNewOM():
