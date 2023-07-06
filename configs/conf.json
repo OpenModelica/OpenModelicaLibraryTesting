@@ -395,7 +395,8 @@
   {
     "library":"TransiEnt",
     "libraryVersion":"master",
-    "libraryVersionNameForTests":""
+    "libraryVersionNameForTests":"",
+    "extraCustomCommands": ["setCommandLineOptions(\"--allowNonStandardModelica=nonStdEnumerationAsIntegers\")"]
   },
   {
     "library":"VehicleInterfaces"
