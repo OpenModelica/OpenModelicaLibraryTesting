@@ -122,6 +122,10 @@
     "extraCustomCommands":["setCommandLineOptions(\"-d=ignoreCycles\")"]
   },
   {
+    "library":"BidiDCDC",
+    "libraryVersionNameForTests":""
+  },
+  {
     "library":"BLDC",
     "libraryVersionNameForTests":""
   },
@@ -187,6 +191,10 @@
     "library":"DeltaRobot"
   },
   {
+    "library":"DroneLibrary",
+    "libraryVersionNameForTests":""
+  },
+  {
     "library":"ElectricalEnergyStorage"
   },
   {
@@ -232,6 +240,10 @@
   {
     "library":"LibRAS",
     "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"]
+  },
+  {
+    "library":"MagLev",
+    "libraryVersionNameForTests":""
   },
   {
     "library":"MEV"
