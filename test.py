@@ -504,7 +504,7 @@ for (library,conf) in configs:
       subprocess.check_call(cmd, stderr=subprocess.STDOUT)
 
   if "customCommands" in conf:
-    cmd = conf["runOnceBeforeTesting"]
+    cmd = conf["customCommands"]
     # replace the $libraryLocation in the customCommands if present
     cmd = [c.replace("$libraryLocation", conf["libraryLocation"]) for c in cmd]
     conf["customCommands"] = cmd
