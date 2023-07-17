@@ -501,6 +501,7 @@ for (library,conf) in configs:
     for cmd in conf["runOnceBeforeTesting"]:
       # replace the resource location in the command if present
       cmd = [c.replace("$resourceLocation", conf["resourceLocation"]) for c in cmd]
+      cmd = [c.replace("$libraryLocation", conf["libraryLocation"]) for c in cmd]
       subprocess.check_call(cmd, stderr=subprocess.STDOUT)
 
   if "customCommands" in conf:

@@ -411,10 +411,10 @@
     "extraCustomCommands": 
       [
         "setCommandLineOptions(\"--allowNonStandardModelica=nonStdEnumerationAsIntegers\")",
-        "setEnvironmentVar(\"public-data\", \"$libraryLocation/Tables/\"",
-        "setEnvironmentVar(\"private-data\", \"$libraryLocation/Tables/\"",
-        "setEnvironmentVar(\"superstructure-tables\", \"$libraryLocation/Tables/superstructure/Tables/\"",
-        "setEnvironmentVar(\"superstructure-input\", \"$libraryLocation/Tables/superstructure/RegionInformation/\""
+        "setEnvironmentVar(\"public-data\", \"$libraryLocation/Tables/\")",
+        "setEnvironmentVar(\"private-data\", \"$libraryLocation/Tables/\")",
+        "setEnvironmentVar(\"superstructure-tables\", \"$libraryLocation/Tables/superstructure/Tables/\")",
+        "setEnvironmentVar(\"superstructure-input\", \"$libraryLocation/Tables/superstructure/RegionInformation/\")"
       ]
   },
   {
