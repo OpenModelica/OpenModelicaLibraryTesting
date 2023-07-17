@@ -491,8 +491,10 @@ for (library,conf) in configs:
     sys.exit(1)
 
   try:
+    conf["libraryLocation"]=omc.sendExpression('uriToFilename("modelica://%s/")' % library)
     conf["resourceLocation"]=omc.sendExpression('uriToFilename("modelica://%s/Resources")' % library)
   except:
+    conf["libraryLocation"]=""
     conf["resourceLocation"]=""
 
   if "runOnceBeforeTesting" in conf:
@@ -500,6 +502,12 @@ for (library,conf) in configs:
       # replace the resource location in the command if present
       cmd = [c.replace("$resourceLocation", conf["resourceLocation"]) for c in cmd]
       subprocess.check_call(cmd, stderr=subprocess.STDOUT)
+
+  if "customCommands" in conf:
+    cmd = conf["runOnceBeforeTesting"]
+    # replace the $libraryLocation in the customCommands if present
+    cmd = [c.replace("$libraryLocation", conf["libraryLocation"]) for c in cmd]
+    conf["customCommands"] = cmd
 
   conf["libraryVersionRevision"]=omc.sendExpression('getVersion(%s)' % library)
   librarySourceFile=omc.sendExpression('getSourceFile(%s)' % library)
