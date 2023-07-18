@@ -32,8 +32,14 @@ def fixData(data,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCom
     if extrasimflags:
       simflags.append(extrasimflags)
     data["extraSimFlags"] = " ".join(simflags) # no extra sim flags
-    data["environmentSimulation"] = data.get("environmentSimulation") + environmentSimulation
-    data["environmentTranslation"] = data.get("environmentTranslation") + environmentTranslation
+    if data.get("environmentSimulation"):
+      data["environmentSimulation"] = data.get("environmentSimulation") + environmentSimulation
+    else:
+      data["environmentSimulation"] = environmentSimulation
+    if data.get("environmentTranslation"):
+      data["environmentTranslation"] = data.get("environmentTranslation") + environmentTranslation
+    else:
+      data["environmentTranslation"] = environmentTranslation
     data["libraryVersion"] = data.get("libraryVersion") or "default"
     data["libraryVersionLatestInPackageManager"] = data.get("libraryVersionLatestInPackageManager") or False
     data["alarmFlag"] = data.get("alarmFlag") or (alarmFlag if data["simCodeTarget"]=="C" else "")
