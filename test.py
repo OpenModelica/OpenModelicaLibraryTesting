@@ -509,6 +509,16 @@ for (library,conf) in configs:
     # replace the $libraryLocation in the customCommands if present
     cmd = [c.replace("$libraryLocation", conf["libraryLocation"]) for c in cmd]
     conf["customCommands"] = cmd
+  if "environmentSimulation" in conf:
+    cmd = conf["environmentSimulation"]
+    # replace the $libraryLocation in the environmentSimulation if present
+    cmd = [[el.replace("$libraryLocation", conf["libraryLocation"]) for el in c] for c in cmd]
+    conf["environmentSimulation"] = cmd
+  if "environmentTranslation" in conf:
+    cmd = conf["environmentTranslation"]
+    # replace the $libraryLocation in the environmentTraslation if present
+    cmd = [[el.replace("$libraryLocation", conf["libraryLocation"]) for el in c] for c in cmd]
+    conf["environmentTranslation"] = cmd
 
   conf["libraryVersionRevision"]=omc.sendExpression('getVersion(%s)' % library)
   librarySourceFile=omc.sendExpression('getSourceFile(%s)' % library)

@@ -415,6 +415,13 @@
         "setEnvironmentVar(\"private-data\", \"$libraryLocation/Tables/\")",
         "setEnvironmentVar(\"superstructure-tables\", \"$libraryLocation/Tables/superstructure/Tables/\")",
         "setEnvironmentVar(\"superstructure-input\", \"$libraryLocation/Tables/superstructure/RegionInformation/\")"
+      ],
+    "environmentSimulation":
+      [
+        ["public-data", "$libraryLocation/Tables/"],
+        ["private-data", "$libraryLocation/Tables/"],
+        ["superstructure-tables", "$libraryLocation/Tables/superstructure/Tables/"],
+        ["superstructure-input", "$libraryLocation/Tables/superstructure/RegionInformation/"]
       ]
   },
   {
