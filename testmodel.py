@@ -85,14 +85,14 @@ def sendExpressionTimeout(omc, cmd, timeout):
     raise TimeoutError(res[1])
   return res[0]
 
-def checkOutputTimeout(cmd, timeout, envSimulation=[]):
+def checkOutputTimeout(cmd, timeout):
   with open(errFile, 'a+') as fp:
     fp.write(cmd + "\n")
   def target(res):
     try:
       env = os.environ.copy()
-      # add the enviromentSimulation to the environment
-      for e in envSimulation:
+      # add the environmentSimulation to the environment
+      for e in conf["environmentSimulation"]:
         env[e[0]] = e[1]
       res[0] = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, env = env).decode().strip()
     except subprocess.CalledProcessError as e:
