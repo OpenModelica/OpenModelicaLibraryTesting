@@ -85,15 +85,20 @@ def sendExpressionTimeout(omc, cmd, timeout):
     raise TimeoutError(res[1])
   return res[0]
 
-def checkOutputTimeout(cmd, timeout):
+def checkOutputTimeout(cmd, timeout, conf=None):
   with open(errFile, 'a+') as fp:
     fp.write(cmd + "\n")
   def target(res):
     try:
       env = os.environ.copy()
       # add the environmentSimulation to the environment
-      for e in conf["environmentSimulation"]:
-        env[e[0]] = e[1]
+      if conf:
+        for e in conf["environmentSimulation"]:
+          env[e[0]] = e[1]
+        with open(errFile, 'a+') as fp:
+          fp.write("Environment - environmentSimulation:")
+          for e in conf["environmentSimulation"]:
+            fp.write(env[e[0]] + "\n")
       res[0] = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, env = env).decode().strip()
     except subprocess.CalledProcessError as e:
       outputStr = e.output.decode("utf-8","backslashreplace")
@@ -422,7 +427,7 @@ try:
       execstat["phase"] = 5
   else:
     
-    res = checkOutputTimeout("make -j1 -f %s.makefile" % conf["fileName"], conf["ulimitOmc"])
+    res = checkOutputTimeout("make -j1 -f %s.makefile" % conf["fileName"], conf["ulimitOmc"], conf)
     execstat["build"] = monotonic()-start
     execstat["phase"] = 5
 except TimeoutError as e:
@@ -450,19 +455,19 @@ try:
     cmd = "%s --tempDir=%s --startTime=%g --stopTime=%g --timeout=%g --tolerance=%g %s.fmu" % (("-r=%s" % resFile) if outputFormat != "empty" else "",fmitmpdir,startTime,stopTime,conf["ulimitExe"],tolerance,conf["fileName"].replace(".","_"))
     with open(simFile,"w") as fp:
       fp.write("OMSimulator %s\n" % cmd)
-    #res = checkOutputTimeout("%s %s >> %s 2>&1" % (conf["fmisimulator"],cmd,simFile), conf["ulimitExe"])
-    res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,conf["fmisimulator"],cmd,conf["fileName"]), 1.05*conf["ulimitExe"])
+    #res = checkOutputTimeout("%s %s >> %s 2>&1" % (conf["fmisimulator"],cmd,simFile), conf["ulimitExe"], conf)
+    res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,conf["fmisimulator"],cmd,conf["fileName"]), 1.05*conf["ulimitExe"], conf)
   else:
     cmd = ("./%s %s %s %s" % (conf["fileName"],annotationSimFlags,conf["simFlags"],emit_protected)).strip()
     if conf["simCodeTarget"]=="C":
       cmd = cmd + " -lv LOG_STATS"
     with open(simFile,"w") as fp:
-      fp.write("Environment:\n")
+      fp.write("Environment - simulationEnvironment:\n")
       for e in conf["environmentSimulation"]:
         fp.write("%s = %s\n" % (e[0], e[1]))
       fp.write("startTime=%g\nstopTime=%g\ntolerance=%g\nnumberOfIntervals=%d\nstepSize=%g\n" % (startTime,stopTime,tolerance,numberOfIntervals,stepSize))      
       fp.write("Regular simulation: %s\n" % cmd)
-    res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & printenv > %s.pipe ; %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,conf["fileName"],cmd,conf["fileName"]), conf["ulimitExe"])
+    res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & printenv > %s.pipe ; %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,conf["fileName"],cmd,conf["fileName"]), conf["ulimitExe"], conf)
   execstat["sim"] = monotonic()-start
   execstat["phase"] = 6
 except TimeoutError as e:
