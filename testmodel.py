@@ -467,7 +467,7 @@ try:
         fp.write("%s = %s\n" % (e[0], e[1]))
       fp.write("startTime=%g\nstopTime=%g\ntolerance=%g\nnumberOfIntervals=%d\nstepSize=%g\n" % (startTime,stopTime,tolerance,numberOfIntervals,stepSize))      
       fp.write("Regular simulation: %s\n" % cmd)
-    res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & printenv > %s.pipe ; %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,conf["fileName"],cmd,conf["fileName"]), conf["ulimitExe"], conf)
+    res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,cmd,conf["fileName"]), conf["ulimitExe"], conf)
   execstat["sim"] = monotonic()-start
   execstat["phase"] = 6
 except TimeoutError as e:
