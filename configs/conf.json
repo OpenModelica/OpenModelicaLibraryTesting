@@ -411,17 +411,17 @@
     "extraCustomCommands": 
       [
         "setCommandLineOptions(\"--allowNonStandardModelica=nonStdEnumerationAsIntegers\")",
-        "setEnvironmentVar(\"public-data\", \"$libraryLocation/Tables/\")",
-        "setEnvironmentVar(\"private-data\", \"$libraryLocation/Tables/\")",
-        "setEnvironmentVar(\"superstructure-tables\", \"$libraryLocation/Tables/superstructure/Tables/\")",
-        "setEnvironmentVar(\"superstructure-input\", \"$libraryLocation/Tables/superstructure/RegionInformation/\")"
+        "setEnvironmentVar(\"publicData\", \"$libraryLocation/Tables/\")",
+        "setEnvironmentVar(\"privateData\", \"$libraryLocation/Tables/\")",
+        "setEnvironmentVar(\"superstructureTables\", \"$libraryLocation/Tables/superstructure/Tables/\")",
+        "setEnvironmentVar(\"superstructureInput\", \"$libraryLocation/Tables/superstructure/RegionInformation/\")"
       ],
     "environmentSimulation":
       [
-        ["public-data", "$libraryLocation/Tables/"],
-        ["private-data", "$libraryLocation/Tables/"],
-        ["superstructure-tables", "$libraryLocation/Tables/superstructure/Tables/"],
-        ["superstructure-input", "$libraryLocation/Tables/superstructure/RegionInformation/"]
+        ["publicData", "$libraryLocation/Tables/"],
+        ["privateData", "$libraryLocation/Tables/"],
+        ["superstructureTables", "$libraryLocation/Tables/superstructure/Tables/"],
+        ["superstructureInput", "$libraryLocation/Tables/superstructure/RegionInformation/"]
       ]
   },
   {

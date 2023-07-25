@@ -96,9 +96,9 @@ def checkOutputTimeout(cmd, timeout, conf=None):
         for e in conf["environmentSimulation"]:
           env[e[0]] = e[1]
         with open(errFile, 'a+') as fp:
-          fp.write("Environment - environmentSimulation:")
+          fp.write("Environment - environmentSimulation:\n")
           for e in conf["environmentSimulation"]:
-            fp.write(env[e[0]] + "\n")
+            fp.write("%s = %s\n " % (e[0], env[e[0]]))
       res[0] = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, env = env).decode().strip()
     except subprocess.CalledProcessError as e:
       outputStr = e.output.decode("utf-8","backslashreplace")
