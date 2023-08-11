@@ -410,7 +410,7 @@
     "libraryVersionNameForTests":"",
     "extraCustomCommands": 
       [
-        "setCommandLineOptions(\"--allowNonStandardModelica=nonStdEnumerationAsIntegers\")",
+        "setCommandLineOptions(\"--allowNonStandardModelica=nonStdEnumerationAsIntegers,nonStdTopLevelOuter\")",
         "setEnvironmentVar(\"publicData\", \"$libraryLocation/Tables/\")",
         "setEnvironmentVar(\"privateData\", \"$libraryLocation/Tables/\")",
         "setEnvironmentVar(\"superstructureTables\", \"$libraryLocation/Tables/superstructure/Tables/\")",
