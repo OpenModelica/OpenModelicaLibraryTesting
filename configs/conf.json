@@ -210,9 +210,14 @@
   {
     "library":"FastBuildings"
   },
-    {
+  {
     "library":"FluxTubesExtension",
     "libraryVersion":"main",
+    "libraryVersionNameForTests":""
+  },
+  {
+    "library":"Greenhouses",
+    "libraryVersion":"master",
     "libraryVersionNameForTests":""
   },
   {
