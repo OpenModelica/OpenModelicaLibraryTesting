@@ -831,7 +831,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
       git submodule update || exit 1
       git clean -fdx || exit 1
       git submodule foreach --recursive  "git fetch --tags && git reset --hard && git clean -fdxq -e /git -e /svn" || exit 1
-      mkdir -p build || exit 1
+      cmake -S . -B build/ -DCMAKE_INSTALL_PREFIX=install/
       cmake --build build/ --target install || exit 1
       ./install/OMSimulator --version || exit 1
       mkdir -p ~/saved_omc/OMSimulator || exit 1
