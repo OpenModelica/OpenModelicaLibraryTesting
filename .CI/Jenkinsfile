@@ -833,14 +833,14 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
       git submodule foreach --recursive  "git fetch --tags && git reset --hard && git clean -fdxq -e /git -e /svn" || exit 1
       cmake -S . -B build/ -DCMAKE_INSTALL_PREFIX=install/
       cmake --build build/ --target install || exit 1
-      ./install/OMSimulator --version || exit 1
+      ./install/biin/OMSimulator --version || exit 1
       mkdir -p ~/saved_omc/OMSimulator || exit 1
       cp -a * ~/saved_omc/OMSimulator/ || exit 1
       git rev-parse HEAD > ~/saved_omc/OMSimulator/.githash || exit 1
 
     fi
     """
-    FMI_TESTING_FLAG="--fmi=true --fmisimulator=${env.HOME}/saved_omc/OMSimulator/install/OMSimulator --default=ulimitExe=50"
+    FMI_TESTING_FLAG="--fmi=true --fmisimulator=${env.HOME}/saved_omc/OMSimulator/install/bin/OMSimulator --default=ulimitExe=50"
   }
   OMCPATH = "${omcompiler ? '../' : './'}OMCompiler"
 
