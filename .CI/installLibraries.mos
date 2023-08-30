@@ -39,6 +39,7 @@ for l in {
   {"IDEAS", "master"},
   {"iPSL", ""},
   {"MagLev", ""},
+  {"OpenIMDML", "main"},
   {"OpenIPSL", "2.0.0"},
   {"OpenIPSL", ""},
   {"OpenIPSL", "master"},

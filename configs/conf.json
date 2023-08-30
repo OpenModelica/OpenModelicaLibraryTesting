@@ -265,6 +265,10 @@
     "libraryVersionNameForTests":""
   },
   {
+    "library":"OpenIMDML",
+    "libraryVersion":"main"
+  },
+  {
     "library":"OpenIPSL",
     "libraryVersion":"2.0.0"
   },
