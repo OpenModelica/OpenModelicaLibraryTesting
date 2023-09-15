@@ -32,6 +32,8 @@ for l in {
   {"Credibility", ""},
   {"DeltaRobot", ""},
   {"DroneLibrary", ""},
+  {"EHTPexamples", "main"},
+  {"EHTPlib", "main"},
   {"ExtendedPetriNets", ""},
   {"ExternalMedia",""},
   {"FluxTubesExtension","main"},
