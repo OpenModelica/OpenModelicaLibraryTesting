@@ -195,6 +195,14 @@
     "libraryVersionNameForTests":""
   },
   {
+    "library":"EHPTexamples",
+    "libraryVersion":"main"
+  },
+  {
+    "library":"EHPTlib",
+    "libraryVersion":"main"
+  },
+  {
     "library":"ElectricalEnergyStorage"
   },
   {
