@@ -101,6 +101,7 @@ parser.add_argument('--fmisimulator', default='', help="The default is nothing b
 parser.add_argument('--ulimitvmem', help="Virtual memory limit (in kB)", type=int, default=8*1024*1024)
 parser.add_argument('--default', action='append', help="Add a default value for some configuration key, such as --default=ulimitExe=60. The equals sign is mandatory.", default=[])
 parser.add_argument('-j', '--jobs', default=0)
+parser.add_argument('-v', '--verbose', action="store_true", help="Verbose mode.", default=False)
 
 args = parser.parse_args()
 configs = args.configs
@@ -108,6 +109,7 @@ branch = args.branch
 result_location = args.output
 n_jobs = int(args.jobs)
 clean = not args.noclean
+verbose = args.verbose
 extraflags = args.extraflags
 extrasimflags = args.extrasimflags
 ompython_omhome = args.ompython_omhome
@@ -613,7 +615,7 @@ if errorOccurred:
 print("Created .conf.json files")
 sys.stdout.flush()
 
-def runScript(c, timeout, memoryLimit):
+def runScript(c, timeout, memoryLimit, verbose):
   j = "files/%s.stat.json" % c
   try:
     os.remove(j)
@@ -621,6 +623,9 @@ def runScript(c, timeout, memoryLimit):
     pass
   start=monotonic()
   # runCommand("%s %s %s.mos" % (omc_exe, single_thread, c), prefix=c, timeout=timeout)
+  if verbose:
+    print("%s" % c)
+
   if 0 != runCommand("ulimit -v %d; ./testmodel.py --libraries=%s %s --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (memoryLimit, librariespath, ("--docker %s --dockerExtraArgs '%s'" % (docker, " ".join(dockerExtraArgs))) if docker else "", ompython_omhome, c, c), prefix=c, timeout=timeout):
     print("files/%s.err" % c)
     with open("files/%s.err" % c, "a+") as errfile:
@@ -688,7 +693,7 @@ start=monotonic()
 start_as_time=time.localtime()
 testRunStartTimeAsEpoch = int(time.time())
 # Need translateModel + make + exe...
-cmd_res=Parallel(n_jobs=n_jobs)(delayed(runScript)(name, 2*data["ulimitOmc"]+data["ulimitExe"]+25, data["ulimitMemory"]) for (model,lib,libName,name,data) in tests)
+cmd_res=Parallel(n_jobs=n_jobs)(delayed(runScript)(name, 2*data["ulimitOmc"]+data["ulimitExe"]+25, data["ulimitMemory"], verbose) for (model,lib,libName,name,data) in tests)
 stop=monotonic()
 print("Execution time: %s" % friendlyStr(stop-start))
 assert(stop-start >= 0.0)

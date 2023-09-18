@@ -50,6 +50,14 @@ The scripts from this repository can be used to run regression tests for public,
 
     *or*
   - Install your libraries.
+  - To test a library that is not installed in a default location like
+    `$MODELICAPATH /home/username/.openmodelica/libraries/` use
+    ```yml
+    "loadFileCommands": [
+      "loadFile(\"/path/to/package.mo\")"
+    ]
+    ```
+    in config JSON.
 - Create configs/myConf.json to specify what libraries to test.
   ```json
   [
