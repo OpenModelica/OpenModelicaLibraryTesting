@@ -624,7 +624,7 @@ def runScript(c, timeout, memoryLimit, verbose):
   start=monotonic()
   # runCommand("%s %s %s.mos" % (omc_exe, single_thread, c), prefix=c, timeout=timeout)
   if verbose:
-    print("%s" % c)
+    print("Starting test: %s" % c)
 
   if 0 != runCommand("ulimit -v %d; ./testmodel.py --libraries=%s %s --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (memoryLimit, librariespath, ("--docker %s --dockerExtraArgs '%s'" % (docker, " ".join(dockerExtraArgs))) if docker else "", ompython_omhome, c, c), prefix=c, timeout=timeout):
     print("files/%s.err" % c)
@@ -651,6 +651,8 @@ def runScript(c, timeout, memoryLimit, verbose):
     data = {"phase":0}
   data["exectime"] = execTime
   json.dump(data, open(j,"w"))
+  if verbose:
+    print("Finished test: %s - %d[s]" % (c, execTime))
 
 def expectedExec(c):
   (model,lib,libName,name,data) = c
