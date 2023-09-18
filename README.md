@@ -37,27 +37,15 @@ The scripts from this repository can be used to run regression tests for public,
   ```bash
   pip install -r requirements.txt
   ```
-- Install libraries you want to test
-  - (Optional) Remove already installed libraries
-    ```bash
-    rm -rf ~/.openmodelica/libraries/
-    rm -rf /path/to/OpenModelica/build/lib/omlibraries
-    ```
-  - Install all available libraries.
-    ```bash
-    /path/to/omc .CI/installLibraries.mos
-    ```
-
-    *or*
-  - Install your libraries.
-  - To test a library that is not installed in a default location like
-    `$MODELICAPATH /home/username/.openmodelica/libraries/` use
+- OMC will search for libraries in the location provided with test.py argument `--libraries`.
+  The default value is `/home/username/.openmodelica/libraries/`.
+  - Install your libraries into the location specified with `--libraries`
+    or use `loadFile` command inside `loadFileCommands` in the config JSON:
     ```yml
     "loadFileCommands": [
       "loadFile(\"/path/to/package.mo\")"
     ]
     ```
-    in config JSON.
 - Create configs/myConf.json to specify what libraries to test.
   ```json
   [
