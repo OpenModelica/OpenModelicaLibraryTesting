@@ -1,21 +1,45 @@
 [
   {
-    "library":"LargeTestSuite",
+    "library":"ScalableTestSuite",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":"OB",
+    "ulimitOmc":400,
+    "ulimitExe":600,
+    "ulimitMemory":62914560,
+    "optlevel":"-O0 -march=native",
+    "referenceFileExtension":"mat",
+    "referenceFileNameDelimiter":".",
+    "referenceFinalDot":"_res.",
+    "referenceFiles":{
+      "giturl":"https://github.com/casella/ScalableTestSuite-ref",
+      "destination":"ReferenceFiles/ScalableTestSuite"
+    }
+  },
+  {
+    "library":"ScalableTestSuite",
     "libraryVersion":"master",
     "libraryVersionNameForTests":"NB",
-    "ulimitOmc":1800,
-    "ulimitExe":800,
+    "ulimitOmc":400,
+    "ulimitExe":600,
     "ulimitMemory":62914560,
     "optlevel":"-Ofast -march=native",
+    "referenceFileExtension":"mat",
+    "referenceFileNameDelimiter":".",
+    "referenceFinalDot":"_res.",
+    "referenceFiles":{
+      "giturl":"https://github.com/casella/ScalableTestSuite-ref",
+      "destination":"ReferenceFiles/ScalableTestSuite"
+    },
     "extraCustomCommands":["setCommandLineOptions(\"--newBackend\")"]
   },
   {
     "library":"LargeTestSuite",
     "libraryVersion":"master",
-    "libraryVersionNameForTests":"OB",
-    "ulimitOmc":1800,
-    "ulimitExe":800,
+    "libraryVersionNameForTests":"NB",
+    "ulimitOmc":300,
+    "ulimitExe":600,
     "ulimitMemory":62914560,
-    "optlevel":"-O0 -march=native"
+    "optlevel":"-Ofast -march=native",
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend\")"]
   }
 ]
