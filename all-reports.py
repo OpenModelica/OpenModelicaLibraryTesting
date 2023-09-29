@@ -119,6 +119,9 @@ for branch in branches:
         for email in [email.strip() for email in subprocess.check_output(["git", "log", '--pretty=%ae', "%s..%s" % (v1,v2)], cwd=omcgitdir).decode("utf-8").split("\n")]:
           if "@" not in email:
             continue
+          # adrpo: if email domain doesn't have "." in it, skip it
+          if "." not in email[email.find("@"):]:
+            continue
           emails_current.add(email)
       except subprocess.CalledProcessError as e:
         print(str(e))

@@ -482,22 +482,43 @@ for (library,conf) in configs:
         print("Failed to load library %s %s: %s" % (library,versions,omc.sendExpression('OpenModelica.Scripting.getErrorString()')))
       except:
         print("Failed to load library %s %s. OpenModelica.Scripting.getErrorString() failed..." % (library,conf["libraryVersion"]))
-  conf["loadFiles"] = sorted(omc.sendExpression("{getSourceFile(cl) for cl in getClassNames()}"))
+  # adrpo: do not sort the top level names as sometimes that loads a bad MSL version
+  # conf["loadFiles"] = sorted(omc.sendExpression("{getSourceFile(cl) for cl in getClassNames()}"))
+  conf["loadFiles"] = omc.sendExpression("{getSourceFile(cl) for cl in getClassNames()}")
 
   if not (omc.sendExpression('setCommandLineOptions("-g=MetaModelica")') or omc.sendExpression('setCommandLineOptions("+g=Modelica")')):
     print("Failed to set MetaModelica grammar")
     sys.exit(1)
 
   try:
+    conf["libraryLocation"]=omc.sendExpression('uriToFilename("modelica://%s/")' % library)
     conf["resourceLocation"]=omc.sendExpression('uriToFilename("modelica://%s/Resources")' % library)
   except:
+    conf["libraryLocation"]=""
     conf["resourceLocation"]=""
 
   if "runOnceBeforeTesting" in conf:
     for cmd in conf["runOnceBeforeTesting"]:
       # replace the resource location in the command if present
       cmd = [c.replace("$resourceLocation", conf["resourceLocation"]) for c in cmd]
+      cmd = [c.replace("$libraryLocation", conf["libraryLocation"]) for c in cmd]
       subprocess.check_call(cmd, stderr=subprocess.STDOUT)
+
+  if "customCommands" in conf:
+    cmd = conf["customCommands"]
+    # replace the $libraryLocation in the customCommands if present
+    cmd = [c.replace("$libraryLocation", conf["libraryLocation"]) for c in cmd]
+    conf["customCommands"] = cmd
+  if "environmentSimulation" in conf:
+    cmd = conf["environmentSimulation"]
+    # replace the $libraryLocation in the environmentSimulation if present
+    cmd = [[el.replace("$libraryLocation", conf["libraryLocation"]) for el in c] for c in cmd]
+    conf["environmentSimulation"] = cmd
+  if "environmentTranslation" in conf:
+    cmd = conf["environmentTranslation"]
+    # replace the $libraryLocation in the environmentTraslation if present
+    cmd = [[el.replace("$libraryLocation", conf["libraryLocation"]) for el in c] for c in cmd]
+    conf["environmentTranslation"] = cmd
 
   conf["libraryVersionRevision"]=omc.sendExpression('getVersion(%s)' % library)
   librarySourceFile=omc.sendExpression('getSourceFile(%s)' % library)

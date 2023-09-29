@@ -122,6 +122,10 @@
     "extraCustomCommands":["setCommandLineOptions(\"-d=ignoreCycles\")"]
   },
   {
+    "library":"BidiDCDC",
+    "libraryVersionNameForTests":""
+  },
+  {
     "library":"BLDC",
     "libraryVersionNameForTests":""
   },
@@ -172,10 +176,6 @@
   {
     "library":"ClaRa",
     "libraryVersionNameForTests":"dev",
-    "loadFileCommands":[
-      "loadModel(TILMedia, {\"main\"})",
-      "loadFile(\"/mnt/ReferenceFiles/ExtraLibs/packaged/ClaRa/package.mo\")"
-    ],
     "referenceFileExtension":"mat",
     "referenceFileNameDelimiter":".",
     "referenceFiles":"/mnt/ReferenceFiles/ExtraLibs/clara_om.git/ReferenceResults"
@@ -185,6 +185,18 @@
   },
   {
     "library":"DeltaRobot"
+  },
+  {
+    "library":"DroneLibrary",
+    "libraryVersionNameForTests":""
+  },
+  {
+    "library":"EHPTexamples",
+    "libraryVersion":"main"
+  },
+  {
+    "library":"EHPTlib",
+    "libraryVersion":"main"
   },
   {
     "library":"ElectricalEnergyStorage"
@@ -202,9 +214,14 @@
   {
     "library":"FastBuildings"
   },
-    {
+  {
     "library":"FluxTubesExtension",
     "libraryVersion":"main",
+    "libraryVersionNameForTests":""
+  },
+  {
+    "library":"Greenhouses",
+    "libraryVersion":"master",
     "libraryVersionNameForTests":""
   },
   {
@@ -234,6 +251,10 @@
     "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"]
   },
   {
+    "library":"MagLev",
+    "libraryVersionNameForTests":""
+  },
+  {
     "library":"MEV"
   },
   {
@@ -246,6 +267,10 @@
     "library":"OpenHydraulics",
     "libraryVersion":"master",
     "libraryVersionNameForTests":""
+  },
+  {
+    "library":"OpenIMDML",
+    "libraryVersion":"main"
   },
   {
     "library":"OpenIPSL",
@@ -391,6 +416,26 @@
     "library":"ThermoSysPro",
     "libraryVersion":"master",
     "libraryVersionNameForTests":""
+  },
+  {
+    "library":"TransiEnt",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":"",
+    "extraCustomCommands": 
+      [
+        "setCommandLineOptions(\"--allowNonStandardModelica=nonStdEnumerationAsIntegers,nonStdTopLevelOuter\")",
+        "setEnvironmentVar(\"publicData\", \"$libraryLocation/Tables/\")",
+        "setEnvironmentVar(\"privateData\", \"$libraryLocation/Tables/\")",
+        "setEnvironmentVar(\"superstructureTables\", \"$libraryLocation/Tables/superstructure/Tables/\")",
+        "setEnvironmentVar(\"superstructureInput\", \"$libraryLocation/Tables/superstructure/RegionInformation/\")"
+      ],
+    "environmentSimulation":
+      [
+        ["publicData", "$libraryLocation/Tables/"],
+        ["privateData", "$libraryLocation/Tables/"],
+        ["superstructureTables", "$libraryLocation/Tables/superstructure/Tables/"],
+        ["superstructureInput", "$libraryLocation/Tables/superstructure/RegionInformation/"]
+      ]
   },
   {
     "library":"VehicleInterfaces"
