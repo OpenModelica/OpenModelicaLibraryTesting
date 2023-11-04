@@ -819,7 +819,7 @@ pipeline {
   }
 }
 def omsimulatorHash() {
-  return '1552061d5fe27ecfa51f5289909717192b102263'
+  return '634b0193a3eb14e75622a8e720bf0fb6dab77487'
 }
 def installLibraries(boolean removePackageOrder, boolean conversionScript, name, String omhomeTestedOMC) {
   sh "rm -rf '${env.HOME}/saved_omc/libraries/.openmodelica/libraries'"
