@@ -191,12 +191,20 @@
     "libraryVersionNameForTests":""
   },
   {
+    "library":"EHPTexamples"
+  },
+  {
     "library":"EHPTexamples",
-    "libraryVersion":"main"
+    "libraryVersion":"main",
+    "libraryVersionNameForTests":"latest"
+  },
+  {
+    "library":"EHPTlib"
   },
   {
     "library":"EHPTlib",
-    "libraryVersion":"main"
+    "libraryVersion":"main",
+    "libraryVersionNameForTests":"latest"
   },
   {
     "library":"ElectricalEnergyStorage"
