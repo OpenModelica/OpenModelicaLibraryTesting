@@ -16,7 +16,7 @@ from subprocess import call
 from monotonic import monotonic
 from omcommon import friendlyStr, multiple_replace
 from natsort import natsorted
-from shared import readConfig, getReferenceFileName, simulationAcceptsFlag
+from shared import readConfig, getReferenceFileName, simulationAcceptsFlag, isFMPy
 import shared
 
 import signal
