@@ -453,7 +453,7 @@ try:
     if isFMpy(fmisimulator):
       fmisimulator = "%s simulate " % fmisimulator
       cmd = "%s --start-time %g --stop-time %g --timeout %g --tolerance %g %s.fmu" % ("--output-file %s" % resFile),startTime,stopTime,conf["ulimitExe"],tolerance,conf["fileName"].replace(".","_"))
-    else # OMSimulator
+    else: # OMSimulator
       cmd = "%s --tempDir=%s --startTime=%g --stopTime=%g --timeout=%g --tolerance=%g %s.fmu" % (("-r=%s" % resFile) if outputFormat != "empty" else "",fmitmpdir,startTime,stopTime,conf["ulimitExe"],tolerance,conf["fileName"].replace(".","_"))
     with open(simFile,"w") as fp:
       fp.write("OMSimulator %s\n" % cmd)
