@@ -465,7 +465,7 @@ pipeline {
           runRegressiontest('maintenance/v1.22', 'v1.22-fmi-fmpy', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
-      stage('master FMI with OMSimulator') {
+      stage('master FMI with FMPy') {
         agent {
           node {
             label 'ryzen-5950x-2-1'
