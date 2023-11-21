@@ -930,7 +930,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
   }
   if (name.contains('fmpy')) {
     sh """
-    python -m pip install FMPy
+    python3 -m pip install FMPy
     fmpy -h || exit 1
     """
     FMI_TESTING_FLAG="--fmi=true --fmisimulator='fmpy' --default=ulimitExe=50"
