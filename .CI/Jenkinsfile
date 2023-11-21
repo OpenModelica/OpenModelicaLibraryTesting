@@ -25,7 +25,9 @@ pipeline {
     booleanParam(name: 'fmi_v1_20', defaultValue: false, description: 'maintenance/v1.20 branch with FMI (ryzen-5950x-2)')
     booleanParam(name: 'fmi_v1_21', defaultValue: false, description: 'maintenance/v1.21 branch with FMI (ryzen-5950x-2)')
     booleanParam(name: 'fmi_v1_22', defaultValue: false, description: 'maintenance/v1.22 branch with FMI (ryzen-5950x-2)')
-    booleanParam(name: 'fmi_master', defaultValue: false, description: 'master branch with FMI (ryzen-5950x-2)')
+    booleanParam(name: 'fmi_master', defaultValue: false, description: 'master branch with FMI running OMSimulator (ryzen-5950x-2)')
+    booleanParam(name: 'fmpy_fmi_v1_22', defaultValue: false, description: 'maintenance/v1.22 branch with FMI (ryzen-5950x-2)')
+    booleanParam(name: 'fmpy_fmi_master', defaultValue: false, description: 'master branch with FMI running FMPy (ryzen-5950x-2)')
     booleanParam(name: 'newInst_daeMode', defaultValue: false, description: 'master branch, --daeMode with -d=newInst (ryzen-5950x-2)')
     booleanParam(name: 'newInst_newBackend', defaultValue: false, description: 'master branch, -d=newInst --newBackend, (ryzen-5950x-1)')
     booleanParam(name: 'oldInst', defaultValue: false, description: 'master branch, with -d=nonewInst (ryzen-5950x-2)')
@@ -271,7 +273,7 @@ pipeline {
         }
       }
 
-      stage('v1.12 FMI') {
+      stage('v1.12 FMI with OMSimulator') {
         agent {
           node {
             label 'ryzen-5950x-2-1'
@@ -287,7 +289,7 @@ pipeline {
           runRegressiontest('maintenance/v1.12', 'v1.12-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', true, '', true, false)
         }
       }
-      stage('v1.13 FMI') {
+      stage('v1.13 FMI with OMSimulator') {
         agent {
           node {
             label 'ryzen-5950x-2-1'
@@ -303,7 +305,7 @@ pipeline {
           runRegressiontest('maintenance/v1.13', 'v1.13-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', true, '', true, false)
         }
       }
-      stage('v1.14 FMI') {
+      stage('v1.14 FMI with OMSimulator') {
         agent {
           node {
             label 'ryzen-5950x-2-1'
@@ -319,7 +321,7 @@ pipeline {
           runRegressiontest('maintenance/v1.14', 'v1.14-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', true, false)
         }
       }
-      stage('v1.16 FMI') {
+      stage('v1.16 FMI with OMSimulator') {
         agent {
           node {
             label 'ryzen-5950x-2-1'
@@ -335,7 +337,7 @@ pipeline {
           runRegressiontest('maintenance/v1.16', 'v1.16-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
-      stage('v1.17 FMI') {
+      stage('v1.17 FMI with OMSimulator') {
         agent {
           node {
             label 'ryzen-5950x-2-1'
@@ -351,7 +353,7 @@ pipeline {
           runRegressiontest('maintenance/v1.17', 'v1.17-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
-      stage('v1.18 FMI') {
+      stage('v1.18 FMI with OMSimulator') {
         agent {
           node {
             label 'ryzen-5950x-2-1'
@@ -367,7 +369,7 @@ pipeline {
           runRegressiontest('maintenance/v1.18', 'v1.18-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
-      stage('v1.19 FMI') {
+      stage('v1.19 FMI with OMSimulator') {
         agent {
           node {
             label 'ryzen-5950x-2-1'
@@ -383,7 +385,7 @@ pipeline {
           runRegressiontest('maintenance/v1.19', 'v1.19-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
-      stage('v1.20 FMI') {
+      stage('v1.20 FMI with OMSimulator') {
         agent {
           node {
             label 'ryzen-5950x-2-1'
@@ -399,7 +401,7 @@ pipeline {
           runRegressiontest('maintenance/v1.20', 'v1.20-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
-      stage('v1.21 FMI') {
+      stage('v1.21 FMI with OMSimulator') {
         agent {
           node {
             label 'ryzen-5950x-2-1'
@@ -415,7 +417,7 @@ pipeline {
           runRegressiontest('maintenance/v1.21', 'v1.21-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
-      stage('v1.22 FMI') {
+      stage('v1.22 FMI with OMSimulator') {
         agent {
           node {
             label 'ryzen-5950x-2-1'
@@ -431,7 +433,7 @@ pipeline {
           runRegressiontest('maintenance/v1.22', 'v1.22-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
-      stage('master FMI') {
+      stage('master FMI with OMSimulator') {
         agent {
           node {
             label 'ryzen-5950x-2-1'
@@ -445,6 +447,38 @@ pipeline {
         }
         steps {
           runRegressiontest('master', 'master-fmi', '', 'origin/master', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+        }
+      }
+      stage('v1.22 FMI with FMPy') {
+        agent {
+          node {
+            label 'ryzen-5950x-2-1'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.fmpy_fmi_v1_22 }
+        }
+        steps {
+          runRegressiontest('maintenance/v1.22', 'v1.22-fmi-fmpy', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+        }
+      }
+      stage('master FMI with OMSimulator') {
+        agent {
+          node {
+            label 'ryzen-5950x-2-1'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.fmpy_fmi_master }
+        }
+        steps {
+          runRegressiontest('master', 'master-fmi-fmpy', '', 'origin/master', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('newInst-daeMode') {
@@ -714,7 +748,7 @@ pipeline {
           expression { params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_v1_14 || params.fmi_v1_16 || params.fmi_v1_17 || params.fmi_v1_18 || params.fmi_v1_19 || params.fmi_v1_20 || params.fmi_v1_21 || params.fmi_v1_22 ||params.fmi_master || params.newInst_daeMode  || params.oldInst || params.report_ryzen_5950x_2 || params.cpp || params.cvode || params.gbode}
         }
         environment {
-          GITBRANCHES_FMI = 'maintenance/v1.12-fmi maintenance/v1.13-fmi maintenance/v1.14-fmi maintenance/v1.16-fmi maintenance/v1.17-fmi maintenance/v1.18-fmi maintenance/v1.19-fmi maintenance/v1.20-fmi maintenance/v1.21-fmi maintenance/v1.22-fmi master-fmi'
+          GITBRANCHES_FMI = 'maintenance/v1.12-fmi maintenance/v1.13-fmi maintenance/v1.14-fmi maintenance/v1.16-fmi maintenance/v1.17-fmi maintenance/v1.18-fmi maintenance/v1.19-fmi maintenance/v1.20-fmi maintenance/v1.21-fmi maintenance/v1.22-fmi master-fmi maintenance/v1.22-fmi-fmpy master-fmi-fmpy'
           GITBRANCHES_NEWINST = 'oldInst'
           GITBRANCHES_DAE = 'newInst-daeMode'
           GITBRANCHES_CPP = 'v1.19-cpp v1.20-cpp v1.21-cpp v1.22-cpp cpp'
@@ -807,7 +841,7 @@ pipeline {
         }
         when {
           beforeAgent true
-          expression { params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_v1_14 || params.fmi_v1_16 || params.fmi_v1_17 || params.fmi_master || params.newInst_daeMode  || params.oldInst || params.report_ripper2 }
+          expression { params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_v1_14 || params.fmi_v1_16 || params.fmi_v1_17 || params.fmi_v1_18 || params.fmi_v1_18 || params.fmi_v1_19 || params.fmi_v1_20 || params.fmi_v1_21 || params.fmi_v1_22 || params.fmi_master || params.fmpy_fmi_v1_22 || params.fmpy_fmi_master || params.newInst_daeMode  || params.oldInst || params.report_ripper2 }
         }
         steps {
           sh 'cp ~/TEST_LIBS_BACKUP/ripper2-sqlite3.db sqlite3.db'
@@ -863,7 +897,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
   fi
   '''
   FMI_TESTING_FLAG=""
-  if (omsHash) {
+  if (!name.contains('fmpy') && omsHash) {
     sh """
     if ! test -d OMSimulator; then
       git clone --recursive https://openmodelica.org/git-readonly/OMSimulator.git || exit 1
@@ -894,6 +928,13 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
     """
     FMI_TESTING_FLAG="--fmi=true --fmisimulator=${env.HOME}/saved_omc/OMSimulator/install/bin/OMSimulator --default=ulimitExe=50"
   }
+  if (name.contains('fmpy')) {
+    sh """
+    fmpy -h || exit 1
+    """
+    FMI_TESTING_FLAG="--fmi=true --fmisimulator='fmpy' --default=ulimitExe=50"
+  }
+
   OMCPATH = "${omcompiler ? '../' : './'}OMCompiler"
 
   sh '''

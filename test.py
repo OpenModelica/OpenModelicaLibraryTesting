@@ -97,7 +97,7 @@ parser.add_argument('--extraflags', default='')
 parser.add_argument('--extrasimflags', default='')
 parser.add_argument('--ompython_omhome', default='')
 parser.add_argument('--noclean', action="store_true", default=False)
-parser.add_argument('--fmisimulator', default='')
+parser.add_argument('--fmisimulator', default='OMSimulator', help="'OMSimulator' is default but you can use 'fmpy' also")
 parser.add_argument('--ulimitvmem', help="Virtual memory limit (in kB)", type=int, default=8*1024*1024)
 parser.add_argument('--default', action='append', help="Add a default value for some configuration key, such as --default=ulimitExe=60. The equals sign is mandatory.", default=[])
 parser.add_argument('-j', '--jobs', default=0)
@@ -208,7 +208,11 @@ sys.stdout.flush()
 
 fmisimulatorversion = None
 if fmisimulator:
-  fmisimulatorversion = subprocess.check_output([fmisimulator, "-v"], stderr=subprocess.STDOUT).strip()
+  if not isFMPy(fmisimulator)
+    fmisimulatorversion = subprocess.check_output([fmisimulator, "-v"], stderr=subprocess.STDOUT).strip()
+  else
+    fmisimulatorversion = subprocess.check_output([fmisimulator, "-h"], stderr=subprocess.STDOUT).strip()
+
   print(fmisimulatorversion)
 else:
   if allTestsFmi:
