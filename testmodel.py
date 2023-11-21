@@ -435,7 +435,8 @@ except TimeoutError as e:
 writeResult()
 # Do the simulation
 
-resFile = "%s_res.%s" % (conf["fileName"], outputFormat)
+# FMPy generates csv, OMSimulator generates mat (outputFormat)
+resFile = "%s_res.%s" % (conf["fileName"], outputFormat if not isFMPy(fmisimulator) else 'csv')
 
 start=monotonic()
 try:
@@ -448,11 +449,15 @@ try:
     fmitmpdir = "temp_%s_fmu" % conf["fileName"].replace(".","_")
     with open("%s.tmpfiles" % conf["fileName"], "a+") as fp:
       fp.write("%s\n" % fmitmpdir)
-    cmd = "%s --tempDir=%s --startTime=%g --stopTime=%g --timeout=%g --tolerance=%g %s.fmu" % (("-r=%s" % resFile) if outputFormat != "empty" else "",fmitmpdir,startTime,stopTime,conf["ulimitExe"],tolerance,conf["fileName"].replace(".","_"))
+    fmisimulator = conf.get("fmisimulator")
+    if isFMpy(fmisimulator):
+      fmisimulator = "%s simulate " % fmisimulator
+      cmd = "%s --start-time %g --stop-time %g --timeout %g --tolerance %g %s.fmu" % ("--output-file %s" % resFile),startTime,stopTime,conf["ulimitExe"],tolerance,conf["fileName"].replace(".","_"))
+    else # OMSimulator
+      cmd = "%s --tempDir=%s --startTime=%g --stopTime=%g --timeout=%g --tolerance=%g %s.fmu" % (("-r=%s" % resFile) if outputFormat != "empty" else "",fmitmpdir,startTime,stopTime,conf["ulimitExe"],tolerance,conf["fileName"].replace(".","_"))
     with open(simFile,"w") as fp:
       fp.write("OMSimulator %s\n" % cmd)
-    #res = checkOutputTimeout("%s %s >> %s 2>&1" % (conf["fmisimulator"],cmd,simFile), conf["ulimitExe"], conf)
-    res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,conf["fmisimulator"],cmd,conf["fileName"]), 1.05*conf["ulimitExe"], conf)
+    res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,fmisimulator,cmd,conf["fileName"]), 1.05*conf["ulimitExe"], conf)
   else:
     cmd = ("./%s %s %s %s" % (conf["fileName"],annotationSimFlags,conf["simFlags"],emit_protected)).strip()
     if conf["simCodeTarget"]=="C":

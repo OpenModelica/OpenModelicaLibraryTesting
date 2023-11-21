@@ -93,3 +93,8 @@ def simulationAcceptsFlag(f, checkOutput=True, cwd=None):
   except subprocess.CalledProcessError as e:
     pass
   return False
+
+def isFMPy(fmisimulator):
+  return 'fmpy' in fmisimulator
+
+
