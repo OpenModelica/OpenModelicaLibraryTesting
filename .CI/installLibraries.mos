@@ -62,6 +62,7 @@ for l in {
   {"ThermofluidStream", "main"},
   {"TILMedia", "main"},
   {"ClaRa_Obsolete", "main"},
+  {"ClaRa", ""},
   {"ClaRa", "main"}
 } loop
   if not installPackage(stringTypeName(l[1]), l[2]) then
