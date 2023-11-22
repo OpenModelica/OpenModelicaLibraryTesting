@@ -61,7 +61,6 @@ for l in {
   {"Physiomodel", ""},
   {"ThermofluidStream", "main"},
   {"TILMedia", "main"},
-  {"ClaRa_Obsolete", "main"},
   {"ClaRa", ""},
   {"ClaRa", "main"}
 } loop
