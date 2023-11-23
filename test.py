@@ -214,7 +214,7 @@ if fmisimulator:
     else:
       fmisimulatorversion = subprocess.check_output(fmisimulator.split() + ["-h"], stderr=subprocess.STDOUT).strip()
   except subprocess.CalledProcessError as e:
-    print("Failure to run %s:\n%s", fmisimulator, e.output)
+    print("Failure to run %s:\n%s" %(fmisimulator, e.output))
     
   
   
