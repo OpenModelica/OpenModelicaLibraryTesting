@@ -211,7 +211,7 @@ if fmisimulator:
   if not isFMPy(fmisimulator):
     fmisimulatorversion = subprocess.check_output([fmisimulator, "-v"], stderr=subprocess.STDOUT).strip()
   else:
-    fmisimulatorversion = "fmpy latest via pip" # subprocess.check_output([fmisimulator, "-h"], stderr=subprocess.STDOUT).strip()
+    fmisimulatorversion = subprocess.check_output(fmisimulator.split() + ["-h"], stderr=subprocess.STDOUT).strip()
 
   print(fmisimulatorversion)
 else:
