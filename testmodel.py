@@ -456,7 +456,7 @@ try:
     else: # OMSimulator
       cmd = "%s --tempDir=%s --startTime=%g --stopTime=%g --timeout=%g --tolerance=%g %s.fmu" % (("-r=%s" % resFile) if outputFormat != "empty" else "",fmitmpdir,startTime,stopTime,conf["ulimitExe"],tolerance,conf["fileName"].replace(".","_"))
     with open(simFile,"w") as fp:
-      fp.write("OMSimulator %s\n" % cmd)
+      fp.write("%s %s\n" % (fmisimulator, cmd))
     res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,fmisimulator,cmd,conf["fileName"]), 1.05*conf["ulimitExe"], conf)
   else:
     cmd = ("./%s %s %s %s" % (conf["fileName"],annotationSimFlags,conf["simFlags"],emit_protected)).strip()
