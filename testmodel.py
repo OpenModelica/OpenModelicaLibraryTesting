@@ -450,7 +450,7 @@ try:
     fmitmpdir = "temp_%s_fmu" % conf["fileName"].replace(".","_")
     with open("%s.tmpfiles" % conf["fileName"], "a+") as fp:
       fp.write("%s\n" % fmitmpdir)
-    if shared.isFMpy(fmisimulator):
+    if shared.isFMPy(fmisimulator):
       fmisimulator = "%s simulate " % fmisimulator
       cmd = "%s --start-time %g --stop-time %g --timeout %g --tolerance %g %s.fmu" % (("--output-file %s" % resFile),startTime,stopTime,conf["ulimitExe"],tolerance,conf["fileName"].replace(".","_"))
     else: # OMSimulator
