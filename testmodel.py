@@ -436,6 +436,7 @@ writeResult()
 # Do the simulation
 
 # FMPy generates csv, OMSimulator generates mat (outputFormat)
+fmisimulator = conf.get("fmisimulator")
 resFile = "%s_res.%s" % (conf["fileName"], outputFormat if not shared.isFMPy(fmisimulator) else 'csv')
 
 start=monotonic()
@@ -449,7 +450,6 @@ try:
     fmitmpdir = "temp_%s_fmu" % conf["fileName"].replace(".","_")
     with open("%s.tmpfiles" % conf["fileName"], "a+") as fp:
       fp.write("%s\n" % fmitmpdir)
-    fmisimulator = conf.get("fmisimulator")
     if shared.isFMpy(fmisimulator):
       fmisimulator = "%s simulate " % fmisimulator
       cmd = "%s --start-time %g --stop-time %g --timeout %g --tolerance %g %s.fmu" % (("--output-file %s" % resFile),startTime,stopTime,conf["ulimitExe"],tolerance,conf["fileName"].replace(".","_"))
