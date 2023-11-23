@@ -209,7 +209,7 @@ sys.stdout.flush()
 fmisimulatorversion = None
 if fmisimulator:
   if not isFMPy(fmisimulator):
-    fmisimulatorversion = subprocess.check_output([fmisimulator, "-v"], stderr=subprocess.STDOUT).strip()
+    fmisimulatorversion = "fmpy latest via pip" # subprocess.check_output([fmisimulator, "-v"], stderr=subprocess.STDOUT).strip()
   else:
     fmisimulatorversion = subprocess.check_output([fmisimulator, "-h"], stderr=subprocess.STDOUT).strip()
 
