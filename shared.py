@@ -95,6 +95,9 @@ def simulationAcceptsFlag(f, checkOutput=True, cwd=None):
   return False
 
 def isFMPy(fmisimulator):
-  return 'fmpy' in fmisimulator
+  if fmisimulator:
+    return 'fmpy' in fmisimulator
+  else:
+    return False
 
 
