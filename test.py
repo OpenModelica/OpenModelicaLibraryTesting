@@ -819,6 +819,14 @@ for libname in stats_by_libname.keys():
     ))(filename_prefix="files/%s_%s" % (s[2], s[1]), diff=s[3].get("diff"))
     for s in natsorted(stats, key=lambda s: s[1])])
   numSucceeded = [len(stats)] + [sum(1 if s[3]["phase"]>=i else 0 for s in stats) for i in range(1,8)]
+
+  try:
+    githuburltesting = "https://github.com/OpenModelica/OpenModelicaLibraryTesting/commit/"
+    gitloglibrarytesting = subprocess.check_output(["git", "log", '--pretty=<table><tr><th>Commit</th><th>Date</th><th>Author</th><th>Summary</th></tr><tr><td><a href="%s/%%h">%%h</a></td><td>%%ai</td><td>%%an</td><td>%%s</td></tr></table>' % (githuburltesting), "-1"], cwd="./").decode("utf-8")
+  except subprocess.CalledProcessError as e:
+    print(str(e))
+    gitloglibrarytesting = "<table><tr><td>could not get the git log for OpenModelicaLibraryTesting</td></tr></table>"
+
   replacements = (
     (u"#sysInfo#", html.escape(sysInfo)),
     (u"#omcVersion#", html.escape(omc_version)),
@@ -828,6 +836,7 @@ for libname in stats_by_libname.keys():
     (u"#fileName#", html.escape(libname)),
     (u"#customCommands#", html.escape("\n".join(conf["customCommands"]))),
     (u"#libraryVersionRevision#", html.escape(conf["libraryVersionRevision"])),
+    (u"#OpenModelicaLibraryTesting#", html.escape(gitloglibrarytesting)),
     (u"#metadata#", html.escape(conf["metadata"])),
     (u"#ulimitOmc#", html.escape(str(conf["ulimitOmc"]))),
     (u"#ulimitExe#", html.escape(str(conf["ulimitExe"]))),

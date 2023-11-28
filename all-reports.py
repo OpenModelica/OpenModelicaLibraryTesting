@@ -14,6 +14,7 @@ parser.add_argument('branches', nargs='*')
 parser.add_argument('--baseurl', default="http://libraries.openmodelica.org/branches")
 parser.add_argument('--historyurl', default="http://libraries.openmodelica.org/branches/history")
 parser.add_argument('--githuburl', default="https://github.com/OpenModelica/OpenModelica/commit")
+parser.add_argument('--githuburltesting', default="https://github.com/OpenModelica/OpenModelicaLibraryTesting/commit")
 parser.add_argument('--omcgitdir', default="../OpenModelica/OpenModelica")
 parser.add_argument('--email', default=False, action='store_true')
 args = parser.parse_args()
@@ -25,7 +26,9 @@ branches = [branch.split("/")[-1] for branch in args.branches]
 baseurl = args.baseurl
 historyurl  = args.historyurl
 githuburl = args.githuburl
+githuburltesting = args.githuburltesting
 omcgitdir = args.omcgitdir
+omctestinggitdir = args.omctestinggitdir
 doemail = args.email
 
 if not os.path.exists(omcgitdir):
@@ -100,7 +103,7 @@ for branch in branches:
     emails_current = set(["openmodelicabuilds@ida.liu.se"])
     if v1 != v2:
       try:
-        gitlog = subprocess.check_output(["git", "log", '--pretty=<tr><td><a href="%s/%%h">%%h</a></td><td>%%an</td><td>%%s</td></tr>' % (githuburl), "%s..%s" % (v1,v2)], cwd=omcgitdir).decode("utf-8")
+        gitlog = subprocess.check_output(["git", "log", '--pretty=<tr><td><a href="%s/%%h">%%h</a></td><td>%%ai</td><td>%%an</td><td>%%s</td></tr>' % (githuburl), "%s..%s" % (v1,v2)], cwd=omcgitdir).decode("utf-8")
         print("Do git ls-tree for %s %s" % (v1,v2))
         try:
           t1 = subprocess.check_output(["git", "ls-tree", v1, "OMCompiler/3rdParty"], cwd=omcgitdir).decode("utf-8").strip().split(" ")[2].split("\t")[0]
@@ -128,7 +131,14 @@ for branch in branches:
         gitlog = "<tr><td>%s..%s</td></tr>" % (v1,v2)
     else:
       gitlog = ""
-    tpl = tpl.replace("#OMCGITLOG#",gitlog).replace("#NUMCOMMITS#",str(gitlog.count("<tr>"))).replace("#3rdParty#",thirdPartyChanged)
+    
+    try:
+      gitloglibrarytesting = subprocess.check_output(["git", "log", '--pretty=<tr><td><a href="%s/%%h">%%h</a></td><td>%%ai</td><td>%%an</td><td>%%s</td></tr>' % (githuburltesting), "-2"], cwd="./").decode("utf-8")
+    except subprocess.CalledProcessError as e:
+      print(str(e))
+      gitloglibrarytesting = "<tr><td>could not get the git log for OpenModelicaLibraryTesting</td></tr>"
+    
+    tpl = tpl.replace("#OMCGITLOG#",gitlog).replace("#NUMCOMMITS#",str(gitlog.count("<tr>"))).replace("#3rdParty#",thirdPartyChanged).replace("#OMCLIBRARYTESTINGGITLOG#",gitloglibrarytesting)
     libnames = [libname for (libname,) in cursor.execute("""SELECT libname FROM [%s] WHERE date=? GROUP BY libname""" % branch, (d2,))]
     startdates = {}
     # Get previous date of each library run and group them together for fast queries later

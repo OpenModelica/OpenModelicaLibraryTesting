@@ -26,10 +26,15 @@
 
 <h2>OpenModelica Changes</h2>
 <table>
-<tr><th>Commit</th><th>Author</th><th>Summary</th></tr>
+<tr><th>Commit</th><td>Date</th><th>Author</th><th>Summary</th></tr>
 #OMCGITLOG#
 </table>
 #3rdParty#
+<h2>OpenModelicaLibaryTesting Changes</h2>
+<table>
+<tr><th>Commit</th><th>Date</th><th>Author</th><th>Summary</th></tr>
+#OMCLIBRARYTESTINGGITLOG#
+</table>
 
 <h2>Library Changes</h2>
 <table>
