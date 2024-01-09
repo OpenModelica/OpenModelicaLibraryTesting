@@ -93,6 +93,21 @@ The scripts from this repository can be used to run regression tests for public,
   ```
   Use `configs/*.json` to specify what to test.
   The test results are saved in `sqlite3.db`.
+
+  Options:
+    - `--branch=master`: Branch of OpenModelica
+    - `--fmi=False`: Test FMI
+    - `--output=''`: Result location
+    - `--libraries=~/.openmodelica/libraries/`: Location of Modelica libraries
+    - `--extraflags=''`: Extra compiler flags.
+    - `--extrasimflags=''`: Extra simulation flags.
+    - `--ompython_omhome=''`: Path to OpenModelica for OMPython (can be different to the OM running the tests)
+    - `--noclean=False`: Clean (most) generated files.
+    - `--fmisimulator=''`: The default is nothing but you can use the path to OMSimulator executable or 'fmpy'
+    - `--ulimitvmem=8388608`: Virtual memory limit (in kB)
+    - `--default=[]`: Add a default value for some configuration key, such as --default=ulimitExe=60. The equals sign is mandatory
+    - `-j`,`--jobs`: Number of threads to use for testing.
+
 - Generate HTML results
   ```bash
   ./report.py configs/myConf.json
