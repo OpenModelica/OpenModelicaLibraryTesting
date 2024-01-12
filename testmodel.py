@@ -529,12 +529,12 @@ else:
   # Create a file containing only the calibrated variables, for easy display
   lstfiles = "\n".join(['<li>%s <a href="%s.html">(javascript)</a> <a href="%s.csv">(csv)</a></li>' % (str.split(str(f),".diff.",1)[1],str(os.path.basename(f)),str(os.path.basename(f))) for f in diffFiles])
   with open(prefix+".html", 'w') as fp:
-    fp.write("<html><body><h1>%s differences from the reference file</h1><p>startTime: %g</p><p>stopTime: %g</p><p>Simulated using tolerance: %g</p><ul>%s</ul></body></html>" % (conf["modelName"], startTime, stopTime, tolerance, lstfiles));
+    fp.write("<html lang="en"><body><h1>%s differences from the reference file</h1><p>startTime: %g</p><p>stopTime: %g</p><p>Simulated using tolerance: %g</p><ul>%s</ul></body></html>" % (conf["modelName"], startTime, stopTime, tolerance, lstfiles));
   for var in diffVars:
     if "/" in var:
       continue # Quoted identifier, or possibly an error message... Either way, avoid crapping out below
     with open(prefix+"."+var+".html", 'w') as fp:
-      fp.write("""<html>
+      fp.write("""<html lang="en">
 <head>
 <script type="text/javascript" src="dygraph-combined.js"></script>
     <style type="text/css">
