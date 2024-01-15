@@ -19,7 +19,7 @@ branches = [br.split("/")[-1] for br in args.branches.split(" ")]
 dates = {}
 dates_str = {}
 fields = ["exectime", "parsing", "frontend", "backend", "simcode", "templates", "compile", "simulate", "verify"]
-entryhead = "<tr><th>Branch</th><th>Total</th><th>Parsing</th><th>Frontend</th><th>Backend</th><th>SimCode</th><th>Templates</th><th>Compilation</th><th>Simulation</th><th>Verification</th>\n"
+entryhead = "<tr><th>Branch</th><th>Total</th><th>Parsing</th><th>Frontend</th><th>Backend</th><th>SimCode</th><th>Templates</th><th>Compilation</th><th>Simulation</th><th>Verification</th></tr>\n"
 
 libs = {}
 
@@ -70,7 +70,7 @@ def checkEqual(iterator):
 
 for lib in sorted(libs.keys()):
   models = libs[lib]
-  entries += "<hr /><h3>%s</h3>\n" % lib
+  entries += "<hr><h3>%s</h3>\n" % lib
   branches_versions = [(cursor.execute("SELECT libversion FROM [libversion] WHERE libname=? AND branch=? ORDER BY date DESC LIMIT 1", (lib,branch)).fetchone() or ["unknown"])[0] for branch in branches]
   all_equal = checkEqual(branches_versions)
   if not all_equal:
@@ -104,11 +104,11 @@ for lib in sorted(libs.keys()):
       diff2 = models[branches[-1]][i] - models[branch][i]
       diff_text = ""
       if len(diff2)>0:
-        diff_text += "<p>Now working in %s, failed in %s:<br />\n" % (branches[-1],branch) + "<br />\n".join(sorted(diff2)) + "</p>"
+        diff_text += "<p>Now working in %s, failed in %s:<br>\n" % (branches[-1],branch) + "<br>\n".join(sorted(diff2)) + "</p>"
       if len(diff1)>0:
-        diff_text += "<p>Now failing in %s, worked in %s:<br />\n" % (branches[-1],branch) + "<br />\n".join(sorted(diff1)) + "</p>"
+        diff_text += "<p>Now failing in %s, worked in %s:<br>\n" % (branches[-1],branch) + "<br>\n".join(sorted(diff1)) + "</p>"
       if False and diff_text:
-        diff_text += "<p>Debug:<br />\n" + "<br />\n".join(models[branch][i]) + "</p>"
+        diff_text += "<p>Debug:<br>\n" + "<br>\n".join(models[branch][i]) + "</p>"
       entries += '<td%s><a%s>%s%s</a></td>' % (' class="warning"' if old_vs and old_vs[i]>vs[i] else (' class="better"' if old_vs and old_vs[i]<vs[i] else ""),' class="dot"' if diff_text else "",vs[i],('<span class="tooltip">%s</span>' % diff_text) if diff_text else "")
     entries += "</tr>"
     nsimulate[branch] += vs[6]
