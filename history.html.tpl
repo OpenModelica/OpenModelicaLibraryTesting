@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <title>OpenModelica #BRANCH# from #DATE1# to #DATE2#</title>

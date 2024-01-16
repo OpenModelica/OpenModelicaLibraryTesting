@@ -266,7 +266,7 @@ for email in sorted(emails_to_send.keys()):
 The following reports contain regressions your account was involved with:
 """ + "\n".join(reversed(emails_to_send[email]["plain"])))
   msg.add_alternative("""\
-<html>
+<html lang="en">
 <head></head>
 <body>
 <p>The following reports contain regressions your account was involved with:</p>
