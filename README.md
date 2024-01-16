@@ -1,3 +1,5 @@
+[![Continuous Integration](https://github.com/OpenModelica/OpenModelicaLibraryTesting/actions/workflows/test.yml/badge.svg)](https://github.com/OpenModelica/OpenModelicaLibraryTesting/actions/workflows/test.yml)
+
 # OpenModelica Library Testing
 
 This repository provides scripts and documentation to run the nightly Modelica library tests for OpenModelica.
