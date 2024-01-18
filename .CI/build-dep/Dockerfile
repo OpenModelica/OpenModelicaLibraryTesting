@@ -1,5 +1,4 @@
 FROM docker.openmodelica.org/build-deps:v1.16.3
 
-# this doesn't seem to exist libxml2-dev libxslt1-dev
-RUN apt-get install libxml2 libxslt1.1 
+RUN apt-get update && apt-get install libxml2 libxslt1.1 libxml2-dev libxslt1-dev
 RUN pip3 install matplotlib FMPy
