@@ -28,7 +28,6 @@ historyurl  = args.historyurl
 githuburl = args.githuburl
 githuburltesting = args.githuburltesting
 omcgitdir = args.omcgitdir
-omctestinggitdir = args.omctestinggitdir
 doemail = args.email
 
 if not os.path.exists(omcgitdir):
