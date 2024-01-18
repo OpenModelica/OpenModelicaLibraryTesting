@@ -836,7 +836,7 @@ for libname in stats_by_libname.keys():
     (u"#fileName#", html.escape(libname)),
     (u"#customCommands#", html.escape("\n".join(conf["customCommands"]))),
     (u"#libraryVersionRevision#", html.escape(conf["libraryVersionRevision"])),
-    (u"#OpenModelicaLibraryTesting#", html.escape(gitloglibrarytesting)),
+    (u"#OpenModelicaLibraryTesting#", gitloglibrarytesting),
     (u"#metadata#", html.escape(conf["metadata"])),
     (u"#ulimitOmc#", html.escape(str(conf["ulimitOmc"]))),
     (u"#ulimitExe#", html.escape(str(conf["ulimitExe"]))),

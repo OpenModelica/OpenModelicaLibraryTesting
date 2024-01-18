@@ -35,7 +35,7 @@
 #fmi#
 #OpenModelicaLibraryTesting#
 <p>Test started: #timeStart#</p>
-<p>Tested Library: ##<pre>
+<p>Tested Library: #fileName# #libraryVersionRevision#<pre>
 #metadata#</pre></p>
 <p>BuildModel time limit: #ulimitOmc#s</p>
 <p>Simulation time limit: #ulimitExe#s</p>
