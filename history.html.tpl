@@ -30,7 +30,7 @@
 #OMCGITLOG#
 </table>
 #3rdParty#
-<h2>OpenModelicaLibaryTesting Changes</h2>
+<h2>OpenModelicaLibraryTesting Changes</h2>
 <table>
 <tr><th>Commit</th><th>Date</th><th>Author</th><th>Summary</th></tr>
 #OMCLIBRARYTESTINGGITLOG#

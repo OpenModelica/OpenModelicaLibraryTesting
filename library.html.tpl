@@ -29,12 +29,13 @@
 </tr>
 </table>
 
+<p>Test started: #timeStart#</p>
 <p>Total time taken: #totalTime#</p>
 <p>System info: #sysInfo#</p>
 <p>OpenModelica Version: #omcVersion#</p>
 #fmi#
+<p>OpenModelicaLibraryTesting Changes</p>
 #OpenModelicaLibraryTesting#
-<p>Test started: #timeStart#</p>
 <p>Tested Library: #fileName# #libraryVersionRevision#<pre>
 #metadata#</pre></p>
 <p>BuildModel time limit: #ulimitOmc#s</p>
