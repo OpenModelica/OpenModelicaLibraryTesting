@@ -29,19 +29,21 @@
 </tr>
 </table>
 
-<p>Test started: #timeStart#</p>
-<p>Total time taken: #totalTime#</p>
-<p>System info: #sysInfo#</p>
-<p>OpenModelica Version: #omcVersion#</p>
-#fmi#
-<p>OpenModelicaLibraryTesting Changes</p>
-#OpenModelicaLibraryTesting#
+<p>
+Test started: #timeStart#<br/>
+Total time taken: #totalTime#<br>
+System info: #sysInfo#</p>
+<p>OpenModelica Version: #omcVersion#<br>
+#fmi#<br>
+OpenModelicaLibraryTesting Changes<br>
+#OpenModelicaLibraryTesting#</p>
 <p>Tested Library: #fileName# #libraryVersionRevision#<pre>
 #metadata#</pre></p>
-<p>BuildModel time limit: #ulimitOmc#s</p>
-<p>Simulation time limit: #ulimitExe#s</p>
-<p>Default tolerance: #default_tolerance#</p>
-<p>Optimization level: #optlevel#</p>
+<p>
+BuildModel time limit: #ulimitOmc#s<br>
+Simulation time limit: #ulimitExe#s<br>
+Default tolerance: #default_tolerance#<br>
+Optimization level: #optlevel#</p>
 #referenceFiles#
 #referenceTool#
 Flags: <pre>#customCommands#</pre>
