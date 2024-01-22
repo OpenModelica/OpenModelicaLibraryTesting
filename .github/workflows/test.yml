@@ -1,0 +1,71 @@
+name: Continuous Integration
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+    tags: '*'
+
+jobs:
+  test:
+    name: GitHub Actions Test
+    strategy:
+      matrix:
+        omc-version: [stable, nightly]
+        python-version: ['3.10']
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup OpenModelica
+        uses: AnHeuermann/setup-openmodelica@v0.7
+        with:
+          version: ${{ matrix.omc-version }}
+          packages: |
+            'omc'
+          libraries: |
+            'Modelica 4.0.0'
+            'PNlib 2.2.0'
+          omc-diff: true
+
+      - name: Setup Python3
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'            # caching pip dependencies
+      - name: Install Python dependencies
+        shell: bash
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run library test
+        shell: bash
+        run: python test.py --branch="${{ matrix.omc-version }}" --noclean configs/sanityCheck.json
+
+      - name: Generate HTML results
+        shell: bash
+        run: python report.py --branches="${{ matrix.omc-version }}" configs/sanityCheck.json
+
+      - name: Zip HTML results
+        shell: bash
+        run: |
+          python .github/scripts/archiveResults.py "PNlib" "2.2.0" "${{ matrix.omc-version }}" "html/"
+
+      - name: Archive sqlite3.db
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ matrix.omc-version }}-sqlite3.db
+          path: |
+            sqlite3.db
+
+      - name: Archive HTML
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ matrix.omc-version }}-PNlib.html
+          path: html/
