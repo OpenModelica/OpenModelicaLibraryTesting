@@ -69,17 +69,38 @@
     "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"]
   },
   {
-    "library":"PowerGrids"
+    "library":"PowerGrids",
+    "referenceFileExtension":"mat",
+    "referenceFileNameDelimiter":".",
+    "referenceFinalDot":"_res.",
+    "referenceFiles":{
+      "giturl":"https://github.com/PowerGrids/PowerGrids-ref",
+      "destination":"ReferenceFiles/PowerGrids"
+    }
   },
   {
     "library":"PowerGrids",
     "libraryVersionNameForTests":"symb_jac",
-    "extraCustomCommands":["setCommandLineOptions(\"--generateSymbolicJacobian\")"]
+    "extraCustomCommands":["setCommandLineOptions(\"--generateSymbolicJacobian\")"],
+    "referenceFileExtension":"mat",
+    "referenceFileNameDelimiter":".",
+    "referenceFinalDot":"_res.",
+    "referenceFiles":{
+      "giturl":"https://github.com/PowerGrids/PowerGrids-ref",
+      "destination":"ReferenceFiles/PowerGrids"
+    }
   },
   {
     "library":"PowerGrids",
     "libraryVersion":"develop",
-    "libraryVersionNameForTests":"dev"
+    "libraryVersionNameForTests":"dev",
+    "referenceFileExtension":"mat",
+    "referenceFileNameDelimiter":".",
+    "referenceFinalDot":"_res.",
+    "referenceFiles":{
+      "giturl":"https://github.com/PowerGrids/PowerGrids-ref",
+      "destination":"ReferenceFiles/PowerGrids"
+    }
   },
   {
     "library":"PowerSystems",
