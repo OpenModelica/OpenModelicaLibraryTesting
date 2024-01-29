@@ -689,7 +689,7 @@ pipeline {
           expression { params.v1_12 || params.v1_13 || params.v1_14 || params.v1_16 || params.v1_17 || params.v1_18 || params.v1_19 || params.v1_20 || params.v1_21 || params.v1_22 || params.master || params.conversion_script || params.report_ryzen_5950x_1 | params.newInst_newBackend || params.generateSymbolicJacobian || params.heavy_tests}
         }
         environment {
-          GITBRANCHES = 'maintenance/v1.12 maintenance/v1.13 maintenance/v1.14 maintenance/v1.16 maintenance/v1.17 maintenance/v1.18 maintenance/v1.19 maintenance/v1.20 maintenance/v1.21 maintenance/v1.22 master'
+          GITBRANCHES = 'maintenance/v1.12 maintenance/v1.13 maintenance/v1.14 maintenance/v1.16 maintenance/v1.17 maintenance/v1.18 maintenance/v1.19 maintenance/v1.20 maintenance/v1.21 maintenance/v1.22 newInst_newBackend master'
           PYTHONIOENCODING = 'utf-8'
           IDA_EMAIL = credentials('IDA email')
         }
