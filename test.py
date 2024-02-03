@@ -815,7 +815,8 @@ for libname in stats_by_libname.keys():
       checkPhase(s[3]["phase"], 4),
       timeSeconds(s[3].get("templates") or 0),
       checkPhase(s[3]["phase"], 5),
-      timeSeconds(s[3].get("build") or 0)
+      timeSeconds(s[3].get("build") or 0),
+      timeSeconds(s[3].get("exectime") or 0)
     ))(filename_prefix="files/%s_%s" % (s[2], s[1]), diff=s[3].get("diff"))
     for s in natsorted(stats, key=lambda s: s[1])])
   numSucceeded = [len(stats)] + [sum(1 if s[3]["phase"]>=i else 0 for s in stats) for i in range(1,8)]
