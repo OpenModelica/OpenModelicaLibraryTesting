@@ -793,7 +793,7 @@ for libname in stats_by_libname.keys():
       filesList.write("/%s.diff.%s.csv\n" % (filename_prefix, v))
       filesList.write("/%s.diff.%s.html\n" % (filename_prefix, v))
   filesList.close()
-  testsHTML = "\n".join(['<tr><td>%s%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td>%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td></tr>\n' %
+  testsHTML = "\n".join(['<tr><td>%s%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td>%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td>%s</td></tr>\n' %
     (lambda filename_prefix, diff:
       (
       ('<a href="%s">%s</a>' % (filename_prefix + ".err", html.escape(s[1]))) if is_non_zero_file(filename_prefix + ".err") else html.escape(s[1]),
