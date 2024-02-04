@@ -353,18 +353,31 @@ for (lib,c) in configs:
         continue
       giturl = c["referenceFiles"]["giturl"]
       destination = c["referenceFiles"]["destination"]
-      if not os.path.isdir(destination):
-        subprocess.check_call(["git", "clone", giturl, destination], stderr=subprocess.STDOUT)
       destinationReal = os.path.realpath(destination)
+
+      if not os.path.isdir(destination):
+        if "git-directory" in c["referenceFiles"]:
+          # Sparse clone
+          os.makedirs(destination)
+          subprocess.check_call(["git", "init"], stderr=subprocess.STDOUT, cwd=destinationReal)
+          subprocess.check_call(["git", "remote", "add", "-f", "origin", giturl], stderr=subprocess.STDOUT, cwd=destinationReal)
+          subprocess.check_call(["git", "config", "core.sparseCheckout", "true"], stderr=subprocess.STDOUT, cwd=destinationReal)
+          file = open(os.path.join(destinationReal,".git", "info", "sparse-checkout"), "a")
+          file.write(c["referenceFiles"]["git-directory"].strip())
+          file.close()
+        else:
+          # Clone
+          subprocess.check_call(["git", "clone", giturl, destination], stderr=subprocess.STDOUT)
+
       subprocess.check_call(["git", "clean", "-fdx", "--exclude=*.hash"], stderr=subprocess.STDOUT, cwd=destinationReal)
       subprocess.check_call(["git", "fetch", "origin"], stderr=subprocess.STDOUT, cwd=destination)
       subprocess.check_call(["git", "reset", "--hard", refFilesGitTag], stderr=subprocess.STDOUT, cwd=destinationReal)
       subprocess.check_call(["git", "clean", "-fdx", "--exclude=*.hash"], stderr=subprocess.STDOUT, cwd=destinationReal)
       subprocess.check_call(["find", ".", "-name", "*.mat.xz", "-exec", "xz", "--decompress", "--keep", "{}", ";"], stderr=subprocess.STDOUT, cwd=destinationReal)
-      githash = subprocess.check_output(["git", "rev-parse", "--verify", "HEAD"], stderr=subprocess.STDOUT, cwd=destinationReal)
+      githash = subprocess.check_output(["git", "rev-parse", "--verify", "HEAD"], stderr=subprocess.STDOUT, cwd=destinationReal, encoding='utf8')
       c["referenceFiles"] = destinationReal
       if giturl.startswith("https://github.com"):
-        c["referenceFilesURL"] = '<a href="%s/tree/%s">%s (%s)</a>' % (giturl,githash.strip(),giturl,githash.strip())
+        c["referenceFilesURL"] = '<a href="%s/tree/%s">%s (%s)</a>' % (giturl, githash.strip(), giturl,githash.strip())
       else:
         c["referenceFilesURL"] = "%s (%s)" % (giturl,githash.strip())
       preparedReferenceDirs[destination] = (c["referenceFiles"],c["referenceFilesURL"])

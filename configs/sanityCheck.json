@@ -8,7 +8,7 @@
       "giturl":"https://github.com/AMIT-HSBI/PNlib",
       "destination":"ReferenceFiles/PNlib",
       "git-ref": "v2.2",
-      "directory": "ReferenceFiles"
+      "git-directory": "ReferenceFiles"
     }
   }
 ]
