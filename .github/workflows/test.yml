@@ -44,7 +44,7 @@ jobs:
 
       - name: Run library test
         shell: bash
-        run: python test.py --branch="${{ matrix.omc-version }}" --noclean configs/sanityCheck.json
+        run: python test.py --branch="${{ matrix.omc-version }}" --noclean --verbose configs/sanityCheck.json
 
       - name: Generate HTML results
         shell: bash
