@@ -345,6 +345,9 @@ for (lib,c) in configs:
           raise Exception("Environment variable %s not defined, but used in JSON config for reference files" % k)
         c["referenceFiles"] = c["referenceFiles"].replace(m.group(0), os.environ[k])
     elif "giturl" in c["referenceFiles"]:
+      refFilesGitTag = "origin/master"
+      if "git-ref" in c["referenceFiles"]:
+        refFilesGitTag = c["referenceFiles"]["git-ref"].strip()
       if c["referenceFiles"]["destination"] in preparedReferenceDirs:
         (c["referenceFiles"],c["referenceFilesURL"]) = preparedReferenceDirs[destination]
         continue
