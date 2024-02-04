@@ -375,7 +375,13 @@ for (lib,c) in configs:
       subprocess.check_call(["git", "clean", "-fdx", "--exclude=*.hash"], stderr=subprocess.STDOUT, cwd=destinationReal)
       subprocess.check_call(["find", ".", "-name", "*.mat.xz", "-exec", "xz", "--decompress", "--keep", "{}", ";"], stderr=subprocess.STDOUT, cwd=destinationReal)
       githash = subprocess.check_output(["git", "rev-parse", "--verify", "HEAD"], stderr=subprocess.STDOUT, cwd=destinationReal, encoding='utf8')
-      c["referenceFiles"] = destinationReal
+
+      if "git-directory" in c["referenceFiles"]:
+        c["referenceFiles"] = os.path.join(destinationReal, c["referenceFiles"]['git-directory'])
+        print(c["referenceFiles"])
+      else:
+        c["referenceFiles"] = destinationReal
+
       if giturl.startswith("https://github.com"):
         c["referenceFilesURL"] = '<a href="%s/tree/%s">%s (%s)</a>' % (giturl, githash.strip(), giturl,githash.strip())
       else:
