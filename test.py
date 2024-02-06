@@ -383,9 +383,9 @@ for (lib,c) in configs:
         c["referenceFiles"] = destinationReal
 
       if giturl.startswith("https://github.com"):
-        c["referenceFilesURL"] = '<a href="%s/tree/%s">%s (%s)</a>' % (giturl, githash.strip(), giturl,githash.strip())
+        c["referenceFilesURL"] = '<a href="%s/tree/%s">%s (%s)</a>' % (giturl, githash.strip(), giturl, githash.strip())
       else:
-        c["referenceFilesURL"] = "%s (%s)" % (giturl,githash.strip())
+        c["referenceFilesURL"] = "%s (%s)" % (giturl, githash.strip())
       preparedReferenceDirs[destination] = (c["referenceFiles"],c["referenceFilesURL"])
     else:
       raise Exception("Unknown referenceFiles in config: %s" % (str(c["referenceFiles"])))
