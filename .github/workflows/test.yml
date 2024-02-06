@@ -64,7 +64,6 @@ jobs:
             exit 1
           fi
 
-
       - name: Archive sqlite3.db
         uses: actions/upload-artifact@v4
         if: always()
