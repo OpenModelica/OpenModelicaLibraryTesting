@@ -58,7 +58,7 @@ jobs:
       - name: Verify that overview.html contains simulation and verification
         shell: bash
         run: |
-          if ! grep -q "<tr><td><a href=\"omc-stable/PNlib_2.2.0/PNlib_2.2.0.html\">omc-stable</a></td><td><a>93</a></td><td><a>93</a></td><td><a>92</a></td><td><a>92</a></td><td><a>92</a></td><td><a>92</a></td><td><a>92</a></td><td><a>91</a></td><td><a>90</a></td></tr></table>" overview.html; then
+          if ! grep -q "<tr><td><a href=\"${{ matrix.omc-version }}/PNlib_2.2.0/PNlib_2.2.0.html\">omc-stable</a></td><td><a>93</a></td><td><a>93</a></td><td><a>92</a></td><td><a>92</a></td><td><a>92</a></td><td><a>92</a></td><td><a>92</a></td><td><a>91</a></td><td><a>90</a></td></tr></table>" overview.html; then
             echo "Failed to find 93 simulating and 90 verifying models in overwiew.html:"
             cat overview.html
             exit 1
