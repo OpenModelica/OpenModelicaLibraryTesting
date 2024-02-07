@@ -345,25 +345,47 @@ for (lib,c) in configs:
           raise Exception("Environment variable %s not defined, but used in JSON config for reference files" % k)
         c["referenceFiles"] = c["referenceFiles"].replace(m.group(0), os.environ[k])
     elif "giturl" in c["referenceFiles"]:
+      refFilesGitTag = "origin/master"
+      if "git-ref" in c["referenceFiles"]:
+        refFilesGitTag = c["referenceFiles"]["git-ref"].strip()
       if c["referenceFiles"]["destination"] in preparedReferenceDirs:
         (c["referenceFiles"],c["referenceFilesURL"]) = preparedReferenceDirs[destination]
         continue
       giturl = c["referenceFiles"]["giturl"]
       destination = c["referenceFiles"]["destination"]
-      if not os.path.isdir(destination):
-        subprocess.check_call(["git", "clone", giturl, destination], stderr=subprocess.STDOUT)
       destinationReal = os.path.realpath(destination)
+
+      if not os.path.isdir(destination):
+        if "git-directory" in c["referenceFiles"]:
+          # Sparse clone
+          os.makedirs(destination)
+          subprocess.check_call(["git", "init"], stderr=subprocess.STDOUT, cwd=destinationReal)
+          subprocess.check_call(["git", "remote", "add", "-f", "origin", giturl], stderr=subprocess.STDOUT, cwd=destinationReal)
+          subprocess.check_call(["git", "config", "core.sparseCheckout", "true"], stderr=subprocess.STDOUT, cwd=destinationReal)
+          file = open(os.path.join(destinationReal,".git", "info", "sparse-checkout"), "a")
+          file.write(c["referenceFiles"]["git-directory"].strip())
+          file.close()
+        else:
+          # Clone
+          subprocess.check_call(["git", "clone", giturl, destination], stderr=subprocess.STDOUT)
+
       subprocess.check_call(["git", "clean", "-fdx", "--exclude=*.hash"], stderr=subprocess.STDOUT, cwd=destinationReal)
       subprocess.check_call(["git", "fetch", "origin"], stderr=subprocess.STDOUT, cwd=destination)
-      subprocess.check_call(["git", "reset", "--hard", "origin/master"], stderr=subprocess.STDOUT, cwd=destinationReal)
+      subprocess.check_call(["git", "reset", "--hard", refFilesGitTag], stderr=subprocess.STDOUT, cwd=destinationReal)
       subprocess.check_call(["git", "clean", "-fdx", "--exclude=*.hash"], stderr=subprocess.STDOUT, cwd=destinationReal)
       subprocess.check_call(["find", ".", "-name", "*.mat.xz", "-exec", "xz", "--decompress", "--keep", "{}", ";"], stderr=subprocess.STDOUT, cwd=destinationReal)
-      githash = subprocess.check_output(["git", "rev-parse", "--verify", "HEAD"], stderr=subprocess.STDOUT, cwd=destinationReal)
-      c["referenceFiles"] = destinationReal
-      if giturl.startswith("https://github.com"):
-        c["referenceFilesURL"] = '<a href="%s/tree/%s">%s (%s)</a>' % (giturl,githash.strip(),giturl,githash.strip())
+      githash = subprocess.check_output(["git", "rev-parse", "--verify", "HEAD"], stderr=subprocess.STDOUT, cwd=destinationReal, encoding='utf8')
+
+      if "git-directory" in c["referenceFiles"]:
+        c["referenceFiles"] = os.path.join(destinationReal, c["referenceFiles"]['git-directory'])
+        print(c["referenceFiles"])
       else:
-        c["referenceFilesURL"] = "%s (%s)" % (giturl,githash.strip())
+        c["referenceFiles"] = destinationReal
+
+      if giturl.startswith("https://github.com"):
+        c["referenceFilesURL"] = '<a href="%s/tree/%s">%s (%s)</a>' % (giturl, githash.strip(), giturl, githash.strip())
+      else:
+        c["referenceFilesURL"] = "%s (%s)" % (giturl, githash.strip())
       preparedReferenceDirs[destination] = (c["referenceFiles"],c["referenceFilesURL"])
     else:
       raise Exception("Unknown referenceFiles in config: %s" % (str(c["referenceFiles"])))

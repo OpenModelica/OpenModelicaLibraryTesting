@@ -1,11 +1,13 @@
 __pycache__
 !HelloWorld.mo
 !HelloWorld.mos
+/*.files
+/*.html
 /*.json
 /converted-libraries
+/PNlib*/
+/ReferenceFiles/
 files/
 HelloWorld*
 history/
 sqlite3.db
-/*.html
-/*.files
