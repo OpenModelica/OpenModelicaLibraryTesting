@@ -39,8 +39,8 @@ parser.add_argument('--default', action='append', help="Add a default value for 
 parser.add_argument('-j', '--jobs', default=0)
 parser.add_argument('-v', '--verbose', action="store_true", help="Verbose mode.", default=False)
 parser.add_argument('--execAllTests', action="store_true", help="Force all tests to be executed", default=False)
-parser.add_argument('--win', action="store_true", default=False)
-parser.add_argument('--noSync', action="store_true", default=False)
+parser.add_argument('--win', action="store_true", help="Windows mode", default=False)
+parser.add_argument('--noSync', action="store_true", help="Move files using python instead of rsync", default=False)
 parser.add_argument('--timeout', default=0, help="=[value] timeout in seconds for each test, it overrides the timeout calculated by the script")
 
 args = parser.parse_args()

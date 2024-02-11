@@ -15,7 +15,7 @@ parser.add_argument('--libraries')
 parser.add_argument('--docker')
 parser.add_argument('--dockerExtraArgs')
 parser.add_argument('--corba', action="store_true", default=False)
-parser.add_argument('--win', action="store_true", default=False)
+parser.add_argument('--win', action="store_true", help="Windows mode", default=False)
 
 args = parser.parse_args()
 config = args.config
