@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import argparse, os, sys, signal, threading, psutil, subprocess, shutil
+from asyncio.subprocess import STDOUT
 import simplejson as json
 from monotonic import monotonic
 from OMPython import FindBestOMCSession, OMCSession, OMCSessionZMQ
@@ -14,14 +15,16 @@ parser.add_argument('--libraries')
 parser.add_argument('--docker')
 parser.add_argument('--dockerExtraArgs')
 parser.add_argument('--corba', action="store_true", default=False)
+parser.add_argument('--win', action="store_true", default=False)
 
 args = parser.parse_args()
 config = args.config
 ompython_omhome = args.ompython_omhome
-libraries = args.libraries
+libraries = args.libraries.replace("\\","/")
 docker = args.docker if args.docker else None
 dockerExtraArgs = args.dockerExtraArgs.split(" ") if args.dockerExtraArgs else []
 corbaStyle = args.corba
+isWin = args.win 
 
 try:
   os.mkdir("files")
@@ -60,7 +63,7 @@ def sendExpressionTimeout(omc, cmd, timeout):
       fp.write("Thread is still alive.\n")
       if omc._omc_process.poll() is not None:
         fp.write("OMC died, but the thread is still running? This will end badly. The log-file of omc:\n")
-        with open(omc._omc_log_file.name) as omcLog:
+        with open(os.path.normpath(omc._omc_log_file.name)) as omcLog:
           for line in omcLog:
             fp.write(line)
         print("OMC died, but the thread is still running? This will end badly.\n")
@@ -151,9 +154,9 @@ os.chdir(conf["fileName"])
 
 dockerExtraArgs = dockerExtraArgs + ["-w", conf["fileName"]]
 
-errFile="../files/%s.err" % conf["fileName"]
-simFile="../files/%s.sim" % conf["fileName"]
-statFile="../files/%s.stat.json" % conf["fileName"]
+errFile=os.path.normpath("../files/%s.err" % conf["fileName"])
+simFile=os.path.normpath("../files/%s.sim" % conf["fileName"])
+statFile=os.path.normpath("../files/%s.stat.json" % conf["fileName"])
 try:
   os.unlink(errFile)
 except OSError:
@@ -203,7 +206,7 @@ if not omc.sendExpression(cmd):
   raise Exception('Could not send %s' % cmd)
 
 try:
-  os.unlink("%s.tmpfiles" % conf["fileName"])
+  os.unlink(os.path.normpath("%s.tmpfiles" % conf["fileName"]))
 except:
   pass
 #cmd = 'setCommandLineOptions("--running-testsuite=%s.tmpfiles")' % conf["fileName"]
@@ -219,7 +222,7 @@ referenceVars=[]
 referenceFile = conf.get("referenceFile") or ""
 if referenceFile != "":
   try:
-    compSignals = os.path.join(os.path.dirname(referenceFile),"comparisonSignals.txt")
+    compSignals = os.path.normpath(os.path.join(os.path.dirname(referenceFile),"comparisonSignals.txt"))
     if os.path.exists(compSignals):
       referenceVars=[s.strip() for s in open(compSignals).readlines() if (s.strip() != "")] # s.strip().lower() != "time" and ??? I guess we should check time variable...
       print(referenceVars)
@@ -325,7 +328,7 @@ if conf["simCodeTarget"]=="C" and sendExpressionOldOrNew('classAnnotationExists(
       continue
     val=sendExpressionOldOrNew('getAnnotationModifierValue(%s,"__OpenModelica_simulationFlags","%s")' % (conf["modelName"],flag))
     flagVal=" -noemit -%s=%s" % (flag,val)
-    if shared.simulationAcceptsFlag(flagVal, checkOutput=False, cwd=".."):
+    if shared.simulationAcceptsFlag(flagVal, checkOutput=False, cwd="..", isWin=isWin):
       annotationSimFlags+=" -%s=%s" % (flag,val)
     else:
       with open(errFile, 'a+') as fp:
@@ -348,7 +351,7 @@ except TimeoutError as e:
   with open(errFile, 'a+') as fp:
     fp.write("Timeout error for cmd: %s\n%s"%(cmd,str(e)))
     try:
-      name = omc._omc_log_file.name
+      name = os.path.normpath(omc._omc_log_file.name)
       del omc
       with open(name,"r") as fp2:
         fp.write("\n\nOMC output: %s" % fp2.read().decode().strip())
@@ -416,14 +419,17 @@ try:
     if res:
       fmuExpectedLocation = "%s.fmu" % conf["fileName"].replace(".","_")
       execstat["build"] = max(0.0, buildmodel) # Older versions didn't separate translate and build times
-      if not os.path.exists(fmuExpectedLocation):
+      if not os.path.exists(os.path.normpath(fmuExpectedLocation)):
         err += "\nFMU was not generated in the expected location: %s" % fmuExpectedLocation
         execstat["phase"]=4
         writeResultAndExit(0)
       execstat["phase"] = 5
   else:
+    if isWin:
+      res = checkOutputTimeout("\"%s\\share\\omc\\scripts\\Compile.bat\" %s gcc mingw64 parallel dynamic 24 0" % (conf["omhome"], conf["fileName"]), conf["ulimitOmc"], conf)
+    else:
+      res = checkOutputTimeout("make -j1 -f %s.makefile" % conf["fileName"], conf["ulimitOmc"], conf)
     
-    res = checkOutputTimeout("make -j1 -f %s.makefile" % conf["fileName"], conf["ulimitOmc"], conf)
     execstat["build"] = monotonic()-start
     execstat["phase"] = 5
 except TimeoutError as e:
@@ -459,7 +465,11 @@ try:
       fp.write("%s %s\n" % (fmisimulator, cmd))
     res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,fmisimulator,cmd,conf["fileName"]), 1.05*conf["ulimitExe"], conf)
   else:
-    cmd = ("./%s %s %s %s" % (conf["fileName"],annotationSimFlags,conf["simFlags"],emit_protected)).strip()
+    if isWin:
+      cmd = (".\\%s.bat %s %s %s" % (conf["fileName"],annotationSimFlags,conf["simFlags"],emit_protected)).strip()
+    else:
+      cmd = ("./%s %s %s %s" % (conf["fileName"],annotationSimFlags,conf["simFlags"],emit_protected)).strip()
+    
     if conf["simCodeTarget"]=="C":
       cmd = cmd + " -lv LOG_STATS"
     with open(simFile,"w") as fp:
@@ -468,7 +478,10 @@ try:
         fp.write("%s = %s\n" % (e[0], e[1]))
       fp.write("startTime=%g\nstopTime=%g\ntolerance=%g\nnumberOfIntervals=%d\nstepSize=%g\n" % (startTime,stopTime,tolerance,numberOfIntervals,stepSize))      
       fp.write("Regular simulation: %s\n" % cmd)
-    res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,cmd,conf["fileName"]), conf["ulimitExe"], conf)
+    if isWin:
+      res = checkOutputTimeout("%s >> %s" % (cmd,simFile), conf["ulimitExe"], conf)
+    else:
+      res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,cmd,conf["fileName"]), conf["ulimitExe"], conf)
   execstat["sim"] = monotonic()-start
   execstat["phase"] = 6
 except TimeoutError as e:
@@ -484,9 +497,10 @@ if len(referenceVars)==0:
 
 # Check the reference file...
 
-prefix = "../files/%s.diff" % conf["fileName"]
+prefix = os.path.abspath("../files/%s.diff" % conf["fileName"]).replace('\\','/')
 
-if not os.path.exists(resFile):
+
+if not os.path.exists(os.path.normpath(resFile)):
   with open(errFile, 'a+') as fp:
     fp.write("TODO: How the !@#!# did the simulation report success but simulation result %s does not exist to compare? outputFormat=%s" % (resFile,outputFormat))
   writeResultAndExit(0)

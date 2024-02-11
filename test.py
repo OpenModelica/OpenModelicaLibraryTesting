@@ -17,9 +17,53 @@ from monotonic import monotonic
 from omcommon import friendlyStr, multiple_replace
 from natsort import natsorted
 from shared import readConfig, getReferenceFileName, simulationAcceptsFlag, isFMPy
+from platform import processor
 import shared
 
 import signal
+
+parser = argparse.ArgumentParser(description='OpenModelica library testing tool')
+parser.add_argument('configs', nargs='*')
+parser.add_argument('--branch', default='master')
+parser.add_argument('--fmi', default=False)
+parser.add_argument('--output', default='')
+parser.add_argument('--docker', default='')
+parser.add_argument('--libraries', help="Directory omc will search in to load system libraries/libraries to test.", default=os.path.normpath(os.path.expanduser('~/.openmodelica/libraries/')))
+parser.add_argument('--extraflags', default='')
+parser.add_argument('--extrasimflags', default='')
+parser.add_argument('--ompython_omhome', default='')
+parser.add_argument('--noclean', action="store_true", default=False)
+parser.add_argument('--fmisimulator', default='')
+parser.add_argument('--ulimitvmem', help="Virtual memory limit (in kB) (linux only)", type=int, default=8*1024*1024)
+parser.add_argument('--default', action='append', help="Add a default value for some configuration key, such as --default=ulimitExe=60. The equals sign is mandatory.", default=[])
+parser.add_argument('-j', '--jobs', default=0)
+parser.add_argument('-v', '--verbose', action="store_true", help="Verbose mode.", default=False)
+parser.add_argument('--execAllTests', action="store_true", help="Force all tests to be executed", default=False)
+parser.add_argument('--win', action="store_true", default=False)
+parser.add_argument('--noSync', action="store_true", default=False)
+parser.add_argument('--timeout', default=0, help="=[value] timeout in seconds for each test, it overrides the timeout calculated by the script")
+
+args = parser.parse_args()
+configs = args.configs
+branch = args.branch
+result_location = os.path.abspath(args.output) if args.output else ''
+n_jobs = int(args.jobs)
+clean = not args.noclean
+verbose = args.verbose
+extraflags = args.extraflags
+extrasimflags = args.extrasimflags
+ompython_omhome = args.ompython_omhome
+fmisimulator = args.fmisimulator or None
+allTestsFmi = args.fmi
+ulimitMemory = args.ulimitvmem
+docker = args.docker
+librariespath = os.path.abspath(args.libraries)
+overrideDefaults = [arg.split("=", 1) for arg in args.default]
+execAllTests = args.execAllTests
+isWin = args.win
+noSync = args.noSync
+exeExt = ".exe" if isWin else ""
+customTimeout = int(args.timeout)
 
 def rmtree(f):
   try:
@@ -31,14 +75,20 @@ def rmtree(f):
 def print_linenum(signum, frame):
     print("Currently at line", frame.f_lineno)
 
-signal.signal(signal.SIGUSR1, print_linenum)
+if not isWin:
+    signal(signal.SIGUSR1, print_linenum)
 
 def runCommand(cmd, prefix, timeout):
   process = [None]
   def target():
     with open(os.devnull, 'w')  as FNULL:
-      process[0] = subprocess.Popen(cmd, shell=True, stdin=FNULL, stdout=FNULL, stderr=FNULL, preexec_fn=os.setpgrp)
+      if isWin:
+        process[0] = subprocess.Popen(cmd, shell=True, stdin=FNULL, stdout=FNULL, stderr=FNULL)
+      else:
+        process[0] = subprocess.Popen(cmd, shell=True, stdin=FNULL, stdout=FNULL, stderr=FNULL, preexec_fn=os.setpgrp)
+      
       while process[0].poll() is None:
+        print("process running... pid: " + str(process[0].pid) + " timeout: " + str(timeout) + " cmd: " + cmd.split('>',1)[0])
         process[0].communicate(1)
         process[0].wait(1)
 
@@ -51,13 +101,22 @@ def runCommand(cmd, prefix, timeout):
 
   if thread.is_alive():
     gotTimeout = True
-    os.kill(-process[0].pid, signal.SIGTERM)
+    print("process SIGTERM... pid: " + str(process[0].pid))
+    if isWin:
+      os.kill(process[0].pid, signal.SIGTERM)
+    else:
+      os.kill(-process[0].pid, signal.SIGTERM)
     thread.join(min(10, timeout))
     if thread.is_alive():
-      os.kill(-process[0].pid, signal.SIGKILL)
+      print("process SIGKILL... pid: " + str(process[0].pid))
+      if isWin:
+        os.kill(process[0].pid, signal.SIGKILL)
+      else:
+        os.kill(-process[0].pid, signal.SIGKILL)
     thread.join()
 
   if clean:
+    print("---> try clean")
     try:
       lines = open("%s.tmpfiles" % prefix).readlines()
     except:
@@ -81,45 +140,14 @@ def runCommand(cmd, prefix, timeout):
   return 1 if gotTimeout else process[0].returncode
 
 try:
-  subprocess.check_output(["./testmodel.py", "--help"], stderr=subprocess.STDOUT)
+  if isWin:
+    subprocess.check_output(["python", "testmodel.py", "--help"], stderr=subprocess.STDOUT)
+  else:
+    subprocess.check_output(["./testmodel.py", "--help"], stderr=subprocess.STDOUT)
+  
 except subprocess.CalledProcessError as e:
   print("Sanity check failed (./testmodel.py --help):\n" + e.output.decode())
   sys.exit(1)
-
-parser = argparse.ArgumentParser(description='OpenModelica library testing tool')
-parser.add_argument('configs', nargs='*')
-parser.add_argument('--branch', default='master')
-parser.add_argument('--fmi', default=False)
-parser.add_argument('--output', default='')
-parser.add_argument('--docker', default='')
-parser.add_argument('--libraries', help="Directory omc will search in to load system libraries/libraries to test.", default=os.path.expanduser('~/.openmodelica/libraries/'))
-parser.add_argument('--extraflags', default='')
-parser.add_argument('--extrasimflags', default='')
-parser.add_argument('--ompython_omhome', default='')
-parser.add_argument('--noclean', action="store_true", default=False)
-parser.add_argument('--fmisimulator', default='', help="The default is nothing but you can use the path to OMSimulator executable or 'fmpy'")
-parser.add_argument('--ulimitvmem', help="Virtual memory limit (in kB)", type=int, default=8*1024*1024)
-parser.add_argument('--default', action='append', help="Add a default value for some configuration key, such as --default=ulimitExe=60. The equals sign is mandatory.", default=[])
-parser.add_argument('-j', '--jobs', default=0)
-parser.add_argument('-v', '--verbose', action="store_true", help="Verbose mode.", default=False)
-
-args = parser.parse_args()
-configs = args.configs
-branch = args.branch
-result_location = args.output
-n_jobs = int(args.jobs)
-clean = not args.noclean
-verbose = args.verbose
-extraflags = args.extraflags
-extrasimflags = args.extrasimflags
-ompython_omhome = args.ompython_omhome
-fmisimulator = args.fmisimulator or None
-allTestsFmi = args.fmi
-ulimitMemory = args.ulimitvmem
-docker = args.docker
-librariespath = args.libraries
-overrideDefaults = [arg.split("=", 1) for arg in args.default]
-
 
 # If -j=0 is specified (or -j is not specified, defaults to 0) then use all available physical CPUS.
 if n_jobs == 0:
@@ -148,7 +176,7 @@ if docker:
   print("Warning: Using docker to run this will fail. It is not fully working and needs to be reworked to use docker exec instead of docker run")
   print("###")
   print("###")
-  dir_path = os.path.dirname(os.path.realpath(__file__))
+  dir_path = os.path.normpath(os.path.dirname(os.path.realpath(__file__)))
   subprocess.check_output(["docker", "pull", docker], stderr=subprocess.STDOUT).strip()
   dockerExtraArgs = ["-w", dir_path, "-v", "%s:%s" % (dir_path,dir_path), "--env", "OPENMODELICALIBRARY=%s" % "/usr/lib/omlibrary", "--env", "GC_MARKERS=1", "-v", "%s:/usr/lib/omlibrary" % librariespath]
   commands = ["docker", "run", "--user", str(os.getuid())] + dockerExtraArgs + [docker]
@@ -157,7 +185,11 @@ else:
   commands = []
   dockerExtraArgs = []
   if os.environ.get("OPENMODELICAHOME"):
-    omc_cmd = ["%s/bin/omc" % os.environ.get("OPENMODELICAHOME")]
+    if isWin:
+      omc_cmd = ["%sbin\\omc" % os.environ.get("OPENMODELICAHOME")]
+    else:
+      omc_cmd = ["%s/bin/omc" % os.environ.get("OPENMODELICAHOME")]
+  
   else:
     omc_cmd = ["omc"]
 if result_location != "" and not os.path.exists(result_location):
@@ -195,9 +227,9 @@ def timeSeconds(f):
   return html.escape("%.2f" % f)
 
 if not docker:
-  omc.sendExpression('setModelicaPath("%s")' % librariespath)
-omc_exe=os.path.join(omhome,"bin","omc")
-dygraphs=os.path.join(ompython_omhome or omhome,"share","doc","omc","testmodels","dygraph-combined.js")
+  omc.sendExpression('setModelicaPath("%s")' % librariespath.replace('\\','/'))
+omc_exe=os.path.normpath(os.path.join(omhome,"bin","omc"))
+dygraphs=os.path.normpath(os.path.join(ompython_omhome or omhome,"share","doc","omc","testmodels","dygraph-combined.js"))
 print(omc_exe,omc_version,dygraphs)
 
 sys.stdout.flush()
@@ -227,13 +259,13 @@ else:
 sys.stdout.flush()
 
 try:
-  os.unlink("HelloWorld")
+  os.unlink("HelloWorld"+exeExt)
 except OSError:
   pass
 subprocess.check_output(omc_cmd + ["--simCodeTarget=Cpp", "HelloWorld.mos"], stderr=subprocess.STDOUT)
-if os.path.exists("HelloWorld"):
+if os.path.exists("HelloWorld"+exeExt):
   print("Have C++ HelloWorld simulation executable")
-  haveCppRuntime=simulationAcceptsFlag("")
+  haveCppRuntime=simulationAcceptsFlag("", isWin=isWin)
   if haveCppRuntime:
     print("Have C++ runtime")
   else:
@@ -248,7 +280,7 @@ try:
   subprocess.check_output(omc_cmd + ["Architecture.mo"], stderr=subprocess.STDOUT)
 except subprocess.CalledProcessError:
   print("Patching ModelicaServices for Architecture bug...")
-  for f in glob.glob(librariespath + "/ModelicaServices*/package.mo") + glob.glob(omhome + "/Modelica */Constants.mo"):
+  for f in glob.glob(librariespath + os.path.normpath("/ModelicaServices*/package.mo")) + glob.glob(omhome + os.path.normpath("/Modelica */Constants.mo")):
     with open(f) as fin:
       content = fin.read()
     assert(len(content) > 0)
@@ -268,13 +300,13 @@ def testHelloWorld(cmd):
   with open("HelloWorld.mos") as fin:
     helloWorldContents = fin.read()
   try:
-    os.unlink("HelloWorld")
+    os.unlink("HelloWorld"+exeExt)
   except OSError:
     pass
   open("HelloWorld.cmd.mos","w").write(cmd + "\n" + helloWorldContents)
   try:
     out=subprocess.check_output(omc_cmd + ["HelloWorld.cmd.mos"], stderr=subprocess.STDOUT)
-    if os.path.exists("HelloWorld") and not "Error:" in out.decode():
+    if os.path.exists("HelloWorld"+exeExt) and not "Error:" in out.decode():
       return True
   except subprocess.CalledProcessError as e:
     pass
@@ -301,33 +333,34 @@ else:
 
 fmiOK_C = False
 fmiOK_Cpp = False
-try:
-  out=subprocess.check_output(omc_cmd + ["--simCodeTarget=C", "FMI.mos"], stderr=subprocess.STDOUT)
-  if os.path.exists("HelloWorldX.fmu") and not "Error:" in out.decode():
-    fmiOK_C = True
-    print("C FMU OK")
-  else:
-    print("No C-based FMUs (files not generated in correct location)")
-except subprocess.CalledProcessError as e:
-  pass
-try:
-  out=subprocess.check_output(omc_cmd + ["--simCodeTarget=Cpp", "FMI.mos"], stderr=subprocess.STDOUT)
-  if os.path.exists("HelloWorldX.fmu") and not "Error:" in out.decode():
-    fmiOK_Cpp = True
-    print("C++ FMU OK")
-  else:
-    print("No C++-based FMUs (files not generated in correct location)")
-except subprocess.CalledProcessError as e:
-  pass
+if allTestsFmi:
+  try:
+    out=subprocess.check_output(omc_cmd + ["--simCodeTarget=C", "FMI.mos"], stderr=subprocess.STDOUT)
+    if os.path.exists("HelloWorldX.fmu") and not "Error:" in out.decode():
+      fmiOK_C = True
+      print("C FMU OK")
+    else:
+      print("No C-based FMUs (files not generated in correct location)")
+  except subprocess.CalledProcessError as e:
+    pass
+  try:
+    out=subprocess.check_output(omc_cmd + ["--simCodeTarget=Cpp", "FMI.mos"], stderr=subprocess.STDOUT)
+    if os.path.exists("HelloWorldX.fmu") and not "Error:" in out.decode():
+      fmiOK_Cpp = True
+      print("C++ FMU OK")
+    else:
+      print("No C++-based FMUs (files not generated in correct location)")
+  except subprocess.CalledProcessError as e:
+    pass
 
 try:
-  os.unlink("HelloWorld")
+  os.unlink("HelloWorld"+exeExt)
 except OSError:
   pass
 print(subprocess.check_output(omc_cmd + ["HelloWorld.mos"], stderr=subprocess.STDOUT).decode().strip())
-assert(os.path.exists("HelloWorld"))
-abortSimulationFlag="-abortSlowSimulation" if simulationAcceptsFlag("-abortSlowSimulation") else ""
-alarmFlag="-alarm" if simulationAcceptsFlag("-alarm=480") else ""
+assert(os.path.exists("HelloWorld"+exeExt))
+abortSimulationFlag="-abortSlowSimulation" if simulationAcceptsFlag("-abortSlowSimulation", isWin=isWin) else ""
+alarmFlag="-alarm" if simulationAcceptsFlag("-alarm=480", isWin=isWin) else ""
 
 configs_lst = [readConfig(c, abortSimulationFlag=abortSimulationFlag, alarmFlag=alarmFlag, overrideDefaults=overrideDefaults, defaultCustomCommands=defaultCustomCommands, extrasimflags=extrasimflags) for c in configs]
 configs = []
@@ -352,8 +385,8 @@ for (lib,c) in configs:
         (c["referenceFiles"],c["referenceFilesURL"]) = preparedReferenceDirs[destination]
         continue
       giturl = c["referenceFiles"]["giturl"]
-      destination = c["referenceFiles"]["destination"]
-      destinationReal = os.path.realpath(destination)
+      destination = os.path.normpath(c["referenceFiles"]["destination"])
+      destinationReal = os.path.normpath(os.path.realpath(destination))
 
       if not os.path.isdir(destination):
         if "git-directory" in c["referenceFiles"]:
@@ -442,7 +475,7 @@ def findAllFiles(d):
   return res
 
 def getmd5(f):
-  hf = f+".hash"
+  hf = os.path.normpath(f+".hash")
   if not os.path.exists(hf) or (os.path.getmtime(f) > os.path.getmtime(hf)):
     with open(hf, "w") as fout:
       with open(f, "rb") as fin:
@@ -552,7 +585,7 @@ for (library,conf) in configs:
     conf["environmentTranslation"] = cmd
 
   conf["libraryVersionRevision"]=omc.sendExpression('getVersion(%s)' % library)
-  librarySourceFile=omc.sendExpression('getSourceFile(%s)' % library)
+  librarySourceFile=os.path.normpath(omc.sendExpression('getSourceFile(%s)' % library))
   lastChange=(librarySourceFile[:-3]+".last_change") if not librarySourceFile.endswith("package.mo") else (os.path.dirname(librarySourceFile)+".last_change")
   if os.path.exists(lastChange):
     conf["libraryLastChange"] = " %s (revision %s)" % (conf["libraryVersionRevision"],"\n".join(open(lastChange).readlines()).strip())
@@ -580,7 +613,7 @@ for (library,conf) in configs:
   WHERE libversion=? AND libname=? AND branch=? AND omcversion=? AND confighash=? ORDER BY date DESC LIMIT 1""", (conf["libraryLastChange"],libName,branch,omc_version,confighash)).fetchone()
   if libName in stats_by_libname or libName in skipped_libs:
     raise Exception("Duplicate libName found: %s" % libName)
-  if v is None:
+  if v is None or execAllTests:
     stats_by_libname[libName] = {"conf":conf, "stats":[]}
     tests = tests + [(r,library,libName,libName+"_"+r,conf) for r in res]
     print("Running library %s (%d tests)" % (libName, len(res)))
@@ -621,11 +654,15 @@ for (modelName,library,libName,name,conf) in tests:
   )
   with open(name + ".conf.json", 'w') as fp:
     newconf = dict(conf.items())
+    newconf["referenceFiles"] = newconf["referenceFiles"].replace("\\","/")
+    newconf["referenceFilesURL"] = newconf["referenceFilesURL"].replace("\\","/")
+    newconf["libraryLocation"] = newconf["libraryLocation"].replace("\\","/")
+    newconf["libraryLastChange"] = newconf["libraryLastChange"].replace("\\","/")
     newconf["library"] = library
     newconf["modelName"] = modelName
     newconf["fileName"] = name
     try:
-      newconf["referenceFile"] = getReferenceFileName(newconf)
+      newconf["referenceFile"] = getReferenceFileName(newconf).replace("\\","/")
     except Exception as e:
       # Find all such errors
       print(e)
@@ -638,7 +675,7 @@ print("Created .conf.json files")
 sys.stdout.flush()
 
 def runScript(c, timeout, memoryLimit, verbose):
-  j = "files/%s.stat.json" % c
+  j = os.path.normpath("files/%s.stat.json" % c)
   try:
     os.remove(j)
   except:
@@ -649,20 +686,24 @@ def runScript(c, timeout, memoryLimit, verbose):
     print("Starting test: %s" % c)
     sys.stdout.flush()
 
-  if 0 != runCommand("ulimit -v %d; ./testmodel.py --libraries=%s %s --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (memoryLimit, librariespath, ("--docker %s --dockerExtraArgs '%s'" % (docker, " ".join(dockerExtraArgs))) if docker else "", ompython_omhome, c, c), prefix=c, timeout=timeout):
+  if (isWin and (0 != runCommand("python testmodel.py --win --libraries=%s %s --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (librariespath, ("--docker %s --dockerExtraArgs '%s'" % (docker, " ".join(dockerExtraArgs))) if docker else "", ompython_omhome, c, c), prefix=c, timeout=timeout))) \
+     or \
+     ((not isWin) and (0 != runCommand("ulimit -v %d; ./testmodel.py --libraries=%s %s --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (memoryLimit, librariespath, ("--docker %s --dockerExtraArgs '%s'" % (docker, " ".join(dockerExtraArgs))) if docker else "", ompython_omhome, c, c), prefix=c, timeout=timeout))):
+
     print("files/%s.err" % c)
-    with open("files/%s.err" % c, "a+") as errfile:
+    with open(os.path.normpath("files/%s.err" % c), "a+") as errfile:
       errfile.write("Failed to read output from testmodel.py, exit status != 0:\n")
       try:
-        with open("files/%s.cmdout" % c) as cmdout:
+        with open(os.path.normpath("files/%s.cmdout" % c)) as cmdout:
           errfile.write(cmdout.read())
       except IOError:
         pass
       except OSError:
         pass
+
   if clean:
     try:
-      os.unlink("files/%s.cmdout" % c)
+      os.unlink(os.path.normpath("files/%s.cmdout" % c))
     except OSError:
       pass
 
@@ -719,7 +760,10 @@ start=monotonic()
 start_as_time=time.localtime()
 testRunStartTimeAsEpoch = int(time.time())
 # Need translateModel + make + exe...
-cmd_res=Parallel(n_jobs=n_jobs)(delayed(runScript)(name, 2*data["ulimitOmc"]+data["ulimitExe"]+25, data["ulimitMemory"], verbose) for (model,lib,libName,name,data) in tests)
+if customTimeout > 0.0:
+  cmd_res=Parallel(n_jobs=n_jobs)(delayed(runScript)(name, customTimeout, data["ulimitMemory"], verbose) for (model,lib,libName,name,data) in tests)
+else:
+  cmd_res=Parallel(n_jobs=n_jobs)(delayed(runScript)(name, 2*data["ulimitOmc"]+data["ulimitExe"]+25, data["ulimitMemory"], verbose) for (model,lib,libName,name,data) in tests)
 stop=monotonic()
 print("Execution time: %s" % friendlyStr(stop-start))
 assert(stop-start >= 0.0)
@@ -783,20 +827,33 @@ def checkPhase(phase, n):
     return "#FFCC66"
 
 def is_non_zero_file(fpath):
-    return os.path.isfile(fpath) and os.path.getsize(fpath) > 0
+    return os.path.isfile(os.path.normpath(fpath)) and os.path.getsize(os.path.normpath(fpath)) > 0
 
 def cpu_name():
-  for line in open("/proc/cpuinfo").readlines():
-    if "model name" in line.strip():
-      return (re.sub( ".*model name.*:", "", line,1)).strip()
-
-try:
-  lsb_release = subprocess.check_output(commands + ["cat","/etc/lsb-release"]).decode().strip()
-  lsb_release = dict(a.split("=") for a in lsb_release.split("\n"))["DISTRIB_DESCRIPTION"].strip('"')
-except:
+  if isWin:
+    return processor()
+  else:
+    for line in open("/proc/cpuinfo").readlines():
+      if "model name" in line.strip():
+        return (re.sub( ".*model name.*:", "", line,1)).strip()
+ 
+if isWin:
   lsb_release = ""
+else:
+  try:
+    lsb_release = subprocess.check_output(commands + ["cat","/etc/lsb-release"]).decode().strip()
+    lsb_release = dict(a.split("=") for a in lsb_release.split("\n"))["DISTRIB_DESCRIPTION"].strip('"')
+  except:
+    lsb_release = ""
 
 sysInfo = "%s, %d GB RAM, %s%s" % (cpu_name(), int(math.ceil(psutil.virtual_memory().total / (1024.0**3))), ("Docker " + docker + " ") if docker else "", lsb_release)
+
+# create target dir to move results without sync operations (win or when --noSync is used)
+resRootPath = os.path.join(result_location, branch)
+if result_location != "" and (isWin or noSync):
+  if os.path.exists(resRootPath):
+    rmtree(resRootPath)
+  os.mkdir(resRootPath)
 
 htmltpl=open("library.html.tpl").read()
 for libname in stats_by_libname.keys():
@@ -896,7 +953,9 @@ for libname in stats_by_libname.keys():
     (u"#testsHTML#", testsHTML)
   )
   open("%s.html" % libname, "w").write(multiple_replace(htmltpl, *replacements))
-  if result_location != "":
+  
+  # move results by sync operations (not available under win)
+  if result_location != "" and not isWin and not noSync:
     result_location_libname = "%s/%s" % (result_location, libname)
     try:
       os.mkdir("emptydir")
@@ -915,16 +974,56 @@ for libname in stats_by_libname.keys():
     if (conf.get("referenceFiles") or "") != "":
       subprocess.check_output(["rsync", "-a", dygraphs, result_location_libname+"/files"])
 
+  # move results without sync operations (win or when --noSync is used)
+  if result_location != "" and (isWin or noSync):
+    print("--> copy res file of library: " + libname)
+    libPath = os.path.join(resRootPath, libname)
+    if not os.path.exists(libPath):
+      os.makedirs(libPath)
+    libFilesPath = os.path.join(libPath, 'files')
+    if os.path.exists(libFilesPath):
+      rmtree(libFilesPath)
+    os.makedirs(libFilesPath)
+    try:
+      if clean:
+        shutil.move("./" + libname + ".html", libPath)
+      else:
+        shutil.copy2("./" + libname + ".html", libPath)
+    except:
+      print("-- problem durin copy/move of html file of lib: " + libname)
+    
+    for file in glob.glob("./files/" + libname + '*.err') \
+              + glob.glob("./files/" + libname + '*.sim') \
+              + glob.glob("./files/" + libname + '*.csv') \
+              + glob.glob("./files/" + libname + '*.json') \
+              + glob.glob("./files/" + libname + '*.html'):
+      try:
+        print("copy: " + file)
+        shutil.copy2(file, libFilesPath)
+      except:
+        print("-- problem during file copy... maybe the file is still hooked by a process... :" + file)
+        pass
+
 if clean:
-  for g in ["*.o","*.so","*.h","*.c","*.cpp","*.simsuccess","*.conf.json","*.tmpfiles","*.log","*.libs","OMCpp*","*.fmu*","temp_*"]:
+  for g in ["*.o","*.so","*.h","*.c","*.cpp","*.simsuccess","*.conf.json","*.tmpfiles","*.log","*.libs","OMCpp*","*.fmu*","temp_*", "*.exe", "HelloWorld.bat", "*.makefile", "*.mat","*.xml", "*.bin", "*.json"]:
     for f in glob.glob(g):
-      if os.path.isdir(f):
-        rmtree(f)
-      elif os.path.exists(f):
-        os.unlink(f)
-if clean:
-  rmtree("files/")
+      try:
+        if os.path.isdir(f):
+          rmtree(f)
+        elif os.path.exists(f):
+          os.unlink(f)
+      except:
+        print("-- problem during clean of: " + f)
+        pass
+
+if clean and (result_location == "" or (not isWin and not noSync)):
+  try:
+    rmtree("files/")
+  except:
+    print("-- problemduring removing of ./files dir")
 
 # Do not commit until we have generated and uploaded the reports
 conn.commit()
 conn.close()
+
+print("all tests done ...")

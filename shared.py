@@ -11,6 +11,7 @@ def fixData(data,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCom
   try:
     data["runOnceBeforeTesting"] = (data.get("runOnceBeforeTesting") or [])
     data["simCodeTarget"] = data.get("simCodeTarget") or "C"
+    data["referenceFiles"] = os.path.abspath(data.get("referenceFiles")) if data.get("referenceFiles") else ""
     data["referenceFileExtension"] = data.get("referenceFileExtension") or "mat"
     data["referenceFileNameDelimiter"] = data.get("referenceFileNameDelimiter") or "."
     data["default_tolerance"] = float(data.get("default_tolerance") or 1e-6)
@@ -71,7 +72,7 @@ def getReferenceFileName(conf):
         modelName += "."+(modelName.split(".")[-1])
       else:
         modelName += "."+conf["referenceFileNameExtraName"]
-    referenceFile = conf["referenceFiles"]+"/"+modelName.replace(".",conf["referenceFileNameDelimiter"])+(conf.get("referenceFinalDot") or ".")+conf["referenceFileExtension"]
+    referenceFile = os.path.normpath(conf["referenceFiles"]+"/"+modelName.replace(".",conf["referenceFileNameDelimiter"])+(conf.get("referenceFinalDot") or ".")+conf["referenceFileExtension"])
     if not os.path.exists(referenceFile) and not os.path.isdir(referenceFile):
       if conf.get("allReferenceFilesExist"):
         raise Exception("Missing reference file %s for config %s" % (referenceFile,conf))
@@ -79,13 +80,17 @@ def getReferenceFileName(conf):
         referenceFile=""
   return referenceFile
 
-def simulationAcceptsFlag(f, checkOutput=True, cwd=None):
+def simulationAcceptsFlag(f, checkOutput=True, cwd=None, isWin=False):
   try:
     os.unlink("HelloWorld_res.mat")
   except OSError:
     pass
   try:
-    subprocess.check_output("./HelloWorld %s" % f, shell=True, stderr=subprocess.STDOUT, cwd=cwd)
+    if isWin:
+        subprocess.check_output("HelloWorld.bat %s" % f, shell=True, stderr=subprocess.STDOUT, cwd=cwd)
+    else:
+        subprocess.check_output("./HelloWorld %s" % f, shell=True, stderr=subprocess.STDOUT, cwd=cwd)
+
     if (not os.path.exists("HelloWorld_res.mat")):
       print("Result file HelloWorld_res.mat WAS NOT generated running: ./HelloWorld with flags [%s]" % f)
     if (not checkOutput) or os.path.exists("HelloWorld_res.mat"):
