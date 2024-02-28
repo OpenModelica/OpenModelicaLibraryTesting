@@ -28,7 +28,7 @@ parser.add_argument('--branch', default='master')
 parser.add_argument('--fmi', default=False)
 parser.add_argument('--output', default='')
 parser.add_argument('--docker', default='')
-parser.add_argument('--libraries', help="Directory omc will search in to load system libraries/libraries to test.", default=os.path.normpath(os.path.expanduser('~/.openmodelica/libraries/')))
+parser.add_argument('--libraries', help="Directory omc will search in to load system libraries/libraries to test.", default='')
 parser.add_argument('--extraflags', default='')
 parser.add_argument('--extrasimflags', default='')
 parser.add_argument('--ompython_omhome', default='')
@@ -56,11 +56,19 @@ fmisimulator = args.fmisimulator or None
 allTestsFmi = args.fmi
 ulimitMemory = args.ulimitvmem
 docker = args.docker
-librariespath = os.path.abspath(os.path.normpath(args.libraries))
+isWin = os.name == 'nt'
+librariespath = ''
+if args.libraries:
+  librariespath = os.path.abspath(os.path.normpath(args.libraries))
+else:
+  if isWin:
+    librariespath = os.path.normpath(os.path.join(os.environ.get('APPDATA'), '.openmodelica', 'libraries'))
+  else:
+    librariespath = os.path.normpath(os.path.join(os.environ.get('HOME'), '.openmodelica', 'libraries'))
 overrideDefaults = [arg.split("=", 1) for arg in args.default]
 execAllTests = args.execAllTests
 noSync = args.noSync
-isWin = os.name == 'nt'
+
 exeExt = ".exe" if isWin else ""
 customTimeout = int(args.timeout)
 
