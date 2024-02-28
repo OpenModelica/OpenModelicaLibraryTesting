@@ -11,7 +11,6 @@ def fixData(data,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCom
   try:
     data["runOnceBeforeTesting"] = (data.get("runOnceBeforeTesting") or [])
     data["simCodeTarget"] = data.get("simCodeTarget") or "C"
-    data["referenceFiles"] = os.path.abspath(data.get("referenceFiles")) if data.get("referenceFiles") else ""
     data["referenceFileExtension"] = data.get("referenceFileExtension") or "mat"
     data["referenceFileNameDelimiter"] = data.get("referenceFileNameDelimiter") or "."
     data["default_tolerance"] = float(data.get("default_tolerance") or 1e-6)
@@ -72,7 +71,7 @@ def getReferenceFileName(conf):
         modelName += "."+(modelName.split(".")[-1])
       else:
         modelName += "."+conf["referenceFileNameExtraName"]
-    referenceFile = os.path.normpath(conf["referenceFiles"]+"/"+modelName.replace(".",conf["referenceFileNameDelimiter"])+(conf.get("referenceFinalDot") or ".")+conf["referenceFileExtension"])
+    referenceFile = conf["referenceFiles"]+"/"+modelName.replace(".",conf["referenceFileNameDelimiter"])+(conf.get("referenceFinalDot") or ".")+conf["referenceFileExtension"]
     if not os.path.exists(referenceFile) and not os.path.isdir(referenceFile):
       if conf.get("allReferenceFilesExist"):
         raise Exception("Missing reference file %s for config %s" % (referenceFile,conf))
