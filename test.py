@@ -139,10 +139,7 @@ def runCommand(cmd, prefix, timeout):
   return 1 if gotTimeout else process[0].returncode
 
 try:
-  if isWin:
-    subprocess.check_output(["python", "testmodel.py", "--help"], stderr=subprocess.STDOUT)
-  else:
-    subprocess.check_output(["./testmodel.py", "--help"], stderr=subprocess.STDOUT)
+  subprocess.check_output(["python", "testmodel.py", "--help"], stderr=subprocess.STDOUT)
 
 except subprocess.CalledProcessError as e:
   print("Sanity check failed (./testmodel.py --help):\n" + e.output.decode())
@@ -184,11 +181,7 @@ else:
   commands = []
   dockerExtraArgs = []
   if os.environ.get("OPENMODELICAHOME"):
-    if isWin:
-      omc_cmd = ["%sbin\\omc" % os.environ.get("OPENMODELICAHOME")]
-    else:
-      omc_cmd = ["%s/bin/omc" % os.environ.get("OPENMODELICAHOME")]
-
+    omc_cmd = [os.path.normpath(os.path.join(os.environ.get("OPENMODELICAHOME"), 'bin', 'omc'))]
   else:
     omc_cmd = ["omc"]
 if result_location != "" and not os.path.exists(result_location):
@@ -199,8 +192,6 @@ if configs == []:
   sys.exit(1)
 
 from OMPython import OMCSession, OMCSessionZMQ
-
-version_cmd = "--version"
 
 # Try to make the processes a bit nicer...
 os.environ["GC_MARKERS"]="1"
@@ -235,7 +226,7 @@ sys.stdout.flush()
 
 # Do feature checks. Handle things like old RML-style arguments...
 
-subprocess.check_output(omc_cmd + ["-n=1", version_cmd], stderr=subprocess.STDOUT).strip()
+subprocess.check_output(omc_cmd + ["-n=1", "--version"], stderr=subprocess.STDOUT).strip()
 
 sys.stdout.flush()
 
