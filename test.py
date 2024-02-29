@@ -687,7 +687,7 @@ def runScript(c, timeout, memoryLimit, verbose):
     sys.stdout.flush()
 
   if isWin:
-    res_cmd = runCommand("python testmodel.py --win --msysEnvironment=%s --libraries=%s %s --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (librariespath, ("--docker %s --dockerExtraArgs '%s'" % (msysEnvironment, docker, " ".join(dockerExtraArgs))) if docker else "", ompython_omhome, c, c), prefix=c, timeout=timeout)
+    res_cmd = runCommand("python testmodel.py --win --msysEnvironment=%s --libraries=%s %s --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (msysEnvironment, librariespath, ("--docker %s --dockerExtraArgs '%s'" % (docker, " ".join(dockerExtraArgs))) if docker else "", ompython_omhome, c, c), prefix=c, timeout=timeout)
   else:
     res_cmd = runCommand("ulimit -v %d; ./testmodel.py --libraries=%s %s --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (memoryLimit, librariespath, ("--docker %s --dockerExtraArgs '%s'" % (docker, " ".join(dockerExtraArgs))) if docker else "", ompython_omhome, c, c), prefix=c, timeout=timeout)
 
