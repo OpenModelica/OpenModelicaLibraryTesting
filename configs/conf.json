@@ -195,15 +195,12 @@
     "library":"ClaRa",
     "referenceFileExtension":"mat",
     "referenceFileNameDelimiter":".",
-    "referenceFiles":"/mnt/ReferenceFiles/ExtraLibs/clara_om.git/ReferenceResults"
-  },
-  {
-    "library":"ClaRa",
-    "libraryVersion":"main",
-    "libraryVersionNameForTests":"dev",
-    "referenceFileExtension":"mat",
-    "referenceFileNameDelimiter":".",
-    "referenceFiles":"/mnt/ReferenceFiles/ExtraLibs/clara_om.git/ReferenceResults"
+    "referenceFiles":{
+      "giturl":"https://github.com/xrg-simulation/ClaRa-official",
+      "destination":"ReferenceFiles/ClaRa",
+      "git-ref": "main",
+      "git-directory": "ReferenceResults"
+    }
   },
   {
     "library":"Credibility"
@@ -454,7 +451,7 @@
     "library":"TransiEnt",
     "libraryVersion":"master",
     "libraryVersionNameForTests":"",
-    "extraCustomCommands": 
+    "extraCustomCommands":
       [
         "setCommandLineOptions(\"--allowNonStandardModelica=nonStdEnumerationAsIntegers,nonStdTopLevelOuter\")",
         "setEnvironmentVar(\"publicData\", \"$libraryLocation/Tables/\")",
