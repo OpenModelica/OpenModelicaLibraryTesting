@@ -31,7 +31,7 @@ jobs:
             'omc'
           libraries: |
             'Modelica 4.0.0'
-            'PNlib 2.2.0'
+            'PNlib 3.0.0'
           omc-diff: true
 
       - name: Setup Python3
@@ -56,12 +56,12 @@ jobs:
       - name: Zip HTML results
         shell: bash
         run: |
-          python .github/scripts/archiveResults.py "PNlib" "2.2.0" "${{ matrix.omc-version }}" "html/"
+          python .github/scripts/archiveResults.py "PNlib" "3.0.0" "${{ matrix.omc-version }}" "html/"
 
       - name: Verify that overview.html contains simulation and verification
         shell: bash
         run: |
-          if ! grep -q "<tr><td><a href=\"${{ matrix.omc-version }}/PNlib_2.2.0/PNlib_2.2.0.html\">${{ matrix.omc-version }}</a></td><td><a>92</a></td><td><a>92</a></td><td><a>92</a></td><td><a>92</a></td><td><a>92</a></td><td><a>92</a></td><td><a>92</a></td><td><a>92</a></td><td><a>92</a></td></tr></table>" overview.html; then
+          if ! grep -q "<tr><td><a href=\"${{ matrix.omc-version }}/PNlib_3.0.0/PNlib_3.0.0.html\">${{ matrix.omc-version }}</a></td><td><a>92</a></td><td><a>92</a></td><td><a>92</a></td><td><a>92</a></td><td><a>92</a></td><td><a>92</a></td><td><a>92</a></td><td><a>92</a></td><td><a>92</a></td></tr></table>" overview.html; then
             echo "Failed to find 92 simulating and 92 verifying models in overwiew.html:"
             cat overview.html
             exit 1
