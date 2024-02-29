@@ -41,6 +41,7 @@ parser.add_argument('-v', '--verbose', action="store_true", help="Verbose mode."
 parser.add_argument('--execAllTests', action="store_true", help="Force all tests to be executed", default=False)
 parser.add_argument('--noSync', action="store_true", help="Move files using python instead of rsync", default=False)
 parser.add_argument('--timeout', default=0, help="=[value] timeout in seconds for each test, it overrides the timeout calculated by the script")
+parser.add_argument('--msysEnvironment', help = 'MSYS2 environment used by OpenModelica on Windows.',  default = 'ucrt64')
 
 args = parser.parse_args()
 configs = args.configs
@@ -57,7 +58,6 @@ allTestsFmi = args.fmi
 ulimitMemory = args.ulimitvmem
 docker = args.docker
 isWin = os.name == 'nt'
-librariespath = ''
 if args.libraries:
   librariespath = os.path.abspath(os.path.normpath(args.libraries))
 else:
@@ -68,6 +68,7 @@ else:
 overrideDefaults = [arg.split("=", 1) for arg in args.default]
 execAllTests = args.execAllTests
 noSync = args.noSync
+msysEnvironment = args.msysEnvironment
 
 exeExt = ".exe" if isWin else ""
 customTimeout = int(args.timeout)
@@ -685,10 +686,12 @@ def runScript(c, timeout, memoryLimit, verbose):
     print("Starting test: %s" % c)
     sys.stdout.flush()
 
-  if (isWin and (0 != runCommand("python testmodel.py --win --libraries=%s %s --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (librariespath, ("--docker %s --dockerExtraArgs '%s'" % (docker, " ".join(dockerExtraArgs))) if docker else "", ompython_omhome, c, c), prefix=c, timeout=timeout))) \
-     or \
-     ((not isWin) and (0 != runCommand("ulimit -v %d; ./testmodel.py --libraries=%s %s --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (memoryLimit, librariespath, ("--docker %s --dockerExtraArgs '%s'" % (docker, " ".join(dockerExtraArgs))) if docker else "", ompython_omhome, c, c), prefix=c, timeout=timeout))):
+  if isWin:
+    res_cmd = runCommand("python testmodel.py --win --msysEnvironment=%s --libraries=%s %s --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (librariespath, ("--docker %s --dockerExtraArgs '%s'" % (msysEnvironment, docker, " ".join(dockerExtraArgs))) if docker else "", ompython_omhome, c, c), prefix=c, timeout=timeout)
+  else:
+    res_cmd = runCommand("ulimit -v %d; ./testmodel.py --libraries=%s %s --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (memoryLimit, librariespath, ("--docker %s --dockerExtraArgs '%s'" % (docker, " ".join(dockerExtraArgs))) if docker else "", ompython_omhome, c, c), prefix=c, timeout=timeout)
 
+  if res_cmd != 0:
     print("files/%s.err" % c)
     with open(os.path.normpath("files/%s.err" % c), "a+") as errfile:
       errfile.write("Failed to read output from testmodel.py, exit status != 0:\n")

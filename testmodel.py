@@ -16,6 +16,7 @@ parser.add_argument('--docker')
 parser.add_argument('--dockerExtraArgs')
 parser.add_argument('--corba', action="store_true", default=False)
 parser.add_argument('--win', action="store_true", help="Windows mode", default=False)
+parser.add_argument('--msysEnvironment', help="MSYS2 Environment (ucrt64|mingw64)", default='ucrt64')
 
 args = parser.parse_args()
 config = args.config
@@ -24,7 +25,8 @@ libraries = args.libraries.replace("\\","/")
 docker = args.docker if args.docker else None
 dockerExtraArgs = args.dockerExtraArgs.split(" ") if args.dockerExtraArgs else []
 corbaStyle = args.corba
-isWin = args.win 
+isWin = args.win
+msysEnvironment = args.msysEnvironment
 
 try:
   os.mkdir("files")
@@ -43,7 +45,7 @@ def writeResult():
 def writeResultAndExit(exitStatus):
   writeResult()
   sys.exit(exitStatus)
-  
+
 def sendExpressionTimeout(omc, cmd, timeout):
   with open(errFile, 'a+') as fp:
     fp.write(cmd + "\n")
@@ -426,10 +428,10 @@ try:
       execstat["phase"] = 5
   else:
     if isWin:
-      res = checkOutputTimeout("\"%s\\share\\omc\\scripts\\Compile.bat\" %s gcc mingw64 parallel dynamic 24 0" % (conf["omhome"], conf["fileName"]), conf["ulimitOmc"], conf)
+      res = checkOutputTimeout("\"%s\\share\\omc\\scripts\\Compile.bat\" %s gcc %s parallel dynamic 24 0" % (conf["omhome"], conf["fileName"]), msysEnvironment, conf["ulimitOmc"], conf)
     else:
       res = checkOutputTimeout("make -j1 -f %s.makefile" % conf["fileName"], conf["ulimitOmc"], conf)
-    
+
     execstat["build"] = monotonic()-start
     execstat["phase"] = 5
 except TimeoutError as e:
@@ -469,14 +471,14 @@ try:
       cmd = (".\\%s.bat %s %s %s" % (conf["fileName"],annotationSimFlags,conf["simFlags"],emit_protected)).strip()
     else:
       cmd = ("./%s %s %s %s" % (conf["fileName"],annotationSimFlags,conf["simFlags"],emit_protected)).strip()
-    
+
     if conf["simCodeTarget"]=="C":
       cmd = cmd + " -lv LOG_STATS"
     with open(simFile,"w") as fp:
       fp.write("Environment - simulationEnvironment:\n")
       for e in conf["environmentSimulation"]:
         fp.write("%s = %s\n" % (e[0], e[1]))
-      fp.write("startTime=%g\nstopTime=%g\ntolerance=%g\nnumberOfIntervals=%d\nstepSize=%g\n" % (startTime,stopTime,tolerance,numberOfIntervals,stepSize))      
+      fp.write("startTime=%g\nstopTime=%g\ntolerance=%g\nnumberOfIntervals=%d\nstepSize=%g\n" % (startTime,stopTime,tolerance,numberOfIntervals,stepSize))
       fp.write("Regular simulation: %s\n" % cmd)
     if isWin:
       res = checkOutputTimeout("%s >> %s" % (cmd,simFile), conf["ulimitExe"], conf)
