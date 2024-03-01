@@ -1,12 +1,13 @@
-[![Continuous Integration](https://github.com/OpenModelica/OpenModelicaLibraryTesting/actions/workflows/test.yml/badge.svg)](https://github.com/OpenModelica/OpenModelicaLibraryTesting/actions/workflows/test.yml)
-
 # OpenModelica Library Testing
+
+[![Continuous Integration](https://github.com/OpenModelica/OpenModelicaLibraryTesting/actions/workflows/test.yml/badge.svg)](https://github.com/OpenModelica/OpenModelicaLibraryTesting/actions/workflows/test.yml)
+[![License: OSMC-PL](https://img.shields.io/badge/license-OSMC--PL-lightgrey.svg)](OSMC-License.txt)
 
 This repository provides scripts and documentation to run the nightly Modelica library tests for OpenModelica.
 
 ## OpenModelica nightly testsuite
 
-Some of the open-source Modelica libraries managed by the [Open Modelica Package Manager](https://github.com/OpenModelica/OMPackageManager) are tested on a daily basis on the OSMC servers. 
+Some of the open-source Modelica libraries managed by the [Open Modelica Package Manager](https://github.com/OpenModelica/OMPackageManager) are tested on a daily basis on the OSMC servers.
 
 [Test results reports](testresults.md#open-source-modelica-library-testing-using-openmodelica) are publicly available.
 
@@ -17,102 +18,103 @@ Test results reports are collected in the https://libraries.openmodelica.org/bra
 If you want to include your open-source library in the testsuite, please open a pull request on [conf.json](configs/conf.json), or open an issue on the [OpenModelica issue tracker](https://github.com/OpenModelica/OpenModelica/issues/new/choose) and ask us to do it for you.
 
 ## Running the library testing infrastructure on your own server
-[![License: OSMC-PL](https://img.shields.io/badge/license-OSMC--PL-lightgrey.svg)](OSMC-License.txt)
 
 The scripts from this repository can be used to run regression tests for public, private, and commercial Modelica libraries to keep track of coverage with different OpenModelica versions, according to the conditions of the [OSMC-PL license](OSMC-License.txt).
 
-### Dependencies (Linux)
-- [OpenModelica](https://openmodelica.org)
-- [Python](https://www.python.org/)
-- [Optional] Reference simulation result files
+### Dependencies
 
+  - [OpenModelica](https://openmodelica.org)
+  - [Python](https://www.python.org/)
+  - (Optional) Reference simulation result files
 
 ### Set-Up
 
-- Install or build OpenModelica
-  - [Install instructions](https://openmodelica.org/download/download-linux)
-  - [Build instructions](https://github.com/OpenModelica/OpenModelica#readme)
-  - Make sure `omc` is in your `PATH`
-- Install Python requirements
-  ```bash
-  pip install -r requirements.txt
-  ```
-- OMC will search for libraries in the location provided with test.py argument `--libraries`.
-  The default value is `/home/username/.openmodelica/libraries/`.
-  - Install your libraries into the location specified with `--libraries`
-    or use `loadFile` command inside `loadFileCommands` in the config JSON:
-    ```yml
-    "loadFileCommands": [
-      "loadFile(\"/path/to/package.mo\")"
+  - Install or build OpenModelica
+    - [Install instructions](https://openmodelica.org/download/download-linux)
+    - [Build instructions](https://github.com/OpenModelica/OpenModelica#readme)
+    - Make sure `omc` is in your `PATH`
+  - Install Python requirements
+    ```bash
+    pip install -r requirements.txt
+    ```
+  - OMC will search for libraries in the location provided with test.py argument `--libraries`.
+    The default value is `/home/username/.openmodelica/libraries/` (Linux) or `%APPDATA%/.openmodelica/libraries` (Windows).
+    - Install your libraries into the location specified with `--libraries`
+      or use `loadFile` command inside `loadFileCommands` in the config JSON:
+      ```yml
+      "loadFileCommands": [
+        "loadFile(\"/path/to/package.mo\")"
+      ]
+      ```
+  - Create configs/myConf.json to specify what libraries to test.
+    ```json
+    [
+      {
+        "library":"MyModelicaLibrary",
+        "libraryVersion":"main",
+        "referenceFileExtension":"mat",
+        "referenceFileNameDelimiter":"/",
+        "referenceFileNameExtraName":"$ClassName",
+        "referenceFiles":{
+          "giturl":"https://github.com/myName/MyModelicaLibrary-ref",
+          "destination":"ReferenceFiles/MyModelicaLibrary",
+          "git-ref": "main",
+          "git-directory": "ReferenceFiles"
+        },
+        "optlevel":"-Os -march=native"
+      }
     ]
     ```
-- Create configs/myConf.json to specify what libraries to test.
-  ```json
-  [
-    {
-      "library":"MyModelicaLibrary",
-      "libraryVersion":"master",
-      "referenceFileExtension":"mat",
-      "referenceFileNameDelimiter":"/",
-      "referenceFileNameExtraName":"$ClassName",
-      "referenceFiles":{
-        "giturl":"https://github.com/myName/MyModelicaLibrary-ref",
-        "destination":"ReferenceFiles/MyModelicaLibrary"
-      },
-      "optlevel":"-Os -march=native"
-    }
-  ]
-  ```
 
-  You can add extra compiler settings
+    You can add extra compiler settings
 
-  ```json
-  "extraCustomCommands":["setCommandLineOptions(\"--std=3.2\");"]
-  ```
-  and extra simulation flags
+    ```json
+    "extraCustomCommands":["setCommandLineOptions(\"--std=3.2\");"]
+    ```
+    and extra simulation flags
 
-  ```json
-  "extraSimFlags": "-s=ida -nls=kinsol"
-  ```
+    ```json
+    "extraSimFlags": "-s=ida -nls=kinsol"
+    ```
 
-  Check `config/conf.json` for more.
-- If you used `.CI/installLibraries.mos` to test all libraries you'll need to install reference results and set environment variables, see [Reference Results](#reference-results).
-  ```bash
-  export MSLREFERENCE="/path/to/ReferenceFiles/"
-  export REFERENCEFILES="/path/to/OpenModelica/testsuite/ReferenceFiles"
-  export PNLIBREFS="/path/to/ReferenceFiles/PNlib/ReferenceFiles"
-  export THERMOFLUIDSTREAMREFS="/path/to/ReferenceFiles/ThermofluidStream-main-regression/ReferenceData"
-  export THERMOFLUIDSTREAMREFSOM="/path/to/ReferenceFiles/ThermofluidStream-OM-regression/ReferenceData"
-  ```
+    Check `config/conf.json` for more.
+  - If you used `.CI/installLibraries.mos` to test all libraries you'll need to install reference results and set environment variables, see [Reference Results](#reference-results).
+    ```bash
+    export MSLREFERENCE="/path/to/ReferenceFiles/"
+    export REFERENCEFILES="/path/to/OpenModelica/testsuite/ReferenceFiles"
+    export PNLIBREFS="/path/to/ReferenceFiles/PNlib/ReferenceFiles"
+    export THERMOFLUIDSTREAMREFS="/path/to/ReferenceFiles/ThermofluidStream-main-regression/ReferenceData"
+    export THERMOFLUIDSTREAMREFSOM="/path/to/ReferenceFiles/ThermofluidStream-OM-regression/ReferenceData"
+    ```
 
-- Run the library test
-  ```bash
-  ./test.py --noclean configs/myConf.json
-  ```
-  Use `configs/*.json` to specify what to test.
-  The test results are saved in `sqlite3.db`.
+  - Run the library test
+    ```bash
+    ./test.py --noclean configs/myConf.json
+    ```
+    Use `configs/*.json` to specify what to test.
+    The test results are saved in `sqlite3.db`.
 
-  Options:
-    - `--branch=master`: Branch of OpenModelica
-    - `--fmi=False`: Test FMI
-    - `--output=''`: Result location
-    - `--libraries=~/.openmodelica/libraries/`: Location of Modelica libraries
-    - `--extraflags=''`: Extra compiler flags.
-    - `--extrasimflags=''`: Extra simulation flags.
-    - `--ompython_omhome=''`: Path to OpenModelica for OMPython (can be different to the OM running the tests)
-    - `--noclean=False`: Clean (most) generated files.
-    - `--fmisimulator=''`: The default is nothing but you can use the path to OMSimulator executable or 'fmpy'
-    - `--ulimitvmem=8388608`: Virtual memory limit (in kB)
-    - `--default=[]`: Add a default value for some configuration key, such as --default=ulimitExe=60. The equals sign is mandatory
-    - `-j`,`--jobs`: Number of threads to use for testing.
+    Options:
+      - `--branch=master`: Branch of OpenModelica
+      - `--fmi=False`: Test FMI
+      - `--output=''`: Result location
+      - `--libraries=~/.openmodelica/libraries/`: Location of Modelica libraries
+      - `--extraflags=''`: Extra compiler flags.
+      - `--extrasimflags=''`: Extra simulation flags.
+      - `--ompython_omhome=''`: Path to OpenModelica for OMPython (can be different to the OM running the tests)
+      - `--noclean=False`: Clean (most) generated files.
+      - `--fmisimulator=''`: The default is nothing but you can use the path to OMSimulator executable or 'fmpy'
+      - `--ulimitvmem=8388608`: Virtual memory limit (in kB)
+      - `--default=[]`: Add a default value for some configuration key, such as --default=ulimitExe=60. The equals sign is mandatory
+      - `-j`,`--jobs`: Number of threads to use for testing.
 
-- Generate HTML results
-  ```bash
-  ./report.py configs/myConf.json
-  ```
-- Upload and backup
-  - Upload HTML files somewhere
-  - backup sqlite3.db
+  - Generate HTML results
+    ```bash
+    ./report.py configs/myConf.json
+    ```
+  - Upload and backup
+    - Upload HTML files somewhere
+    - backup sqlite3.db
 
 ### Reference Results
 
