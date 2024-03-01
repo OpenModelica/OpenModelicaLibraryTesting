@@ -79,13 +79,17 @@ def getReferenceFileName(conf):
         referenceFile=""
   return referenceFile
 
-def simulationAcceptsFlag(f, checkOutput=True, cwd=None):
+def simulationAcceptsFlag(f, checkOutput=True, cwd=None, isWin=False):
   try:
     os.unlink("HelloWorld_res.mat")
   except OSError:
     pass
   try:
-    subprocess.check_output("./HelloWorld %s" % f, shell=True, stderr=subprocess.STDOUT, cwd=cwd)
+    if isWin:
+        subprocess.check_output("HelloWorld.bat %s" % f, shell=True, stderr=subprocess.STDOUT, cwd=cwd)
+    else:
+        subprocess.check_output("./HelloWorld %s" % f, shell=True, stderr=subprocess.STDOUT, cwd=cwd)
+
     if (not os.path.exists("HelloWorld_res.mat")):
       print("Result file HelloWorld_res.mat WAS NOT generated running: ./HelloWorld with flags [%s]" % f)
     if (not checkOutput) or os.path.exists("HelloWorld_res.mat"):

@@ -1,13 +1,13 @@
 [
   {
     "library": "PNlib",
-    "libraryVersion": "2.2.0",
+    "libraryVersion": "3.0.0",
     "referenceFileExtension":"mat",
     "referenceFileNameDelimiter":".",
     "referenceFiles":{
       "giturl":"https://github.com/AMIT-HSBI/PNlib",
       "destination":"ReferenceFiles/PNlib",
-      "git-ref": "v2.2",
+      "git-ref": "v3.0.0",
       "git-directory": "ReferenceFiles"
     }
   }
