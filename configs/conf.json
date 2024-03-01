@@ -203,6 +203,19 @@
     }
   },
   {
+    "library":"ClaRa",
+    "libraryVersion":"main",
+    "libraryVersionNameForTests":"dev",
+    "referenceFileExtension":"mat",
+    "referenceFileNameDelimiter":".",
+    "referenceFiles":{
+      "giturl":"https://github.com/xrg-simulation/ClaRa-official",
+      "destination":"ReferenceFiles/ClaRa",
+      "git-ref": "main",
+      "git-directory": "ReferenceResults"
+    }
+  },
+  {
     "library":"Credibility"
   },
   {
