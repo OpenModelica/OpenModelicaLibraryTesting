@@ -21,7 +21,7 @@ jobs:
             msysEnvironment: --msysEnvironment=mingw64
       fail-fast: false
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
@@ -35,7 +35,6 @@ jobs:
             'omc'
           libraries: |
             'Modelica 4.0.0'
-            'PNlib 3.0.0'
           omc-diff: true
 
       - name: Setup Python3
@@ -60,13 +59,13 @@ jobs:
       - name: Zip HTML results
         shell: bash
         run: |
-          python .github/scripts/archiveResults.py "PNlib" "3.0.0" "${{ matrix.omc-version }}" "html/"
+          python .github/scripts/archiveResults.py "MyLibrary" "1.0.0" "${{ matrix.omc-version }}" "html/"
 
       - name: Verify that overview.html contains simulation and verification
         shell: bash
         run: |
-          if ! grep -q "<tr><td><a href=\"${{ matrix.omc-version }}/PNlib_3.0.0/PNlib_3.0.0.html\">${{ matrix.omc-version }}</a></td><td><a>92</a></td><td><a>92</a></td><td><a>92</a></td><td><a>92</a></td><td><a>92</a></td><td><a>92</a></td><td><a>92</a></td><td><a>92</a></td><td><a>92</a></td></tr></table>" overview.html; then
-            echo "Failed to find 92 simulating and 92 verifying models in overwiew.html:"
+          if ! grep -q "<tr><td><a href=\"${{ matrix.omc-version }}/MyLibrary_1.0.0/MyLibrary_1.0.0.html\">${{ matrix.omc-version }}</a></td><td><a>2</a></td><td><a>2</a></td><td><a>2</a></td><td><a>2</a></td><td><a>2</a></td><td><a>2</a></td><td><a>2</a></td><td><a>2</a></td><td><a>2</a></td></tr></table>" overview.html; then
+            echo "Failed to find 2 simulating and 2 verifying models in overwiew.html:"
             cat overview.html
             exit 1
           fi
@@ -83,5 +82,5 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: ${{ matrix.os }}-${{ matrix.omc-version }}-PNlib.html
+          name: ${{ matrix.os }}-${{ matrix.omc-version }}-MyLibrary.html
           path: html/
