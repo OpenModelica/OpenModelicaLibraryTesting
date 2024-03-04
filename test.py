@@ -96,7 +96,6 @@ def runCommand(cmd, prefix, timeout):
         process[0] = subprocess.Popen(cmd, shell=True, stdin=FNULL, stdout=FNULL, stderr=FNULL, preexec_fn=os.setpgrp)
 
       while process[0].poll() is None:
-        print("process running... pid: " + str(process[0].pid) + " timeout: " + str(timeout) + " cmd: " + cmd.split('>',1)[0])
         process[0].communicate(1)
         process[0].wait(1)
 
@@ -109,14 +108,12 @@ def runCommand(cmd, prefix, timeout):
 
   if thread.is_alive():
     gotTimeout = True
-    print("process SIGTERM... pid: " + str(process[0].pid))
     if isWin:
       os.kill(process[0].pid, signal.SIGTERM)
     else:
       os.kill(-process[0].pid, signal.SIGTERM)
     thread.join(min(10, timeout))
     if thread.is_alive():
-      print("process SIGKILL... pid: " + str(process[0].pid))
       if isWin:
         os.kill(process[0].pid, signal.SIGKILL)
       else:
