@@ -412,7 +412,10 @@ for (lib,c) in configs:
       subprocess.check_call(["git", "clean", "-fdx", "--exclude=*.hash"], stderr=subprocess.STDOUT, cwd=destinationReal)
       if glob.glob(destinationReal + "/*.mat.xz"):
         subprocess.check_call(["find", ".", "-name", "*.mat.xz", "-exec", "xz", "--decompress", "--keep", "{}", ";"], stderr=subprocess.STDOUT, cwd=destinationReal)
-      githash = subprocess.check_output(["git", "rev-parse", "--verify", "HEAD"], stderr=subprocess.STDOUT, cwd=destinationReal, encoding='utf8')
+      try:
+        githash = subprocess.check_output(["git", "rev-parse", "--verify", "HEAD"], stderr=subprocess.STDOUT, cwd=destinationReal, encoding='utf8')
+      except subprocess.CalledProcessError as e:
+        print(e.output)
 
       if "git-directory" in c["referenceFiles"]:
         c["referenceFiles"] = os.path.join(destinationReal, c["referenceFiles"]['git-directory'])
