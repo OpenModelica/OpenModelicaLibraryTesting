@@ -404,7 +404,11 @@ for (lib,c) in configs:
 
       subprocess.check_call(["git", "clean", "-fdx", "--exclude=*.hash"], stderr=subprocess.STDOUT, cwd=destinationReal)
       subprocess.check_call(["git", "fetch", "origin"], stderr=subprocess.STDOUT, cwd=destination)
-      subprocess.check_call(["git", "reset", "--hard", refFilesGitTag], stderr=subprocess.STDOUT, cwd=destinationReal)
+      # do not fail if the branch we were given doesn't exist
+      try:
+        subprocess.check_call(["git", "reset", "--hard", refFilesGitTag], stderr=subprocess.STDOUT, cwd=destinationReal)
+      except subprocess.CalledProcessError as e:
+        print(e.output)
       subprocess.check_call(["git", "clean", "-fdx", "--exclude=*.hash"], stderr=subprocess.STDOUT, cwd=destinationReal)
       if glob.glob(destinationReal + "/*.mat.xz"):
         subprocess.check_call(["find", ".", "-name", "*.mat.xz", "-exec", "xz", "--decompress", "--keep", "{}", ";"], stderr=subprocess.STDOUT, cwd=destinationReal)
