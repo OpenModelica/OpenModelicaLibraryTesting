@@ -1,0 +1,2 @@
+*.mo linguist-language=Modelica
+*.html.tpl linguist-language=HTML

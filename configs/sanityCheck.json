@@ -1,14 +1,12 @@
 [
   {
-    "library": "PNlib",
-    "libraryVersion": "3.0.0",
-    "referenceFileExtension":"mat",
-    "referenceFileNameDelimiter":".",
-    "referenceFiles":{
-      "giturl":"https://github.com/AMIT-HSBI/PNlib",
-      "destination":"ReferenceFiles/PNlib",
-      "git-ref": "v3.0.0",
-      "git-directory": "ReferenceFiles"
-    }
+    "library": "MyLibrary",
+    "libraryVersion": "1.0.0",
+    "loadFileCommands": [
+      "loadFile(\"sanityCheck/MyLibrary/package.mo\")"
+    ],
+    "referenceFileExtension": "csv",
+    "referenceFileNameDelimiter": ".",
+    "referenceFiles": "sanityCheck/ReferenceFiles"
   }
 ]
