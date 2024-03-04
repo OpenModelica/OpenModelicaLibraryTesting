@@ -655,10 +655,14 @@ for (modelName,library,libName,name,conf) in tests:
   )
   with open(name + ".conf.json", 'w') as fp:
     newconf = dict(conf.items())
-    newconf["referenceFiles"] = newconf["referenceFiles"].replace("\\","/")
-    newconf["referenceFilesURL"] = newconf["referenceFilesURL"].replace("\\","/")
-    newconf["libraryLocation"] = newconf["libraryLocation"].replace("\\","/")
-    newconf["libraryLastChange"] = newconf["libraryLastChange"].replace("\\","/")
+    if "referenceFiles" in newconf:
+      newconf["referenceFiles"] = newconf["referenceFiles"].replace("\\","/")
+    if "referenceFilesURL" in newconf:
+      newconf["referenceFilesURL"] = newconf["referenceFilesURL"].replace("\\","/")
+    if "libraryLocation" in newconf:
+      newconf["libraryLocation"] = newconf["libraryLocation"].replace("\\","/")
+    if "libraryLastChange" in newconf:
+      newconf["libraryLastChange"] = newconf["libraryLastChange"].replace("\\","/")
     newconf["library"] = library
     newconf["modelName"] = modelName
     newconf["fileName"] = name
