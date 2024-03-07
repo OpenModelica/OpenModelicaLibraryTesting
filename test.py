@@ -125,7 +125,7 @@ def runCommand(cmd, prefix, timeout):
     thread.join()
 
   if clean:
-    print("---> try clean")
+    # print("---> try clean")
     try:
       lines = open("%s.tmpfiles" % prefix).readlines()
     except:
