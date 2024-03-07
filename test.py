@@ -46,7 +46,14 @@ parser.add_argument('--msysEnvironment', help = 'MSYS2 environment used by OpenM
 args = parser.parse_args()
 configs = args.configs
 branch = args.branch
-result_location = os.path.abspath(args.output) if args.output else ''
+noSync = args.noSync
+isWin = os.name == 'nt'
+# result location can be on a remote server, do NOT use os.path.abspath on it if the system is not Windows or if --noSync=True
+result_location = ''
+if not isWin and not noSync:
+  result_location = args.output if args.output else ''
+else:
+  result_location = os.path.abspath(args.output) if args.output else ''
 n_jobs = int(args.jobs)
 clean = not args.noclean
 verbose = args.verbose
@@ -57,7 +64,7 @@ fmisimulator = args.fmisimulator or None
 allTestsFmi = args.fmi
 ulimitMemory = args.ulimitvmem
 docker = args.docker
-isWin = os.name == 'nt'
+
 if args.libraries:
   librariespath = os.path.abspath(os.path.normpath(args.libraries))
 else:
@@ -67,7 +74,6 @@ else:
     librariespath = os.path.normpath(os.path.join(os.environ.get('HOME'), '.openmodelica', 'libraries'))
 overrideDefaults = [arg.split("=", 1) for arg in args.default]
 execAllTests = args.execAllTests
-noSync = args.noSync
 msysEnvironment = args.msysEnvironment
 
 exeExt = ".exe" if isWin else ""
@@ -125,7 +131,7 @@ def runCommand(cmd, prefix, timeout):
     thread.join()
 
   if clean:
-    print("---> try clean")
+    # print("---> try clean")
     try:
       lines = open("%s.tmpfiles" % prefix).readlines()
     except:
@@ -863,8 +869,8 @@ else:
 sysInfo = "%s, %d GB RAM, %s%s" % (cpu_name(), int(math.ceil(psutil.virtual_memory().total / (1024.0**3))), ("Docker " + docker + " ") if docker else "", lsb_release)
 
 # create target dir to move results without sync operations (win or when --noSync is used)
-resRootPath = os.path.join(result_location, branch)
 if result_location != "" and (isWin or noSync):
+  resRootPath = os.path.join(result_location, branch)
   if os.path.exists(resRootPath):
     rmtree(resRootPath)
   os.mkdir(resRootPath)
@@ -987,6 +993,8 @@ for libname in stats_by_libname.keys():
       subprocess.check_output(["rsync", "-aR", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", result_location_libname])
     if (conf.get("referenceFiles") or "") != "":
       subprocess.check_output(["rsync", "-a", dygraphs, result_location_libname+"/files"])
+  else:
+    print("No Sync: result_location [%s] != "" and not isWin [%s] and not noSync [%s] : library: %s" % (result_location, isWin, noSync, libname))
 
   # move results without sync operations (win or when --noSync is used)
   if result_location != "" and (isWin or noSync):
