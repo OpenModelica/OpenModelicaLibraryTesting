@@ -460,7 +460,7 @@ try:
       fp.write("%s\n" % fmitmpdir)
     if shared.isFMPy(fmisimulator):
       fmisimulator = "%s simulate " % fmisimulator
-      cmd = "%s --start-time %g --stop-time %g --timeout %g --relative-tolerance %g %s.fmu" % (("--output-file %s" % resFile),startTime,stopTime,conf["ulimitExe"],tolerance,conf["fileName"].replace(".","_"))
+      cmd = "%s --start-time %g --stop-time %g --timeout %g --relative-tolerance %g --interface-type ModelExchange --solver CVode --output-interval %g %s.fmu" % (("--output-file %s" % resFile),startTime,stopTime,conf["ulimitExe"],tolerance,stepSize,conf["fileName"].replace(".","_"))
     else: # OMSimulator
       cmd = "%s --tempDir=%s --startTime=%g --stopTime=%g --timeout=%g --tolerance=%g %s.fmu" % (("-r=%s" % resFile) if outputFormat != "empty" else "",fmitmpdir,startTime,stopTime,conf["ulimitExe"],tolerance,conf["fileName"].replace(".","_"))
     with open(simFile,"w") as fp:
