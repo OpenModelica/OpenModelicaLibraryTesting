@@ -18,7 +18,7 @@
     "referenceFileExtension": "csv",
     "referenceFileNameDelimiter": ".",
     "referenceFiles":{
-      "giturl":"https://github.com/OMLibraryTestingTests",
+      "giturl":"https://github.com/OpenModelica/OMLibraryTestingTests",
       "destination":"ReferenceFiles/MyOtherLibrary",
       "git-ref": "origin/main",
       "git-directory": "ReferenceResults"
