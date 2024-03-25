@@ -8,5 +8,20 @@
     "referenceFileExtension": "csv",
     "referenceFileNameDelimiter": ".",
     "referenceFiles": "sanityCheck/ReferenceFiles"
+  },
+  {
+    "library": "MyOtherLibrary",
+    "libraryVersion": "1.0.0",
+    "loadFileCommands": [
+      "loadFile(\"sanityCheck/MyOtherLibrary/package.mo\")"
+    ],
+    "referenceFileExtension": "csv",
+    "referenceFileNameDelimiter": ".",
+    "referenceFiles":{
+      "giturl":"https://github.com/OpenModelica/OMLibraryTestingTests",
+      "destination":"ReferenceFiles/MyOtherLibrary",
+      "git-ref": "main",
+      "git-directory": "ReferenceResults"
+    }
   }
 ]
