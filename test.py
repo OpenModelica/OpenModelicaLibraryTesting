@@ -84,20 +84,30 @@ pythonExecutable = sys.executable
 if not pythonExecutable:
   pythonExecutable = "python"
 
+def fflush():
+  sys.stdout.flush()
+  sys.stderr.flush()  
 
 def check_output_log(*popenargs, **kwargs):
   if DEBUG:
+    fflush()
     print("run: check_output", popenargs, kwargs)
     print("\n")
   return subprocess.check_output(*popenargs, **kwargs)
 
+def check_call_log(*popenargs, **kwargs):
+  if DEBUG:
+    fflush()
+    print("run: check_call", popenargs, kwargs)
+    print("\n")
+  return subprocess.check_call(*popenargs, **kwargs)
 
 def rmtree(f):
   try:
     shutil.rmtree(f)
   except UnicodeDecodeError:
     # Yes, we can get UnicodeDecodeError because shutil.rmtree is poorly implemented
-    subprocess.check_call(["rm", "-rf", f], stderr=subprocess.STDOUT)
+    check_call_log(["rm", "-rf", f], stderr=subprocess.STDOUT)
 
 def print_linenum(signum, frame):
   print("Currently at line", frame.f_lineno)
@@ -108,6 +118,9 @@ if not isWin:
 def runCommand(cmd, prefix, timeout):
   process = [None]
   def target():
+    if DEBUG: 
+      fflush()
+      print("run: Popen %s, %s, %d\n" %(cmd, prefix, timeout))
     with open(os.devnull, 'w')  as FNULL:
       if isWin:
         process[0] = subprocess.Popen(cmd, shell=True, stdin=FNULL, stdout=FNULL, stderr=FNULL)
@@ -407,9 +420,9 @@ for (lib,c) in configs:
         if "git-directory" in c["referenceFiles"]:
           # Sparse clone
           os.makedirs(destination)
-          subprocess.check_call(["git", "init"], stderr=subprocess.STDOUT, cwd=destinationReal)
-          subprocess.check_call(["git", "remote", "add", "-f", "origin", giturl], stderr=subprocess.STDOUT, cwd=destinationReal)
-          subprocess.check_call(["git", "config", "core.sparseCheckout", "true"], stderr=subprocess.STDOUT, cwd=destinationReal)
+          check_call_log(["git", "init"], stderr=subprocess.STDOUT, cwd=destinationReal)
+          check_call_log(["git", "remote", "add", "-f", "origin", giturl], stderr=subprocess.STDOUT, cwd=destinationReal)
+          check_call_log(["git", "config", "core.sparseCheckout", "true"], stderr=subprocess.STDOUT, cwd=destinationReal)
           file = open(os.path.join(destinationReal,".git", "info", "sparse-checkout"), "a")
           file.write(c["referenceFiles"]["git-directory"].strip())
           file.close()
@@ -417,18 +430,18 @@ for (lib,c) in configs:
           refFilesGitTag = 'origin/%s' % refFilesGitTag
         else:
           # Clone
-          subprocess.check_call(["git", "clone", giturl, destination], stderr=subprocess.STDOUT)
+          check_call_log(["git", "clone", giturl, destination], stderr=subprocess.STDOUT)
 
-      subprocess.check_call(["git", "clean", "-fdx", "--exclude=*.hash"], stderr=subprocess.STDOUT, cwd=destinationReal)
-      subprocess.check_call(["git", "fetch", "origin"], stderr=subprocess.STDOUT, cwd=destination)
+      check_call_log(["git", "clean", "-fdx", "--exclude=*.hash"], stderr=subprocess.STDOUT, cwd=destinationReal)
+      check_call_log(["git", "fetch", "origin"], stderr=subprocess.STDOUT, cwd=destination)
       # do not fail if the branch we were given doesn't exist
       try:
-        subprocess.check_call(["git", "reset", "--hard", refFilesGitTag], stderr=subprocess.STDOUT, cwd=destinationReal)
+        check_call_log(["git", "reset", "--hard", refFilesGitTag], stderr=subprocess.STDOUT, cwd=destinationReal)
       except subprocess.CalledProcessError as e:
         print(e.output)
-      subprocess.check_call(["git", "clean", "-fdx", "--exclude=*.hash"], stderr=subprocess.STDOUT, cwd=destinationReal)
+      check_call_log(["git", "clean", "-fdx", "--exclude=*.hash"], stderr=subprocess.STDOUT, cwd=destinationReal)
       if glob.glob(destinationReal + "/*.mat.xz"):
-        subprocess.check_call(["find", ".", "-name", "*.mat.xz", "-exec", "xz", "--decompress", "--keep", "{}", ";"], stderr=subprocess.STDOUT, cwd=destinationReal)
+        check_call_log(["find", ".", "-name", "*.mat.xz", "-exec", "xz", "--decompress", "--keep", "{}", ";"], stderr=subprocess.STDOUT, cwd=destinationReal)
       try:
         githash = check_output_log(["git", "rev-parse", "--verify", "HEAD"], stderr=subprocess.STDOUT, cwd=destinationReal, encoding='utf8')
       except subprocess.CalledProcessError as e:
@@ -591,7 +604,7 @@ for (library,conf) in configs:
       # replace the resource location in the command if present
       cmd = [c.replace("$resourceLocation", conf["resourceLocation"]) for c in cmd]
       cmd = [c.replace("$libraryLocation", conf["libraryLocation"]) for c in cmd]
-      subprocess.check_call(cmd, stderr=subprocess.STDOUT)
+      check_call_log(cmd, stderr=subprocess.STDOUT)
 
   if "customCommands" in conf:
     cmd = conf["customCommands"]
