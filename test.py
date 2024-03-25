@@ -48,6 +48,7 @@ configs = args.configs
 branch = args.branch
 noSync = args.noSync
 isWin = os.name == 'nt'
+DEBUG = True
 # result location can be on a remote server, do NOT use os.path.abspath on it if the system is not Windows or if --noSync=True
 result_location = ''
 if not isWin and not noSync:
@@ -82,6 +83,14 @@ customTimeout = int(args.timeout)
 pythonExecutable = sys.executable
 if not pythonExecutable:
   pythonExecutable = "python"
+
+
+def check_output_log(*popenargs, **kwargs):
+  if DEBUG:
+    print("run: check_output", popenargs, kwargs)
+    print("\n")
+  return subprocess.check_output(*popenargs, **kwargs)
+
 
 def rmtree(f):
   try:
@@ -155,7 +164,7 @@ def runCommand(cmd, prefix, timeout):
   return 1 if gotTimeout else process[0].returncode
 
 try:
-  subprocess.check_output([pythonExecutable, "testmodel.py", "--help"], stderr=subprocess.STDOUT)
+  check_output_log([pythonExecutable, "testmodel.py", "--help"], stderr=subprocess.STDOUT)
 
 except subprocess.CalledProcessError as e:
   print("Sanity check failed (./testmodel.py --help):\n" + e.output.decode())
@@ -189,7 +198,7 @@ if docker:
   print("###")
   print("###")
   dir_path = os.path.normpath(os.path.dirname(os.path.realpath(__file__)))
-  subprocess.check_output(["docker", "pull", docker], stderr=subprocess.STDOUT).strip()
+  check_output_log(["docker", "pull", docker], stderr=subprocess.STDOUT).strip()
   dockerExtraArgs = ["-w", dir_path, "-v", "%s:%s" % (dir_path,dir_path), "--env", "OPENMODELICALIBRARY=%s" % "/usr/lib/omlibrary", "--env", "GC_MARKERS=1", "-v", "%s:/usr/lib/omlibrary" % librariespath]
   commands = ["docker", "run", "--user", str(os.getuid())] + dockerExtraArgs + [docker]
   omc_cmd = commands + ["omc"]
@@ -217,7 +226,7 @@ print("Start OMC version")
 if ompython_omhome != "":
   # Use a different OMC for running OMPython than for running the tests
   omhome = os.environ["OPENMODELICAHOME"]
-  omc_version = subprocess.check_output(omc_cmd + ["--version"], stderr=subprocess.STDOUT).decode("ascii").strip()
+  omc_version = check_output_log(omc_cmd + ["--version"], stderr=subprocess.STDOUT).decode("ascii").strip()
   os.environ["OPENMODELICAHOME"] = ompython_omhome
   omc = OMCSessionZMQ()
   ompython_omc_version=omc.sendExpression('getVersion()')
@@ -242,7 +251,7 @@ sys.stdout.flush()
 
 # Do feature checks. Handle things like old RML-style arguments...
 
-subprocess.check_output(omc_cmd + ["-n=1", "--version"], stderr=subprocess.STDOUT).strip()
+check_output_log(omc_cmd + ["-n=1", "--version"], stderr=subprocess.STDOUT).strip()
 
 sys.stdout.flush()
 
@@ -250,7 +259,7 @@ fmisimulatorversion = None
 if fmisimulator:
   try:
     if not isFMPy(fmisimulator):
-      fmisimulatorversion = subprocess.check_output([fmisimulator, "-v"], stderr=subprocess.STDOUT).strip()
+      fmisimulatorversion = check_output_log([fmisimulator, "-v"], stderr=subprocess.STDOUT).strip()
     else:
       fmisimulatorversion = subprocess.getoutput(fmisimulator + " -h | grep version | tr '\n' ' ' | tr -s ' '" ).strip().encode('ascii')
   except subprocess.CalledProcessError as e:
@@ -268,7 +277,7 @@ try:
   os.unlink("HelloWorld"+exeExt)
 except OSError:
   pass
-subprocess.check_output(omc_cmd + ["--simCodeTarget=Cpp", "HelloWorld.mos"], stderr=subprocess.STDOUT)
+check_output_log(omc_cmd + ["--simCodeTarget=Cpp", "HelloWorld.mos"], stderr=subprocess.STDOUT)
 if os.path.exists("HelloWorld"+exeExt):
   print("Have C++ HelloWorld simulation executable")
   haveCppRuntime=simulationAcceptsFlag("", isWin=isWin)
@@ -283,7 +292,7 @@ else:
 sys.stdout.flush()
 
 try:
-  subprocess.check_output(omc_cmd + ["Architecture.mo"], stderr=subprocess.STDOUT)
+  check_output_log(omc_cmd + ["Architecture.mo"], stderr=subprocess.STDOUT)
 except subprocess.CalledProcessError:
   print("Patching ModelicaServices for Architecture bug...")
   for f in glob.glob(librariespath + os.path.normpath("/ModelicaServices*/package.mo")) + glob.glob(omhome + os.path.normpath("/Modelica */Constants.mo")):
@@ -311,7 +320,7 @@ def testHelloWorld(cmd):
     pass
   open("HelloWorld.cmd.mos","w").write(cmd + "\n" + helloWorldContents)
   try:
-    out=subprocess.check_output(omc_cmd + ["HelloWorld.cmd.mos"], stderr=subprocess.STDOUT)
+    out=check_output_log(omc_cmd + ["HelloWorld.cmd.mos"], stderr=subprocess.STDOUT)
     if os.path.exists("HelloWorld"+exeExt) and not "Error:" in out.decode():
       return True
   except subprocess.CalledProcessError as e:
@@ -341,7 +350,7 @@ fmiOK_C = False
 fmiOK_Cpp = False
 if allTestsFmi:
   try:
-    out=subprocess.check_output(omc_cmd + ["--simCodeTarget=C", "FMI.mos"], stderr=subprocess.STDOUT)
+    out=check_output_log(omc_cmd + ["--simCodeTarget=C", "FMI.mos"], stderr=subprocess.STDOUT)
     if os.path.exists("HelloWorldX.fmu") and not "Error:" in out.decode():
       fmiOK_C = True
       print("C FMU OK")
@@ -350,7 +359,7 @@ if allTestsFmi:
   except subprocess.CalledProcessError as e:
     pass
   try:
-    out=subprocess.check_output(omc_cmd + ["--simCodeTarget=Cpp", "FMI.mos"], stderr=subprocess.STDOUT)
+    out=check_output_log(omc_cmd + ["--simCodeTarget=Cpp", "FMI.mos"], stderr=subprocess.STDOUT)
     if os.path.exists("HelloWorldX.fmu") and not "Error:" in out.decode():
       fmiOK_Cpp = True
       print("C++ FMU OK")
@@ -363,7 +372,7 @@ try:
   os.unlink("HelloWorld"+exeExt)
 except OSError:
   pass
-print(subprocess.check_output(omc_cmd + ["HelloWorld.mos"], stderr=subprocess.STDOUT).decode().strip())
+print(check_output_log(omc_cmd + ["HelloWorld.mos"], stderr=subprocess.STDOUT).decode().strip())
 assert(os.path.exists("HelloWorld"+exeExt))
 abortSimulationFlag="-abortSlowSimulation" if simulationAcceptsFlag("-abortSlowSimulation", isWin=isWin) else ""
 alarmFlag="-alarm" if simulationAcceptsFlag("-alarm=480", isWin=isWin) else ""
@@ -421,7 +430,7 @@ for (lib,c) in configs:
       if glob.glob(destinationReal + "/*.mat.xz"):
         subprocess.check_call(["find", ".", "-name", "*.mat.xz", "-exec", "xz", "--decompress", "--keep", "{}", ";"], stderr=subprocess.STDOUT, cwd=destinationReal)
       try:
-        githash = subprocess.check_output(["git", "rev-parse", "--verify", "HEAD"], stderr=subprocess.STDOUT, cwd=destinationReal, encoding='utf8')
+        githash = check_output_log(["git", "rev-parse", "--verify", "HEAD"], stderr=subprocess.STDOUT, cwd=destinationReal, encoding='utf8')
       except subprocess.CalledProcessError as e:
         print(e.output)
 
@@ -863,7 +872,7 @@ if isWin:
   lsb_release = ""
 else:
   try:
-    lsb_release = subprocess.check_output(commands + ["cat","/etc/lsb-release"]).decode().strip()
+    lsb_release = check_output_log(commands + ["cat","/etc/lsb-release"]).decode().strip()
     lsb_release = dict(a.split("=") for a in lsb_release.split("\n"))["DISTRIB_DESCRIPTION"].strip('"')
   except:
     lsb_release = ""
@@ -933,7 +942,7 @@ for libname in stats_by_libname.keys():
 
   try:
     githuburltesting = "https://github.com/OpenModelica/OpenModelicaLibraryTesting/commit/"
-    gitloglibrarytesting = subprocess.check_output(["git", "log", '--pretty=<table><tr><th>Commit</th><th>Date</th><th>Author</th><th>Summary</th></tr><tr><td><a href="%s/%%h">%%h</a></td><td>%%ai</td><td>%%an</td><td>%%s</td></tr></table>' % (githuburltesting), "-1"], cwd="./").decode("utf-8")
+    gitloglibrarytesting = check_output_log(["git", "log", '--pretty=<table><tr><th>Commit</th><th>Date</th><th>Author</th><th>Summary</th></tr><tr><td><a href="%s/%%h">%%h</a></td><td>%%ai</td><td>%%an</td><td>%%s</td></tr></table>' % (githuburltesting), "-1"], cwd="./").decode("utf-8")
   except subprocess.CalledProcessError as e:
     print(str(e))
     gitloglibrarytesting = "<table><tr><td>could not get the git log for OpenModelicaLibraryTesting</td></tr></table>"
@@ -983,18 +992,18 @@ for libname in stats_by_libname.keys():
       os.mkdir("emptydir")
     except:
       pass
-    subprocess.check_output(["rsync", "-aR", "emptydir/", result_location])
-    subprocess.check_output(["rsync", "-aR", "emptydir/", result_location_libname])
-    subprocess.check_output(["rsync", "-aR", "emptydir/", result_location_libname+"/files"])
+    check_output_log(["rsync", "-aR", "emptydir/", result_location])
+    check_output_log(["rsync", "-aR", "emptydir/", result_location_libname])
+    check_output_log(["rsync", "-aR", "emptydir/", result_location_libname+"/files"])
     try:
-      subprocess.check_output(["rsync", "-aR", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", result_location_libname])
+      check_output_log(["rsync", "-aR", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", result_location_libname])
     except:
-      subprocess.check_output(["rsync", "-aR", "emptydir/", result_location])
-      subprocess.check_output(["rsync", "-aR", "emptydir/", result_location_libname])
-      subprocess.check_output(["rsync", "-aR", "emptydir/", result_location_libname+"/files"])
-      subprocess.check_output(["rsync", "-aR", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", result_location_libname])
+      check_output_log(["rsync", "-aR", "emptydir/", result_location])
+      check_output_log(["rsync", "-aR", "emptydir/", result_location_libname])
+      check_output_log(["rsync", "-aR", "emptydir/", result_location_libname+"/files"])
+      check_output_log(["rsync", "-aR", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", result_location_libname])
     if (conf.get("referenceFiles") or "") != "":
-      subprocess.check_output(["rsync", "-a", dygraphs, result_location_libname+"/files"])
+      check_output_log(["rsync", "-a", dygraphs, result_location_libname+"/files"])
   else:
     print("No Sync: result_location [%s] != "" and not isWin [%s] and not noSync [%s] : library: %s" % (result_location, isWin, noSync, libname))
 
