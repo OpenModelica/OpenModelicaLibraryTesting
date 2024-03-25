@@ -404,6 +404,8 @@ for (lib,c) in configs:
           file = open(os.path.join(destinationReal,".git", "info", "sparse-checkout"), "a")
           file.write(c["referenceFiles"]["git-directory"].strip())
           file.close()
+          # add orgin to the git-ref tag
+          refFilesGitTag = 'origin/%s' % refFilesGitTag
         else:
           # Clone
           subprocess.check_call(["git", "clone", giturl, destination], stderr=subprocess.STDOUT)
