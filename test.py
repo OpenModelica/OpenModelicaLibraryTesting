@@ -90,16 +90,16 @@ def fflush():
 
 def check_output_log(*popenargs, **kwargs):
   if DEBUG:
-    fflush()
     print("run: check_output", popenargs, kwargs)
     print("\n")
+    fflush()
   return subprocess.check_output(*popenargs, **kwargs)
 
 def check_call_log(*popenargs, **kwargs):
   if DEBUG:
-    fflush()
     print("run: check_call", popenargs, kwargs)
     print("\n")
+    fflush()
   return subprocess.check_call(*popenargs, **kwargs)
 
 def rmtree(f):
@@ -119,8 +119,8 @@ def runCommand(cmd, prefix, timeout):
   process = [None]
   def target():
     if DEBUG: 
-      fflush()
       print("run: Popen %s, %s, %d\n" %(cmd, prefix, timeout))
+      fflush()
     with open(os.devnull, 'w')  as FNULL:
       if isWin:
         process[0] = subprocess.Popen(cmd, shell=True, stdin=FNULL, stdout=FNULL, stderr=FNULL)
@@ -413,8 +413,20 @@ for (lib,c) in configs:
         (c["referenceFiles"],c["referenceFilesURL"]) = preparedReferenceDirs[destination]
         continue
       giturl = c["referenceFiles"]["giturl"]
-      destination = os.path.normpath(c["referenceFiles"]["destination"])
-      destinationReal = os.path.normpath(os.path.realpath(destination))
+      destination = c["referenceFiles"]["destination"]
+      if DEBUG:
+        print("destination %s" % destination)
+      destination = os.path.normpath(destination)
+      if DEBUG:
+        print("normalized destination %s" % destination)
+        print("not os.path.isdir(destination): %s" % (not os.path.isdir(destination)))
+      destinationReal = os.path.realpath(destination)
+      if DEBUG:
+        print("destinationReal %s" % destinationReal)
+      destinationReal = os.path.normpath(destinationReal)
+      if DEBUG:
+        print("normalized destinationReal %s" % destinationReal)
+        print("referenceFiles:", c["referenceFiles"])
 
       if not os.path.isdir(destination):
         if "git-directory" in c["referenceFiles"]:
