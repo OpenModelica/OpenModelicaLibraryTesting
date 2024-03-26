@@ -189,6 +189,11 @@
     "library":"BuildSysPro"
   },
   {
+    "library":"BusinessSimulation",
+    "libraryVersion":"main",
+    "libraryVersionNameForTests":"dev"
+  },
+  {
     "library":"BioChem"
   },
   {
