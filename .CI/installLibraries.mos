@@ -29,6 +29,7 @@ for l in {
   {"Annex60", ""},
   {"BidiDCDC", ""},
   {"BLDC", ""},
+  {"BusinessSimulation, "main"},
   {"Credibility", ""},
   {"DeltaRobot", ""},
   {"DroneLibrary", ""},
