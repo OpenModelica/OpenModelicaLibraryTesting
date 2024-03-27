@@ -29,7 +29,7 @@ for l in {
   {"Annex60", ""},
   {"BidiDCDC", ""},
   {"BLDC", ""},
-  {"BusinessSimulation, "main"},
+  {"BusinessSimulation", "main"},
   {"Credibility", ""},
   {"DeltaRobot", ""},
   {"DroneLibrary", ""},
