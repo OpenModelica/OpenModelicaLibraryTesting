@@ -37,6 +37,11 @@ jobs:
             'Modelica 4.0.0'
           omc-diff: true
 
+      - name: Check if .CI/installLibraries.mos works
+        shell: bash
+        run: |
+          omc .CI/installLibraries.mos
+
       - name: Setup Python3
         uses: actions/setup-python@v5
         with:
