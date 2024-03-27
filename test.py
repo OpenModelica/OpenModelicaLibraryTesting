@@ -48,7 +48,7 @@ configs = args.configs
 branch = args.branch
 noSync = args.noSync
 isWin = os.name == 'nt'
-DEBUG = True
+DEBUG = False # set this to True for debug output
 # result location can be on a remote server, do NOT use os.path.abspath on it if the system is not Windows or if --noSync=True
 result_location = ''
 if not isWin and not noSync:
@@ -57,7 +57,7 @@ else:
   result_location = os.path.abspath(args.output) if args.output else ''
 n_jobs = int(args.jobs)
 clean = not args.noclean
-verbose = args.verbose
+runverbose = args.verbose
 extraflags = args.extraflags
 extrasimflags = args.extrasimflags
 ompython_omhome = args.ompython_omhome
@@ -65,6 +65,8 @@ fmisimulator = args.fmisimulator or None
 allTestsFmi = args.fmi
 ulimitMemory = args.ulimitvmem
 docker = args.docker
+
+numberOfTests = 0
 
 if args.libraries:
   librariespath = os.path.abspath(os.path.normpath(args.libraries))
@@ -153,7 +155,6 @@ def runCommand(cmd, prefix, timeout):
     thread.join()
 
   if clean:
-    # print("---> try clean")
     try:
       lines = open("%s.tmpfiles" % prefix).readlines()
     except:
@@ -728,7 +729,7 @@ if errorOccurred:
 print("Created .conf.json files")
 sys.stdout.flush()
 
-def runScript(c, timeout, memoryLimit, verbose):
+def runScript(c, timeout, memoryLimit, runverbose):
   j = os.path.normpath("files/%s.stat.json" % c)
   try:
     os.remove(j)
@@ -736,7 +737,7 @@ def runScript(c, timeout, memoryLimit, verbose):
     pass
   start=monotonic()
   # runCommand("%s %s %s.mos" % (omc_exe, single_thread, c), prefix=c, timeout=timeout)
-  if verbose:
+  if runverbose:
     print("Starting test: %s" % c)
     sys.stdout.flush()
 
@@ -771,8 +772,8 @@ def runScript(c, timeout, memoryLimit, verbose):
     data = {"phase":0}
   data["exectime"] = execTime
   json.dump(data, open(j,"w"))
-  if verbose:
-    print("Finished test: %s - %d[s]" % (c, execTime))
+  if runverbose:
+    print("[%s %ds] " % (c, execTime))
     sys.stdout.flush()
 
 def expectedExec(c):
@@ -804,12 +805,14 @@ except OSError:
 print("Created files directory")
 sys.stdout.flush()
 
-if len(tests)==0:
+numberOfTests = len(tests)
+
+if numberOfTests==0:
   print("Everything already up to date. Not executing any tests.")
   sys.exit(0)
 
 
-print("Starting execution of %d tests. Estimated execution time %s (wrong if there are new or few tests)." % (len(tests), friendlyStr(sum(expectedExec(c) for c in tests)/(1.0*n_jobs))))
+print("Starting execution of %d tests. Estimated execution time %s (wrong if there are new or few tests).\n" % (numberOfTests, friendlyStr(sum(expectedExec(c) for c in tests)/(1.0*n_jobs))))
 sys.stdout.flush()
 cmd_res=[0]
 start=monotonic()
@@ -817,9 +820,9 @@ start_as_time=time.localtime()
 testRunStartTimeAsEpoch = int(time.time())
 # Need translateModel + make + exe...
 if customTimeout > 0.0:
-  cmd_res=Parallel(n_jobs=n_jobs)(delayed(runScript)(name, customTimeout, data["ulimitMemory"], verbose) for (model,lib,libName,name,data) in tests)
+  cmd_res=Parallel(n_jobs=n_jobs, verbose=5)(delayed(runScript)(name, customTimeout, data["ulimitMemory"], runverbose) for (model,lib,libName,name,data) in tests)
 else:
-  cmd_res=Parallel(n_jobs=n_jobs)(delayed(runScript)(name, 2*data["ulimitOmc"]+data["ulimitExe"]+25, data["ulimitMemory"], verbose) for (model,lib,libName,name,data) in tests)
+  cmd_res=Parallel(n_jobs=n_jobs, verbose=5)(delayed(runScript)(name, 2*data["ulimitOmc"]+data["ulimitExe"]+25, data["ulimitMemory"], runverbose) for (model,lib,libName,name,data) in tests)
 stop=monotonic()
 print("Execution time: %s" % friendlyStr(stop-start))
 assert(stop-start >= 0.0)
