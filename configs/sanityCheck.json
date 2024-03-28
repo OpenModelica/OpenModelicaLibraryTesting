@@ -11,6 +11,7 @@
   },
   {
     "library": "MyOtherLibrary",
+    "ignoreModelPrefix":["MyOtherLibrary.Mechanics.MultiBody.Examples.Pendulum", "Some.Other,NonExistentPath"],
     "libraryVersion": "1.0.0",
     "loadFileCommands": [
       "loadFile(\"sanityCheck/MyOtherLibrary/package.mo\")"
