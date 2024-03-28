@@ -40,7 +40,9 @@ jobs:
       - name: Check if .CI/installLibraries.mos works
         shell: bash
         run: |
-          omc .CI/installLibraries.mos
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            omc .CI/installLibraries.mos
+          fi
 
       - name: Setup Python3
         uses: actions/setup-python@v5
