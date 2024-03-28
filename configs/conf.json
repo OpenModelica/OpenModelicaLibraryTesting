@@ -152,7 +152,7 @@
   },
   {
     "library":"Buildings",
-    "ignoreModelPrefix":"Buildings.Utilities.IO.BCVTB.Examples",
+    "ignoreModelPrefix":["Buildings.Utilities.IO.BCVTB.Examples", "Buildings.Obsolete"],
     "libraryVersionNameForTests":"9",
     "libraryVersion":"maint.9.1.x",
     "libraryVersionLatestInPackageManager":true,
@@ -162,7 +162,7 @@
   },
   {
     "library":"Buildings",
-    "ignoreModelPrefix":"Buildings.Utilities.IO.BCVTB.Examples",
+    "ignoreModelPrefix":["Buildings.Utilities.IO.BCVTB.Examples", "Buildings.Obsolete"],
     "libraryVersion":"maint.10.0.x",
     "libraryVersionNameForTests":"10",
     "runOnceBeforeTesting":[["$resourceLocation/src/ThermalZones/install.py", "--binaries-for-os-only"]],
@@ -172,7 +172,7 @@
   },
   {
     "library":"Buildings",
-    "ignoreModelPrefix":"Buildings.Utilities.IO.BCVTB.Examples",
+    "ignoreModelPrefix":["Buildings.Utilities.IO.BCVTB.Examples", "Buildings.Obsolete"],
     "libraryVersion":"master",
     "libraryVersionNameForTests":"latest",
     "runOnceBeforeTesting":[["$resourceLocation/src/ThermalZones/install.py", "--binaries-for-os-only"]],
