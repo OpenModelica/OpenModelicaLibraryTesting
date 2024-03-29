@@ -659,7 +659,8 @@ for (library,conf) in configs:
   if conf.get("ignoreModelPrefix"):
     if isinstance(conf["ignoreModelPrefix"], list):
       prefixes = conf["ignoreModelPrefix"]
-      res=list(filter(lambda x: not x.startswith(prefix), res) for prefix in prefixes)
+      for prefix in prefixes:
+        res=list(filter(lambda x: not x.startswith(prefix), res))
     else: # in this part it should be only a string
       prefix = conf["ignoreModelPrefix"]
       res=list(filter(lambda x: not x.startswith(prefix), res))
