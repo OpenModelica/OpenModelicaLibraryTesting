@@ -410,6 +410,8 @@ for (lib,c) in configs:
       refFilesGitTag = "origin/master"
       if "git-ref" in c["referenceFiles"]:
         refFilesGitTag = c["referenceFiles"]["git-ref"].strip()
+        if not refFilesGitTag.startswith("origin/"):
+          refFilesGitTag = 'origin/%s' % refFilesGitTag
       if c["referenceFiles"]["destination"] in preparedReferenceDirs:
         (c["referenceFiles"],c["referenceFilesURL"]) = preparedReferenceDirs[destination]
         continue
@@ -439,8 +441,6 @@ for (lib,c) in configs:
           file = open(os.path.join(destinationReal,".git", "info", "sparse-checkout"), "a")
           file.write(c["referenceFiles"]["git-directory"].strip())
           file.close()
-          # add orgin to the git-ref tag
-          refFilesGitTag = 'origin/%s' % refFilesGitTag
         else:
           # Clone
           check_call_log(["git", "clone", giturl, destination], stderr=subprocess.STDOUT)
