@@ -189,6 +189,9 @@
     "library":"BuildSysPro"
   },
   {
+    "library":"BusinessSimulation"
+  },
+  {
     "library":"BusinessSimulation",
     "libraryVersion":"main",
     "libraryVersionNameForTests":"dev"
