@@ -274,7 +274,7 @@ missing_html = ""
 if missing_branches:
   missing_plain = ", ".join(missing_branches)
   missing_plain = "Report asks for missing branches which we ignored: %s\n" % missing_plain
-  missing_html = ("%s %s %s" % ("<p color=\"red\">", missing_plain, "</p"))
+  missing_html = ("%s %s %s" % ("<p style=\"color:red;\">", missing_plain, "</p"))
 
 for email in sorted(emails_to_send.keys()):
   msg = EmailMessage()
