@@ -66,13 +66,26 @@ def libraryLink(branch, libname):
 def modelLink(libname, modelname, extension, text):
   return '<a href="%s/%s/%s/files/%s_%s.%s">%s</a>' % (baseurl,branch,libname,libname,modelname,extension,text)
 
+missing_branches = []
 emails_to_send = {}
 for branch in branches:
   try:
     cursor.execute("SELECT name FROM [sqlite_master] WHERE type='table' AND name=?", (branch,))
-    v = cursor.fetchone()[0]
-  except:
-    raise Exception("No such table '%s'; specify it using --branch=XXX" % branch)
+    one = cursor.fetchone()
+    if one == None:
+      print("No such table '%s'; specify it using --branch=XXX when running test.py" % branch)
+      # ignore this table and continue
+      missing_branches.append(branch)
+      continue
+    else:
+      v = one[0]
+  except:    
+    #raise Exception("No such table '%s'; specify it using --branch=XXX" % branch)
+    print("No such table '%s'; specify it using --branch=XXX when running test.py" % branch)
+    # ignore this table and continue
+    missing_branches.append(branch)
+    continue
+
   cursor.execute('''CREATE INDEX IF NOT EXISTS [idx_%s_date] ON [%s](date)''' % (branch,branch))
   cursor.execute("SELECT date,omcversion FROM [omcversion] WHERE branch LIKE ? COLLATE NOCASE ORDER BY date ASC", (branch,))
   entries = cursor.fetchall()
@@ -256,23 +269,32 @@ from email.message import EmailMessage
 from email.headerregistry import Address
 from email.utils import make_msgid
 
+missing_plain = ""
+missing_html = ""
+if missing_branches:
+  missing_plain = ", ".join(missing_branches)
+  missing_plain = "Report asks for missing branches which we ignored: %s\n" % missing_plain
+  missing_html = ("%s %s %s" % ("<p style=\"color:red;\">", missing_plain, "</p"))
+
 for email in sorted(emails_to_send.keys()):
   msg = EmailMessage()
   msg['Subject'] = 'OpenModelica Library Testing Regressions'
   msg['From'] = Address("OM Hudson", "openmodelicabuilds", "ida.liu.se")
   msg['To'] = email
   msg.set_content("""\
+%s
 The following reports contain regressions your account was involved with:
-""" + "\n".join(reversed(emails_to_send[email]["plain"])))
+""" % missing_plain + "\n".join(reversed(emails_to_send[email]["plain"])))
   msg.add_alternative("""\
 <html lang="en">
 <head></head>
 <body>
+%s
 <p>The following reports contain regressions your account was involved with:</p>
 %s
 </body>
 </html>
-""" % "\n".join(reversed(emails_to_send[email]["html"])), subtype='html')
+""" % (missing_html, "\n".join(reversed(emails_to_send[email]["html"]))), subtype='html')
   with smtplib.SMTP('smtp.office365.com') as s:
     s.starttls()
     s.ehlo()
