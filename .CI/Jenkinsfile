@@ -3,12 +3,14 @@ pipeline {
   parameters {
     booleanParam(name: 'OLDLIBS', defaultValue: false, description: 'Also test some outdated libraries')
 
+    /*
     booleanParam(name: 'v1_12', defaultValue: false, description: 'maintenance/v1.12 branch (ryzen-5950x-1)')
     booleanParam(name: 'v1_13', defaultValue: false, description: 'maintenance/v1.13 branch (ryzen-5950x-1)')
     booleanParam(name: 'v1_14', defaultValue: false, description: 'maintenance/v1.14 branch (ryzen-5950x-1)')
     booleanParam(name: 'v1_16', defaultValue: false, description: 'maintenance/v1.16 branch (ryzen-5950x-1)')
     booleanParam(name: 'v1_17', defaultValue: false, description: 'maintenance/v1.17 branch (ryzen-5950x-1)')
     booleanParam(name: 'v1_18', defaultValue: false, description: 'maintenance/v1.18 branch (ryzen-5950x-1)')
+    */
     booleanParam(name: 'v1_19', defaultValue: false, description: 'maintenance/v1.19 branch (ryzen-5950x-1)')
     booleanParam(name: 'v1_20', defaultValue: false, description: 'maintenance/v1.20 branch (ryzen-5950x-1)')
     booleanParam(name: 'v1_21', defaultValue: false, description: 'maintenance/v1.21 branch (ryzen-5950x-1)')
@@ -16,12 +18,14 @@ pipeline {
     booleanParam(name: 'v1_23', defaultValue: false, description: 'maintenance/v1.23 branch (ryzen-5950x-1)')
     booleanParam(name: 'master', defaultValue: false, description: 'master branch (ryzen-5950x-1)')
 
+    /*
     booleanParam(name: 'fmi_v1_12', defaultValue: false, description: 'maintenance/v1.12 branch with FMI (ryzen-5950x-2)')
     booleanParam(name: 'fmi_v1_13', defaultValue: false, description: 'maintenance/v1.13 branch with FMI (ryzen-5950x-2)')
     booleanParam(name: 'fmi_v1_14', defaultValue: false, description: 'maintenance/v1.14 branch with FMI (ryzen-5950x-2)')
     booleanParam(name: 'fmi_v1_16', defaultValue: false, description: 'maintenance/v1.16 branch with FMI (ryzen-5950x-2)')
     booleanParam(name: 'fmi_v1_17', defaultValue: false, description: 'maintenance/v1.17 branch with FMI (ryzen-5950x-2)')
     booleanParam(name: 'fmi_v1_18', defaultValue: false, description: 'maintenance/v1.18 branch with FMI (ryzen-5950x-2)')
+    */
     booleanParam(name: 'fmi_v1_19', defaultValue: false, description: 'maintenance/v1.19 branch with FMI (ryzen-5950x-2)')
     booleanParam(name: 'fmi_v1_20', defaultValue: false, description: 'maintenance/v1.20 branch with FMI (ryzen-5950x-2)')
     booleanParam(name: 'fmi_v1_21', defaultValue: false, description: 'maintenance/v1.21 branch with FMI (ryzen-5950x-2)')
@@ -56,6 +60,7 @@ pipeline {
   stages {
     stage('test') { parallel {
 
+      /*
       stage('v1.12') {
         agent {
           node {
@@ -157,6 +162,7 @@ pipeline {
           runRegressiontest('maintenance/v1.18', 'v1.18', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
+      */
 
       stage('v1.19') {
         agent {
@@ -294,6 +300,7 @@ pipeline {
         }
       }
 
+      /*
       stage('v1.12 FMI with OMSimulator') {
         agent {
           node {
@@ -390,6 +397,7 @@ pipeline {
           runRegressiontest('maintenance/v1.18', 'v1.18-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
+      */
       stage('v1.19 FMI with OMSimulator') {
         agent {
           node {
@@ -630,6 +638,7 @@ pipeline {
             runRegressiontest('master', 'heavy_tests', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false, 'configs/heavy_tests.json', 1)
         }
       }
+      /*
       stage('C++ v1.18') {
         agent {
           node {
@@ -646,6 +655,7 @@ pipeline {
           runRegressiontest('maintenance/v1.18', 'v1.18-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
+      */
       stage('C++ v1.19') {
         agent {
           node {
