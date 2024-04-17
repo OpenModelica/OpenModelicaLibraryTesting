@@ -99,11 +99,19 @@ def plotLibrary(branch, libname, xs, total, frontend,backend,simcode,template,co
 for branch in branches:
   try:
     cursor.execute("SELECT name FROM [sqlite_master] WHERE type='table' AND name=?", (branch,))
-    v = cursor.fetchone()[0]
+    one = cursor.fetchone()
+    if one == None:
+      print("No such table '%s'; specify it using --branch=XXX when running test.py" % branch)
+      # ignore this table and continue
+      continue
+    else:
+      v = one[0]
   except:
-    raise Exception("No such table '%s'; specify it using --branch=XXX" % branch)
-
-for branch in branches:
+    # raise Exception("No such table '%s'; specify it using --branch=XXX" % branch)
+    print("No such table '%s'; specify it using --branch=XXX when running test.py" % branch)
+    # ignore this table and continue
+    continue
+  
   cursor.execute('''CREATE INDEX IF NOT EXISTS [idx_%s_date] ON [%s](date)''' % (branch,branch))
   libs = {}
   for (date,libname,total,frontend,backend,simcode,template,compile,simulate,verify) in cursor.execute("""SELECT date,libname,COUNT(finalphase),COUNT(finalphase>=1 or null),COUNT(finalphase>=2 or null),COUNT(finalphase>=3 or null),COUNT(finalphase>=4 or null),COUNT(finalphase>=5 or null),COUNT(finalphase>=6 or null),COUNT(finalphase>=7 or null)
