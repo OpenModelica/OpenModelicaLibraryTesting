@@ -40,8 +40,22 @@ nsimulate = {}
 exectime = {}
 
 for branch in branches:
-  cursor.execute("SELECT date FROM [%s] ORDER BY date DESC LIMIT 1" % branch)
-  v = cursor.fetchone()[0]
+  try:
+    cursor.execute("SELECT date FROM [%s] ORDER BY date DESC LIMIT 1" % branch)
+    one = cursor.fetchone()
+    if one == None:
+      print("No such table '%s'; specify it using --branch=XXX when running test.py" % branch)
+      # ignore this table and continue
+      branches.remove(branch)
+      continue
+    else:
+      v = one[0]
+  except:    
+    print("No such table '%s'; specify it using --branch=XXX when running test.py" % branch)
+    # ignore this table and continue
+    branches.remove(branch)
+    continue
+
   dates_str[branch] = str(datetime.datetime.fromtimestamp(v).strftime('%Y-%m-%d %H:%M:%S'))
   cursor.execute('''CREATE INDEX IF NOT EXISTS [idx_%s_date] ON [%s](date)''' % (branch,branch))
 
