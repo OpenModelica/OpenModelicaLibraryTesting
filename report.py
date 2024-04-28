@@ -39,6 +39,7 @@ nmodels = {}
 nsimulate = {}
 exectime = {}
 
+missing_branches = []
 for branch in branches:
   try:
     cursor.execute("SELECT date FROM [%s] ORDER BY date DESC LIMIT 1" % branch)
@@ -46,14 +47,14 @@ for branch in branches:
     if one == None:
       print("No such table '%s'; specify it using --branch=XXX when running test.py" % branch)
       # ignore this table and continue
-      branches.remove(branch)
+      missing_branches.append(branch)
       continue
     else:
       v = one[0]
   except:    
     print("No such table '%s'; specify it using --branch=XXX when running test.py" % branch)
     # ignore this table and continue
-    branches.remove(branch)
+    missing_branches.append(branch)
     continue
 
   dates_str[branch] = str(datetime.datetime.fromtimestamp(v).strftime('%Y-%m-%d %H:%M:%S'))
@@ -78,6 +79,9 @@ for branch in branches:
   exectime[branch] = 0.0
 
 entries = ""
+# removing missing branches
+for branch in missing_branches:
+  branches.remove(branch)
 
 def checkEqual(iterator):
    return len(set(iterator)) <= 1
