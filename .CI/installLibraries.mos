@@ -1,3 +1,6 @@
+// adrpo: DO NOT REMOVE ANY LIBS FROM HERE BEFORE REMOVING THEM FROM configs/conf*
+//        usually the newest version will be loaded instead if you remove them!
+//        SO: first remove them from configs/conf* then remove them from here.
 updatePackageIndex();
 if not installPackage(Modelica, "3.1.0", exactMatch=true) then
     print("Modelica 3.1.0 " + getErrorString() + "\n");
@@ -9,7 +12,7 @@ for v in {"3.2.1","3.2.2","3.2.3","4.0.0","trunk"} loop
     exit(1);
   end if;
 end for;
-for v in {"maint.10.0.x", "maint.11.x", "master"} loop
+for v in {"1.6", "3.0.0", "maint.7.0.x", "maint.8.1.x", "maint.9.1.x", "maint.10.0.x", "maint.11.x", "master"} loop
   if not installPackage(Buildings, v) then
     print("Buildings " + v + " " + getErrorString() + "\n");
     exit(1);
