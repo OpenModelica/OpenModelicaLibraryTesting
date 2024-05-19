@@ -1,3 +1,6 @@
+// adrpo: DO NOT REMOVE ANY LIBS FROM HERE BEFORE REMOVING THEM FROM configs/conf*
+//        usually the newest version will be loaded instead if you remove them!
+//        SO: first remove them from configs/conf* then remove them from here.
 updatePackageIndex();
 if not installPackage(Modelica, "3.1.0", exactMatch=true) then
     print("Modelica 3.1.0 " + getErrorString() + "\n");
