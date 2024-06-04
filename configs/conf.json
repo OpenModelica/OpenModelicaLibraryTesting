@@ -416,6 +416,9 @@
     }
   },
   {
+    "library":"SOFCPoliMi"
+  },
+  {
     "library":"SolarTherm"
   },
   {
