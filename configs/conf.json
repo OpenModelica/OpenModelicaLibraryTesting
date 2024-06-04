@@ -419,6 +419,12 @@
     "library":"SolarTherm"
   },
   {
+    "library":"SOFCPoliMi",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":"",
+    "ignoreModelPrefix":"SOFCPoliMi.Tests.Dymola"
+  },
+  {
     "library":"StewartPlatform"
   },
   {
