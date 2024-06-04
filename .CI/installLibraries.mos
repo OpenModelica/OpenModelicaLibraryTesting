@@ -61,6 +61,7 @@ for l in {
   {"SiemensPower",""},
   {"SiemensPower","OMCtest"},
   {"StewartPlatform",""},
+  {"SOFCPoliMi","master"},
   {"Modelica_LinearSystems2", "dev"},
   {"Modelica_StateGraph2", ""},
   {"Physiomodel", ""},
