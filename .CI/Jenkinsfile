@@ -824,10 +824,10 @@ pipeline {
         }
         when {
           beforeAgent true
-          expression { params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_v1_14 || params.fmi_v1_16 || params.fmi_v1_17 || params.fmi_v1_18 || params.fmi_v1_19 || params.fmi_v1_20 || params.fmi_v1_21 || params.fmi_v1_22 || params.fmi_v1_23 || params.fmi_master || params.newInst_daeMode  || params.oldInst || params.report_ryzen_5950x_2 || params.cpp || params.cvode || params.gbode}
+          expression { params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_v1_14 || params.fmi_v1_16 || params.fmi_v1_17 || params.fmi_v1_18 || params.fmi_v1_19 || params.fmi_v1_20 || params.fmi_v1_21 || params.fmi_v1_22 || params.fmi_v1_23 || params.fmi_master || params.fmpy_fmi_v1_22 || params.fmpy_fmi_v1_23 || params.fmpy_fmi_master || params.newInst_daeMode || params.oldInst || params.report_ryzen_5950x_2 || params.cpp || params.cvode || params.gbode}
         }
         environment {
-          GITBRANCHES_FMI = 'maintenance/v1.12-fmi maintenance/v1.13-fmi maintenance/v1.14-fmi maintenance/v1.16-fmi maintenance/v1.17-fmi maintenance/v1.18-fmi maintenance/v1.19-fmi maintenance/v1.20-fmi maintenance/v1.21-fmi maintenance/v1.22-fmi maintenance/v1.23-fmi master-fmi maintenance/v1.22-fmi-fmpy maintenance/v1.23-fmi-fmpy master-fmi-fmpy'
+          GITBRANCHES_FMI = 'maintenance/v1.12-fmi maintenance/v1.13-fmi maintenance/v1.14-fmi maintenance/v1.16-fmi maintenance/v1.17-fmi maintenance/v1.18-fmi maintenance/v1.19-fmi maintenance/v1.20-fmi maintenance/v1.21-fmi maintenance/v1.22-fmi maintenance/v1.22-fmi-fmpy maintenance/v1.23-fmi maintenance/v1.23-fmi-fmpy master-fmi master-fmi-fmpy'
           GITBRANCHES_NEWINST = 'oldInst'
           GITBRANCHES_DAE = 'newInst-daeMode'
           GITBRANCHES_CPP = 'v1.19-cpp v1.20-cpp v1.21-cpp v1.22-cpp v1.23-cpp cpp'
