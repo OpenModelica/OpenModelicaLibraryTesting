@@ -448,7 +448,16 @@
   {
     "library":"ThermofluidStream",
     "libraryVersion":"main",
-    "libraryVersionNameForTests":"",
+    "libraryVersionNameForTests":"dev",
+    "ulimitExe":1200,
+    "referenceFileExtension":"mat",
+    "referenceFileNameDelimiter":".",
+    "referenceFinalDot":"_ref.",
+    "allReferenceFilesExist":false,
+    "referenceFiles":"$THERMOFLUIDSTREAMREFS"
+  },
+  {
+    "library":"ThermofluidStream",
     "ulimitExe":1200,
     "referenceFileExtension":"mat",
     "referenceFileNameDelimiter":".",
