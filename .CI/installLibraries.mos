@@ -65,6 +65,7 @@ for l in {
   {"Modelica_LinearSystems2", "dev"},
   {"Modelica_StateGraph2", ""},
   {"Physiomodel", ""},
+  {"ThermofluidStream", ""},
   {"ThermofluidStream", "main"},
   {"TILMedia", "main"},
   {"ClaRa", ""},
