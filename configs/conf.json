@@ -338,6 +338,16 @@
     "library":"ModelicaByExample"
   },
   {
+    "library":"NeuralNetwork",
+    "libraryVersion": "main",
+    "referenceFileExtension":"csv",
+    "referenceFileNameDelimiter":".",
+    "referenceFiles":{
+      "giturl":"https://github.com/AMIT-HSBI/NeuralNetwork",
+      "destination":"ReferenceFiles/NeuralNetwork"
+    }
+  },
+  {
     "library":"OpenHydraulics",
     "libraryVersion":"master",
     "libraryVersionNameForTests":""
