@@ -42,13 +42,15 @@ parser.add_argument('--execAllTests', action="store_true", help="Force all tests
 parser.add_argument('--noSync', action="store_true", help="Move files using python instead of rsync", default=False)
 parser.add_argument('--timeout', default=0, help="=[value] timeout in seconds for each test, it overrides the timeout calculated by the script")
 parser.add_argument('--msysEnvironment', help = 'MSYS2 environment used by OpenModelica on Windows.',  default = 'ucrt64')
+parser.add_argument('--debug', action="store_true", help="turn on the DEBUG mode", default=False)
 
 args = parser.parse_args()
 configs = args.configs
 branch = args.branch
 noSync = args.noSync
 isWin = os.name == 'nt'
-DEBUG = False # set this to True for debug output
+DEBUG = args.debug or False # set this to True for debug output
+
 # result location can be on a remote server, do NOT use os.path.abspath on it if the system is not Windows or if --noSync=True
 result_location = ''
 if not isWin and not noSync:
