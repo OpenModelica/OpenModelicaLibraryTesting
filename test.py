@@ -117,7 +117,7 @@ def print_linenum(signum, frame):
 if not isWin:
   signal.signal(signal.SIGUSR1, print_linenum)
 
-if isWin:
+if isWin or noSync:
   # delete temporary ./files to avoid moving of old results (win does not use rsync)
   try:
     rmtree("./files")
