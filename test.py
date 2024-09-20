@@ -117,6 +117,20 @@ def print_linenum(signum, frame):
 if not isWin:
   signal.signal(signal.SIGUSR1, print_linenum)
 
+if isWin:
+  # delete temporary ./files to avoid moving of old results (win does not use rsync)
+  try:
+    rmtree("./files")
+    print("Cleaned files directory")
+  except OSError:
+    pass
+  try:
+    os.mkdir("files")
+  except OSError:
+    pass
+  print("Created files directory")
+  sys.stdout.flush()
+
 def runCommand(cmd, prefix, timeout):
   process = [None]
   def target():
