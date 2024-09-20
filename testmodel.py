@@ -6,7 +6,7 @@ from asyncio.subprocess import STDOUT
 import simplejson as json
 from monotonic import monotonic
 from OMPython import FindBestOMCSession, OMCSession, OMCSessionZMQ
-import shared
+import shared, glob
 
 parser = argparse.ArgumentParser(description='OpenModelica library testing tool helper (single model)')
 parser.add_argument('config')
@@ -27,6 +27,14 @@ dockerExtraArgs = args.dockerExtraArgs.split(" ") if args.dockerExtraArgs else [
 corbaStyle = args.corba
 isWin = args.win
 msysEnvironment = args.msysEnvironment
+
+# add openmodelica libraries path if the Modelica libraries are not found in the libraries path
+modelicaLibpath = ''
+if len(glob.glob('Modelica*', root_dir=libraries)) == 0:
+  if isWin:
+    modelicaLibpath = ';' + os.path.normpath(os.path.join(os.environ.get('APPDATA'), '.openmodelica', 'libraries')).replace('\\','/')
+  else:
+    modelicaLibpath = ':' + os.path.normpath(os.path.join(os.environ.get('APPDATA'), '.openmodelica', 'libraries')).replace('\\','/')
 
 try:
   os.mkdir("files")
@@ -260,7 +268,7 @@ if conf.get("optlevel"):
   cflags += " " + conf["optlevel"]
   omc.sendExpression(str("setCFlags(\"%s\")" % cflags), parsed = False)
 
-omc.sendExpression('setModelicaPath("%s")' % libraries, parsed = False)
+omc.sendExpression('setModelicaPath("%s")' % (libraries+modelicaLibpath,), parsed = False)
 
 if conf.get("ulimitMemory"):
   # Use at most 80% of the vmem for the GC heap; some memory will be used for other purposes than the GC itself
@@ -284,7 +292,7 @@ def loadLibraryInNewOM():
     newOMLoaded = True
     # Broken/old getSimulationOptions; use new one (requires parsing again)
     assert(ompython_omhome!="")
-    assert(omc_new.sendExpression('setModelicaPath("%s")' % libraries))
+    assert(omc_new.sendExpression('setModelicaPath("%s")' % (libraries+modelicaLibpath,)))
     loadModels(omc_new, conf)
 
 start=monotonic()

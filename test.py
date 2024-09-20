@@ -75,6 +75,15 @@ else:
     librariespath = os.path.normpath(os.path.join(os.environ.get('APPDATA'), '.openmodelica', 'libraries'))
   else:
     librariespath = os.path.normpath(os.path.join(os.environ.get('HOME'), '.openmodelica', 'libraries'))
+
+# add openmodelica libraries path if the Modelica libraries are not found in the libraries path
+modelicaLibpath = ''
+if len(glob.glob('Modelica*', root_dir=librariespath)) == 0:
+  if isWin:
+    modelicaLibpath = ';' + os.path.normpath(os.path.join(os.environ.get('APPDATA'), '.openmodelica', 'libraries')).replace('\\','/')
+  else:
+    modelicaLibpath = ':' + os.path.normpath(os.path.join(os.environ.get('APPDATA'), '.openmodelica', 'libraries')).replace('\\','/')
+
 overrideDefaults = [arg.split("=", 1) for arg in args.default]
 execAllTests = args.execAllTests
 msysEnvironment = args.msysEnvironment
@@ -256,7 +265,7 @@ def timeSeconds(f):
   return html.escape("%.2f" % f)
 
 if not docker:
-  omc.sendExpression('setModelicaPath("%s")' % librariespath.replace('\\','/'))
+  omc.sendExpression('setModelicaPath("%s")' % (librariespath.replace('\\','/') + modelicaLibpath,))
 omc_exe=os.path.normpath(os.path.join(omhome,"bin","omc"))
 dygraphs=os.path.normpath(os.path.join(ompython_omhome or omhome,"share","doc","omc","testmodels","dygraph-combined.js"))
 print(omc_exe,omc_version,dygraphs)
