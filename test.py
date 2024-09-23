@@ -82,7 +82,7 @@ if len(glob.glob('Modelica*', root_dir=librariespath)) == 0:
   if isWin:
     modelicaLibpath = ';' + os.path.normpath(os.path.join(os.environ.get('APPDATA'), '.openmodelica', 'libraries')).replace('\\','/')
   else:
-    modelicaLibpath = ':' + os.path.normpath(os.path.join(os.environ.get('APPDATA'), '.openmodelica', 'libraries')).replace('\\','/')
+    modelicaLibpath = ':' + os.path.normpath(os.path.join(os.environ.get('HOME'), '.openmodelica', 'libraries'))
 
 overrideDefaults = [arg.split("=", 1) for arg in args.default]
 execAllTests = args.execAllTests
