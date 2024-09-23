@@ -34,7 +34,7 @@ if len(glob.glob('Modelica*', root_dir=libraries)) == 0:
   if isWin:
     modelicaLibpath = ';' + os.path.normpath(os.path.join(os.environ.get('APPDATA'), '.openmodelica', 'libraries')).replace('\\','/')
   else:
-    modelicaLibpath = ':' + os.path.normpath(os.path.join(os.environ.get('APPDATA'), '.openmodelica', 'libraries')).replace('\\','/')
+    modelicaLibpath = ':' + os.path.normpath(os.path.join(os.environ.get('HOME'), '.openmodelica', 'libraries'))
 
 try:
   os.mkdir("files")
