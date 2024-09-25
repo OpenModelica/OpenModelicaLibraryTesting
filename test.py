@@ -88,6 +88,9 @@ pythonExecutable = sys.executable
 if not pythonExecutable:
   pythonExecutable = "python"
 
+# adds quotes to sorround path elements that contain blank characters - to be used only for Popen calls under Windows
+pythonExecutablePopenWin = os.path.join(*['\"'+i+'\"' if ' ' in i else i+'\\' if ':' in i else i for i in pythonExecutable.split('\\')]) if isWin else ''
+
 def fflush():
   sys.stdout.flush()
   sys.stderr.flush()  
@@ -763,7 +766,7 @@ def runScript(c, timeout, memoryLimit, runverbose):
     sys.stdout.flush()
 
   if isWin:
-    res_cmd = runCommand("%s testmodel.py --win --msysEnvironment=%s --libraries=%s %s --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (pythonExecutable, msysEnvironment, librariespath, ("--docker %s --dockerExtraArgs '%s'" % (docker, " ".join(dockerExtraArgs))) if docker else "", ompython_omhome, c, c), prefix=c, timeout=timeout)
+    res_cmd = runCommand("%s testmodel.py --win --msysEnvironment=%s --libraries=\"%s\" %s --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (pythonExecutablePopenWin, msysEnvironment, librariespath, ("--docker %s --dockerExtraArgs '%s'" % (docker, " ".join(dockerExtraArgs))) if docker else "", ompython_omhome, c, c), prefix=c, timeout=timeout)
   else:
     res_cmd = runCommand("ulimit -v %d; ./testmodel.py --libraries=%s %s --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (memoryLimit, librariespath, ("--docker %s --dockerExtraArgs '%s'" % (docker, " ".join(dockerExtraArgs))) if docker else "", ompython_omhome, c, c), prefix=c, timeout=timeout)
 
@@ -1102,7 +1105,7 @@ if clean and (result_location == "" or (not isWin and not noSync)):
   try:
     rmtree("files/")
   except:
-    print("-- problemduring removing of ./files dir")
+    print("-- problem during removing of ./files dir")
 
 # Do not commit until we have generated and uploaded the reports
 conn.commit()
