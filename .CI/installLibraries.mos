@@ -36,6 +36,7 @@ for l in {
   {"Annex60", ""},
   {"BidiDCDC", ""},
   {"BLDC", ""},
+  {"BoundaryInitBlocks", "master"},
   {"BusinessSimulation", ""},
   {"BusinessSimulation", "main"},
   {"Credibility", ""},
