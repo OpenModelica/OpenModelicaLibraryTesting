@@ -452,8 +452,7 @@
   {
     "library":"SOFCPoliMi",
     "libraryVersion":"master",
-    "libraryVersionNameForTests":"",
-    "ignoreModelPrefix":"SOFCPoliMi.Tests.Dymola"
+    "libraryVersionNameForTests":""
   },
   {
     "library":"StewartPlatform"
