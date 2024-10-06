@@ -4,7 +4,7 @@
     "libraryVersion":"master",
     "libraryVersionNameForTests":"OB",
     "ulimitOmc":400,
-    "ulimitExe":600,
+    "ulimitExe":400,
     "ulimitMemory":62914560,
     "optlevel":"-O0 -march=native",
     "referenceFileExtension":"mat",
@@ -20,7 +20,7 @@
     "libraryVersion":"master",
     "libraryVersionNameForTests":"NB",
     "ulimitOmc":400,
-    "ulimitExe":600,
+    "ulimitExe":400,
     "ulimitMemory":62914560,
     "optlevel":"-Ofast -march=native",
     "referenceFileExtension":"mat",
@@ -30,17 +30,17 @@
       "giturl":"https://github.com/casella/ScalableTestSuite-ref",
       "destination":"ReferenceFiles/ScalableTestSuite"
     },
-    "extraCustomCommands":["setCommandLineOptions(\"--newBackend\")"]
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend -d=arrayConnect\")"]
   },
   {
     "library":"LargeTestSuite",
     "libraryVersion":"master",
     "libraryVersionNameForTests":"NB",
     "ulimitOmc":300,
-    "ulimitExe":600,
+    "ulimitExe":800,
     "ulimitMemory":62914560,
     "optlevel":"-Ofast -march=native",
-    "extraCustomCommands":["setCommandLineOptions(\"--newBackend\")"]
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend -d=arrayConnect\")"]
   },
   {
     "library":"ScalableTestGrids",
