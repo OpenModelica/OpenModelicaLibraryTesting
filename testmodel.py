@@ -17,6 +17,7 @@ parser.add_argument('--dockerExtraArgs')
 parser.add_argument('--corba', action="store_true", default=False)
 parser.add_argument('--win', action="store_true", help="Windows mode", default=False)
 parser.add_argument('--msysEnvironment', help="MSYS2 Environment (ucrt64|mingw64)", default='ucrt64')
+parser.add_argument('--addmsl', action="store_true", help="add the MSL path to the OPENMODELICAPATH if the MSL is not detected in the libraries path", default=False)
 
 args = parser.parse_args()
 config = args.config
@@ -27,14 +28,15 @@ dockerExtraArgs = args.dockerExtraArgs.split(" ") if args.dockerExtraArgs else [
 corbaStyle = args.corba
 isWin = args.win
 msysEnvironment = args.msysEnvironment
+addmsl = args.addmsl
 
 # add openmodelica libraries path if the Modelica libraries are not found in the libraries path
-modelicaLibpath = ''
-if len(glob.glob('Modelica*', root_dir=libraries)) == 0:
+MSLpath = ''
+if addmsl and len(glob.glob('Modelica *', root_dir=libraries)) == 0:
   if isWin:
-    modelicaLibpath = ';' + os.path.normpath(os.path.join(os.environ.get('APPDATA'), '.openmodelica', 'libraries')).replace('\\','/')
+    MSLpath = ';' + os.path.normpath(os.path.join(os.environ.get('APPDATA'), '.openmodelica', 'libraries')).replace('\\','/')
   else:
-    modelicaLibpath = ':' + os.path.normpath(os.path.join(os.environ.get('HOME'), '.openmodelica', 'libraries'))
+    MSLpath = ':' + os.path.normpath(os.path.join(os.environ.get('HOME'), '.openmodelica', 'libraries'))
 
 try:
   os.mkdir("files")
@@ -268,7 +270,7 @@ if conf.get("optlevel"):
   cflags += " " + conf["optlevel"]
   omc.sendExpression(str("setCFlags(\"%s\")" % cflags), parsed = False)
 
-omc.sendExpression('setModelicaPath("%s")' % (libraries+modelicaLibpath,), parsed = False)
+omc.sendExpression('setModelicaPath("%s")' % (libraries+MSLpath,), parsed = False)
 
 if conf.get("ulimitMemory"):
   # Use at most 80% of the vmem for the GC heap; some memory will be used for other purposes than the GC itself
@@ -292,7 +294,7 @@ def loadLibraryInNewOM():
     newOMLoaded = True
     # Broken/old getSimulationOptions; use new one (requires parsing again)
     assert(ompython_omhome!="")
-    assert(omc_new.sendExpression('setModelicaPath("%s")' % (libraries+modelicaLibpath,)))
+    assert(omc_new.sendExpression('setModelicaPath("%s")' % (libraries+MSLpath,)))
     loadModels(omc_new, conf)
 
 start=monotonic()
