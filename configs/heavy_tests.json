@@ -30,7 +30,7 @@
       "giturl":"https://github.com/casella/ScalableTestSuite-ref",
       "destination":"ReferenceFiles/ScalableTestSuite"
     },
-    "extraCustomCommands":["setCommandLineOptions(\"--newBackend\")"]
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend -d=arrayConnect\")"]
   },
   {
     "library":"LargeTestSuite",
@@ -40,7 +40,7 @@
     "ulimitExe":800,
     "ulimitMemory":62914560,
     "optlevel":"-Ofast -march=native",
-    "extraCustomCommands":["setCommandLineOptions(\"--newBackend\")"]
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend -d=arrayConnect\")"]
   },
   {
     "library":"ScalableTestGrids",

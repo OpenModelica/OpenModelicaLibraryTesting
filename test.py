@@ -42,13 +42,15 @@ parser.add_argument('--execAllTests', action="store_true", help="Force all tests
 parser.add_argument('--noSync', action="store_true", help="Move files using python instead of rsync", default=False)
 parser.add_argument('--timeout', default=0, help="=[value] timeout in seconds for each test, it overrides the timeout calculated by the script")
 parser.add_argument('--msysEnvironment', help = 'MSYS2 environment used by OpenModelica on Windows.',  default = 'ucrt64')
+parser.add_argument('--debug', action="store_true", help="turn on the DEBUG mode", default=False)
 
 args = parser.parse_args()
 configs = args.configs
 branch = args.branch
 noSync = args.noSync
 isWin = os.name == 'nt'
-DEBUG = False # set this to True for debug output
+DEBUG = args.debug or False # set this to True for debug output
+
 # result location can be on a remote server, do NOT use os.path.abspath on it if the system is not Windows or if --noSync=True
 result_location = ''
 if not isWin and not noSync:
@@ -95,6 +97,9 @@ pythonExecutable = sys.executable
 if not pythonExecutable:
   pythonExecutable = "python"
 
+# adds quotes to sorround path elements that contain blank characters - to be used only for Popen calls under Windows
+pythonExecutablePopenWin = os.path.join(*['\"'+i+'\"' if ' ' in i else i+'\\' if ':' in i else i for i in pythonExecutable.split('\\')]) if isWin else ''
+
 def fflush():
   sys.stdout.flush()
   sys.stderr.flush()  
@@ -125,6 +130,20 @@ def print_linenum(signum, frame):
 
 if not isWin:
   signal.signal(signal.SIGUSR1, print_linenum)
+
+if isWin or noSync:
+  # delete temporary ./files to avoid moving of old results (win does not use rsync)
+  try:
+    rmtree("./files")
+    print("Cleaned files directory")
+  except OSError:
+    pass
+  try:
+    os.mkdir("files")
+  except OSError:
+    pass
+  print("Created files directory")
+  sys.stdout.flush()
 
 def runCommand(cmd, prefix, timeout):
   process = [None]
@@ -756,7 +775,7 @@ def runScript(c, timeout, memoryLimit, runverbose):
     sys.stdout.flush()
 
   if isWin:
-    res_cmd = runCommand("%s testmodel.py --win --msysEnvironment=%s --libraries=%s %s --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (pythonExecutable, msysEnvironment, librariespath, ("--docker %s --dockerExtraArgs '%s'" % (docker, " ".join(dockerExtraArgs))) if docker else "", ompython_omhome, c, c), prefix=c, timeout=timeout)
+    res_cmd = runCommand("%s testmodel.py --win --msysEnvironment=%s --libraries=\"%s\" %s --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (pythonExecutablePopenWin, msysEnvironment, librariespath, ("--docker %s --dockerExtraArgs '%s'" % (docker, " ".join(dockerExtraArgs))) if docker else "", ompython_omhome, c, c), prefix=c, timeout=timeout)
   else:
     res_cmd = runCommand("ulimit -v %d; ./testmodel.py --libraries=%s %s --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (memoryLimit, librariespath, ("--docker %s --dockerExtraArgs '%s'" % (docker, " ".join(dockerExtraArgs))) if docker else "", ompython_omhome, c, c), prefix=c, timeout=timeout)
 
@@ -1095,7 +1114,7 @@ if clean and (result_location == "" or (not isWin and not noSync)):
   try:
     rmtree("files/")
   except:
-    print("-- problemduring removing of ./files dir")
+    print("-- problem during removing of ./files dir")
 
 # Do not commit until we have generated and uploaded the reports
 conn.commit()

@@ -171,10 +171,17 @@
     "libraryVersionNameForTests":""
   },
   {
+    "library":"BoundaryInitBlocks",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":""
+  },
+  {
     "library":"Buildings",
     "ignoreModelPrefix":["Buildings.Utilities.IO.BCVTB.Examples", "Buildings.Obsolete"],
     "libraryVersion":"maint.10.0.x",
     "libraryVersionNameForTests":"10",
+    "ulimitOmc":300,
+    "ulimitExe":400,
     "runOnceBeforeTesting":[["$resourceLocation/src/ThermalZones/install.py", "--binaries-for-os-only"]],
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"_",
@@ -185,6 +192,8 @@
     "ignoreModelPrefix":["Buildings.Utilities.IO.BCVTB.Examples", "Buildings.Obsolete"],
     "libraryVersion":"maint.11.x",
     "libraryVersionNameForTests":"11",
+    "ulimitOmc":300,
+    "ulimitExe":400,
     "runOnceBeforeTesting":[["$resourceLocation/src/ThermalZones/install.py", "--binaries-for-os-only"]],
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"_",
@@ -195,6 +204,8 @@
     "ignoreModelPrefix":["Buildings.Utilities.IO.BCVTB.Examples", "Buildings.Obsolete"],
     "libraryVersion":"master",
     "libraryVersionNameForTests":"latest",
+    "ulimitOmc":300,
+    "ulimitExe":400,
     "runOnceBeforeTesting":[["$resourceLocation/src/ThermalZones/install.py", "--binaries-for-os-only"]],
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"_",
@@ -441,8 +452,7 @@
   {
     "library":"SOFCPoliMi",
     "libraryVersion":"master",
-    "libraryVersionNameForTests":"",
-    "ignoreModelPrefix":"SOFCPoliMi.Tests.Dymola"
+    "libraryVersionNameForTests":""
   },
   {
     "library":"StewartPlatform"
