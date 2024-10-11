@@ -45,17 +45,39 @@
   {
     "library":"ScalableTestGrids",
     "libraryVersion":"master",
-    "libraryVersionNameForTests":"NumericalJacobian",
+    "libraryVersionNameForTests":"NB_NumericalJacobian",
     "ignoreModelPrefix":"ScalableTestGrids.Models.Type1Large",
     "ulimitOmc":800,
     "ulimitExe":300,
     "ulimitMemory":62000000,
-    "optlevel":"-O0 -march=native"
+    "optlevel":"-O0 -march=native",
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend -d=mergeComponents\")"]
   },
   {
     "library":"ScalableTestGrids",
     "libraryVersion":"master",
-    "libraryVersionNameForTests":"SymbolicJacobian",
+    "libraryVersionNameForTests":"NB_SymbolicJacobian",
+    "ignoreModelPrefix":"ScalableTestGrids.Models.Type1Large",
+    "ulimitOmc":800,
+    "ulimitExe":300,
+    "ulimitMemory":62000000,
+    "optlevel":"-O0 -march=native",
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend -d=mergeComponents --generateSymbolicJacobian\")"]
+  },
+  {
+    "library":"ScalableTestGrids",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":"OB_NumericalJacobian",
+    "ignoreModelPrefix":"ScalableTestGrids.Models.Type1Large",
+    "ulimitOmc":800,
+    "ulimitExe":300,
+    "ulimitMemory":62000000,
+    "optlevel":"-O0 -march=native"]
+  },
+  {
+    "library":"ScalableTestGrids",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":"OB_SymbolicJacobian",
     "ignoreModelPrefix":"ScalableTestGrids.Models.Type1Large",
     "ulimitOmc":800,
     "ulimitExe":300,
