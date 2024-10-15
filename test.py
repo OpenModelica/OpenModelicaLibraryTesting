@@ -999,6 +999,23 @@ for libname in stats_by_libname.keys():
     print(str(e))
     gitloglibrarytesting = "<table><tr><td>could not get the git log for OpenModelicaLibraryTesting</td></tr></table>"
 
+  # adrpo: attempt to get the revision of the reference files if possible
+  if conf.get("referenceFiles"):
+    try:
+      gitReferenceFiles = conf.get("referenceFiles")
+      sys.stdout.flush()
+      try:
+        gitReferenceFilesURL = check_output_log(["git", "config", "get", "remote.origin.url"], cwd=gitReferenceFiles).decode("utf-8")
+      except subprocess.CalledProcessError as e:
+        print(str(e))
+        gitReferenceFilesURL = gitReferenceFiles
+      gitReferenceFilesVersion = check_output_log(["git", "log", '--pretty=<table><tr><th>Commit</th><th>Date</th><th>Author</th><th>Summary</th></tr><tr><td><a href="%s/%%h">%%h</a></td><td>%%ai</td><td>%%an</td><td>%%s</td></tr></table>' % (gitReferenceFilesURL), "-1"], cwd=gitReferenceFiles).decode("utf-8")
+    except subprocess.CalledProcessError as e:
+      print(str(e))
+      gitReferenceFilesVersion = ""
+  else:
+    gitReferenceFilesVersion = ""
+
   replacements = (
     (u"#sysInfo#", html.escape(sysInfo)),
     (u"#omcVersion#", html.escape(omc_version)),
@@ -1014,7 +1031,7 @@ for libname in stats_by_libname.keys():
     (u"#ulimitExe#", html.escape(str(conf["ulimitExe"]))),
     (u"#default_tolerance#", html.escape(str(conf["default_tolerance"]))),
     (u"#simFlags#", html.escape(conf.get("simFlags") or "")),
-    (u"#referenceFiles#", ('<p>Reference Files: %s</p>' % conf["referenceFilesURL"].replace(os.path.dirname(os.path.realpath(__file__)),"")) if ((conf.get("referenceFilesURL") or "") != "") else ""),
+    (u"#referenceFiles#", ('<p>Reference Files: %s</p>%s' % ((conf["referenceFilesURL"].replace(os.path.dirname(os.path.realpath(__file__)),"")), gitReferenceFilesVersion)) if ((conf.get("referenceFilesURL") or "") != "") else ""),
     (u"#referenceTool#", ('<p>Verified using: %s (diffSimulationResults)</p>' % html.escape(ompython_omc_version)) if ((conf.get("referenceFiles") or "") != "") else ""),
     (u"#Total#", html.escape(str(numSucceeded[0]))),
     (u"#FrontendColor#", checkNumSucceeded(numSucceeded, 1)),
