@@ -10,7 +10,7 @@ if not installPackage(Modelica, "4.1.0-beta.om", exactMatch=true) then
     print("Modelica 4.1.0-beta.om" + getErrorString() + "\n");
     exit(1);
 end if;
-for v in {"3.2.1","3.2.2","3.2.3","4.0.0","trunk"} loop
+for v in {"3.2.1","3.2.2","3.2.3","4.0.0","4.1.0-beta.om","trunk"} loop
   if not installPackage(ModelicaTest, v, exactMatch=true) then
     print("ModelicaTest " + v + " " + getErrorString() + "\n");
     exit(1);
