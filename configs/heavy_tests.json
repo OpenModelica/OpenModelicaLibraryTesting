@@ -1,5 +1,48 @@
 [
   {
+    "library":"ScalableTestSuite",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":"OB",
+    "ulimitOmc":400,
+    "ulimitExe":400,
+    "ulimitMemory":62914560,
+    "optlevel":"-O0 -march=native",
+    "referenceFileExtension":"mat",
+    "referenceFileNameDelimiter":".",
+    "referenceFinalDot":"_res.",
+    "referenceFiles":{
+      "giturl":"https://github.com/casella/ScalableTestSuite-ref",
+      "destination":"ReferenceFiles/ScalableTestSuite"
+    }
+  },
+  {
+    "library":"ScalableTestSuite",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":"NB",
+    "ulimitOmc":400,
+    "ulimitExe":400,
+    "ulimitMemory":62914560,
+    "optlevel":"-Ofast -march=native",
+    "referenceFileExtension":"mat",
+    "referenceFileNameDelimiter":".",
+    "referenceFinalDot":"_res.",
+    "referenceFiles":{
+      "giturl":"https://github.com/casella/ScalableTestSuite-ref",
+      "destination":"ReferenceFiles/ScalableTestSuite"
+    },
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend -d=arrayConnect\")"]
+  },
+  {
+    "library":"LargeTestSuite",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":"NB",
+    "ulimitOmc":300,
+    "ulimitExe":800,
+    "ulimitMemory":62914560,
+    "optlevel":"-Ofast -march=native",
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend -d=arrayConnect\")"]
+  },
+  {
     "library":"ScalableTestGrids",
     "libraryVersion":"master",
     "libraryVersionNameForTests":"NB_NumericalJacobian",
