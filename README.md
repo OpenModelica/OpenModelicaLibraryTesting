@@ -61,7 +61,12 @@ The scripts from this repository can be used to run regression tests for public,
           "git-ref": "main",
           "git-directory": "ReferenceFiles"
         },
-        "optlevel":"-Os -march=native"
+        "ulimitOmc":800, // specify a max timeout for a model build
+        "ulimitExe":300, // specify a max timeout for a model simulation
+        "ulimitMemory":62000000, // specify a max for the virtual memory of the running process when building a model
+        "procOMC":0, // [if procOMC = 0 use max procs, use procOMC = 1 if not defined, else use the given value] how many CPU cores should be used to run omc (load Modelica libraries in parallel and generate the C code in parallel)
+        "procCCompile":0, // [if procCCompile = 0 use max procs, use procCCompile = 1 if not defined, else use the given value] how many CPU cores should be used to compile the generated code
+        "optlevel":"-Os -march=native" // what optimizations should be used by the C compiler
       }
     ]
     ```
@@ -106,7 +111,7 @@ The scripts from this repository can be used to run regression tests for public,
       - `--fmisimulator=''`: The default is nothing but you can use the path to OMSimulator executable or 'fmpy'
       - `--ulimitvmem=8388608`: Virtual memory limit (in kB)
       - `--default=[]`: Add a default value for some configuration key, such as --default=ulimitExe=60. The equals sign is mandatory
-      - `-j`,`--jobs`: Number of threads to use for testing.
+      - `-j`,`--jobs`: Number of threads to use for testing. Deprecated, use procOMC and procCCompile inside the config json
 
   - Generate HTML results
     ```bash

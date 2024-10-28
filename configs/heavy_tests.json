@@ -6,6 +6,8 @@
     "ulimitOmc":400,
     "ulimitExe":400,
     "ulimitMemory":62914560,
+    "procOMC":0,
+    "procCCompile":0,
     "optlevel":"-O0 -march=native",
     "referenceFileExtension":"mat",
     "referenceFileNameDelimiter":".",
@@ -22,6 +24,8 @@
     "ulimitOmc":400,
     "ulimitExe":400,
     "ulimitMemory":62914560,
+    "procOMC":0,
+    "procCCompile":0,
     "optlevel":"-Ofast -march=native",
     "referenceFileExtension":"mat",
     "referenceFileNameDelimiter":".",
@@ -39,6 +43,8 @@
     "ulimitOmc":300,
     "ulimitExe":800,
     "ulimitMemory":62914560,
+    "procOMC":0,
+    "procCCompile":0,
     "optlevel":"-Ofast -march=native",
     "extraCustomCommands":["setCommandLineOptions(\"--newBackend -d=arrayConnect\")"]
   },
@@ -50,6 +56,8 @@
     "ulimitOmc":800,
     "ulimitExe":300,
     "ulimitMemory":62000000,
+    "procOMC":0,
+    "procCCompile":0,
     "optlevel":"-O0 -march=native",
     "extraCustomCommands":["setCommandLineOptions(\"--newBackend -d=mergeComponents\")"]
   },
@@ -61,6 +69,8 @@
     "ulimitOmc":800,
     "ulimitExe":300,
     "ulimitMemory":62000000,
+    "procOMC":0,
+    "procCCompile":0,
     "optlevel":"-O0 -march=native",
     "extraCustomCommands":["setCommandLineOptions(\"--newBackend -d=mergeComponents --generateSymbolicJacobian\")"]
   }
