@@ -36,7 +36,7 @@ parser.add_argument('--noclean', action="store_true", default=False)
 parser.add_argument('--fmisimulator', default='')
 parser.add_argument('--ulimitvmem', help="Virtual memory limit (in kB) (linux only)", type=int, default=8*1024*1024)
 parser.add_argument('--default', action='append', help="Add a default value for some configuration key, such as --default=ulimitExe=60. The equals sign is mandatory.", default=[])
-parser.add_argument('-j', '--jobs', default=0)
+parser.add_argument('-j', '--jobs', default=0, help="Ignored and deprecated, use procOMC:0 or procOMC:1 in the config")
 parser.add_argument('-v', '--verbose', action="store_true", help="Verbose mode.", default=False)
 parser.add_argument('--execAllTests', action="store_true", help="Force all tests to be executed", default=False)
 parser.add_argument('--noSync', action="store_true", help="Move files using python instead of rsync", default=False)
@@ -203,17 +203,8 @@ except subprocess.CalledProcessError as e:
   print("Sanity check failed (./testmodel.py --help):\n" + e.output.decode())
   sys.exit(1)
 
-# If -j=0 is specified (or -j is not specified, defaults to 0) then use all available physical CPUS.
-if n_jobs == 0:
-  n_jobs = psutil.cpu_count(logical=False)
-
-# If we are running one test at a time assume that omc is allowed to use multiple
-# threads for each individual test.
-if n_jobs == 1:
-  single_thread="" # Alternative: single_thread="-n=0"
-else:
-  single_thread="-n=1"
-
+# ignored j argument, use procOMC and procCCompile in config
+n_jobs = psutil.cpu_count(logical=False)
 
 print("branch: %s, n_jobs: %d" % (branch, n_jobs))
 
@@ -575,7 +566,22 @@ for (library,conf) in configs:
     confighash = strToHashInt(str(c)+hashReferenceFiles(""))
   conf["confighash"] = confighash
   conf["omhome"] = omhome
-  conf["single_thread_cmd"] = single_thread
+  # if procOMC = 0 use max procs, use procOMC = 1 if not defined, else use the given value
+  if "procOMC" in conf:
+    if conf.get("procOMC") == 0:
+      omc_threads = ''
+    else:
+      omc_threads = '-n=%s' % conf.get("procOMC")
+  else:
+    omc_threads = '-n=1'
+
+  # if procCompile = 0 use max procs, use procCompile = 1 if not defined, else use the given value
+  if "procCCompile" in conf:
+    if conf.get("procCCompile") == 0:
+      conf["procCCompile"] = n_jobs
+  else:
+    conf["procCCompile"] = 1
+  conf["omc_thread_cmd"] = omc_threads
   conf["haveCppRuntime"] = haveCppRuntime
   conf["ulimitMemory"] = conf.get("ulimitMemory") or ulimitMemory
   if conf.get("fmi"):
@@ -760,7 +766,7 @@ def runScript(c, timeout, memoryLimit, runverbose):
   except:
     pass
   start=monotonic()
-  # runCommand("%s %s %s.mos" % (omc_exe, single_thread, c), prefix=c, timeout=timeout)
+  # runCommand("%s %s %s.mos" % (omc_exe, omc_threads, c), prefix=c, timeout=timeout)
   if runverbose:
     print("Starting test: %s" % c)
     sys.stdout.flush()

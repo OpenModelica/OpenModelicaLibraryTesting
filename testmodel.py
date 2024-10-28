@@ -203,7 +203,7 @@ def createOmcSessionNew():
 omc = createOmcSession()
 omc_new = createOmcSessionNew()
 
-cmd = 'setCommandLineOptions("%s")' % conf["single_thread_cmd"]
+cmd = 'setCommandLineOptions("%s")' % conf["omc_thread_cmd"]
 if not omc.sendExpression(cmd):
   raise Exception('Could not send %s' % cmd)
 
@@ -430,7 +430,7 @@ try:
     if isWin:
       res = checkOutputTimeout("\"%s\\share\\omc\\scripts\\Compile.bat\" %s gcc %s parallel dynamic 24 0" % (conf["omhome"], conf["fileName"], msysEnvironment), conf["ulimitOmc"], conf)
     else:
-      res = checkOutputTimeout("make -j1 -f %s.makefile" % conf["fileName"], conf["ulimitOmc"], conf)
+      res = checkOutputTimeout("make -j%s -f %s.makefile" % (conf["procCCompile"], conf["fileName"]), conf["ulimitOmc"], conf)
 
     execstat["build"] = monotonic()-start
     execstat["phase"] = 5
