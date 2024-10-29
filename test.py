@@ -203,8 +203,10 @@ except subprocess.CalledProcessError as e:
   print("Sanity check failed (./testmodel.py --help):\n" + e.output.decode())
   sys.exit(1)
 
-# ignored j argument, use procOMC and procCCompile in config
-n_jobs = psutil.cpu_count(logical=False)
+# how many jobs in parallel?
+n_cores = psutil.cpu_count(logical=False)
+if n_jobs == 0:
+  n_jobs = n_cores
 
 print("branch: %s, n_jobs: %d" % (branch, n_jobs))
 
@@ -578,7 +580,7 @@ for (library,conf) in configs:
   # if procCompile = 0 use max procs, use procCompile = 1 if not defined, else use the given value
   if "procCCompile" in conf:
     if conf.get("procCCompile") == 0:
-      conf["procCCompile"] = n_jobs
+      conf["procCCompile"] = n_cores
   else:
     conf["procCCompile"] = 1
   conf["omc_thread_cmd"] = omc_threads
