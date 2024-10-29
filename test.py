@@ -1010,8 +1010,16 @@ for libname in stats_by_libname.keys():
   # adrpo: attempt to get the revision of the reference files if possible
   if conf.get("referenceFiles"):
     try:
-      gitReferenceFiles = conf.get("referenceFiles")
-      sys.stdout.flush()
+      c = conf.get("referenceFiles")
+      gitReferenceFiles = c
+      if isinstance(c, (str, bytes)):
+        m = re.search("^[$][A-Z]+", c)
+        if m:
+          k = m.group(0)[1:]
+          if k not in os.environ:
+            raise Exception("Environment variable %s not defined, but used in JSON config for reference files" % k)
+          gitReferenceFiles = c.replace(m.group(0), os.environ[k])
+        sys.stdout.flush()
       try:
         gitReferenceFilesURL = check_output_log(["git", "config", "get", "remote.origin.url"], cwd=gitReferenceFiles).decode("utf-8")
       except subprocess.CalledProcessError as e:
