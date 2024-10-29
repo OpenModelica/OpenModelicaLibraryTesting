@@ -111,7 +111,7 @@ The scripts from this repository can be used to run regression tests for public,
       - `--fmisimulator=''`: The default is nothing but you can use the path to OMSimulator executable or 'fmpy'
       - `--ulimitvmem=8388608`: Virtual memory limit (in kB)
       - `--default=[]`: Add a default value for some configuration key, such as --default=ulimitExe=60. The equals sign is mandatory
-      - `-j`,`--jobs`: Number of threads to use for testing. Deprecated, use procOMC and procCCompile inside the config json
+      - `-j`,`--jobs`: Number of cores to use for testing, default is 0 (max cores), use 1 to run serial (for large tests) and see procOMC and procCCompile above for more insight into individual test parallelization
 
   - Generate HTML results
     ```bash

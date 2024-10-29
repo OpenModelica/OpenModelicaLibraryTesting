@@ -203,8 +203,10 @@ except subprocess.CalledProcessError as e:
   print("Sanity check failed (./testmodel.py --help):\n" + e.output.decode())
   sys.exit(1)
 
-# ignored j argument, use procOMC and procCCompile in config
-n_jobs = psutil.cpu_count(logical=False)
+# how many jobs in parallel?
+n_cores = psutil.cpu_count(logical=False)
+if n_jobs == 0:
+  n_jobs = n_cores
 
 print("branch: %s, n_jobs: %d" % (branch, n_jobs))
 
@@ -578,7 +580,7 @@ for (library,conf) in configs:
   # if procCompile = 0 use max procs, use procCompile = 1 if not defined, else use the given value
   if "procCCompile" in conf:
     if conf.get("procCCompile") == 0:
-      conf["procCCompile"] = n_jobs
+      conf["procCCompile"] = n_cores
   else:
     conf["procCCompile"] = 1
   conf["omc_thread_cmd"] = omc_threads
@@ -1008,8 +1010,16 @@ for libname in stats_by_libname.keys():
   # adrpo: attempt to get the revision of the reference files if possible
   if conf.get("referenceFiles"):
     try:
-      gitReferenceFiles = conf.get("referenceFiles")
-      sys.stdout.flush()
+      c = conf.get("referenceFiles")
+      gitReferenceFiles = c
+      if isinstance(c, (str, bytes)):
+        m = re.search("^[$][A-Z]+", c)
+        if m:
+          k = m.group(0)[1:]
+          if k not in os.environ:
+            raise Exception("Environment variable %s not defined, but used in JSON config for reference files" % k)
+          gitReferenceFiles = c.replace(m.group(0), os.environ[k])
+        sys.stdout.flush()
       try:
         gitReferenceFilesURL = check_output_log(["git", "config", "get", "remote.origin.url"], cwd=gitReferenceFiles).decode("utf-8")
       except subprocess.CalledProcessError as e:
