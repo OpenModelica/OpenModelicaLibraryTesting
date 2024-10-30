@@ -412,7 +412,7 @@ for (lib,c) in configs:
   if "referenceFiles" in c:
     c["referenceFilesURL"] = c["referenceFiles"]
     if isinstance(c["referenceFiles"], (str, bytes)):
-      m = re.search("^[$][A-Z]+", c["referenceFiles"])
+      m = re.search("^[$][A-Z_]+", c["referenceFiles"])
       if m:
         k = m.group(0)[1:]
         if k not in os.environ:
@@ -1017,7 +1017,7 @@ for libname in stats_by_libname.keys():
       if isinstance(c, (str, bytes)):
         print("referenceFiles git ... see if directory has an evironment variable")
         sys.stdout.flush()
-        m = re.search("^[$][A-Z]+", c)
+        m = re.search("^[$][A-Z_]+", c)
         if m:
           k = m.group(0)[1:]
           if k not in os.environ:
