@@ -48,7 +48,7 @@ def writeResultAndExit(exitStatus):
 
 def sendExpressionTimeout(omc, cmd, timeout):
   with open(errFile, 'a+') as fp:
-    fp.write(cmd + "\n")
+    fp.write("%s [Timeout %s]\n" % (cmd, timeout))
   def target(res):
     try:
       res[0] = omc.sendExpression(cmd)
@@ -322,7 +322,7 @@ def sendExpressionOldOrNew(cmd):
     return omc_new.sendExpression(cmd)
 
 annotationSimFlags=""
-(startTime,stopTime,tolerance,numberOfIntervals,stepSize)=sendExpressionOldOrNew('getSimulationOptions(%s,defaultTolerance=%s,defaultNumberOfIntervals=2500)' % (conf["modelName"],conf["default_tolerance"]))
+(startTime,stopTime,tolerance,numberOfIntervals,stepSize)=sendExpressionOldOrNew('getSimulationOptions(%s,defaultTolerance=%s)' % (conf["modelName"],conf["default_tolerance"]))
 if conf["simCodeTarget"]=="C" and sendExpressionOldOrNew('classAnnotationExists(%s, __OpenModelica_simulationFlags)' % conf["modelName"]):
   for flag in sendExpressionOldOrNew('getAnnotationNamedModifiers(%s,"__OpenModelica_simulationFlags")' % conf["modelName"]):
     if flag=="The searched annotation name not found":
