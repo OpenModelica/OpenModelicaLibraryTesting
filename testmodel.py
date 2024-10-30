@@ -48,7 +48,7 @@ def writeResultAndExit(exitStatus):
 
 def sendExpressionTimeout(omc, cmd, timeout):
   with open(errFile, 'a+') as fp:
-    fp.write(cmd + "\n")
+    fp.write("%s [Timeout %s]\n" % (cmd, timeout))
   def target(res):
     try:
       res[0] = omc.sendExpression(cmd)
@@ -92,7 +92,7 @@ def sendExpressionTimeout(omc, cmd, timeout):
 
 def checkOutputTimeout(cmd, timeout, conf=None):
   with open(errFile, 'a+') as fp:
-    fp.write(cmd + "\n")
+    fp.write("%s [Timeout %s]\n" % (cmd, timeout))
   def target(res):
     try:
       env = os.environ.copy()
@@ -322,7 +322,7 @@ def sendExpressionOldOrNew(cmd):
     return omc_new.sendExpression(cmd)
 
 annotationSimFlags=""
-(startTime,stopTime,tolerance,numberOfIntervals,stepSize)=sendExpressionOldOrNew('getSimulationOptions(%s,defaultTolerance=%s,defaultNumberOfIntervals=2500)' % (conf["modelName"],conf["default_tolerance"]))
+(startTime,stopTime,tolerance,numberOfIntervals,stepSize)=sendExpressionOldOrNew('getSimulationOptions(%s,defaultTolerance=%s,defaultNumberOfIntervals=%s)' % (conf["modelName"], conf["defaultTolerance"], conf["defaultNumberOfIntervals"]))
 if conf["simCodeTarget"]=="C" and sendExpressionOldOrNew('classAnnotationExists(%s, __OpenModelica_simulationFlags)' % conf["modelName"]):
   for flag in sendExpressionOldOrNew('getAnnotationNamedModifiers(%s,"__OpenModelica_simulationFlags")' % conf["modelName"]):
     if flag=="The searched annotation name not found":
@@ -342,7 +342,7 @@ start=monotonic()
 if conf.get("fmi"):
   cmd='"" <> buildModelFMU(%s,fileNamePrefix="%s",fmuType="%s",version="%s",platforms={"static"})' % (conf["modelName"],conf["fileName"].replace(".","_"),conf["fmuType"],conf["fmi"])
 else:
-  cmd='translateModel(%s,tolerance=%g,outputFormat="%s",numberOfIntervals=%d,variableFilter="%s",fileNamePrefix="%s")' % (conf["modelName"],tolerance,outputFormat,2*numberOfIntervals,variableFilter,conf["fileName"])
+  cmd='translateModel(%s,tolerance=%g,outputFormat="%s",numberOfIntervals=%d,variableFilter="%s",fileNamePrefix="%s")' % (conf["modelName"],tolerance,outputFormat,numberOfIntervals,variableFilter,conf["fileName"])
 with open(errFile, 'a+') as fp:
   fp.write("Running command: %s\n"%(cmd))
 try:

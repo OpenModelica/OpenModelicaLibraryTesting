@@ -55,12 +55,16 @@ The scripts from this repository can be used to run regression tests for public,
         "referenceFileExtension":"mat",
         "referenceFileNameDelimiter":"/",
         "referenceFileNameExtraName":"$ClassName",
-        "referenceFiles":{
+        "referenceFiles": "/path/to/some/SomeDirectory", // specifies a directory with the files
+        "referenceFiles": "$ENV_VAR/SomeDirectory", // specifies a directory with the files via an env var
+        "referenceFiles":{ // specified as an URL, directory destination, git branch and git directory
           "giturl":"https://github.com/myName/MyModelicaLibrary-ref",
           "destination":"ReferenceFiles/MyModelicaLibrary",
           "git-ref": "main",
           "git-directory": "ReferenceFiles"
         },
+        "defaultTolerance": 1e-6, // tolerance for tests if not specified by the model, defaults to 1e-6
+        "defaultNumberOfIntervals": 500, // number of intervals for tests if not specified by the model, defaults to 500
         "ulimitOmc":800, // specify a max timeout for a model build
         "ulimitExe":300, // specify a max timeout for a model simulation
         "ulimitMemory":62000000, // specify a max for the virtual memory of the running process when building a model
