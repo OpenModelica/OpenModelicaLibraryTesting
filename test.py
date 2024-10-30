@@ -412,7 +412,7 @@ for (lib,c) in configs:
   if "referenceFiles" in c:
     c["referenceFilesURL"] = c["referenceFiles"]
     if isinstance(c["referenceFiles"], (str, bytes)):
-      m = re.search("^[$][A-Z]+", c["referenceFiles"])
+      m = re.search("^[$][A-Z_]+", c["referenceFiles"])
       if m:
         k = m.group(0)[1:]
         if k not in os.environ:
@@ -851,10 +851,14 @@ start=monotonic()
 start_as_time=time.localtime()
 testRunStartTimeAsEpoch = int(time.time())
 # Need translateModel + make + exe...
-if customTimeout > 0.0:
-  cmd_res=Parallel(n_jobs=n_jobs, verbose=5)(delayed(runScript)(name, customTimeout, data["ulimitMemory"], runverbose) for (model,lib,libName,name,data) in tests)
+if n_jobs == 1:
+  verbose = 10
 else:
-  cmd_res=Parallel(n_jobs=n_jobs, verbose=5)(delayed(runScript)(name, 2*data["ulimitOmc"]+data["ulimitExe"]+25, data["ulimitMemory"], runverbose) for (model,lib,libName,name,data) in tests)
+  verbose = 5
+if customTimeout > 0.0:
+  cmd_res=Parallel(n_jobs=n_jobs, verbose=verbose)(delayed(runScript)(name, customTimeout, data["ulimitMemory"], runverbose) for (model,lib,libName,name,data) in tests)
+else:
+  cmd_res=Parallel(n_jobs=n_jobs, verbose=verbose)(delayed(runScript)(name, 2*data["ulimitOmc"]+data["ulimitExe"]+25, data["ulimitMemory"], runverbose) for (model,lib,libName,name,data) in tests)
 stop=monotonic()
 print("Execution time: %s" % friendlyStr(stop-start))
 assert(stop-start >= 0.0)
@@ -1009,16 +1013,24 @@ for libname in stats_by_libname.keys():
 
   # adrpo: attempt to get the revision of the reference files if possible
   if conf.get("referenceFiles"):
+    c = conf.get("referenceFiles")
+    print("referenceFiles git ... attempting to retrieve info from directory: %s" % c)
+    sys.stdout.flush()
     try:
-      c = conf.get("referenceFiles")
       gitReferenceFiles = c
       if isinstance(c, (str, bytes)):
-        m = re.search("^[$][A-Z]+", c)
+        print("referenceFiles git ... see if directory has an evironment variable")
+        sys.stdout.flush()
+        m = re.search("^[$][A-Z_]+", c)
         if m:
           k = m.group(0)[1:]
           if k not in os.environ:
+            print("referenceFiles git ... environment variable used in the directory cannot be found in the environment: %s" % k)
+            sys.stdout.flush()
             raise Exception("Environment variable %s not defined, but used in JSON config for reference files" % k)
           gitReferenceFiles = c.replace(m.group(0), os.environ[k])
+          print("referenceFiles git ... directory after replacing the environment variable: %s" % gitReferenceFiles)
+          sys.stdout.flush()
         sys.stdout.flush()
       try:
         gitReferenceFilesURL = check_output_log(["git", "config", "get", "remote.origin.url"], cwd=gitReferenceFiles).decode("utf-8")
@@ -1026,8 +1038,12 @@ for libname in stats_by_libname.keys():
         print(str(e))
         gitReferenceFilesURL = gitReferenceFiles
       gitReferenceFilesVersion = check_output_log(["git", "log", '--pretty=<table><tr><th>Commit</th><th>Date</th><th>Author</th><th>Summary</th></tr><tr><td><a href="%s/%%h">%%h</a></td><td>%%ai</td><td>%%an</td><td>%%s</td></tr></table>' % (gitReferenceFilesURL), "-1"], cwd=gitReferenceFiles).decode("utf-8")
+      print("referenceFiles git ... got version information: %s" % gitReferenceFilesVersion)
+      sys.stdout.flush()
     except subprocess.CalledProcessError as e:
+      print("referenceFiles git ... something went wrong with getting the git info for directory: %s" % c)
       print(str(e))
+      sys.stdout.flush()
       gitReferenceFilesVersion = ""
   else:
     gitReferenceFilesVersion = ""

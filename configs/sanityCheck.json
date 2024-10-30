@@ -7,7 +7,7 @@
     ],
     "referenceFileExtension": "csv",
     "referenceFileNameDelimiter": ".",
-    "referenceFiles": "sanityCheck/ReferenceFiles"
+    "referenceFiles": "$MY_SANITY_CHECK_DIRECTORY/ReferenceFiles"
   },
   {
     "library": "MyOtherLibrary",

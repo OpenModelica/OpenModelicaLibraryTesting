@@ -57,6 +57,7 @@ jobs:
       - name: Run library test
         shell: bash
         run: |
+          export MY_SANITY_CHECK_DIRECTORY=sanityCheck
           python test.py --branch="${{ matrix.omc-version }}" --noclean --verbose ${{ matrix.msysEnvironment }} configs/sanityCheck.json
 
       - name: Generate HTML results
