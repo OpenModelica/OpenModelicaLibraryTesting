@@ -851,10 +851,14 @@ start=monotonic()
 start_as_time=time.localtime()
 testRunStartTimeAsEpoch = int(time.time())
 # Need translateModel + make + exe...
-if customTimeout > 0.0:
-  cmd_res=Parallel(n_jobs=n_jobs, verbose=min(n_jobs,5))(delayed(runScript)(name, customTimeout, data["ulimitMemory"], runverbose) for (model,lib,libName,name,data) in tests)
+if n_jobs == 1:
+  verbose = 10
 else:
-  cmd_res=Parallel(n_jobs=n_jobs, verbose=min(n_jobs,5))(delayed(runScript)(name, 2*data["ulimitOmc"]+data["ulimitExe"]+25, data["ulimitMemory"], runverbose) for (model,lib,libName,name,data) in tests)
+  verbose = 5
+if customTimeout > 0.0:
+  cmd_res=Parallel(n_jobs=n_jobs, verbose=verbose)(delayed(runScript)(name, customTimeout, data["ulimitMemory"], runverbose) for (model,lib,libName,name,data) in tests)
+else:
+  cmd_res=Parallel(n_jobs=n_jobs, verbose=verbose)(delayed(runScript)(name, 2*data["ulimitOmc"]+data["ulimitExe"]+25, data["ulimitMemory"], runverbose) for (model,lib,libName,name,data) in tests)
 stop=monotonic()
 print("Execution time: %s" % friendlyStr(stop-start))
 assert(stop-start >= 0.0)
