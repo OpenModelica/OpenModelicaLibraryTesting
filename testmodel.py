@@ -92,7 +92,7 @@ def sendExpressionTimeout(omc, cmd, timeout):
 
 def checkOutputTimeout(cmd, timeout, conf=None):
   with open(errFile, 'a+') as fp:
-    fp.write(cmd + "\n")
+    fp.write("%s [Timeout %s]\n" % (cmd, timeout))
   def target(res):
     try:
       env = os.environ.copy()
