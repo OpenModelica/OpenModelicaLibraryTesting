@@ -235,6 +235,7 @@ omc.sendExpression("getErrorString()", parsed = False)
 
 outputFormat="mat"
 referenceVars=[]
+numberOfIntervalsInReference = 0
 referenceFile = conf.get("referenceFile") or ""
 if referenceFile != "":
   try:
@@ -243,8 +244,10 @@ if referenceFile != "":
       referenceVars=[s.strip() for s in open(compSignals).readlines() if (s.strip() != "")] # s.strip().lower() != "time" and ??? I guess we should check time variable...
       print(referenceVars)
     else:
-      referenceVars=omc_new.sendExpression('readSimulationResultVars("%s", readParameters=true, openmodelicaStyle=true)' % referenceFile)
+      referenceVars=omc_new.sendExpression('readSimulationResultVars("%s", readParameters=true, openmodelicaStyle=true)' % referenceFile)    
     variableFilter="|".join([v.replace("[",".").replace("]",".").replace("(",".").replace(")",".").replace('"',".") for v in referenceVars])
+    # get the number of intervals from the file
+    numberOfIntervalsInReference = omc_new.sendExpression('readSimulationResultSize("%s")' % referenceFile)
     emit_protected="-emit_protected"
   except:
     referenceFile=""
@@ -334,7 +337,7 @@ def sendExpressionOldOrNew(cmd):
     return omc_new.sendExpression(cmd)
 
 annotationSimFlags=""
-(startTime,stopTime,tolerance,numberOfIntervals,stepSize)=sendExpressionOldOrNew('getSimulationOptions(%s,defaultTolerance=%s,defaultNumberOfIntervals=%s)' % (conf["modelName"], conf["defaultTolerance"], conf["defaultNumberOfIntervals"]))
+(startTime,stopTime,tolerance,numberOfIntervals,stepSize)=sendExpressionOldOrNew('getSimulationOptions(%s,defaultTolerance=%s,defaultNumberOfIntervals=%s)' % (conf["modelName"], conf["defaultTolerance"], max(conf["defaultNumberOfIntervals"], numberOfIntervalsInReference)))
 if conf["simCodeTarget"]=="C" and sendExpressionOldOrNew('classAnnotationExists(%s, __OpenModelica_simulationFlags)' % conf["modelName"]):
   for flag in sendExpressionOldOrNew('getAnnotationNamedModifiers(%s,"__OpenModelica_simulationFlags")' % conf["modelName"]):
     if flag=="The searched annotation name not found":
