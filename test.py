@@ -1015,37 +1015,49 @@ for libname in stats_by_libname.keys():
   # adrpo: attempt to get the revision of the reference files if possible
   if conf.get("referenceFiles"):
     c = conf.get("referenceFiles")
-    print("referenceFiles git ... attempting to retrieve info from directory: %s" % c)
-    sys.stdout.flush()
-    try:
-      gitReferenceFiles = c
-      if isinstance(c, (str, bytes)):
-        print("referenceFiles git ... see if directory has an evironment variable")
+    if DEBUG:
+      print("referenceFiles git ... attempting to retrieve info from directory: %s" % c)
+      sys.stdout.flush()
+    gitReferenceFiles = c
+    # see if we have a commit file
+    f = os.path.join(c, "commit")
+    if os.path.exists(f):
+      with open(f) as fin:
+        gitReferenceFilesVersion = fin.read()
+        print("referenceFiles git ... read from file %s" % f)
         sys.stdout.flush()
-        m = re.search("^[$][A-Z_]+", c)
-        if m:
-          k = m.group(0)[1:]
-          if k not in os.environ:
-            print("referenceFiles git ... environment variable used in the directory cannot be found in the environment: %s" % k)
-            sys.stdout.flush()
-            raise Exception("Environment variable %s not defined, but used in JSON config for reference files" % k)
-          gitReferenceFiles = c.replace(m.group(0), os.environ[k])
-          print("referenceFiles git ... directory after replacing the environment variable: %s" % gitReferenceFiles)
-          sys.stdout.flush()
-        sys.stdout.flush()
+    else:
       try:
-        gitReferenceFilesURL = check_output_log(["git", "config", "get", "remote.origin.url"], cwd=gitReferenceFiles).decode("utf-8")
+        if isinstance(c, (str, bytes)):
+          if DEBUG:
+            print("referenceFiles git ... see if directory has an evironment variable")
+            sys.stdout.flush()
+          m = re.search("^[$][A-Z_]+", c)
+          if m:
+            k = m.group(0)[1:]
+            if k not in os.environ:
+              if DEBUG:
+                print("referenceFiles git ... environment variable used in the directory cannot be found in the environment: %s" % k)
+                sys.stdout.flush()
+              raise Exception("Environment variable %s not defined, but used in JSON config for reference files" % k)
+            gitReferenceFiles = c.replace(m.group(0), os.environ[k])
+            if DEBUG:
+              print("referenceFiles git ... directory after replacing the environment variable: %s" % gitReferenceFiles)
+              sys.stdout.flush()
+          sys.stdout.flush()
+        try:
+          gitReferenceFilesURL = check_output_log(["git", "config", "get", "remote.origin.url"], cwd=gitReferenceFiles).decode("utf-8")
+        except subprocess.CalledProcessError as e:
+          print(str(e))
+          gitReferenceFilesURL = gitReferenceFiles
+        gitReferenceFilesVersion = check_output_log(["git", "log", '--pretty=<table><tr><th>Commit</th><th>Date</th><th>Author</th><th>Summary</th></tr><tr><td><a href="%s/%%h">%%h</a></td><td>%%ai</td><td>%%an</td><td>%%s</td></tr></table>' % (gitReferenceFilesURL), "-1"], cwd=gitReferenceFiles).decode("utf-8")
+        print("referenceFiles git ... got version information: %s" % gitReferenceFilesVersion)
+        sys.stdout.flush()
       except subprocess.CalledProcessError as e:
+        print("referenceFiles git ... something went wrong with getting the git info for directory: %s" % c)
         print(str(e))
-        gitReferenceFilesURL = gitReferenceFiles
-      gitReferenceFilesVersion = check_output_log(["git", "log", '--pretty=<table><tr><th>Commit</th><th>Date</th><th>Author</th><th>Summary</th></tr><tr><td><a href="%s/%%h">%%h</a></td><td>%%ai</td><td>%%an</td><td>%%s</td></tr></table>' % (gitReferenceFilesURL), "-1"], cwd=gitReferenceFiles).decode("utf-8")
-      print("referenceFiles git ... got version information: %s" % gitReferenceFilesVersion)
-      sys.stdout.flush()
-    except subprocess.CalledProcessError as e:
-      print("referenceFiles git ... something went wrong with getting the git info for directory: %s" % c)
-      print(str(e))
-      sys.stdout.flush()
-      gitReferenceFilesVersion = ""
+        sys.stdout.flush()
+        gitReferenceFilesVersion = ""
   else:
     gitReferenceFilesVersion = ""
 
