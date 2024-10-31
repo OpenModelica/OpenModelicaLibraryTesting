@@ -53,6 +53,8 @@ def sendExpressionTimeout(omc, cmd, timeout):
     try:
       ignore = omc.sendExpression("alarm(%s)" % timeout)
       res[0] = omc.sendExpression(cmd)
+      with open(errFile, 'a+') as fp:
+        fp.write(omc.sendExpression('OpenModelica.Scripting.getErrorString()'))
       elapsed = omc.sendExpression("alarm(0)")
       with open(errFile, 'a+') as fp:
         fp.write("[Timeout remaining time %s]\n" % elapsed)
@@ -282,8 +284,6 @@ if conf.get("ulimitMemory"):
 def loadModels(omc, conf):
   for f in conf["loadFiles"]:
     if not sendExpressionTimeout(omc, 'loadFile("%s", uses=false)' % f, conf["ulimitLoadModel"]):
-      with open(errFile, 'a+') as fp:
-        fp.write(omc.sendExpression('OpenModelica.Scripting.getErrorString()'))
       writeResultAndExit(0)
   loadedFiles = sorted(omc.sendExpression("{getSourceFile(cl) for cl in getClassNames()}"))
   if sorted(conf["loadFiles"]) != loadedFiles:
