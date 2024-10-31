@@ -51,7 +51,11 @@ def sendExpressionTimeout(omc, cmd, timeout):
     fp.write("%s [Timeout %s]\n" % (cmd, timeout))
   def target(res):
     try:
+      ignore = omc.sendExpression("alarm(%s)" % timeout)
       res[0] = omc.sendExpression(cmd)
+      elapsed = omc.sendExpression("alarm(0)")
+      with open(errFile, 'a+') as fp:
+        fp.write("[Timeout remaining time %s]\n" % elapsed)
     except Exception as e:
       res[1] = cmd + " " + str(e)
 
@@ -73,6 +77,8 @@ def sendExpressionTimeout(omc, cmd, timeout):
       try:
         os.kill(process.pid, signal.SIGINT)
       except OSError:
+        with open(errFile, 'a+') as fp:
+          fp.write("Could not SIGINT process: %s.\n" % process.pid)
         pass
     thread.join(2)
     if thread.is_alive():
@@ -80,6 +86,8 @@ def sendExpressionTimeout(omc, cmd, timeout):
         try:
           os.kill(process.pid, signal.SIGKILL)
         except OSError:
+          with open(errFile, 'a+') as fp:
+            fp.write("Could not SIGKILL process: %s.\n" % process.pid)
           pass
       with open(errFile, 'a+') as fp:
         fp.write("Aborted the command.\n")
@@ -117,6 +125,8 @@ def checkOutputTimeout(cmd, timeout, conf=None):
       try:
         os.killpg(process.pid, signal.SIGINT)
       except OSError:
+        with open(errFile, 'a+') as fp:
+          fp.write("Could not SIGINT process: %s.\n" % process.pid)
         pass
     thread.join(2)
     if thread.is_alive():
@@ -124,6 +134,8 @@ def checkOutputTimeout(cmd, timeout, conf=None):
         try:
           os.kill(process.pid, signal.SIGKILL)
         except OSError:
+          with open(errFile, 'a+') as fp:
+            fp.write("Could not SIGKILL process: %s.\n" % process.pid)
           pass
       thread.join()
     if res[1] is None:
