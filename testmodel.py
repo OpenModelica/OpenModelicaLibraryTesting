@@ -45,10 +45,11 @@ def writeResult():
 def writeResultAndExit(exitStatus):
   writeResult()
   print("Calling exit ...")
+  with open(errFile, 'a+') as fp:
+    fp.write("[Calling os._exit(%s)]\n" % exitStatus)
+    fp.flush()
   sys.stdout.flush()
   os._exit(exitStatus)
-  # calling sys.exit will hang in lock.acquire()
-  # sys.exit(exitStatus)
 
 def sendExpressionTimeout(omc, cmd, timeout):
   with open(errFile, 'a+') as fp:
