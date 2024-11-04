@@ -40,7 +40,7 @@
     "library":"LargeTestSuite",
     "libraryVersion":"master",
     "libraryVersionNameForTests":"NB",
-    "ulimitOmc":300,
+    "ulimitOmc":400,
     "ulimitExe":400,
     "ulimitMemory":62914560,
     "procOMC":0,
