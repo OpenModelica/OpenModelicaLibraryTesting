@@ -4,49 +4,7 @@
     "libraryVersion":"1.0.0"
   },
   {
-    "library":"Buildings",
-    "libraryVersion":"1.6"
-  },
-  {
-    "library":"Buildings",
-    "libraryVersion":"3.0.0"
-  },
-  {
-    "library":"Buildings",
-    "ignoreModelPrefix":"Buildings.Utilities.IO.BCVTB.Examples",
-    "libraryVersion":"maint.7.0.x",
-    "libraryVersionLatestInPackageManager":true
-  },
-  {
     "library":"iPSL"
-  },
-  {
-    "library":"Modelica",
-    "libraryVersion":"3.1"
-  },
-  {
-    "library":"Modelica",
-    "libraryVersion":"3.2.2",
-    "optlevel":"-Os -march=native"
-  },
-  {
-    "library":"ModelicaTest",
-    "libraryVersion":"3.2.2"
-  },
-  {
-    "library":"Modelica",
-    "libraryVersion":"3.2.1"
-  },
-  {
-    "library":"Modelica_Synchronous",
-    "libraryVersion":"master",
-    "libraryVersionNameForTests":"",
-    "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"],
-    "referenceFiles":"$REFERENCEFILES/Modelica_Synchronous"
-  },
-  {
-    "library":"ModelicaTest",
-    "libraryVersion":"3.2.1"
   },
   {
     "library":"ObjectStab"
