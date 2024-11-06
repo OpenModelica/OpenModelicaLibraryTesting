@@ -78,7 +78,7 @@ def sendExpressionTimeout(omc, cmd, timeout):
       ignore = omc.sendExpression("alarm(%s)" % timeout)
       res[0] = omc.sendExpression(cmd)
       with open(errFile, 'a+') as fp:
-        fp.write(omc.sendExpression('OpenModelica.Scripting.getErrorString()'))
+        fp.write(omc.sendExpression('OpenModelica.Scripting.getErrorString()', parsed = False))
       elapsed = omc.sendExpression("alarm(0)")
       with open(errFile, 'a+') as fp:
         fp.write("[Timeout remaining time %s]\n" % elapsed)
