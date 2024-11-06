@@ -42,14 +42,23 @@ def writeResult():
     fp.flush()
     os.fsync(fp.fileno())
 
-def writeResultAndExit(exitStatus):
+startJob=monotonic()
+
+def writeResultAndExit(exitStatus, useOsExit=False):
   writeResult()
   print("Calling exit ...")
   with open(errFile, 'a+') as fp:
-    fp.write("[Calling os._exit(%s)]\n" % exitStatus)
+    if useOsExit:
+      msg = "[Calling os._exit(%s), Time elapsed: %s]\n"
+    else:
+      msg = "[Calling sys.exit(%s), Time elapsed: %s]\n"
+    fp.write(msg % (exitStatus, monotonic()-startJob)
     fp.flush()
   sys.stdout.flush()
-  os._exit(exitStatus)
+  if useOsExit:
+    os._exit(exitStatus)
+  else:
+    sys.exit(exitStatus)
 
 def sendExpressionTimeout(omc, cmd, timeout):
   with open(errFile, 'a+') as fp:
@@ -98,7 +107,7 @@ def sendExpressionTimeout(omc, cmd, timeout):
           pass
       with open(errFile, 'a+') as fp:
         fp.write("Aborted the command.\n")
-      writeResultAndExit(0)
+      writeResultAndExit(0, True)
     if res[1] is None:
       res[1] = ""
   if res[1] is not None:
@@ -314,7 +323,7 @@ except TimeoutError as e:
   execstat["parsing"]=monotonic()-start
   with open(errFile, 'a+') as fp:
     fp.write("Timeout error for cmd: %s\n%s"%(cmd,str(e)))
-  writeResultAndExit(0)
+  writeResultAndExit(0, True)
 execstat["parsing"]=monotonic()-start
 
 try:
@@ -458,7 +467,7 @@ except TimeoutError as e:
   execstat["build"] = monotonic()-start
   with open(errFile, 'a+') as fp:
     fp.write(str(e))
-  writeResultAndExit(0)
+  writeResultAndExit(0, True)
 
 writeResult()
 # Do the simulation
@@ -508,7 +517,7 @@ try:
   execstat["phase"] = 6
 except TimeoutError as e:
   execstat["sim"] = monotonic()-start
-  writeResultAndExit(0)
+  writeResultAndExit(0, True)
 
 if referenceFile=="":
   writeResultAndExit(0)
