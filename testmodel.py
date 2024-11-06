@@ -52,7 +52,7 @@ def writeResultAndExit(exitStatus, useOsExit=False):
       msg = "[Calling os._exit(%s), Time elapsed: %s]\n"
     else:
       msg = "[Calling sys.exit(%s), Time elapsed: %s]\n"
-    fp.write(msg % (exitStatus, monotonic()-startJob)
+    fp.write(msg % (exitStatus, monotonic()-startJob))
     fp.flush()
   sys.stdout.flush()
   if useOsExit:
