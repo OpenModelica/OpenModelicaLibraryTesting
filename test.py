@@ -43,6 +43,7 @@ parser.add_argument('--noSync', action="store_true", help="Move files using pyth
 parser.add_argument('--timeout', default=0, help="=[value] timeout in seconds for each test, it overrides the timeout calculated by the script")
 parser.add_argument('--msysEnvironment', help = 'MSYS2 environment used by OpenModelica on Windows.',  default = 'ucrt64')
 parser.add_argument('--debug', action="store_true", help="turn on the DEBUG mode", default=False)
+parser.add_argument('--addmsl', action="store_true", help="add the MSL path to the OPENMODELICAPATH if the MSL is not detected in the libraries path", default=False)
 
 args = parser.parse_args()
 configs = args.configs
@@ -67,6 +68,7 @@ fmisimulator = args.fmisimulator or None
 allTestsFmi = args.fmi
 ulimitMemory = args.ulimitvmem
 docker = args.docker
+addmsl = args.addmsl
 
 numberOfTests = 0
 
@@ -77,6 +79,15 @@ else:
     librariespath = os.path.normpath(os.path.join(os.environ.get('APPDATA'), '.openmodelica', 'libraries'))
   else:
     librariespath = os.path.normpath(os.path.join(os.environ.get('HOME'), '.openmodelica', 'libraries'))
+
+# add the MSL path if mslpath=True and the MSL is not found in the libraries path
+MSLpath = ''
+if addmsl and len(glob.glob('Modelica *', root_dir=librariespath)) == 0:
+  if isWin:
+    MSLpath = ';' + os.path.normpath(os.path.join(os.environ.get('APPDATA'), '.openmodelica', 'libraries')).replace('\\','/')
+  else:
+    MSLpath = ':' + os.path.normpath(os.path.join(os.environ.get('HOME'), '.openmodelica', 'libraries'))
+
 overrideDefaults = [arg.split("=", 1) for arg in args.default]
 execAllTests = args.execAllTests
 msysEnvironment = args.msysEnvironment
@@ -268,7 +279,7 @@ def timeSeconds(f):
   return html.escape("%.2f" % f)
 
 if not docker:
-  omc.sendExpression('setModelicaPath("%s")' % librariespath.replace('\\','/'))
+  omc.sendExpression('setModelicaPath("%s")' % (librariespath.replace('\\','/') + MSLpath,))
 omc_exe=os.path.normpath(os.path.join(omhome,"bin","omc"))
 dygraphs=os.path.normpath(os.path.join(ompython_omhome or omhome,"share","doc","omc","testmodels","dygraph-combined.js"))
 print(omc_exe,omc_version,dygraphs)
@@ -775,9 +786,9 @@ def runScript(c, timeout, memoryLimit, runverbose):
     sys.stdout.flush()
 
   if isWin:
-    res_cmd = runCommand("%s testmodel.py --win --msysEnvironment=%s --libraries=\"%s\" %s --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (pythonExecutablePopenWin, msysEnvironment, librariespath, ("--docker %s --dockerExtraArgs '%s'" % (docker, " ".join(dockerExtraArgs))) if docker else "", ompython_omhome, c, c), prefix=c, timeout=timeout)
+    res_cmd = runCommand("%s testmodel.py --win %s --msysEnvironment=%s --libraries=\"%s\" %s --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (pythonExecutablePopenWin, '--addmsl' if addmsl else "", msysEnvironment, librariespath, ("--docker %s --dockerExtraArgs '%s'" % (docker, " ".join(dockerExtraArgs))) if docker else "", ompython_omhome, c, c), prefix=c, timeout=timeout)
   else:
-    res_cmd = runCommand("ulimit -v %d; ./testmodel.py --libraries=%s %s --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (memoryLimit, librariespath, ("--docker %s --dockerExtraArgs '%s'" % (docker, " ".join(dockerExtraArgs))) if docker else "", ompython_omhome, c, c), prefix=c, timeout=timeout)
+    res_cmd = runCommand("ulimit -v %d; ./testmodel.py %s --libraries=%s %s --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (memoryLimit, '--addmsl' if addmsl else "", librariespath, ("--docker %s --dockerExtraArgs '%s'" % (docker, " ".join(dockerExtraArgs))) if docker else "", ompython_omhome, c, c), prefix=c, timeout=timeout)
 
   if res_cmd != 0:
     print("files/%s.err" % c)
