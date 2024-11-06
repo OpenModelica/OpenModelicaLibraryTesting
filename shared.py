@@ -26,7 +26,7 @@ def fixData(data,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCom
     data["customCommands"] = (data.get("customCommands") or defaultCustomCommands2) + (data.get("extraCustomCommands") or [])
     data["ulimitOmc"] = int(data.get("ulimitOmc") or 660) # 11 minutes to generate the C-code
     data["ulimitExe"] = int(data.get("ulimitExe") or 8*60) # 8 additional minutes to initialize and run the simulation
-    data["ulimitLoadModel"] = int(data.get("ulimitLoadModel") or 90)
+    data["ulimitLoadModel"] = int(data.get("ulimitLoadModel") or 3*60) # 3 minutes to load the files (could take a while if the ssd is doing backup)
     simflags = []
     if data.get("extraSimFlags"):
       simflags.append(data.get("extraSimFlags"))
