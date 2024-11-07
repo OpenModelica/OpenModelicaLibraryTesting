@@ -14,7 +14,7 @@ def fixData(data,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCom
     data["referenceFileExtension"] = data.get("referenceFileExtension") or "mat"
     data["referenceFileNameDelimiter"] = data.get("referenceFileNameDelimiter") or "."
     data["defaultTolerance"] = float(data.get("defaultTolerance") or 1e-6)
-    data["defaultNumberOfIntervals"] = int(data.get("defaultNumberOfIntervals") or 500)
+    data["defaultNumberOfIntervals"] = int(data.get("defaultNumberOfIntervals") or 2500)
     data["reference_reltol"] = float(data.get("reference_reltol") or 3e-3)
     data["reference_reltolDiffMinMax"] = float(data.get("reference_reltolDiffMinMax") or 3e-3)
     data["reference_rangeDelta"] = float(data.get("reference_rangeDelta") or 1e-3)

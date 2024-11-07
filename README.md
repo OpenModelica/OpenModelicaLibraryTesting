@@ -64,7 +64,7 @@ The scripts from this repository can be used to run regression tests for public,
           "git-directory": "ReferenceFiles"
         },
         "defaultTolerance": 1e-6, // tolerance for tests if not specified by the model, defaults to 1e-6
-        "defaultNumberOfIntervals": 500, // number of intervals for tests if not specified by the model, defaults to 500
+        "defaultNumberOfIntervals": 2500, // number of intervals for tests if not specified by the model, defaults to 2500
         "ulimitOmc":800, // specify a max timeout for a model build
         "ulimitExe":300, // specify a max timeout for a model simulation
         "ulimitMemory":62000000, // specify a max for the virtual memory of the running process when building a model
