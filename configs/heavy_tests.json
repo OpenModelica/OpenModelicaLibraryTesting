@@ -2,24 +2,6 @@
   {
     "library":"ScalableTestSuite",
     "libraryVersion":"master",
-    "libraryVersionNameForTests":"OB",
-    "ulimitOmc":400,
-    "ulimitExe":300,
-    "ulimitMemory":62914560,
-    "procOMC":0,
-    "procCCompile":0,
-    "optlevel":"-O0 -march=native",
-    "referenceFileExtension":"mat",
-    "referenceFileNameDelimiter":".",
-    "referenceFinalDot":"_res.",
-    "referenceFiles":{
-      "giturl":"https://github.com/casella/ScalableTestSuite-ref",
-      "destination":"ReferenceFiles/ScalableTestSuite"
-    }
-  },
-  {
-    "library":"ScalableTestSuite",
-    "libraryVersion":"master",
     "libraryVersionNameForTests":"NB",
     "ulimitOmc":400,
     "ulimitExe":300,
