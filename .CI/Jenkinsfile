@@ -586,11 +586,13 @@ HISTORY_FILE='00_history.html'
 for b in ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_CPP}; do
   BRANCH=`echo \${b} | cut -d '/' -f2`
   FILE="\${HISTORY_DIRECTORY}\${BRANCH}\${SEPARATOR}\${HISTORY_FILE}"
+  ssh hudson@build.openmodelica.org << EOF
   if [ ! -f \${FILE} ]; then
     echo "Creating initial history: library.openmodelica.org: \${FILE}"
-    ssh hudson@library.openmodelica.org mkdir -p \${HISTORY_DIRECTORY}\${BRANCH}
-    ssh hudson@library.openmodelica.org touch \${FILE}
+    mkdir -p \${HISTORY_DIRECTORY}\${BRANCH}
+    touch \${FILE}
   fi
+  EOF
 done
 """
 }
