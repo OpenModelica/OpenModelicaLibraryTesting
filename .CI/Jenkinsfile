@@ -386,6 +386,9 @@ pipeline {
           IDA_EMAIL = credentials('IDA email')
         }
         steps {
+          sshagent (credentials: ['Hudson-SSH-Key']) {
+            createInitialHistoryFilesOnRemote()
+          }
           sh 'rm -rf sqlite3.db *.html history'
           sh '''
           if ! test -d OpenModelica; then
@@ -448,6 +451,9 @@ pipeline {
           IDA_EMAIL = credentials('IDA email')
         }
         steps {
+          sshagent (credentials: ['Hudson-SSH-Key']) {
+            createInitialHistoryFilesOnRemote()
+          }
           sh 'rm -f sqlite3.db *.html'
           sh '''
           if ! test -d OpenModelica; then
@@ -568,6 +574,25 @@ def installLibraries(boolean removePackageOrder, boolean conversionScript, name,
   } else {
     return "${env.HOME}/saved_omc/libraries"
   }
+}
+
+
+def createInitialHistoryFilesOnRemote() {
+  sh """
+HISTORY_DIRECTORY='/var/www/libraries.openmodelica.org/branches/history/'
+SEPARATOR='/'
+HISTORY_FILE='00_history.html'
+
+for b in ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_CPP}; do
+  BRANCH=`echo ${b} | cut -d '/' -f2`
+  FILE="${HISTORY_DIRECTORY}${BRANCH}${SEPARATOR}${HISTORY_FILE}"
+  if [ ! -f ${FILE} ]; then
+    echo "Creating initial history: library.openmodelica.org:${FILE}"
+    ssh hudson@library.openmodelica.org mkdir -p ${HISTORY_DIRECTORY}${BRANCH}
+    ssh hudson@library.openmodelica.org touch ${FILE}
+  fi
+done
+"""
 }
 
 /**
