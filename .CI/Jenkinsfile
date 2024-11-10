@@ -373,7 +373,7 @@ pipeline {
             label 'linux'
             dir '.CI/build-dep'
             customWorkspace 'ws/OpenModelicaLibraryTestingReport'
-            args '-e IDA_EMAIL_USR=$IDA_EMAIL_USR -e IDA_EMAIL_PSW=$IDA_EMAIL_PSW'
+            args '-e IDA_EMAIL_USR=$IDA_EMAIL_USR -e IDA_EMAIL_PSW=$IDA_EMAIL_PSW --user 1001 --volume /etc/passwd:/etc/passwd:ro --volume /etc/group:/etc/group:ro'
           }
         }
         when {
