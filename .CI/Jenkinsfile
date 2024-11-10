@@ -373,7 +373,7 @@ pipeline {
             label 'linux'
             dir '.CI/build-dep'
             customWorkspace 'ws/OpenModelicaLibraryTestingReport'
-            args '-e IDA_EMAIL_USR=$IDA_EMAIL_USR -e IDA_EMAIL_PSW=$IDA_EMAIL_PSW --user 1001 --volume /etc/passwd:/etc/passwd:ro --volume /etc/group:/etc/group:ro'
+            args '-e IDA_EMAIL_USR=$IDA_EMAIL_USR -e IDA_EMAIL_PSW=$IDA_EMAIL_PSW'
           }
         }
         when {
@@ -386,9 +386,9 @@ pipeline {
           IDA_EMAIL = credentials('IDA email')
         }
         steps {
-          sshagent (credentials: ['Hudson-SSH-Key']) {
-            createInitialHistoryFilesOnRemote()
-          }
+          //sshagent (credentials: ['Hudson-SSH-Key']) {
+          //  createInitialHistoryFilesOnRemote()
+          //}
           sh 'rm -rf sqlite3.db *.html history'
           sh '''
           if ! test -d OpenModelica; then
@@ -451,9 +451,9 @@ pipeline {
           IDA_EMAIL = credentials('IDA email')
         }
         steps {
-          sshagent (credentials: ['Hudson-SSH-Key']) {
-            createInitialHistoryFilesOnRemote()
-          }
+          //sshagent (credentials: ['Hudson-SSH-Key']) {
+          //  createInitialHistoryFilesOnRemote()
+          //}
           sh 'rm -f sqlite3.db *.html'
           sh '''
           if ! test -d OpenModelica; then
