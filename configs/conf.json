@@ -101,7 +101,7 @@
   {
     "library":"PowerGrids",
     "libraryVersionNameForTests":"symb_jac",
-    "extraCustomCommands":["setCommandLineOptions(\"--generateSymbolicJacobian\")"],
+    "extraCustomCommands":["setCommandLineOptions(\"--generateDynamicJacobian=symbolic\")"],
     "referenceFileExtension":"mat",
     "referenceFileNameDelimiter":".",
     "referenceFinalDot":"_res.",
@@ -425,7 +425,7 @@
     "ulimitOmc":600,
     "ulimitMemory":12582912,
     "optlevel":"-O0",
-    "extraCustomCommands":["setCommandLineOptions(\"--generateSymbolicJacobian\")"]
+    "extraCustomCommands":["setCommandLineOptions(\"--generateDynamicJacobian=symbolic\")"]
   },
   {
     "library":"ScalableTestSuite",
