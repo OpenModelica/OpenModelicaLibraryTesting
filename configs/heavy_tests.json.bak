@@ -72,7 +72,7 @@
     "procOMC":0,
     "procCCompile":0,
     "optlevel":"-O0 -march=native",
-    "extraCustomCommands":["setCommandLineOptions(\"--newBackend -d=mergeComponents --generateSymbolicJacobian\")"]
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend -d=mergeComponents --generateDynamicJacobian=symbolic\")"]
   },
   {
     "library":"ScalableTestGrids",
@@ -97,6 +97,6 @@
     "procOMC":0,
     "procCCompile":0,
     "optlevel":"-O0 -march=native",
-    "extraCustomCommands":["setCommandLineOptions(\"--generateSymbolicJacobian\")"]
+    "extraCustomCommands":["setCommandLineOptions(\"--generateDynamicJacobian=symbolic\")"]
   }
 ]
