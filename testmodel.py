@@ -30,6 +30,10 @@ isWin = args.win
 msysEnvironment = args.msysEnvironment
 addmsl = args.addmsl
 
+# our OMPython sessions
+omc = None
+omc_new = None
+
 # add openmodelica libraries path if the Modelica libraries are not found in the libraries path
 MSLpath = ''
 if addmsl and len(glob.glob('Modelica *', root_dir=libraries)) == 0:
