@@ -135,7 +135,7 @@ pipeline {
           expression { params.fmi_v1_23 }
         }
         steps {
-          runRegressiontest('maintenance/v1.23', 'v1.23-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false, 8)
+          runRegressiontest('maintenance/v1.23', 'v1.23-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('v1.24 FMI with OMSimulator') {
@@ -151,7 +151,7 @@ pipeline {
           expression { params.fmi_v1_24 }
         }
         steps {
-          runRegressiontest('maintenance/v1.24', 'v1.24-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false, 8)
+          runRegressiontest('maintenance/v1.24', 'v1.24-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('master FMI with OMSimulator') {
@@ -167,7 +167,7 @@ pipeline {
           expression { params.fmi_master }
         }
         steps {
-          runRegressiontest('master', 'master-fmi', '', 'origin/master', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false, 8)
+          runRegressiontest('master', 'master-fmi', '', 'origin/master', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
 
@@ -185,7 +185,7 @@ pipeline {
           expression { params.fmpy_fmi_v1_23 }
         }
         steps {
-          runRegressiontest('maintenance/v1.23', 'v1.23-fmi-fmpy', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false, 8)
+          runRegressiontest('maintenance/v1.23', 'v1.23-fmi-fmpy', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('v1.24 FMI with FMPy') {
@@ -201,7 +201,7 @@ pipeline {
           expression { params.fmpy_fmi_v1_24 }
         }
         steps {
-          runRegressiontest('maintenance/v1.24', 'v1.24-fmi-fmpy', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false, 8)
+          runRegressiontest('maintenance/v1.24', 'v1.24-fmi-fmpy', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('master FMI with FMPy') {
@@ -217,7 +217,7 @@ pipeline {
           expression { params.fmpy_fmi_master }
         }
         steps {
-          runRegressiontest('master', 'master-fmi-fmpy', '', 'origin/master', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false, 8)
+          runRegressiontest('master', 'master-fmi-fmpy', '', 'origin/master', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('newInst-daeMode') {
@@ -330,7 +330,7 @@ pipeline {
           expression { params.cpp_v1_23 }
         }
         steps {
-          runRegressiontest('maintenance/v1.23', 'v1.23-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false, 8)
+          runRegressiontest('maintenance/v1.23', 'v1.23-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('C++ v1.24') {
@@ -346,7 +346,7 @@ pipeline {
           expression { params.cpp_v1_23 }
         }
         steps {
-          runRegressiontest('maintenance/v1.24', 'v1.24-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false, 8)
+          runRegressiontest('maintenance/v1.24', 'v1.24-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('C++') {
@@ -362,7 +362,7 @@ pipeline {
           expression { params.cpp }
         }
         steps {
-          runRegressiontest('master', 'cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false, 8)
+          runRegressiontest('master', 'cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
     } }
