@@ -30,6 +30,10 @@ isWin = args.win
 msysEnvironment = args.msysEnvironment
 addmsl = args.addmsl
 
+# our OMPython sessions
+omc = None
+omc_new = None
+
 # add openmodelica libraries path if the Modelica libraries are not found in the libraries path
 MSLpath = ''
 if addmsl and len(glob.glob('Modelica *', root_dir=libraries)) == 0:
@@ -54,7 +58,21 @@ def writeResult():
 
 startJob=monotonic()
 
-def writeResultAndExit(exitStatus, useOsExit=False):
+def quit_omc(omc):
+  if omc is None:
+    return omc
+  try:
+    omc.sendExpression("quit()")
+  except:
+    pass
+  try:
+    del omc
+  except:
+    pass
+  omc = None
+  return omc
+
+def writeResultAndExit(exitStatus, useOsExit=False, omc=None, omc_new=None):
   writeResult()
   print("Calling exit ...")
   with open(errFile, 'a+') as fp:
@@ -65,6 +83,8 @@ def writeResultAndExit(exitStatus, useOsExit=False):
     fp.write(msg % (exitStatus, monotonic()-startJob))
     fp.flush()
   sys.stdout.flush()
+  omc = quit_omc(omc)
+  omc_new = quit(omc_new)
   if useOsExit:
     os._exit(exitStatus)
   else:
@@ -117,7 +137,7 @@ def sendExpressionTimeout(omc, cmd, timeout):
           pass
       with open(errFile, 'a+') as fp:
         fp.write("Aborted the command.\n")
-      writeResultAndExit(0, True)
+      writeResultAndExit(0, True, omc, omc_new)
     if res[1] is None:
       res[1] = ""
   if res[1] is not None:
@@ -311,7 +331,7 @@ if conf.get("ulimitMemory"):
 def loadModels(omc, conf):
   for f in conf["loadFiles"]:
     if not sendExpressionTimeout(omc, 'loadFile("%s", uses=false)' % f, conf["ulimitLoadModel"]):
-      writeResultAndExit(0)
+      writeResultAndExit(0, False, omc, omc_new)
   loadedFiles = sorted(omc.sendExpression("{getSourceFile(cl) for cl in getClassNames()}"))
   if sorted(conf["loadFiles"]) != loadedFiles:
     print("Loaded the wrong files. Expected:\n%s\nActual:\n%s" % ("\n".join(sorted(conf["loadFiles"])), "\n".join(loadedFiles)))
@@ -333,7 +353,7 @@ except TimeoutError as e:
   execstat["parsing"]=monotonic()-start
   with open(errFile, 'a+') as fp:
     fp.write("Timeout error for cmd: %s\n%s"%(cmd,str(e)))
-  writeResultAndExit(0, True)
+  writeResultAndExit(0, True, omc, omc_new)
 execstat["parsing"]=monotonic()-start
 
 try:
@@ -399,7 +419,7 @@ except TimeoutError as e:
     except:
       pass
 
-  writeResultAndExit(0)
+  writeResultAndExit(0, omc, omc_new)
 
 # See which translateModel phases completed
 
@@ -413,14 +433,7 @@ backend  = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(Op
 frontend = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_FRONTEND)")
 
 writeResult()
-try:
-  omc.sendExpression("quit()")
-except:
-  pass
-try:
-  del omc
-except:
-  pass
+omc = quit_omc(omc)
 
 print(execTimeTranslateModel,frontend,backend)
 if backend != -1:
@@ -452,7 +465,7 @@ with open(errFile, 'a+') as fp:
   fp.write(err)
 
 if execstat["phase"] < 4:
-  writeResultAndExit(0)
+  writeResultAndExit(0, False, omc, omc_new)
 
 start=monotonic()
 try:
@@ -463,7 +476,7 @@ try:
       if not os.path.exists(os.path.normpath(fmuExpectedLocation)):
         err += "\nFMU was not generated in the expected location: %s" % fmuExpectedLocation
         execstat["phase"]=4
-        writeResultAndExit(0)
+        writeResultAndExit(0, False, omc, omc_new)
       execstat["phase"] = 5
   else:
     if isWin:
@@ -477,7 +490,7 @@ except TimeoutError as e:
   execstat["build"] = monotonic()-start
   with open(errFile, 'a+') as fp:
     fp.write(str(e))
-  writeResultAndExit(0, True)
+  writeResultAndExit(0, True, omc, omc_new)
 
 writeResult()
 # Do the simulation
@@ -493,7 +506,7 @@ try:
     if not conf.get("fmisimulator"):
       with open(simFile,"w") as fp:
         fp.write("OMSimulator not available\n")
-      writeResultAndExit(0)
+      writeResultAndExit(0, False, omc, omc_new)
     fmitmpdir = "temp_%s_fmu" % conf["fileName"].replace(".","_")
     with open("%s.tmpfiles" % conf["fileName"], "a+") as fp:
       fp.write("%s\n" % fmitmpdir)
@@ -527,19 +540,18 @@ try:
   execstat["phase"] = 6
 except TimeoutError as e:
   execstat["sim"] = monotonic()-start
-  writeResultAndExit(0, True)
+  writeResultAndExit(0, True, omc, omc_new)
 
 if referenceFile=="":
-  writeResultAndExit(0)
+  writeResultAndExit(0, False, omc, omc_new)
 if len(referenceVars)==0:
   execstat["diff"] = {"time":0.0, "vars":[], "numCompared":0}
   execstat["phase"]=7
-  writeResultAndExit(0)
+  writeResultAndExit(0, False, omc, omc_new)
 
 # Check the reference file...
 
 prefix = os.path.abspath("../files/%s.diff" % conf["fileName"]).replace('\\','/')
-
 
 if not os.path.exists(os.path.normpath(resFile)):
   with open(errFile, 'a+') as fp:
@@ -551,7 +563,7 @@ if False and conf["simCodeTarget"] in ["Cpp"]: # This is a work-around for older
   if not sendExpressionTimeout(omc_new, 'filterSimulationResults("%s", "updated%s", vars={%s}, removeDescription=false, hintReadAllVars=false)' % (resFile, resFile, ", ".join(['"%s"' % s for s in referenceVars])), conf["ulimitOmc"]):
     with open(errFile, 'a+') as fp:
       fp.write("Failed to filter simulation results. Took time: %.2f\n" % (monotonic()-start))
-    writeResultAndExit(0)
+    writeResultAndExit(0, False, omc, omc_new)
   os.remove(resFile)
   os.rename("updated" + resFile, resFile)
   with open(errFile, 'a+') as fp:
@@ -563,7 +575,7 @@ try:
 except TimeoutError as e:
   with open(errFile, 'a+') as fp:
     fp.write("Timeout error for diffSimulationResults")
-  writeResultAndExit(0)
+  writeResultAndExit(0, False, omc, omc_new)
 
 execstat["diff"] = {"time":monotonic()-start, "vars":[], "numCompared":len(referenceVars)}
 if len(diffVars)==0 and referenceOK:
@@ -634,5 +646,8 @@ function change(el) {
 </script>
 </body>
 </html>""" % (tolerance, conf["reference_reltolDiffMinMax"], conf["reference_rangeDelta"], os.path.basename(prefix + "." + var + ".csv"), var))
+
+# quit omc_new
+omc_new = quit_omc(omc_new)
 
 writeResultAndExit(0)
