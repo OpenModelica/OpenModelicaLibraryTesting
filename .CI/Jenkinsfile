@@ -627,7 +627,8 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
     git reset --hard "${omsHash}" || exit 1
 
     git rev-parse HEAD > .newhash
-    echo "OMSimulator Hash: ${omsHash}"
+    echo "OMSimulator Hash: ${omsHash} and commit:"
+    cat .newhash || true
     echo Old Hash:
     cat ~/saved_omc/OMSimulator/.githash || true
 
@@ -644,6 +645,8 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
       git rev-parse HEAD > ~/saved_omc/OMSimulator/.githash || exit 1
 
     fi
+    echo OMSimulator version:
+    ${env.HOME}/saved_omc/OMSimulator/install/bin/OMSimulator --version
     """
     FMI_TESTING_FLAG="--fmi=true --fmisimulator=${env.HOME}/saved_omc/OMSimulator/install/bin/OMSimulator --default=ulimitExe=50"
   }
