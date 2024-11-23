@@ -34,7 +34,8 @@ Test started: #timeStart#<br/>
 Total time taken: #totalTime#<br>
 System info: #sysInfo#</p>
 <p>OpenModelica Version: #omcVersion#<br>
-#fmi#<br>
+#fmiToolVersion#
+#fmi#
 OpenModelicaLibraryTesting Changes<br>
 #OpenModelicaLibraryTesting#</p>
 <p>Tested Library: #fileName# #libraryVersionRevision#<pre>
