@@ -804,7 +804,8 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
   export PREVIOUSHOME="${env.HOME}"
   export HOME="${libraryPath}"
   # we need to do some crap magic here to make sure python3 finds fmpy as we change the HOME here
-  ln -s -t \${HOME} \${PREVIOUSHOME}/.local .local
+  # too bad if we cannot do it, just continue
+  ln -s -t \${HOME} \${PREVIOUSHOME}/.local .local || true
 
   cd OpenModelicaLibraryTesting
   # Force /usr/bin/omc as being used for generating the mos-files. Ensures consistent behavior among all tested OMC versions
