@@ -381,7 +381,7 @@ pipeline {
           expression { params.v1_12 || params.v1_13 || params.v1_14 || params.v1_16 || params.v1_17 || params.v1_18 || params.v1_19 || params.v1_20 || params.v1_21 || params.v1_22 || params.v1_23 || params.v1_24 || params.master || params.conversion_script || params.report_ryzen_5950x_1 | params.newInst_newBackend || params.generateSymbolicJacobian || params.heavy_tests}
         }
         environment {
-          GITBRANCHES = 'maintenance/v1.12 maintenance/v1.13 maintenance/v1.14 maintenance/v1.16 maintenance/v1.17 maintenance/v1.18 maintenance/v1.19 maintenance/v1.20 maintenance/v1.21 maintenance/v1.22 maintenance/v1.23 maintenance/v1.24 master newInst-newBackend'
+          GITBRANCHES = 'maintenance/v1.12 maintenance/v1.13 maintenance/v1.14 maintenance/v1.16 maintenance/v1.17 maintenance/v1.18 maintenance/v1.19 maintenance/v1.20 maintenance/v1.21 maintenance/v1.22 maintenance/v1.23 maintenance/v1.24 master newInst-newBackend heavy_tests'
           PYTHONIOENCODING = 'utf-8'
           IDA_EMAIL = credentials('IDA email')
         }
@@ -465,8 +465,8 @@ pipeline {
           sh 'wget -q https://libraries.openmodelica.org/sqlite3/ripper2/sqlite3.db'
           sh './clean-empty-omcversion-dates.py'
 
-          sh "./all-reports.py --email --omcgitdir=OpenModelica ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_CPP}"
-          sh "./all-plots.py ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_CPP}"
+          sh "./all-reports.py --email --omcgitdir=OpenModelica ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_CPP} gbode cvode"
+          sh "./all-plots.py ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_CPP} gbode cvode"
 
           sh "./report.py --branches='${env.GITBRANCHES_NEWINST}' configs/conf.json"
           sh "mv overview.html overview-oldinst.html"
