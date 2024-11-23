@@ -514,7 +514,7 @@ try:
       fmisimulator = "%s simulate " % fmisimulator
       cmd = "%s --start-time %g --stop-time %g --timeout %g --relative-tolerance %g --interface-type ModelExchange --solver CVode --output-interval %g %s.fmu" % (("--output-file %s" % resFile),startTime,stopTime,conf["ulimitExe"],tolerance,stepSize,conf["fileName"].replace(".","_"))
     else: # OMSimulator
-      cmd = "%s --tempDir=%s --startTime=%g --stopTime=%g --timeout=%g --tolerance=%g %s.fmu" % (("-r=%s" % resFile) if outputFormat != "empty" else "",fmitmpdir,startTime,stopTime,conf["ulimitExe"],tolerance,conf["fileName"].replace(".","_"))
+      cmd = "%s --tempDir=%s --startTime=%g --stopTime=%g --stepSize=%g --timeout=%g --tolerance=%g %s.fmu" % (("-r=%s" % resFile) if outputFormat != "empty" else "",fmitmpdir,startTime,stopTime,stepSize,conf["ulimitExe"],tolerance,conf["fileName"].replace(".","_"))
     with open(simFile,"w") as fp:
       fp.write("%s %s\n" % (fmisimulator, cmd))
     res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,fmisimulator,cmd,conf["fileName"]), 1.05*conf["ulimitExe"], conf)

@@ -650,6 +650,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
     """
     FMI_TESTING_FLAG="--fmi=true --fmisimulator=${env.HOME}/saved_omc/OMSimulator/install/bin/OMSimulator --default=ulimitExe=50"
   }
+  
   if (name.contains('fmpy')) {
     sh """
     # update fmpy
@@ -800,7 +801,11 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
   export PNLIBREFS="${PNLIBREFS}"
   export THERMOFLUIDSTREAMREFS="${THERMOFLUIDSTREAMREFS}"
   export THERMOFLUIDSTREAMREFSOM="${THERMOFLUIDSTREAMREFSOM}"
+  export PREVIOUSHOME="${env.HOME}"
   export HOME="${libraryPath}"
+  # we need to do some crap magic here to make sure python3 finds fmpy as we change the HOME here
+  ln -s -t \${HOME} \${PREVIOUSHOME}/.local .local
+
   cd OpenModelicaLibraryTesting
   # Force /usr/bin/omc as being used for generating the mos-files. Ensures consistent behavior among all tested OMC versions
   stdbuf -oL -eL time ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags='${extraFlags}' --extrasimflags='${extrasimflags}' --branch="${name}" --output="libraries.openmodelica.org:/var/www/libraries.openmodelica.org/branches/${name}/" --libraries='${libraryPath}/.openmodelica/libraries/'  --jobs=${jobs} ${libs_config_file} ${params.OLDLIBS ? "configs/conf-old.json configs/conf-nonstandard.json" : ""} || (killall omc ; false) || exit 1
