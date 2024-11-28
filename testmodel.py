@@ -516,8 +516,8 @@ try:
     else: # OMSimulator
       stepSizeStr = ""
       if stepSize != 0.0:
-        stepSizeStr = " --stepSize=%g " % stepSize
-      cmd = "%s --tempDir=%s --startTime=%g --stopTime=%g%s--timeout=%g --tolerance=%g %s.fmu" % (("-r=%s" % resFile) if outputFormat != "empty" else "",fmitmpdir,startTime,stopTime,stepSizeStr,conf["ulimitExe"],tolerance,conf["fileName"].replace(".","_"))
+        stepSizeStr = " --stepSize=%g" % stepSize
+      cmd = "%s --tempDir=%s --startTime=%g --stopTime=%g%s --timeout=%g --tolerance=%g %s.fmu" % (("-r=%s" % resFile) if outputFormat != "empty" else "",fmitmpdir,startTime,stopTime,stepSizeStr,conf["ulimitExe"],tolerance,conf["fileName"].replace(".","_"))
     with open(simFile,"w") as fp:
       fp.write("%s %s\n" % (fmisimulator, cmd))
     res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,fmisimulator,cmd,conf["fileName"]), 1.05*conf["ulimitExe"], conf)
