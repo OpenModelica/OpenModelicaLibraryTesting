@@ -152,11 +152,6 @@
     "library":"AixLib"
   },
   {
-    "library":"AixLib",
-    "libraryVersion":"development",
-    "libraryVersionNameForTests":"latest"
-  },
-  {
     "library":"IBPSA",
     "libraryVersion":"master",
     "libraryVersionNameForTests":"latest",
