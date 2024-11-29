@@ -32,7 +32,7 @@ end for;
 
 for l in {
   {"AES", "main"},
-  {"AixLib", "development"},
+  {"AixLib", "main"},
   {"Annex60", ""},
   {"BidiDCDC", ""},
   {"BLDC", ""},
