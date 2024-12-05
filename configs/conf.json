@@ -200,7 +200,7 @@
     "libraryVersion":"master",
     "libraryVersionNameForTests":"latest",
     "ulimitOmc":300,
-    "ulimitExe":400,
+    "ulimitExe":800,
     "runOnceBeforeTesting":[["$resourceLocation/src/ThermalZones/install.py", "--binaries-for-os-only"]],
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"_",
