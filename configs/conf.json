@@ -267,11 +267,6 @@
   },
   {
     "library":"Dynawo",
-    "libraryVersion":"maint.1.6.x",
-    "libraryVersionNameForTests":"1.6.1"
-  },
-  {
-    "library":"Dynawo",
     "libraryVersion":"master",
     "libraryVersionNameForTests":"dev"
   },
