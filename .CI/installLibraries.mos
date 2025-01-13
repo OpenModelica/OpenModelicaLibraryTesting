@@ -44,7 +44,6 @@ for l in {
   {"DroneLibrary", ""},
   {"Dynawo", ""},
   {"Dynawo", "master"},
-  {"Dynawo", "maint.1.6.x"},
   {"EHPTexamples", ""},
   {"EHPTexamples", "main"},
   {"EHPTlib", ""},
