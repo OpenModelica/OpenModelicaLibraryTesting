@@ -263,7 +263,8 @@
     "libraryVersionNameForTests":""
   },
   {
-    "library":"Dynawo"
+    "library":"Dynawo",
+    "extraCustomCommands":["setCommandLineOptions(\"--allowNonStandardModelica=implicitParameterStartAttribute\");"]
   },
   {
     "library":"Dynawo",
@@ -273,7 +274,8 @@
   {
     "library":"Dynawo",
     "libraryVersion":"master",
-    "libraryVersionNameForTests":"dev"
+    "libraryVersionNameForTests":"dev",
+    "extraCustomCommands":["setCommandLineOptions(\"--allowNonStandardModelica=implicitParameterStartAttribute\");"]
   },
   {
     "library":"EHPTexamples"
