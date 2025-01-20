@@ -28,7 +28,7 @@
     "procOMC":0,
     "procCCompile":0,
     "optlevel":"-O0 -march=native",
-    "extraCustomCommands":["setCommandLineOptions(\"--newBackend -d=arrayConnect\")"]
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend --resizableArrays -d=arrayConnect\")"]
   },
   {
     "library":"ScalableTestGrids",
