@@ -378,7 +378,7 @@ pipeline {
         }
         when {
           beforeAgent true
-          expression { params.v1_12 || params.v1_13 || params.v1_14 || params.v1_16 || params.v1_17 || params.v1_18 || params.v1_19 || params.v1_20 || params.v1_21 || params.v1_22 || params.v1_23 || params.v1_24 || params.master || params.conversion_script || params.report_ryzen_5950x_1 | params.newInst_newBackend || params.generateSymbolicJacobian || params.heavy_tests}
+          expression { params.v1_23 || params.v1_24 || params.master || params.conversion_script || params.report_ryzen_5950x_1 | params.newInst_newBackend || params.generateSymbolicJacobian || params.heavy_tests}
         }
         environment {
           GITBRANCHES = 'maintenance/v1.12 maintenance/v1.13 maintenance/v1.14 maintenance/v1.16 maintenance/v1.17 maintenance/v1.18 maintenance/v1.19 maintenance/v1.20 maintenance/v1.21 maintenance/v1.22 maintenance/v1.23 maintenance/v1.24 master newInst-newBackend'
@@ -440,7 +440,7 @@ pipeline {
         }
         when {
           beforeAgent true
-          expression { params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_v1_14 || params.fmi_v1_16 || params.fmi_v1_17 || params.fmi_v1_18 || params.fmi_v1_19 || params.fmi_v1_20 || params.fmi_v1_21 || params.fmi_v1_22 || params.fmi_v1_23 || params.fmi_v1_24 || params.fmi_master || params.fmpy_fmi_v1_22 || params.fmpy_fmi_v1_23 || params.fmpy_fmi_v1_24 || params.fmpy_fmi_master || params.newInst_daeMode || params.oldInst || params.report_ryzen_5950x_2 || params.cpp || params.cvode || params.gbode}
+          expression { params.fmi_v1_23 || params.fmi_v1_24 || params.fmi_master || params.fmpy_fmi_v1_23 || params.fmpy_fmi_v1_24 || params.fmpy_fmi_master || params.newInst_daeMode || params.oldInst || params.report_ryzen_5950x_2 || params.cpp || params.cvode || params.gbode}
         }
         environment {
           GITBRANCHES_FMI = 'maintenance/v1.12-fmi maintenance/v1.13-fmi maintenance/v1.14-fmi maintenance/v1.16-fmi maintenance/v1.17-fmi maintenance/v1.18-fmi maintenance/v1.19-fmi maintenance/v1.20-fmi maintenance/v1.21-fmi maintenance/v1.22-fmi maintenance/v1.23-fmi maintenance/v1.24-fmi maintenance/v1.22-fmi-fmpy maintenance/v1.23-fmi-fmpy maintenance/v1.24-fmi-fmpy master-fmi master-fmi-fmpy'
@@ -523,7 +523,7 @@ pipeline {
         }
         when {
           beforeAgent true
-          expression { params.v1_12 || params.v1_13 || params.v1_14 || params.v1_16 || params.v1_17 || params.v1_18 || params.v1_19 || params.v1_20 || params.v1_21 || params.v1_22 || params.v1_23 || params.v1_24 || params.master || params.report_ripper1 || params.generateSymbolicJacobian }
+          expression { params.v1_23 || params.v1_24 || params.master || params.report_ripper1 || params.generateSymbolicJacobian }
         }
         steps {
           sh 'cp ~/TEST_LIBS_BACKUP/ripper1-sqlite3.db sqlite3.db'
@@ -539,7 +539,7 @@ pipeline {
         }
         when {
           beforeAgent true
-          expression { params.fmi_v1_12 || params.fmi_v1_13 || params.fmi_v1_14 || params.fmi_v1_16 || params.fmi_v1_17 || params.fmi_v1_18 || params.fmi_v1_18 || params.fmi_v1_19 || params.fmi_v1_20 || params.fmi_v1_21 || params.fmi_v1_22 || params.fmi_v1_23 || params.fmi_v1_24 || params.fmi_master || params.fmpy_fmi_v1_22 || params.fmpy_fmi_v1_23 || params.fmpy_fmi_v1_24 || params.fmpy_fmi_master || params.newInst_daeMode  || params.oldInst || params.report_ripper2 }
+          expression { params.fmi_v1_23 || params.fmi_v1_24 || params.fmi_master || params.fmpy_fmi_v1_23 || params.fmpy_fmi_v1_24 || params.fmpy_fmi_master || params.newInst_daeMode  || params.oldInst || params.report_ripper2 }
         }
         steps {
           sh 'cp ~/TEST_LIBS_BACKUP/ripper2-sqlite3.db sqlite3.db'
