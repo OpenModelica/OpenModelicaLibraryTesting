@@ -513,41 +513,6 @@ pipeline {
         }
       }
     } }
-    stage('cleanup') { parallel {
-      // The cleanup is needed because we can't save the cleanup done in the report stage
-      stage('ripper1') {
-        agent {
-          node {
-            label 'ryzen-5950x-1'
-          }
-        }
-        when {
-          beforeAgent true
-          expression { params.v1_23 || params.v1_24 || params.master || params.report_ripper1 || params.generateSymbolicJacobian }
-        }
-        steps {
-          sh 'cp ~/TEST_LIBS_BACKUP/ripper1-sqlite3.db sqlite3.db'
-          sh './clean-empty-omcversion-dates.py'
-          sh 'cp sqlite3.db ~/TEST_LIBS_BACKUP/ripper1-sqlite3.db'
-        }
-      }
-      stage('ripper2') {
-        agent {
-          node {
-            label 'ryzen-5950x-2-1'
-          }
-        }
-        when {
-          beforeAgent true
-          expression { params.fmi_v1_23 || params.fmi_v1_24 || params.fmi_master || params.fmpy_fmi_v1_23 || params.fmpy_fmi_v1_24 || params.fmpy_fmi_master || params.newInst_daeMode  || params.oldInst || params.report_ripper2 }
-        }
-        steps {
-          sh 'cp ~/TEST_LIBS_BACKUP/ripper2-sqlite3.db sqlite3.db'
-          sh './clean-empty-omcversion-dates.py'
-          sh 'cp sqlite3.db ~/TEST_LIBS_BACKUP/ripper2-sqlite3.db'
-        }
-      }
-    } }
   }
 }
 def omsimulatorHash() {
@@ -814,10 +779,9 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
   sh 'date'
   sh "rm -f OpenModelicaLibraryTesting/${dbPrefix}-sqlite3.db.tmp"
   sh "ln OpenModelicaLibraryTesting/sqlite3.db OpenModelicaLibraryTesting/${dbPrefix}-sqlite3.db.tmp"
-
+  sh "cd OpenModelicaLibraryTesting/sqlite3.db && ./clean-empty-omcversion-dates.py"
   sh "cp OpenModelicaLibraryTesting/sqlite3.db ~/TEST_LIBS_BACKUP/${dbPrefix}-sqlite3.db"
   sh "rm -f ~/TEST_LIBS_BACKUP/${dbPrefix}-`date +sqlite3.%Y%m%d.db`"
 
-  sshPublisher(publishers: [sshPublisherDesc(configName: sshConfig, transfers: [sshTransfer(removePrefix: 'OpenModelicaLibraryTesting', sourceFiles: 'OpenModelicaLibraryTesting/sqlite3.db')])], failOnError: true)
-
+  sshPublisher(publishers: [sshPublisherDesc(configName: sshConfig, transfers: [sshTransfer(removePrefix: 'OpenModelicaLibraryTesting', sourceFiles: 'OpenModelicaLibraryTesting/sqlite3.db')])], failOnError: true)  
 }
