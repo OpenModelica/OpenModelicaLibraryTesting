@@ -779,7 +779,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
   sh 'date'
   sh "rm -f OpenModelicaLibraryTesting/${dbPrefix}-sqlite3.db.tmp"
   sh "ln OpenModelicaLibraryTesting/sqlite3.db OpenModelicaLibraryTesting/${dbPrefix}-sqlite3.db.tmp"
-  sh "cd OpenModelicaLibraryTesting/sqlite3.db && ./clean-empty-omcversion-dates.py"
+  sh "cd OpenModelicaLibraryTesting/ && ./clean-empty-omcversion-dates.py"
   sh "cp OpenModelicaLibraryTesting/sqlite3.db ~/TEST_LIBS_BACKUP/${dbPrefix}-sqlite3.db"
   sh "rm -f ~/TEST_LIBS_BACKUP/${dbPrefix}-`date +sqlite3.%Y%m%d.db`"
 
