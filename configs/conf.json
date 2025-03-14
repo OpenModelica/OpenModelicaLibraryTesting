@@ -270,7 +270,15 @@
     "library":"Dynawo",
     "libraryVersion":"master",
     "libraryVersionNameForTests":"dev",
-    "extraCustomCommands":["setCommandLineOptions(\"--allowNonStandardModelica=implicitParameterStartAttribute\");"]
+    "extraCustomCommands":["setCommandLineOptions(\"--allowNonStandardModelica=implicitParameterStartAttribute\");"],
+    "referenceFileExtension":"csv",
+    "referenceFileNameDelimiter":".",
+    "referenceFinalDot":"_res.",
+    "referenceFiles":{
+      "giturl":"https://github.com/dynawo/dynawo",
+      "destination":"ReferenceFiles/Dynawo",
+      "git-directory": "dynawo/sources/Models/Modelica/Dynawo/Examples/references"
+    }
   },
   {
     "library":"EHPTexamples"
