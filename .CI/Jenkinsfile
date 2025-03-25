@@ -3,24 +3,24 @@ pipeline {
   parameters {
     booleanParam(name: 'OLDLIBS', defaultValue: false, description: 'Also test some outdated libraries')
 
-    booleanParam(name: 'v1_23', defaultValue: false, description: 'maintenance/v1.23 branch (ryzen-5950x-1)')
     booleanParam(name: 'v1_24', defaultValue: false, description: 'maintenance/v1.24 branch (ryzen-5950x-1)')
+    booleanParam(name: 'v1_25', defaultValue: false, description: 'maintenance/v1.25 branch (ryzen-5950x-1)')
     booleanParam(name: 'master', defaultValue: false, description: 'master branch (ryzen-5950x-1)')
 
-    booleanParam(name: 'fmi_v1_23', defaultValue: false, description: 'maintenance/v1.23 branch with FMI (ryzen-5950x-2)')
     booleanParam(name: 'fmi_v1_24', defaultValue: false, description: 'maintenance/v1.24 branch with FMI (ryzen-5950x-2)')
+    booleanParam(name: 'fmi_v1_25', defaultValue: false, description: 'maintenance/v1.25 branch with FMI (ryzen-5950x-2)')
     booleanParam(name: 'fmi_master', defaultValue: false, description: 'master branch with FMI running OMSimulator (ryzen-5950x-2)')
 
-    booleanParam(name: 'fmpy_fmi_v1_23', defaultValue: false, description: 'maintenance/v1.23 branch with FMI (ryzen-5950x-2)')
     booleanParam(name: 'fmpy_fmi_v1_24', defaultValue: false, description: 'maintenance/v1.24 branch with FMI (ryzen-5950x-2)')
+    booleanParam(name: 'fmpy_fmi_v1_25', defaultValue: false, description: 'maintenance/v1.25 branch with FMI (ryzen-5950x-2)')
     booleanParam(name: 'fmpy_fmi_master', defaultValue: false, description: 'master branch with FMI running FMPy (ryzen-5950x-2)')
 
     booleanParam(name: 'newInst_daeMode', defaultValue: false, description: 'master branch, --daeMode with -d=newInst (ryzen-5950x-2)')
     booleanParam(name: 'newInst_newBackend', defaultValue: false, description: 'master branch, -d=newInst --newBackend, (ryzen-5950x-1)')
     booleanParam(name: 'oldInst', defaultValue: false, description: 'master branch, with -d=nonewInst (ryzen-5950x-2)')
 
-    booleanParam(name: 'cpp_v1_23', defaultValue: false, description: 'maintenance/v1.23 branch, with --simCodeTarget=Cpp (ryzen-5950x-2).')    
     booleanParam(name: 'cpp_v1_24', defaultValue: false, description: 'maintenance/v1.24 branch, with --simCodeTarget=Cpp (ryzen-5950x-2).')    
+    booleanParam(name: 'cpp_v1_25', defaultValue: false, description: 'maintenance/v1.25 branch, with --simCodeTarget=Cpp (ryzen-5950x-2).')
     booleanParam(name: 'cpp', defaultValue: false, description: 'master branch, with --simCodeTarget=Cpp (ryzen-5950x-2).')
     booleanParam(name: 'report_ryzen_5950x_1', defaultValue: false, description: 'Generate a report for ryzen-5950x-1 without running the tests')
     booleanParam(name: 'report_ryzen_5950x_2', defaultValue: false, description: 'Generate a report for ryzen-5950x-2 without running the tests')
@@ -37,23 +37,6 @@ pipeline {
   stages {
     stage('test') { parallel {
 
-      stage('v1.23') {
-        agent {
-          node {
-            label 'ryzen-5950x-1'
-            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
-          }
-        }
-        options { skipDefaultCheckout() }
-        when {
-          beforeAgent true
-          expression { params.v1_23 }
-        }
-        steps {
-          runRegressiontest('maintenance/v1.23', 'v1.23', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
-        }
-      }
-
       stage('v1.24') {
         agent {
           node {
@@ -68,6 +51,23 @@ pipeline {
         }
         steps {
           runRegressiontest('maintenance/v1.24', 'v1.24', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
+        }
+      }
+
+      stage('v1.25') {
+        agent {
+          node {
+            label 'ryzen-5950x-1'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.v1_25 }
+        }
+        steps {
+          runRegressiontest('maintenance/v1.25', 'v1.25', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
 
@@ -122,22 +122,6 @@ pipeline {
         }
       }
 
-      stage('v1.23 FMI with OMSimulator') {
-        agent {
-          node {
-            label 'ryzen-5950x-2-1'
-            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
-          }
-        }
-        options { skipDefaultCheckout() }
-        when {
-          beforeAgent true
-          expression { params.fmi_v1_23 }
-        }
-        steps {
-          runRegressiontest('maintenance/v1.23', 'v1.23-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
-        }
-      }
       stage('v1.24 FMI with OMSimulator') {
         agent {
           node {
@@ -152,6 +136,22 @@ pipeline {
         }
         steps {
           runRegressiontest('maintenance/v1.24', 'v1.24-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+        }
+      }
+      stage('v1.25 FMI with OMSimulator') {
+        agent {
+          node {
+            label 'ryzen-5950x-2-1'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.fmi_v1_25 }
+        }
+        steps {
+          runRegressiontest('maintenance/v1.25', 'v1.25-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('master FMI with OMSimulator') {
@@ -172,22 +172,6 @@ pipeline {
       }
 
 
-      stage('v1.23 FMI with FMPy') {
-        agent {
-          node {
-            label 'ryzen-5950x-2-1'
-            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
-          }
-        }
-        options { skipDefaultCheckout() }
-        when {
-          beforeAgent true
-          expression { params.fmpy_fmi_v1_23 }
-        }
-        steps {
-          runRegressiontest('maintenance/v1.23', 'v1.23-fmi-fmpy', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
-        }
-      }
       stage('v1.24 FMI with FMPy') {
         agent {
           node {
@@ -202,6 +186,22 @@ pipeline {
         }
         steps {
           runRegressiontest('maintenance/v1.24', 'v1.24-fmi-fmpy', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+        }
+      }
+      stage('v1.25 FMI with FMPy') {
+        agent {
+          node {
+            label 'ryzen-5950x-2-1'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.fmpy_fmi_v1_25 }
+        }
+        steps {
+          runRegressiontest('maintenance/v1.25', 'v1.25-fmi-fmpy', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('master FMI with FMPy') {
@@ -317,22 +317,6 @@ pipeline {
         }
       }
 
-      stage('C++ v1.23') {
-        agent {
-          node {
-            label 'ryzen-5950x-2-1'
-            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
-          }
-        }
-        options { skipDefaultCheckout() }
-        when {
-          beforeAgent true
-          expression { params.cpp_v1_23 }
-        }
-        steps {
-          runRegressiontest('maintenance/v1.23', 'v1.23-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
-        }
-      }
       stage('C++ v1.24') {
         agent {
           node {
@@ -343,10 +327,26 @@ pipeline {
         options { skipDefaultCheckout() }
         when {
           beforeAgent true
-          expression { params.cpp_v1_23 }
+          expression { params.cpp_v1_24 }
         }
         steps {
           runRegressiontest('maintenance/v1.24', 'v1.24-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+        }
+      }
+      stage('C++ v1.25') {
+        agent {
+          node {
+            label 'ryzen-5950x-2-1'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.cpp_v1_25 }
+        }
+        steps {
+          runRegressiontest('maintenance/v1.25', 'v1.25-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
       stage('C++') {
@@ -381,7 +381,7 @@ pipeline {
           expression { params.v1_23 || params.v1_24 || params.master || params.conversion_script || params.report_ryzen_5950x_1 | params.newInst_newBackend || params.generateSymbolicJacobian || params.heavy_tests}
         }
         environment {
-          GITBRANCHES = 'maintenance/v1.12 maintenance/v1.13 maintenance/v1.14 maintenance/v1.16 maintenance/v1.17 maintenance/v1.18 maintenance/v1.19 maintenance/v1.20 maintenance/v1.21 maintenance/v1.22 maintenance/v1.23 maintenance/v1.24 master newInst-newBackend'
+          GITBRANCHES = 'maintenance/v1.12 maintenance/v1.13 maintenance/v1.14 maintenance/v1.16 maintenance/v1.17 maintenance/v1.18 maintenance/v1.19 maintenance/v1.20 maintenance/v1.21 maintenance/v1.22 maintenance/v1.23 maintenance/v1.24 maintenance/v1.25 master newInst-newBackend'
           PYTHONIOENCODING = 'utf-8'
           IDA_EMAIL = credentials('IDA email')
         }
@@ -440,13 +440,13 @@ pipeline {
         }
         when {
           beforeAgent true
-          expression { params.fmi_v1_23 || params.fmi_v1_24 || params.fmi_master || params.fmpy_fmi_v1_23 || params.fmpy_fmi_v1_24 || params.fmpy_fmi_master || params.newInst_daeMode || params.oldInst || params.report_ryzen_5950x_2 || params.cpp || params.cvode || params.gbode}
+          expression { params.fmi_v1_24 || params.fmi_v1_25 || params.fmi_master || params.fmpy_fmi_v1_24 || params.fmpy_fmi_v1_25 || params.fmpy_fmi_master || params.newInst_daeMode || params.oldInst || params.report_ryzen_5950x_2 || params.cpp || params.cvode || params.gbode}
         }
         environment {
-          GITBRANCHES_FMI = 'maintenance/v1.12-fmi maintenance/v1.13-fmi maintenance/v1.14-fmi maintenance/v1.16-fmi maintenance/v1.17-fmi maintenance/v1.18-fmi maintenance/v1.19-fmi maintenance/v1.20-fmi maintenance/v1.21-fmi maintenance/v1.22-fmi maintenance/v1.23-fmi maintenance/v1.24-fmi maintenance/v1.22-fmi-fmpy maintenance/v1.23-fmi-fmpy maintenance/v1.24-fmi-fmpy master-fmi master-fmi-fmpy'
+          GITBRANCHES_FMI = 'maintenance/v1.12-fmi maintenance/v1.13-fmi maintenance/v1.14-fmi maintenance/v1.16-fmi maintenance/v1.17-fmi maintenance/v1.18-fmi maintenance/v1.19-fmi maintenance/v1.20-fmi maintenance/v1.21-fmi maintenance/v1.22-fmi maintenance/v1.23-fmi maintenance/v1.24-fmi maintenance/v1.25-fmi maintenance/v1.22-fmi-fmpy maintenance/v1.23-fmi-fmpy maintenance/v1.24-fmi-fmpy maintenance/v1.25-fmi-fmpy master-fmi master-fmi-fmpy'
           GITBRANCHES_NEWINST = 'oldInst'
           GITBRANCHES_DAE = 'newInst-daeMode'
-          GITBRANCHES_CPP = 'v1.19-cpp v1.20-cpp v1.21-cpp v1.22-cpp v1.23-cpp v1.24-cpp cpp'
+          GITBRANCHES_CPP = 'v1.19-cpp v1.20-cpp v1.21-cpp v1.22-cpp v1.23-cpp v1.24-cpp v1.25-cpp cpp'
           PYTHONIOENCODING = 'utf-8'
           IDA_EMAIL = credentials('IDA email')
         }
