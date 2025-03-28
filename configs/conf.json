@@ -173,18 +173,6 @@
   {
     "library":"Buildings",
     "ignoreModelPrefix":["Buildings.Utilities.IO.BCVTB.Examples", "Buildings.Obsolete"],
-    "libraryVersion":"maint.10.0.x",
-    "libraryVersionNameForTests":"10",
-    "ulimitOmc":300,
-    "ulimitExe":400,
-    "runOnceBeforeTesting":[["$resourceLocation/src/ThermalZones/install.py", "--binaries-for-os-only"]],
-    "referenceFileExtension":"csv",
-    "referenceFileNameDelimiter":"_",
-    "referenceFiles":"/mnt/ReferenceFiles/Buildings/csv/maint_10.0.x"
-  },
-  {
-    "library":"Buildings",
-    "ignoreModelPrefix":["Buildings.Utilities.IO.BCVTB.Examples", "Buildings.Obsolete"],
     "libraryVersion":"maint.11.x",
     "libraryVersionNameForTests":"11",
     "ulimitOmc":300,
@@ -193,6 +181,18 @@
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"_",
     "referenceFiles":"/mnt/ReferenceFiles/Buildings/csv/maint_11.x"
+  },
+  {
+    "library":"Buildings",
+    "ignoreModelPrefix":["Buildings.Utilities.IO.BCVTB.Examples", "Buildings.Obsolete"],
+    "libraryVersion":"maint.12.x",
+    "libraryVersionNameForTests":"12",
+    "ulimitOmc":300,
+    "ulimitExe":400,
+    "runOnceBeforeTesting":[["$resourceLocation/src/ThermalZones/install.py", "--binaries-for-os-only"]],
+    "referenceFileExtension":"csv",
+    "referenceFileNameDelimiter":"_",
+    "referenceFiles":"/mnt/ReferenceFiles/Buildings/csv/maint_12.x"
   },
   {
     "library":"Buildings",
