@@ -230,6 +230,8 @@
   },
   {
     "library":"ClaRa",
+    "ulimitOmc":800,
+    "ulimitExe":800,
     "referenceFileExtension":"mat",
     "referenceFileNameDelimiter":".",
     "referenceFiles":{
@@ -241,9 +243,10 @@
   },
   {
     "library":"ClaRa",
+    "ulimitOmc":800,
+    "ulimitExe":800,
     "libraryVersion":"main",
     "libraryVersionNameForTests":"dev",
-    "referenceFileExtension":"mat",
     "referenceFileNameDelimiter":".",
     "referenceFiles":{
       "giturl":"https://github.com/xrg-simulation/ClaRa-official",
