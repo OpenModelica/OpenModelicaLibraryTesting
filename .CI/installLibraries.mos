@@ -90,9 +90,11 @@ end for;
 
 print("Did install:" + getErrorString() + "\n");
 
+/* do not upgrade as it will reinstall libs!
 if not upgradeInstalledPackages() then
   print("Failed upgrade:\n" + getErrorString() + "\n");
   exit(1);
 end if;
 
 print("Did upgrade:\n" + getErrorString() + "\n");
+*/
