@@ -1,32 +1,12 @@
 [
   {
     "library":"Modelica",
-    "libraryVersion":"trunk",
-    "referenceFileExtension":"csv",
-    "referenceFileNameDelimiter":"/",
-    "referenceFileNameExtraName":"$ClassName",
-    "referenceFiles":"$MSLREFERENCE/MAP-LIB_ReferenceResults/v4.1.0",
-    "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"],
-    "optlevel":"-Os -march=native"
-  },
-  {
-    "library":"Modelica",
     "libraryVersion":"4.1.0-beta.om",
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
     "referenceFiles":"$MSLREFERENCE/MAP-LIB_ReferenceResults/v4.1.0",
     "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"],
-    "optlevel":"-Os -march=native"
-  },
-  {
-    "library":"Modelica",
-    "libraryVersion":"4.0.0",
-    "referenceFileExtension":"csv",
-    "referenceFileNameDelimiter":"/",
-    "referenceFileNameExtraName":"$ClassName",
-    "allReferenceFilesExist":false,
-    "referenceFiles":"$MSLREFERENCE/MAP-LIB_ReferenceResults/v4.0.0",
     "optlevel":"-Os -march=native"
   },
   {
