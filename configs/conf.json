@@ -6,17 +6,15 @@
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
     "referenceFiles":"$MSLREFERENCE/MAP-LIB_ReferenceResults/v4.1.0",
-    "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"],
     "optlevel":"-Os -march=native"
   },
   {
     "library":"Modelica",
-    "libraryVersion":"4.1.0-beta.om",
+    "libraryVersion":"4.1.0",
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
     "referenceFiles":"$MSLREFERENCE/MAP-LIB_ReferenceResults/v4.1.0",
-    "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"],
     "optlevel":"-Os -march=native"
   },
   {
@@ -46,18 +44,16 @@
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
-    "referenceFiles":"$MSLREFERENCE/MAP-LIB_ReferenceResults/v4.0.0",
-    "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"],
+    "referenceFiles":"$MSLREFERENCE/MAP-LIB_ReferenceResults/v4.1.0",
     "optlevel":"-Os -march=native"
   },
   {
     "library":"ModelicaTest",
-    "libraryVersion":"4.1.0-beta.om",
+    "libraryVersion":"4.1.0",
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
     "referenceFiles":"$MSLREFERENCE/MAP-LIB_ReferenceResults/v4.1.0",
-    "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"],
     "optlevel":"-Os -march=native"
   },
   {
@@ -67,7 +63,6 @@
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
     "referenceFiles":"$MSLREFERENCE/MAP-LIB_ReferenceResults/v4.0.0",
-    "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"],
     "optlevel":"-Os -march=native"
   },
   {
