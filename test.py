@@ -630,7 +630,14 @@ for (library,conf) in configs:
       versions = "{" + ",".join(['"'+v+'"' for v in availableVersions]) + "}"
     else:
       versions = '{"%s"}' % version
-    if not omc.sendExpression('loadModel(%s,%s)' % (lib,versions)):
+    
+    exactMatch=''
+    if conf["libraryVersionExactMatch"]:
+      if conf["libraryVersionLatestInPackageManager"]:
+        raise Exception("Library %s has both libraryVersionLatestInPackageManager:true and libraryVersionExactMatch:true! Make up your mind." % libName)
+      exactMatch=', requireExactVersion=true'
+      
+    if not omc.sendExpression('loadModel(%s,%s%s)' % (lib,versions,exactMatch)):
       try:
         print("Failed to load library %s %s: %s" % (library,versions,omc.sendExpression('OpenModelica.Scripting.getErrorString()')))
       except:

@@ -52,6 +52,8 @@ The scripts from this repository can be used to run regression tests for public,
       {
         "library":"MyModelicaLibrary",
         "libraryVersion":"main",
+        "libraryVersionExactMatch":true, // to be sure that the exact version is loaded, not the latest compatible
+        "libraryVersionLatestInPackageManager":true, // load the latest from the package manager
         "referenceFileExtension":"mat",
         "referenceFileNameDelimiter":"/",
         "referenceFileNameExtraName":"$ClassName",

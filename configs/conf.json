@@ -11,6 +11,7 @@
   {
     "library":"Modelica",
     "libraryVersion":"4.1.0",
+    "libraryVersionExactMatch":true,
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
@@ -20,6 +21,7 @@
   {
     "library":"Modelica",
     "libraryVersion":"4.0.0",
+    "libraryVersionExactMatch":true,
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
