@@ -1,5 +1,61 @@
 [
   {
+    "library":"ScalableTestSuite",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":"OB",
+    "ulimitOmc":400,
+    "ulimitExe":300,
+    "ulimitMemory":62914560,
+    "procOMC":0,
+    "procCCompile":0,
+    "optlevel":"-O0 -march=native",
+    "referenceFileExtension":"mat",
+    "referenceFileNameDelimiter":".",
+    "referenceFinalDot":"_res.",
+    "referenceFiles":{
+      "giturl":"https://github.com/casella/ScalableTestSuite-ref",
+      "destination":"ReferenceFiles/ScalableTestSuite"
+    }
+  },
+  {
+    "library":"ScalableTestSuite",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":"NB",
+    "ulimitOmc":400,
+    "ulimitExe":300,
+    "ulimitMemory":62914560,
+    "procOMC":0,
+    "procCCompile":0,
+    "optlevel":"-O0 -march=native",
+    "referenceFileExtension":"mat",
+    "referenceFileNameDelimiter":".",
+    "referenceFinalDot":"_res.",
+    "referenceFiles":{
+      "giturl":"https://github.com/casella/ScalableTestSuite-ref",
+      "destination":"ReferenceFiles/ScalableTestSuite"
+    },
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend -d=arrayConnect\")"]
+  },
+  {
+    "library":"ScalableTestSuite",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":"NB_resizable",
+    "ulimitOmc":400,
+    "ulimitExe":300,
+    "ulimitMemory":62914560,
+    "procOMC":0,
+    "procCCompile":0,
+    "optlevel":"-O0 -march=native",
+    "referenceFileExtension":"mat",
+    "referenceFileNameDelimiter":".",
+    "referenceFinalDot":"_res.",
+    "referenceFiles":{
+      "giturl":"https://github.com/casella/ScalableTestSuite-ref",
+      "destination":"ReferenceFiles/ScalableTestSuite"
+    },
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend --resizableArrays -d=arrayConnect\")"]
+  },
+  {
     "library":"LargeTestSuite",
     "libraryVersion":"master",
     "libraryVersionNameForTests":"NB",
@@ -12,15 +68,29 @@
     "extraCustomCommands":["setCommandLineOptions(\"--newBackend -d=arrayConnect\")"]
   },
   {
-    "library":"LargeTestSuite",
+    "library":"ScalableTestGrids",
     "libraryVersion":"master",
-    "libraryVersionNameForTests":"NB_resizable",
-    "ulimitOmc":400,
-    "ulimitExe":400,
-    "ulimitMemory":62914560,
+    "libraryVersionNameForTests":"OB_SymbolicJacobian",
+    "ignoreModelPrefix":"ScalableTestGrids.Models.Type1Large",
+    "ulimitOmc":800,
+    "ulimitExe":300,
+    "ulimitMemory":62000000,
     "procOMC":0,
     "procCCompile":0,
     "optlevel":"-O0 -march=native",
-    "extraCustomCommands":["setCommandLineOptions(\"--newBackend --resizableArrays -d=arrayConnect\")"]
+    "extraCustomCommands":["setCommandLineOptions(\"--generateDynamicJacobian=symbolic\")"]
+  },
+  {
+    "library":"ScalableTestGrids",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":"NB_SymbolicJacobian",
+    "ignoreModelPrefix":"ScalableTestGrids.Models.Type1Large",
+    "ulimitOmc":800,
+    "ulimitExe":300,
+    "ulimitMemory":62000000,
+    "procOMC":0,
+    "procCCompile":0,
+    "optlevel":"-O0 -march=native",
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend -d=mergeComponents --generateDynamicJacobian=symbolic\")"]
   }
 ]
