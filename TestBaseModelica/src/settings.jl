@@ -9,31 +9,31 @@ struct SolverSettings
   solver
   start_time::Real
   stop_time::Real
-  intervals::Integer
+  interval::Real
   tolerance::Real
 
   function SolverSettings(;
     solver=nothing,
     start_time::Real=0.0,
-    stop_time::Real=0.1,
-    intervals::Integer=500,
+    stop_time::Real=1.0,
+    interval::Real=(stop_time-start_time)/500,
     tolerance::Real=1e-6
   )
     @assert stop_time >= start_time "Stop time is smaller than start time."
-    @assert intervals > 0 "Intervals have to be greater than zero."
+    @assert interval > 0 "Interval has to be greater than zero."
     @assert tolerance > 0 "Tolerance has to be greater than zero."
 
     new(
       solver,
       start_time,
       stop_time,
-      intervals,
+      interval,
       tolerance
     )
   end
 end
 
-struct Settings
+struct TestSettings
   modelname::AbstractString
   output_directory::AbstractString
   resultfile::AbstractString
@@ -42,7 +42,7 @@ struct Settings
   timeout_simulating::Integer
   solver_settings::SolverSettings
 
-  function Settings(;
+  function TestSettings(;
     modelname::AbstractString,
     output_directory::AbstractString=pwd(),
     resultfile::AbstractString=joinpath(output_directory, modelname * "_res.csv"),
