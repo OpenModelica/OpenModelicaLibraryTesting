@@ -20,6 +20,13 @@ To speed up the execution of the test and reduce the TTFP-overhad of Julia there
 1. Precompile this package with
    [PackageCompiler.jl](https://github.com/JuliaLang/PackageCompiler.jl) and
    start a new Julia session for each test.
+
+  ```julia
+  julia> using PackageCompiler
+  (@v1.11) pkg> activate .
+  julia> create_sysimage(["TestBaseModelica"]; sysimage_path="TestBaseModelica.so", precompile_execution_file="precompile_skript.jl" )
+  ```
+
 2. Keep a Julia daemon running in the background for all tests by using
    [DaemonMode.jl](https://github.com/dmolina/DaemonMode.jl)
 
