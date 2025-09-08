@@ -1,6 +1,8 @@
 __pycache__
 !HelloWorld.mo
 !HelloWorld.mos
+/.venv/
+/.vscode/
 /*.files
 /*.html
 /*.json
