@@ -8,7 +8,7 @@ on:
     tags: '*'
 
 jobs:
-  test:
+  unittest-testbasemodelica:
     name: GitHub Actions TestBaseModelica
     strategy:
       matrix:
@@ -39,3 +39,33 @@ jobs:
         uses: julia-actions/julia-runtest@v1
         with:
           project: TestBaseModelica
+
+  test-mtk-import:
+    name: GitHub Actions TestBaseModelica
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        julia-version: [1.11]
+        omc-version: [stable]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run library test
+        shell: bash
+        run: |
+          export MY_SANITY_CHECK_DIRECTORY=sanityCheck
+          python test.py --branch="${{ matrix.omc-version }}" --basemodelica-mtk-import --noclean --verbose configs/sanityCheck.json
+
+      - name: Generate HTML results
+        shell: bash
+        run: python report.py --branches="${{ matrix.omc-version }}" configs/sanityCheck.json
+
+      - name: Zip HTML results
+        shell: bash
+        run: |
+          python .github/scripts/archiveResults.py "MyLibrary" "1.0.0" "${{ matrix.omc-version }}" "html/"
