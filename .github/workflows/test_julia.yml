@@ -55,6 +55,33 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup OpenModelica
+        uses: OpenModelica/setup-openmodelica@v1
+        with:
+          version: ${{ matrix.omc-version }}
+          packages: |
+            'omc'
+          libraries: |
+            'Modelica 4.0.0'
+          omc-diff: true
+
+      - name: Check if .CI/installLibraries.mos works
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            omc .CI/installLibraries.mos
+          fi
+
+      - name: Setup Python3
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'            # caching pip dependencies
+      - name: Install Python dependencies
+        shell: bash
+        run: |
+          pip install -r requirements.txt
+
       - name: Run library test
         shell: bash
         run: |
