@@ -288,7 +288,7 @@ if referenceFile != "":
       referenceVars=[s.strip() for s in open(compSignals).readlines() if (s.strip() != "")] # s.strip().lower() != "time" and ??? I guess we should check time variable...
       print(referenceVars)
     else:
-      referenceVars=omc_new.sendExpression('readSimulationResultVars("%s", readParameters=true, openmodelicaStyle=true)' % referenceFile)    
+      referenceVars=omc_new.sendExpression('readSimulationResultVars("%s", readParameters=true, openmodelicaStyle=true)' % referenceFile)
     variableFilter="|".join([v.replace("[",".").replace("]",".").replace("(",".").replace(")",".").replace('"',".") for v in referenceVars])
     # get the number of intervals from the file
     numberOfIntervalsInReference = omc_new.sendExpression('readSimulationResultSize("%s")' % referenceFile)
@@ -400,6 +400,10 @@ total_before = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerToc
 start=monotonic()
 if conf.get("fmi"):
   cmd='"" <> buildModelFMU(%s,fileNamePrefix="%s",fmuType="%s",version="%s",platforms={"static"})' % (conf["modelName"],conf["fileName"].replace(".","_"),conf["fmuType"],conf["fmi"])
+elif conf.get("basemodelica-export"):
+  cmd = "setCommandLineOptions(\"--baseModelica\");"
+  omc.sendExpression(omc, cmd)
+  cmd = 'writeFile("%s.mo", OpenModelica.Scripting.instantiateModel(%s))' % (conf["modelName"], conf["modelName"])
 else:
   cmd='translateModel(%s,tolerance=%g,outputFormat="%s",numberOfIntervals=%d,variableFilter="%s",fileNamePrefix="%s")' % (conf["modelName"],tolerance,outputFormat,numberOfIntervals,variableFilter,conf["fileName"])
 with open(errFile, 'a+') as fp:
@@ -424,13 +428,13 @@ except TimeoutError as e:
 # See which translateModel phases completed
 
 execTimeTranslateModel=monotonic()-start
-err=omc.sendExpression("OpenModelica.Scripting.getErrorString()")
-total    = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_SIMULATE_TOTAL)")-total_before
-buildmodel= omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_BUILD_MODEL)")
-templates= omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_TEMPLATES)")
-simcode  = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_SIMCODE)")
-backend  = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_BACKEND)")
-frontend = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_FRONTEND)")
+err        = omc.sendExpression("OpenModelica.Scripting.getErrorString()")
+total      = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_SIMULATE_TOTAL)")-total_before
+buildmodel = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_BUILD_MODEL)")
+templates  = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_TEMPLATES)")
+simcode    = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_SIMCODE)")
+backend    = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_BACKEND)")
+frontend   = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_FRONTEND)")
 
 writeResult()
 omc = quit_omc(omc)
@@ -457,6 +461,10 @@ if backend != -1:
   else:
     execstat["phase"]=1
     execstat["backend"]=backend
+elif conf.get("basemodelica-export"):
+  # TODO: No way to measure success or time of instantiate yet
+  execstat["phase"] = 4
+  execstat["frontend"]=total
 else:
   execstat["phase"]=0
   execstat["frontend"]=frontend
@@ -476,6 +484,15 @@ try:
       if not os.path.exists(os.path.normpath(fmuExpectedLocation)):
         err += "\nFMU was not generated in the expected location: %s" % fmuExpectedLocation
         execstat["phase"]=4
+        writeResultAndExit(0, False, omc, omc_new)
+      execstat["phase"] = 5
+  elif conf.get("basemodelica-export"):
+    if res:
+      baseModelicaExpectedLocation = "%s.mo" % conf["modelName"]
+      execstat["build"] = buildmodel
+      if not os.path.exists(os.path.normpath(baseModelicaExpectedLocation)):
+        err += "\nBaseModelica was not generated in the expected location: %s" % baseModelicaExpectedLocation
+        execstat["phase"] = 4
         writeResultAndExit(0, False, omc, omc_new)
       execstat["phase"] = 5
   else:
@@ -521,6 +538,24 @@ try:
     with open(simFile,"w") as fp:
       fp.write("%s %s\n" % (fmisimulator, cmd))
     res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,fmisimulator,cmd,conf["fileName"]), 1.05*conf["ulimitExe"], conf)
+  elif conf.get("basemodelica-export"):
+    if conf.get("basemodelica-mtk-import"):
+
+      juliaCallFile=os.path.normpath("%s_test.jl" % conf["modelName"])
+      with open(juliaCallFile,"w") as fp:
+        fp.write("using TestBaseModelica\n")
+        fp.write("solver_settings = SolverSettings(start_time=%g,stop_time=%g,interval=%g,tolerance=%g)\n" %(startTime,stopTime,stepSize,tolerance))
+        fp.write("test_settings = TestSettings(modelname=\"%s\", output_directory=\"%s\", solver_settings=solver_settings)\n" % (conf["fileName"], conf["fileName"]))
+        fp.write("run_test(\"%s.mo\"; settings = test_settings)\n" % (conf["modelName"]))
+
+      cmd = "julia %s" % juliaCallFile
+      with open(simFile,"w") as fp:
+        fp.write("%s\n" % (cmd))
+      res = checkOutputTimeout(
+      "(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s > %s.pipe 2>&1)"
+        % (conf["fileName"], conf["fileName"], conf["fileName"], simFile, cmd, conf["fileName"]), 1.05*conf["ulimitExe"], conf)
+    else:
+        print("BaseModelica import with OpenModelica not yet implemented.")
   else:
     if isWin:
       cmd = (".\\%s.bat %s %s %s" % (conf["fileName"],annotationSimFlags,conf["simFlags"],emit_protected)).strip()

@@ -7,7 +7,6 @@ import DifferentialEquations
 
 include("dump.jl")
 include("settings.jl")
-include("timeout.jl")
 
 """
 Test coupling of Base Modelica and ModelingToolkit.jl.
@@ -16,14 +15,12 @@ Test coupling of Base Modelica and ModelingToolkit.jl.
   2. Solve ODE problem
 """
 function run_test(base_modelica_file::AbstractString; settings::TestSettings)
-  mkpath(settings.output_directory)
+  mkpath(abspath(settings.output_directory))
 
   # Parse Base Modelica
   parsed_model = nothing
   time_parsing = @elapsed begin
-    @timeout settings.timeout_parsing begin
     parsed_model = BaseModelica.parse_basemodelica(base_modelica_file)
-    end throw(TimeoutError("Base Modelica parsing reached timeout $(settings.timeout_parsing)."))
   end
   open(settings.time_measurements_file, "w") do file
     write(file, "BaseModelica.parse_basemodelica, $(time_parsing)\n")

@@ -19,7 +19,7 @@ pipeline {
     booleanParam(name: 'newInst_newBackend', defaultValue: false, description: 'master branch, -d=newInst --newBackend, (ryzen-5950x-1)')
     booleanParam(name: 'oldInst', defaultValue: false, description: 'master branch, with -d=nonewInst (ryzen-5950x-2)')
 
-    booleanParam(name: 'cpp_v1_24', defaultValue: false, description: 'maintenance/v1.24 branch, with --simCodeTarget=Cpp (ryzen-5950x-2).')    
+    booleanParam(name: 'cpp_v1_24', defaultValue: false, description: 'maintenance/v1.24 branch, with --simCodeTarget=Cpp (ryzen-5950x-2).')
     booleanParam(name: 'cpp_v1_25', defaultValue: false, description: 'maintenance/v1.25 branch, with --simCodeTarget=Cpp (ryzen-5950x-2).')
     booleanParam(name: 'cpp', defaultValue: false, description: 'master branch, with --simCodeTarget=Cpp (ryzen-5950x-2).')
     booleanParam(name: 'report_ryzen_5950x_1', defaultValue: false, description: 'Generate a report for ryzen-5950x-1 without running the tests')
@@ -220,6 +220,24 @@ pipeline {
           runRegressiontest('master', 'master-fmi-fmpy', '', 'origin/master', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
+
+      stage('master BaseModelica') {
+        agent {
+          node {
+            label 'ryzen-5950x-2-1'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.fmi_master }
+        }
+        steps {
+          runRegressiontest('master', 'master-basemodelica-mtk-import', '--basemodelica', 'origin/master', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+        }
+      }
+
       stage('newInst-daeMode') {
         agent {
           node {
@@ -615,7 +633,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
     """
     FMI_TESTING_FLAG="--fmi=true --fmisimulator=${env.HOME}/saved_omc/OMSimulator/install/bin/OMSimulator --default=ulimitExe=50"
   }
-  
+
   if (name.contains('fmpy')) {
     sh """
     # update fmpy
@@ -623,6 +641,13 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
     python3 -m fmpy -h || exit 1
     """
     FMI_TESTING_FLAG="--fmi=true --fmisimulator='python3 -m fmpy' --default=ulimitExe=50"
+  }
+
+  if (name.contains('basemodelica-mtk-import')) {
+    sh """
+    julia --project=TestBaseModelica -e 'import Pkg; Pkg.build(verbose=true); Pkg.precompile()'
+    """
+    JULIA_TESTTING_FLAG = "--basemodelica-mtk-import --extraflags=\"setCommandLineOptions(\\\"--baseModelica\\\");\""
   }
 
   OMCPATH = "${omcompiler ? '../' : './'}OMCompiler"
@@ -774,7 +799,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
 
   cd OpenModelicaLibraryTesting
   # Force /usr/bin/omc as being used for generating the mos-files. Ensures consistent behavior among all tested OMC versions
-  stdbuf -oL -eL time ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags='${extraFlags}' --extrasimflags='${extrasimflags}' --branch="${name}" --output="libraries.openmodelica.org:/var/www/libraries.openmodelica.org/branches/${name}/" --libraries='${libraryPath}/.openmodelica/libraries/'  --jobs=${jobs} ${libs_config_file} ${params.OLDLIBS ? "configs/conf-old.json configs/conf-nonstandard.json" : ""} || (killall omc ; false) || exit 1
+  stdbuf -oL -eL time ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} ${JULIA_TESTTING_FLAG} --extraflags='${extraFlags}' --extrasimflags='${extrasimflags}' --branch="${name}" --output="libraries.openmodelica.org:/var/www/libraries.openmodelica.org/branches/${name}/" --libraries='${libraryPath}/.openmodelica/libraries/'  --jobs=${jobs} ${libs_config_file} ${params.OLDLIBS ? "configs/conf-old.json configs/conf-nonstandard.json" : ""} || (killall omc ; false) || exit 1
   """
   sh 'date'
   sh "rm -f OpenModelicaLibraryTesting/${dbPrefix}-sqlite3.db.tmp"
@@ -783,5 +808,5 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
   sh "cp OpenModelicaLibraryTesting/sqlite3.db ~/TEST_LIBS_BACKUP/${dbPrefix}-sqlite3.db"
   sh "rm -f ~/TEST_LIBS_BACKUP/${dbPrefix}-`date +sqlite3.%Y%m%d.db`"
 
-  sshPublisher(publishers: [sshPublisherDesc(configName: sshConfig, transfers: [sshTransfer(removePrefix: 'OpenModelicaLibraryTesting', sourceFiles: 'OpenModelicaLibraryTesting/sqlite3.db')])], failOnError: true)  
+  sshPublisher(publishers: [sshPublisherDesc(configName: sshConfig, transfers: [sshTransfer(removePrefix: 'OpenModelicaLibraryTesting', sourceFiles: 'OpenModelicaLibraryTesting/sqlite3.db')])], failOnError: true)
 }

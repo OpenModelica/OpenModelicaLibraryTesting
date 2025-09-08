@@ -27,7 +27,7 @@ parser = argparse.ArgumentParser(description='OpenModelica library testing tool'
 parser.add_argument('configs', nargs='*')
 parser.add_argument('--branch', default='master')
 parser.add_argument('--fmi', default=False)
-parser.add_argument('--basemodelica-mtk-import', default=False, help='Activate Base Modelica export and test import with BaseModelica.jl / ModelingToolkit.jl.')
+parser.add_argument('--basemodelica-mtk-import', action="store_true", default=False, help='Activate Base Modelica export and test import with BaseModelica.jl / ModelingToolkit.jl.')
 parser.add_argument('--output', default='')
 parser.add_argument('--docker', default='')
 parser.add_argument('--libraries', help="Directory omc will search in to load system libraries/libraries to test.", default='')
@@ -67,7 +67,6 @@ extraflags = args.extraflags
 extrasimflags = args.extrasimflags
 ompython_omhome = args.ompython_omhome
 fmisimulator = args.fmisimulator or None
-basemodelicaexport = args.basemodelica_mtk_import or None # TODO: Also add "or arg.basemodelica_export"
 basemodelica_mtk_import = args.basemodelica_mtk_import or None
 allTestsFmi = args.fmi
 ulimitMemory = args.ulimitvmem
@@ -509,6 +508,10 @@ for (lib,c) in configs:
 
   if allTestsFmi:
     c["fmi"] = "2.0"
+
+  if basemodelica_mtk_import:
+    c["basemodelica-export"] = True
+    c["basemodelica-mtk-import"] = True
 
 # Create mos-files
 

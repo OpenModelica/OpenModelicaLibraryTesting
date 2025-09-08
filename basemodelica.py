@@ -16,6 +16,3 @@ def print_julia_version():
 def dev_testbasemodelica_jl():
 
   jl.seval("import Pkg; Pkg.develop(path=\"TestBaseModelica\")")
-  jl.seval("using TestBaseModelica; Pkg.test(\"TestBaseModelica\")")
-
-dev_testbasemodelica_jl()

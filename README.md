@@ -175,3 +175,13 @@ export MSLREFERENCE="/some/path/to/ReferenceFiles/"
 ```
 
 For the other libraries just clone the repositories to `/some/path/to/ReferenceFiles/`.
+
+## Examples
+
+### BaseModelica export and BaseModelica.jl import
+
+```bash
+export MY_SANITY_CHECK_DIRECTORY=sanityCheck
+./test.py --basemodelica-mtk-import --branch=master --noclean --verbose configs/sanityCheck.json
+./report.py --branches="${{ matrix.omc-version }}" configs/sanityCheck.json
+```
