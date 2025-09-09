@@ -56,6 +56,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Julia
+        uses: julia-actions/setup-julia@latest
+        with:
+          version: ${{ matrix.julia-version }}
+
       - name: Setup OpenModelica
         uses: OpenModelica/setup-openmodelica@v1
         with:
@@ -82,11 +87,6 @@ jobs:
         shell: bash
         run: |
           pip install -r requirements.txt
-
-      - name: Setup Julia
-        uses: julia-actions/setup-julia@latest
-        with:
-          version: ${{ matrix.julia-version }}
 
       - name: Run library test
         shell: bash
