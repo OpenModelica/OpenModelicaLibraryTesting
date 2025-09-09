@@ -317,6 +317,7 @@ sys.stdout.flush()
 if basemodelica_mtk_import:
   basemodelica.print_julia_version()
   basemodelica.dev_testbasemodelica_jl()
+  basemodelica.update_testbasemodelica()
 
 try:
   os.unlink("HelloWorld"+exeExt)
@@ -355,6 +356,9 @@ sys.stdout.flush()
 defaultCustomCommands = []
 if extraflags:
   defaultCustomCommands += [extraflags]
+
+if basemodelica_mtk_import:
+  defaultCustomCommands += ['setCommandLineOptions("-d=newInst --baseModelica --modelicaOutput");']
 
 def testHelloWorld(cmd):
   with open("HelloWorld.mos") as fin:

@@ -10,13 +10,6 @@ DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
 ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
 
-[compat]
-BaseModelica = "1.1.0"
-CSV = "0.10.15"
-DataFrames = "1.7.1"
-DifferentialEquations = "7.16.1"
-ModelingToolkit = "9.68.1"
-
 [extras]
 SafeTestsets = "1bc83da4-3b8d-516f-aca4-4fe02f6d838f"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

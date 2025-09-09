@@ -401,8 +401,6 @@ start=monotonic()
 if conf.get("fmi"):
   cmd='"" <> buildModelFMU(%s,fileNamePrefix="%s",fmuType="%s",version="%s",platforms={"static"})' % (conf["modelName"],conf["fileName"].replace(".","_"),conf["fmuType"],conf["fmi"])
 elif conf.get("basemodelica-export"):
-  cmd = "setCommandLineOptions(\"--baseModelica\");"
-  omc.sendExpression(omc, cmd)
   cmd = 'writeFile("%s.mo", OpenModelica.Scripting.instantiateModel(%s))' % (conf["modelName"], conf["modelName"])
 else:
   cmd='translateModel(%s,tolerance=%g,outputFormat="%s",numberOfIntervals=%d,variableFilter="%s",fileNamePrefix="%s")' % (conf["modelName"],tolerance,outputFormat,numberOfIntervals,variableFilter,conf["fileName"])
@@ -545,7 +543,7 @@ try:
       with open(juliaCallFile,"w") as fp:
         fp.write("using TestBaseModelica\n")
         fp.write("solver_settings = SolverSettings(start_time=%g,stop_time=%g,interval=%g,tolerance=%g)\n" %(startTime,stopTime,stepSize,tolerance))
-        fp.write("test_settings = TestSettings(modelname=\"%s\", output_directory=\"%s\", solver_settings=solver_settings)\n" % (conf["fileName"], conf["fileName"]))
+        fp.write("test_settings = TestSettings(modelname=\"%s\", solver_settings=solver_settings)\n" % (conf["fileName"]))
         fp.write("run_test(\"%s.mo\"; settings = test_settings)\n" % (conf["modelName"]))
 
       cmd = "julia %s" % juliaCallFile
