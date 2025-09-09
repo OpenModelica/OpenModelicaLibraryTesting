@@ -47,6 +47,7 @@ jobs:
         os: [ubuntu-latest]
         julia-version: [1.11]
         omc-version: [stable]
+        python-version: ['3.12']
       fail-fast: false
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
@@ -81,6 +82,11 @@ jobs:
         shell: bash
         run: |
           pip install -r requirements.txt
+
+      - name: Setup Julia
+        uses: julia-actions/setup-julia@latest
+        with:
+          version: ${{ matrix.julia-version }}
 
       - name: Run library test
         shell: bash
