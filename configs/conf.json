@@ -397,6 +397,9 @@
     "libraryVersionNameForTests":"dev"
   },
   {
+    "library":"Pharmacolibrary"
+  },
+  {
     "library":"PhotoVoltaics"
   },
   {
