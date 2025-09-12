@@ -9,7 +9,7 @@ on:
 
 jobs:
   unittest-testbasemodelica:
-    name: GitHub Actions TestBaseModelica
+    name: Unit test TestBaseModelica.jl
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -41,13 +41,13 @@ jobs:
           project: TestBaseModelica
 
   test-mtk-import:
-    name: GitHub Actions TestBaseModelica
+    name: Sanity check TestBaseModelica.jl + test.py
     strategy:
       matrix:
         os: [ubuntu-latest]
         julia-version: [1.11]
         omc-version: [stable]
-        python-version: ['3.12']
+        python-version: ['3.10']
       fail-fast: false
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
@@ -82,7 +82,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'            # caching pip dependencies
+
       - name: Install Python dependencies
         shell: bash
         run: |
