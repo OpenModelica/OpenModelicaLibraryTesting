@@ -7,11 +7,12 @@ solver_settings = SolverSettings(
   tolerance = 1e-6
 )
 
+output_directory = "tmp_out_dir"
 test_settings = TestSettings(
   modelname = "ExampleFirstOrder",
-  output_directory = "ExampleFirstOrder",
-  solver_settings = solver_settings)
+  output_directory = output_directory,
+  solver_settings = solver_settings
+)
 
-run_test(joinpath("examples", "ExampleFirstOrder.mo"); settings = test_settings)
-
-rm("ExampleFirstOrder", force=true, recursive=true)
+run_test(joinpath(@__DIR__, "examples", "ExampleFirstOrder.mo"); settings = test_settings)
+rm(output_directory, force=true, recursive=true)

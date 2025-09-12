@@ -314,10 +314,10 @@ else:
 sys.stdout.flush()
 
 # Print Julia versions for BaseModelica.jl import
+julia_sysimage = os.path.abspath("TestBaseModelica.so")
 if basemodelica_mtk_import:
   basemodelica.print_julia_version()
-  basemodelica.dev_testbasemodelica_jl()
-  basemodelica.update_testbasemodelica()
+  basemodelica.precompile_testbaesmodelica(julia_sysimage)
 
 try:
   os.unlink("HelloWorld"+exeExt)
@@ -516,6 +516,7 @@ for (lib,c) in configs:
   if basemodelica_mtk_import:
     c["basemodelica-export"] = True
     c["basemodelica-mtk-import"] = True
+    c["julia-system-image"] = julia_sysimage
 
 # Create mos-files
 

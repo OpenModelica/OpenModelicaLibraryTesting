@@ -546,7 +546,7 @@ try:
         fp.write("test_settings = TestSettings(modelname=\"%s\", solver_settings=solver_settings)\n" % (conf["fileName"]))
         fp.write("run_test(\"%s.mo\"; settings = test_settings)\n" % (conf["modelName"]))
 
-      cmd = "julia %s" % juliaCallFile
+      cmd = "julia --sysimage=%s %s" % (conf["julia-system-image"], juliaCallFile)
       with open(simFile,"w") as fp:
         fp.write("%s\n" % (cmd))
       res = checkOutputTimeout(
