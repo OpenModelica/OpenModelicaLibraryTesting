@@ -25,6 +25,8 @@ pipeline {
     booleanParam(name: 'report_ryzen_5950x_1', defaultValue: false, description: 'Generate a report for ryzen-5950x-1 without running the tests')
     booleanParam(name: 'report_ryzen_5950x_2', defaultValue: false, description: 'Generate a report for ryzen-5950x-2 without running the tests')
 
+    booleanParam(name: 'basemodelica_jl_master', defaultValue: false, description: 'OpenModelica master branch with BaseModelica export and BaseModelica.jl import (ryzen-5950x-1)')
+
     booleanParam(name: 'conversion_script', defaultValue: false, description: 'master branch with conversion script from MSL 3 to 4 (ryzen-5950x-1). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'cvode', defaultValue: false, description: 'master branch, with -d=newInst and -s cvode (ryzen-5950x-2). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'gbode', defaultValue: false, description: 'master branch, with -d=newInst and -s gbode (ryzen-5950x-2). This is an experimental job that does not run on a fixed schedule.')
@@ -221,20 +223,20 @@ pipeline {
         }
       }
 
-      stage('master BaseModelica') {
+      stage('master BaseModelica.jl import') {
         agent {
           node {
-            label 'ryzen-5950x-2-1'
+            label 'ryzen-5950x-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
         options { skipDefaultCheckout() }
         when {
           beforeAgent true
-          expression { params.fmi_master }
+          expression { params.basemodelica_jl_master }
         }
         steps {
-          runRegressiontest('master', 'master-basemodelica-mtk-import', '--basemodelica', 'origin/master', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('master', 'basemodelica_jl_master', '--basemodelica-mtk-import', 'origin/master', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
         }
       }
 
