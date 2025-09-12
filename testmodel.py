@@ -541,12 +541,18 @@ try:
 
       juliaCallFile=os.path.normpath("%s_test.jl" % conf["modelName"])
       with open(juliaCallFile,"w") as fp:
-        fp.write("using TestBaseModelica\n")
+        if conf["julia-system-image"] == "":
+          fp.write("using TestBaseModelica\n")
+        else:
+          fp.write("using .TestBaseModelica\n")
         fp.write("solver_settings = SolverSettings(start_time=%g,stop_time=%g,interval=%g,tolerance=%g)\n" %(startTime,stopTime,stepSize,tolerance))
         fp.write("test_settings = TestSettings(modelname=\"%s\", solver_settings=solver_settings)\n" % (conf["fileName"]))
         fp.write("run_test(\"%s.mo\"; settings = test_settings)\n" % (conf["modelName"]))
 
-      cmd = "julia --sysimage=%s %s" % (conf["julia-system-image"], juliaCallFile)
+      cmd = "julia"
+      if conf["julia-system-image"] != "":
+        cmd += " --sysimage=%s" % conf["julia-system-image"]
+      cmd += " %s" % juliaCallFile
       with open(simFile,"w") as fp:
         fp.write("%s\n" % (cmd))
       res = checkOutputTimeout(

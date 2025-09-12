@@ -28,6 +28,7 @@ parser.add_argument('configs', nargs='*')
 parser.add_argument('--branch', default='master')
 parser.add_argument('--fmi', default=False)
 parser.add_argument('--basemodelica-mtk-import', action="store_true", default=False, help='Activate Base Modelica export and test import with BaseModelica.jl / ModelingToolkit.jl.')
+parser.add_argument('--julia-sys-image', action=argparse.BooleanOptionalAction, default=True, help='Activate pre-compiling Julia system image.')
 parser.add_argument('--output', default='')
 parser.add_argument('--docker', default='')
 parser.add_argument('--libraries', help="Directory omc will search in to load system libraries/libraries to test.", default='')
@@ -67,7 +68,8 @@ extraflags = args.extraflags
 extrasimflags = args.extrasimflags
 ompython_omhome = args.ompython_omhome
 fmisimulator = args.fmisimulator or None
-basemodelica_mtk_import = args.basemodelica_mtk_import or None
+basemodelica_mtk_import = args.basemodelica_mtk_import
+julia_sys_image = args.julia_sys_image
 allTestsFmi = args.fmi
 ulimitMemory = args.ulimitvmem
 docker = args.docker
@@ -314,7 +316,7 @@ else:
 sys.stdout.flush()
 
 # Print Julia versions for BaseModelica.jl import
-julia_sysimage = os.path.abspath("TestBaseModelica.so")
+julia_sysimage = os.path.abspath("TestBaseModelica.so") if julia_sys_image else None
 if basemodelica_mtk_import:
   basemodelica.print_julia_version()
   basemodelica.precompile_testbaesmodelica(julia_sysimage)
@@ -516,7 +518,7 @@ for (lib,c) in configs:
   if basemodelica_mtk_import:
     c["basemodelica-export"] = True
     c["basemodelica-mtk-import"] = True
-    c["julia-system-image"] = julia_sysimage
+    c["julia-system-image"] = julia_sysimage if julia_sys_image else ""
 
 # Create mos-files
 

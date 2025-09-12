@@ -185,3 +185,7 @@ export MY_SANITY_CHECK_DIRECTORY=sanityCheck
 ./test.py --basemodelica-mtk-import --branch=master --noclean --verbose configs/sanityCheck.json
 ./report.py --branches="${{ matrix.omc-version }}" configs/sanityCheck.json
 ```
+
+This will create a Julia system image to speedup tests. This can take a lot of
+time, but will reduce the Julia startup penalty. To disable add
+`--no-julia-sys-image`.

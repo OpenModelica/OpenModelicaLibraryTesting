@@ -92,7 +92,7 @@ jobs:
         shell: bash
         run: |
           export MY_SANITY_CHECK_DIRECTORY=sanityCheck
-          python test.py --branch="${{ matrix.omc-version }}" --basemodelica-mtk-import --noclean --verbose configs/sanityCheck.json
+          python test.py --branch="${{ matrix.omc-version }}" --basemodelica-mtk-import --no-julia-sys-image --noclean --verbose configs/sanityCheck.json
 
       - name: Generate HTML results
         shell: bash

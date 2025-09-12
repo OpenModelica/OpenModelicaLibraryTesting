@@ -6,6 +6,7 @@ from juliacall import Main as jl
 from omcommon import friendlyStr
 
 def print_julia_version() -> None:
+  """Print Julia `versioninfo()`"""
 
   julia = None
   try:
@@ -17,27 +18,41 @@ def print_julia_version() -> None:
 
   jl.seval("using InteractiveUtils; versioninfo()")
 
-def precompile_testbaesmodelica(systemImage: os.path) -> None:
+def precompile_testbaesmodelica(systemImage: os.PathLike | None = None) -> None:
   """Update and pre-compile TestBaseModelica to `sysimage`.
 
   Update dependencies of TestBaseModelica to get the latest version of
-  BaseModelica.jl from branch main. Create a pre-compile system image of package
-  TestBaseModelica with PackageCompiler.jl. This might take a wile!
+  BaseModelica.jl from branch main.
+  Create a pre-compile system image of package TestBaseModelica with
+  PackageCompiler.jl. Skipping this step if `systemImage` is `None`.
+  This might take a wile!
   """
 
   start = monotonic.monotonic()
-  print("Updating and pre-compiling Julia package TestBaseModelica. This might take a while, hang tight!")
+  print("Updating Julia package TestBaseModelica")
+
   jl.seval('import Pkg;'
-           "Pkg.activate();"
+           'Pkg.activate();'
            'Pkg.add("PackageCompiler");'
            'using PackageCompiler;'
            'Pkg.activate("TestBaseModelica");'
            'Pkg.update();'
-           'Pkg.status();'
-           'create_sysimage(["TestBaseModelica"]; sysimage_path="%s", precompile_execution_file="TestBaseModelica/precompile_skript.jl")'
-           % systemImage)
+           'Pkg.status();')
+
+  if systemImage == None:
+    jl.seval('Pkg.activate();'
+             'Pkg.develop(path="TestBaseModelica");'
+             'Pkg.precompile("TestBaseModelica")')
+  else:
+    print("Pre-compiling Julia system image %s for TestBaseModelica."
+          "This might take a while." % systemImage)
+
+    jl.seval('create_sysimage(["TestBaseModelica"];'
+             'sysimage_path="%s",'
+             'precompile_execution_file="TestBaseModelica/precompile_skript.jl")'
+            % systemImage)
+    if not os.path.isfile(systemImage):
+      raise FileNotFoundError("Something went wrong, couldn't find %s" % systemImage)
+
   execTime = monotonic.monotonic() - start
   print("Done pre-compiling in %s." % friendlyStr(execTime))
-
-  if not os.path.isfile(systemImage):
-    raise FileNotFoundError("Something went wrong, couldn't find %s" % systemImage)
