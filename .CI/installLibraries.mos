@@ -19,7 +19,7 @@ for v in {"1.6", "3.0.0", "maint.7.0.x", "maint.8.1.x", "maint.9.1.x", "maint.10
   end if;
 end for;
 
-for lib in {"AdvancedNoise", "BioChem", "BuildingSystems", "BuildSysPro", "Chemical", "ConPNlib", "ElectricalEnergyStorage", "ExternData", "ExternalMemoryLib", "FastBuildings", "FCSys", "Greenhouses", "HanserModelica", "HelmholtzMedia", "IBPSA", "IdealizedContact", "IndustrialControlSystems", "KeyWordIO", "LargeTestSuite", "LibRAS", "MEV", "MessagePack", "ModelicaByExample", "ModelicaTestOverdetermined", "Modelica_Synchronous", "Modelica_DeviceDrivers", "Modelica_LinearSystems2", "Modelica_Noise", "ObjectStab", "OpenHydraulics", "OpenIPSL", "PNlib", "Physiolibrary", "PlanarMechanics", "PowerSysPro", "ScalableTestGrids", "ScalableTestSuite", "SolarTherm", "Spot", "SystemDynamics", "TAeZoSysPro", "TAeZoSysPro_testsuite", "ThermalSeparation", "ThermoPower", "ThermoSysPro", "TransiEnt", "VehicleInterfaces"} loop
+for lib in {"AdvancedNoise", "BioChem", "BuildingSystems", "BuildSysPro", "Chemical", "ConPNlib", "ElectricalEnergyStorage", "ExternData", "ExternalMemoryLib", "FastBuildings", "FCSys", "Greenhouses", "HanserModelica", "HelmholtzMedia", "IBPSA", "IdealizedContact", "IndustrialControlSystems", "KeyWordIO", "LargeTestSuite", "LibRAS", "MEV", "MessagePack", "ModelicaByExample", "ModelicaTestOverdetermined", "Modelica_Synchronous", "Modelica_DeviceDrivers", "Modelica_LinearSystems2", "Modelica_Noise", "ObjectStab", "OpenIPSL", "PNlib", "Physiolibrary", "PlanarMechanics", "PowerSysPro", "ScalableTestGrids", "ScalableTestSuite", "SolarTherm", "Spot", "SystemDynamics", "TAeZoSysPro", "TAeZoSysPro_testsuite", "ThermalSeparation", "ThermoPower", "ThermoSysPro", "TransiEnt", "VehicleInterfaces"} loop
   if not installPackage(stringTypeName(lib), "master") then
     print(lib + " " + getErrorString() + "\n");
     exit(1);
@@ -51,6 +51,7 @@ for l in {
   {"IDEAS", "master"},
   {"iPSL", ""},
   {"MagLev", ""},
+  {"OpenHydraulics", "main"},
   {"OpenIMDML", "main"},
   {"OpenIPSL", "2.0.0"},
   {"OpenIPSL", ""},
