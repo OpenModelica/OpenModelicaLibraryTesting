@@ -19,7 +19,6 @@ from natsort import natsorted
 from shared import readConfig, getReferenceFileName, simulationAcceptsFlag, isFMPy
 from platform import processor
 import shared
-import basemodelica
 
 import signal
 
@@ -27,8 +26,6 @@ parser = argparse.ArgumentParser(description='OpenModelica library testing tool'
 parser.add_argument('configs', nargs='*')
 parser.add_argument('--branch', default='master')
 parser.add_argument('--fmi', default=False)
-parser.add_argument('--basemodelica-mtk-import', action="store_true", default=False, help='Activate Base Modelica export and test import with BaseModelica.jl / ModelingToolkit.jl.')
-parser.add_argument('--julia-sys-image', action=argparse.BooleanOptionalAction, default=True, help='Activate pre-compiling Julia system image.')
 parser.add_argument('--output', default='')
 parser.add_argument('--docker', default='')
 parser.add_argument('--libraries', help="Directory omc will search in to load system libraries/libraries to test.", default='')
@@ -68,8 +65,6 @@ extraflags = args.extraflags
 extrasimflags = args.extrasimflags
 ompython_omhome = args.ompython_omhome
 fmisimulator = args.fmisimulator or None
-basemodelica_mtk_import = args.basemodelica_mtk_import
-julia_sys_image = args.julia_sys_image
 allTestsFmi = args.fmi
 ulimitMemory = args.ulimitvmem
 docker = args.docker
@@ -109,7 +104,7 @@ pythonExecutablePopenWin = os.path.join(*['\"'+i+'\"' if ' ' in i else i+'\\' if
 
 def fflush():
   sys.stdout.flush()
-  sys.stderr.flush()
+  sys.stderr.flush()  
 
 def check_output_log(*popenargs, **kwargs):
   if DEBUG:
@@ -155,7 +150,7 @@ if isWin or noSync:
 def runCommand(cmd, prefix, timeout):
   process = [None]
   def target():
-    if DEBUG:
+    if DEBUG: 
       print("run: Popen %s, %s, %d\n" %(cmd, prefix, timeout))
       fflush()
     with open(os.devnull, 'w')  as FNULL:
@@ -315,12 +310,6 @@ else:
 
 sys.stdout.flush()
 
-# Print Julia versions for BaseModelica.jl import
-julia_sysimage = os.path.abspath("TestBaseModelica.so") if julia_sys_image else None
-if basemodelica_mtk_import:
-  basemodelica.print_julia_version()
-  basemodelica.precompile_testbaesmodelica(julia_sysimage)
-
 try:
   os.unlink("HelloWorld"+exeExt)
 except OSError:
@@ -358,9 +347,6 @@ sys.stdout.flush()
 defaultCustomCommands = []
 if extraflags:
   defaultCustomCommands += [extraflags]
-
-if basemodelica_mtk_import:
-  defaultCustomCommands += ['setCommandLineOptions("-d=newInst --baseModelica --modelicaOutput");']
 
 def testHelloWorld(cmd):
   with open("HelloWorld.mos") as fin:
@@ -515,11 +501,6 @@ for (lib,c) in configs:
   if allTestsFmi:
     c["fmi"] = "2.0"
 
-  if basemodelica_mtk_import:
-    c["basemodelica-export"] = True
-    c["basemodelica-mtk-import"] = True
-    c["julia-system-image"] = julia_sysimage if julia_sys_image else ""
-
 # Create mos-files
 
 conn = sqlite3.connect('sqlite3.db')
@@ -649,13 +630,13 @@ for (library,conf) in configs:
       versions = "{" + ",".join(['"'+v+'"' for v in availableVersions]) + "}"
     else:
       versions = '{"%s"}' % version
-
+    
     exactMatch=''
     if conf["libraryVersionExactMatch"]:
       if conf["libraryVersionLatestInPackageManager"]:
         raise Exception("Library %s has both libraryVersionLatestInPackageManager:true and libraryVersionExactMatch:true! Make up your mind." % libName)
       exactMatch=', requireExactVersion=true'
-
+      
     if not omc.sendExpression('loadModel(%s,%s%s)' % (lib,versions,exactMatch)):
       try:
         print("Failed to load library %s %s: %s" % (library,versions,omc.sendExpression('OpenModelica.Scripting.getErrorString()')))
