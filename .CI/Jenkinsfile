@@ -601,6 +601,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
   fi
   '''
   FMI_TESTING_FLAG=""
+  JULIA_TESTTING_FLAG=""
   if (!name.contains('fmpy') && omsHash) {
     sh """
     if ! test -d OMSimulator; then
@@ -649,7 +650,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
     sh """
     julia --project=TestBaseModelica -e 'import Pkg; Pkg.build(verbose=true); Pkg.precompile()'
     """
-    JULIA_TESTTING_FLAG = "--basemodelica-mtk-import --extraflags=\"setCommandLineOptions(\\\"--baseModelica\\\");\""
+    JULIA_TESTTING_FLAG="--basemodelica-mtk-import --extraflags=\"setCommandLineOptions(\\\"--baseModelica\\\");\""
   }
 
   OMCPATH = "${omcompiler ? '../' : './'}OMCompiler"
