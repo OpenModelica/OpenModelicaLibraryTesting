@@ -1,9 +1,8 @@
 datetime
-joblib
-juliacall
 matplotlib
 monotonic
 natsort
+joblib
 ompython
-psutil
 simplejson
+psutil
