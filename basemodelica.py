@@ -1,9 +1,19 @@
 import monotonic
 import os.path
 import subprocess
+import warnings
 
-from juliacall import Main as jl
 from omcommon import friendlyStr
+
+try:
+  from juliacall import Main as jl
+except ImportError:
+  warnings.warn("No module named 'juliacall'. "
+                "'--basemodelica-mtk-import' won't be supported.")
+  juliacall = None
+  class jl:
+    def seval(any: any):
+      raise ImportError("No module named 'juliacall'")
 
 def print_julia_version() -> None:
   """Print Julia `versioninfo()`"""
