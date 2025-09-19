@@ -1,5 +1,6 @@
 import monotonic
 import os.path
+import shutil
 import subprocess
 import warnings
 
@@ -18,12 +19,7 @@ except ImportError:
 def print_julia_version() -> None:
   """Print Julia `versioninfo()`"""
 
-  julia = None
-  try:
-    julia = subprocess.getoutput("which julia").strip()
-  except subprocess.CalledProcessError as e:
-    print("Couldn't find julia:\n%s" %(e.output))
-    raise e
+  julia = shutil.which("julia")
   print("Julia executable: %s" %(julia))
 
   jl.seval("using InteractiveUtils; versioninfo()")
