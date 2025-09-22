@@ -1,0 +1,12 @@
+[
+  {
+    "library":"Modelica",
+    "libraryVersion":"4.1.0",
+    "libraryVersionExactMatch":true,
+    "referenceFileExtension":"csv",
+    "referenceFileNameDelimiter":"/",
+    "referenceFileNameExtraName":"$ClassName",
+    "referenceFiles":"$MSLREFERENCE/MAP-LIB_ReferenceResults/v4.1.0",
+    "optlevel":"-Os -march=native"
+  }
+]
