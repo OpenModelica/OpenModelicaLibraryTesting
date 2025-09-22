@@ -50,7 +50,7 @@ def precompile_testbaesmodelica(systemImage: os.PathLike | None = None) -> None:
              'Pkg.develop(path="TestBaseModelica");'
              'Pkg.precompile("TestBaseModelica")')
   else:
-    print("Pre-compiling Julia system image %s for TestBaseModelica."
+    print("Pre-compiling Julia system image %s for TestBaseModelica. "
           "This might take a while." % systemImage)
 
     jl.seval('create_sysimage(["TestBaseModelica"];'
