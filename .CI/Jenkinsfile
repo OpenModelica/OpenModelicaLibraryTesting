@@ -236,7 +236,7 @@ pipeline {
           expression { params.basemodelica_jl_master }
         }
         steps {
-          runRegressiontest('master', 'basemodelica_jl_master', '--basemodelica-mtk-import', 'origin/master', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
+          runRegressiontest('master', 'basemodelica_jl_master', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false, 0, 'configs/basemodelica.json')
         }
       }
 
@@ -585,9 +585,22 @@ done
 /**
   * Launches the test.py script with the given options.
   *
-  * @param libs_config_file: The config file to be used for testing. This file specifies which libraries to test and what options to use for them.
-  * @param jobs: The number of tests/jobs to launch in parallel.
-                 By default this is set to 0 which means launch as many tests as there are available physical cpus on the machine'.
+  * @param branch:              OpenModelica branch to test. Will checkout the branch and build omc from it.
+  * @param name:                Unique name of the library test. Passed to test.py via flag `--branch`.
+  *                             Also used for stashing omc and uploading results to https://test.openmodelica.org.
+  * @param extraFlags:          Additional compiler flags passed to test.py via flag `--extraflags`.
+  * @param omsHash:             OMSimulator SHA.
+  * @param dbPrefix:            Prefix for test results data base `sqlite3.db`.
+  * @parm sshConfig:            SSH configuration saved on test node.
+  * @param omcompiler:          Checkout old OMCompiler submodule. Should be `false` nowadays.
+  * @param extrasimflags:       Additional simulation flags passed to test.py via flag `--extrasimflags`.
+  * @param removePackageOrder:  Passed to `installLibraries`.
+  * @param conversionScript:    Passed to `installLibraries`.
+  * @param jobs:                The number of tests/jobs to launch in parallel.
+  *                             By default this is set to `0` which means launch as many tests as there are available
+  *                             physical cpus on the machine'.
+  * @param libs_config_file:    The config file to be used for testing.
+  *                             This file specifies which libraries to test and what options to use for them.
   */
 def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, omcompiler, extrasimflags, boolean removePackageOrder, boolean conversionScript, int jobs=0, libs_config_file = 'configs/conf.json') {
   sh '''
@@ -646,11 +659,11 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
     FMI_TESTING_FLAG="--fmi=true --fmisimulator='python3 -m fmpy' --default=ulimitExe=50"
   }
 
-  if (name.contains('basemodelica-mtk-import')) {
+  if (name.contains('basemodelica_jl')) {
     sh """
     julia --project=TestBaseModelica -e 'import Pkg; Pkg.build(verbose=true); Pkg.precompile()'
     """
-    JULIA_TESTTING_FLAG="--basemodelica-mtk-import --extraflags=\"setCommandLineOptions(\\\"--baseModelica\\\");\""
+    JULIA_TESTTING_FLAG="--basemodelica-mtk-import"
   }
 
   OMCPATH = "${omcompiler ? '../' : './'}OMCompiler"
