@@ -554,6 +554,12 @@ try:
         cmd += " --sysimage=%s" % conf["julia-system-image"]
       cmd += " %s" % juliaCallFile
       with open(simFile,"w") as fp:
+        with open(juliaCallFile, "r") as juliaFile:
+          file_content = juliaFile.read()
+          fp.write("%s_test.jl:\n\n" % conf["modelName"])
+          fp.write(file_content)
+          fp.write("\n")
+
         fp.write("%s\n" % (cmd))
       res = checkOutputTimeout(
       "(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s > %s.pipe 2>&1)"
