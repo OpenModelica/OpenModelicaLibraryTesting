@@ -27,6 +27,7 @@ parser = argparse.ArgumentParser(description='OpenModelica library testing tool'
 parser.add_argument('configs', nargs='*')
 parser.add_argument('--branch', default='master')
 parser.add_argument('--fmi', default=False)
+parser.add_argument('--fmuType', default='me', help="FMU type: 'me' for Model Exchange, 'cs' for Co-Simulation.")
 parser.add_argument('--basemodelica-mtk-import', action="store_true", default=False, help='Activate Base Modelica export and test import with BaseModelica.jl / ModelingToolkit.jl.')
 parser.add_argument('--julia-sys-image', action=argparse.BooleanOptionalAction, default=True, help='Activate pre-compiling Julia system image.')
 parser.add_argument('--output', default='')
@@ -71,6 +72,7 @@ fmisimulator = args.fmisimulator or None
 basemodelica_mtk_import = args.basemodelica_mtk_import
 julia_sys_image = args.julia_sys_image
 allTestsFmi = args.fmi
+fmuType = args.fmuType
 ulimitMemory = args.ulimitvmem
 docker = args.docker
 addmsl = args.addmsl
@@ -620,7 +622,7 @@ for (library,conf) in configs:
     conf["haveFMI"] = fmiOK_C
     conf["haveFMICpp"] = fmiOK_Cpp
     conf["fmisimulator"] = fmisimulator
-    conf["fmuType"] = conf.get("fmuType", "me")
+    conf["fmuType"] = fmuType
   if (not canChangeOptLevel) and "optlevel" in conf:
     print("Deleting optlevel")
     del conf["optlevel"]
