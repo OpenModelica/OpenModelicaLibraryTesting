@@ -564,6 +564,10 @@
       ]
   },
   {
+    "library":"URDFModelica",
+    "libraryVersion":"main"
+  },
+  {
     "library":"VehicleInterfaces"
   }
 ]
