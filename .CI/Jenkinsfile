@@ -11,6 +11,10 @@ pipeline {
     booleanParam(name: 'fmi_v1_25', defaultValue: false, description: 'maintenance/v1.25 branch with FMI (ryzen-5950x-2)')
     booleanParam(name: 'fmi_master', defaultValue: false, description: 'master branch with FMI running OMSimulator (ryzen-5950x-2)')
 
+    booleanParam(name: 'cs_fmu_cvode_v1_24', defaultValue: false, description: 'maintenance/v1.24 branch with CVODE CS FMUs running OMSimulator (ryzen-5950x-2)')
+    booleanParam(name: 'cs_fmu_cvode_v1_25', defaultValue: false, description: 'maintenance/v1.25 branch with CVODE CS FMUs running OMSimulator (ryzen-5950x-2)')
+    booleanParam(name: 'cs_fmu_cvode_master', defaultValue: false, description: 'master branch with CVODE CS FMUs running OMSimulator (ryzen-5950x-2)')
+
     booleanParam(name: 'fmpy_fmi_v1_24', defaultValue: false, description: 'maintenance/v1.24 branch with FMI (ryzen-5950x-2)')
     booleanParam(name: 'fmpy_fmi_v1_25', defaultValue: false, description: 'maintenance/v1.25 branch with FMI (ryzen-5950x-2)')
     booleanParam(name: 'fmpy_fmi_master', defaultValue: false, description: 'master branch with FMI running FMPy (ryzen-5950x-2)')
@@ -173,6 +177,54 @@ pipeline {
         }
       }
 
+      stage('v1.24 CVODE CS-FMUs with OMSimulator') {
+        agent {
+          node {
+            label 'ryzen-5950x-2-1'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.cs_fmu_cvode_v1_24 }
+        }
+        steps {
+          runRegressiontest('maintenance/v1.24', 'v1.24-cs-fmu-cvode', 'setCommandLineOptions("--fmiFlags=s:cvode --fmuRuntimeDepends=modelica")', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+        }
+      }
+      stage('v1.25 CVODE CS-FMUs with OMSimulator') {
+        agent {
+          node {
+            label 'ryzen-5950x-2-1'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.cs_fmu_cvode_v1_25 }
+        }
+        steps {
+          runRegressiontest('maintenance/v1.25', 'v1.25-cs-fmu-cvode', 'setCommandLineOptions("--fmiFlags=s:cvode --fmuRuntimeDepends=modelica")', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+        }
+      }
+      stage('master CVODE CS-FMUs with OMSimulator') {
+        agent {
+          node {
+            label 'ryzen-5950x-2-1'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.cs_fmu_cvode_master }
+        }
+        steps {
+          runRegressiontest('master', 'master-cs-fmu-cvode', 'setCommandLineOptions("--fmiFlags=s:cvode --fmuRuntimeDepends=modelica")', 'origin/master', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+        }
+      }
 
       stage('v1.24 FMI with FMPy') {
         agent {
@@ -648,6 +700,9 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
     ${env.HOME}/saved_omc/OMSimulator/install/bin/OMSimulator --version
     """
     FMI_TESTING_FLAG="--fmi=true --fmisimulator=${env.HOME}/saved_omc/OMSimulator/install/bin/OMSimulator --default=ulimitExe=50"
+    if (name.containts('cvode')) {
+      FMI_TESTING_FLAG += "--fmuType='cs'"
+    }
   }
 
   if (name.contains('fmpy')) {
