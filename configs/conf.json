@@ -226,6 +226,11 @@
     "library":"Chemical"
   },
   {
+    "library":"Chemical"
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":"master",
+  },
+  {
     "library":"ClaRa",
     "ulimitOmc":800,
     "ulimitExe":800,
