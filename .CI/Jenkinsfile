@@ -700,7 +700,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
     ${env.HOME}/saved_omc/OMSimulator/install/bin/OMSimulator --version
     """
     FMI_TESTING_FLAG="--fmi=true --fmisimulator=${env.HOME}/saved_omc/OMSimulator/install/bin/OMSimulator --default=ulimitExe=50"
-    if (name.containts('cvode')) {
+    if (name.contains('cvode')) {
       FMI_TESTING_FLAG += "--fmuType='cs'"
     }
   }
