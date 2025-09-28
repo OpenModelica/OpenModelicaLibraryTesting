@@ -1,0 +1,25 @@
+name: Check JSON Validity
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  validate-json:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python3
+        uses: actions/setup-python@v5
+
+      - name: Validate JSON files
+        run: |
+          set -e
+          for file in $(find configs/ -type f -name "*.json"); do
+            echo "Checking $file"
+            python3 -m json.tool "$file" > /dev/null
+          done
