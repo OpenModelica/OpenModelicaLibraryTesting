@@ -1085,9 +1085,9 @@ for libname in stats_by_libname.keys():
               sys.stdout.flush()
           sys.stdout.flush()
         try:
-          gitReferenceFilesURL = check_output_log(["git", "config", "get", "remote.origin.url"], cwd=gitReferenceFiles).decode("utf-8")
+          gitReferenceFilesURL = check_output_log(["git", "config", "--get", "remote.origin.url"], cwd=gitReferenceFiles).decode("utf-8")
         except subprocess.CalledProcessError as e:
-          print(str(e))
+          print(e)
           gitReferenceFilesURL = gitReferenceFiles
         gitReferenceFilesVersion = check_output_log(["git", "log", '--pretty=<table><tr><th>Commit</th><th>Date</th><th>Author</th><th>Summary</th></tr><tr><td><a href="%s/%%h">%%h</a></td><td>%%ai</td><td>%%an</td><td>%%s</td></tr></table>' % (gitReferenceFilesURL), "-1"], cwd=gitReferenceFiles).decode("utf-8")
         print("referenceFiles git ... got version information: %s" % gitReferenceFilesVersion)
