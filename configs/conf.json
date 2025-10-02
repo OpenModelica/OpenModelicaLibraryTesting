@@ -570,7 +570,14 @@
   },
   {
     "library":"URDFModelica",
-    "libraryVersion":"main"
+    "libraryVersion":"main",
+    "referenceFileExtension":"csv",
+    "referenceFileNameDelimiter":"/",
+    "referenceFileNameExtraName":"$ClassName",
+    "referenceFiles":{
+      "giturl":"https://github.com/DLR-RM/urdfmodelica-referenceresults",
+      "destination":"ReferenceFiles/URDFModelica"
+    }
   },
   {
     "library":"VehicleInterfaces"
