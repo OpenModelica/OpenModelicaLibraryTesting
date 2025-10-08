@@ -82,7 +82,6 @@ for l in {
   {"OpenIPSL", ""},
   {"OpenIPSL", "2.0.0"},
   {"OpenIPSL", "master"},
-  {"OpenIPSL", "master"},
   {"PhotoVoltaics_TGM", ""},
   {"PhotoVoltaics", ""},
   {"Physiolibrary", "master"},
@@ -113,7 +112,7 @@ for l in {
   {"TILMedia", "main"},
   {"TransiEnt", "master"},
   {"VehicleInterfaces", "master"},
-  {"URDFModelica", "master"}
+  {"URDFModelica", "main"}
 } loop
   if not installPackage(stringTypeName(l[1]), l[2]) then
     print(l[1] + " " + l[2] + getErrorString() + "\n");
