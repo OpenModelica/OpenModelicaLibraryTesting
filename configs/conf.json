@@ -351,6 +351,18 @@
     "libraryVersionNameForTests":"dev"
   },
   {
+    "library":"LEPSE",
+    "libraryVersion":"main",
+    "referenceFileExtension":"mat",
+    "referenceFileNameDelimiter":".",
+    "referenceFinalDot":"_res.",
+    "referenceFiles":{
+      "giturl":"https://github.com/AndrejFlorinskii/LEPSE-ref",
+      "destination":"ReferenceFiles/LEPSE",
+      "git-ref": "main"
+    }
+  },
+  {
     "library":"LibRAS",
     "extraCustomCommands":["if not setCommandLineOptions(\"--std=3.3\") then exit(1); end if;"]
   },
