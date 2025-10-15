@@ -352,6 +352,7 @@
   },
   {
     "library":"LEPSE",
+    "libraryVersion":"main",
     "referenceFileExtension":"mat",
     "referenceFileNameDelimiter":".",
     "referenceFinalDot":"_res.",

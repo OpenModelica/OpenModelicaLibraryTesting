@@ -64,7 +64,7 @@ for l in {
   {"iPSL", ""},
   {"KeyWordIO", "master"},
   {"LargeTestSuite", "master"},
-  {"LEPSE", ""},
+  {"LEPSE", "main"},
   {"LibRAS", "master"},
   {"MagLev", ""},
   {"MessagePack", "master"},
