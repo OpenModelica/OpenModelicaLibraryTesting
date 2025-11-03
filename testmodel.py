@@ -5,7 +5,7 @@ import argparse, os, sys, signal, threading, psutil, subprocess, shutil
 from asyncio.subprocess import STDOUT
 import simplejson as json
 from monotonic import monotonic
-from OMPython import FindBestOMCSession, OMCSession, OMCSessionZMQ
+from OMPython import OMCSession, OMCSessionZMQ
 import shared, glob
 
 parser = argparse.ArgumentParser(description='OpenModelica library testing tool helper (single model)')
