@@ -260,7 +260,7 @@ if configs == []:
   print("Error: Expected at least one configuration file to start the library test")
   sys.exit(1)
 
-from OMPython import OMCSession, OMCSessionZMQ
+from OMPython import OMCSessionZMQ, OMCProcessDocker
 
 # Try to make the processes a bit nicer...
 os.environ["GC_MARKERS"]="1"
@@ -276,7 +276,7 @@ if ompython_omhome != "":
   ompython_omc_version=omc.sendExpression('getVersion()')
   os.environ["OPENMODELICAHOME"] = omhome
 else:
-  omc = OMCSessionZMQ(docker=docker, dockerExtraArgs=dockerExtraArgs)
+  omc = OMCProcessDocker(docker=docker, dockerExtraArgs=dockerExtraArgs)
   omhome=omc.sendExpression('getInstallationDirectoryPath()')
   omc_version=omc.sendExpression('getVersion()')
   ompython_omc_version=omc_version

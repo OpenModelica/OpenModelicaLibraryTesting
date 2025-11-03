@@ -53,6 +53,7 @@ jobs:
       - name: Install Python dependencies
         shell: bash
         run: |
+          sed -i '/^juliacall/d' requirements.txt # Remove juliacall to check if it works without
           pip install -r requirements.txt
 
       - name: Run library test
