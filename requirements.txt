@@ -4,6 +4,6 @@ juliacall
 matplotlib
 monotonic
 natsort
-OMPython==4.0
+OMPython==3.6
 psutil
 simplejson
