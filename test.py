@@ -267,7 +267,7 @@ os.environ["GC_MARKERS"]="1"
 
 print("Start OMC version")
 
-if ompython_omhome != "":
+if not docker:
   # Use a different OMC for running OMPython than for running the tests
   omhome = os.environ["OPENMODELICAHOME"]
   omc_version = check_output_log(omc_cmd + ["--version"], stderr=subprocess.STDOUT).decode("ascii").strip()
@@ -276,7 +276,7 @@ if ompython_omhome != "":
   ompython_omc_version=omc.sendExpression('getVersion()')
   os.environ["OPENMODELICAHOME"] = omhome
 else:
-  omc = OMCProcessDocker(docker=docker, dockerExtraArgs=dockerExtraArgs)
+  omc = OMCSessionZMQ(docker=docker, dockerExtraArgs=dockerExtraArgs)
   omhome=omc.sendExpression('getInstallationDirectoryPath()')
   omc_version=omc.sendExpression('getVersion()')
   ompython_omc_version=omc_version
