@@ -11,13 +11,13 @@
       "installTools": true,
       "version": "latest"
     }
-  }
+  },
 
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
   // "forwardPorts": [],
 
   // Use 'postCreateCommand' to run commands after the container is created.
-  // "postCreateCommand": "uname -a",
+  "postCreateCommand": "bash .devcontainer/install.sh && omc .devcontainer/install.mos && pip install -r requirements.txt"
 
   // Configure tool-specific properties.
   // "customizations": {},

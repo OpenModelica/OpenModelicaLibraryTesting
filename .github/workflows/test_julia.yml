@@ -94,8 +94,9 @@ jobs:
 
       - name: Run library test
         shell: bash
+        env:
+          MY_SANITY_CHECK_DIRECTORY: sanityCheck
         run: |
-          export MY_SANITY_CHECK_DIRECTORY=sanityCheck
           python test.py --branch="${{ matrix.omc-version }}" --basemodelica-mtk-import --no-julia-sys-image --noclean --verbose configs/sanityCheck.json
 
       - name: Generate HTML results

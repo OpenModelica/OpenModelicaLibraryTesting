@@ -58,8 +58,9 @@ jobs:
 
       - name: Run library test
         shell: bash
+        env:
+          MY_SANITY_CHECK_DIRECTORY: sanityCheck
         run: |
-          export MY_SANITY_CHECK_DIRECTORY=sanityCheck
           python test.py --branch="${{ matrix.omc-version }}" --noclean --verbose ${{ matrix.msysEnvironment }} configs/sanityCheck.json
 
       - name: Generate HTML results
@@ -74,7 +75,7 @@ jobs:
       - name: Verify that overview.html contains simulation and verification
         shell: bash
         run: |
-          if ! grep -q "<tr><td><a href=\"${{ matrix.omc-version }}/MyLibrary_1.0.0/MyLibrary_1.0.0.html\">${{ matrix.omc-version }}</a></td><td><a>2</a></td><td><a>2</a></td><td><a>2</a></td><td><a>2</a></td><td><a>2</a></td><td><a>2</a></td><td><a>2</a></td><td><a>2</a></td><td><a>2</a></td></tr></table>" overview.html; then
+          if ! grep -q '<tr><td><a href="${{ matrix.omc-version }}/MyLibrary_1.0.0/MyLibrary_1.0.0.html">${{ matrix.omc-version }}</a></td><td><a>2</a></td><td><a>2</a></td><td><a>2</a></td><td><a>2</a></td><td><a>2</a></td><td><a>2</a></td><td><a>2</a></td><td><a>2</a></td><td><a>2</a></td></tr></table>' overview.html; then
             echo "Failed to find 2 simulating and 2 verifying models in overwiew.html:"
             cat overview.html
             exit 1
