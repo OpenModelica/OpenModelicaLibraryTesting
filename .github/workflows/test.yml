@@ -18,7 +18,7 @@ jobs:
         include:
           - os: windows-latest
             omc-version: stable
-            msysEnvironment: --msysEnvironment=mingw64
+            msysEnvironment: --msysEnvironment=ucrt64
       fail-fast: false
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
