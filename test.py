@@ -8,11 +8,10 @@ import sys
 if (sys.version_info < (3, 0)):
   raise Exception("Python2 is no longer supported")
 
-import html, shutil, os, re, glob, time, argparse, sqlite3, datetime, math, platform
+import html, shutil, os, re, glob, time, argparse, sqlite3, datetime, math
 from joblib import Parallel, delayed
 import simplejson as json
 import psutil, subprocess, threading, hashlib
-from subprocess import call
 from monotonic import monotonic
 from omcommon import friendlyStr, multiple_replace
 from natsort import natsorted

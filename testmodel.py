@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import argparse, os, sys, signal, threading, psutil, subprocess, shutil
-from asyncio.subprocess import STDOUT
 import simplejson as json
 from monotonic import monotonic
 from OMPython import OMCSessionZMQ, OMCProcessDocker
@@ -58,7 +57,7 @@ def writeResult():
 
 startJob=monotonic()
 
-def quit_omc(omc):
+def quit_omc(omc: OMCSessionZMQ | None):
   if omc is None:
     return omc
   try:
@@ -72,7 +71,7 @@ def quit_omc(omc):
   omc = None
   return omc
 
-def writeResultAndExit(exitStatus, useOsExit=False, omc=None, omc_new=None):
+def writeResultAndExit(exitStatus: int, useOsExit: bool = False, omc: OMCSessionZMQ | None = None, omc_new: OMCSessionZMQ | None = None):
   writeResult()
   print("Calling exit ...")
   with open(errFile, 'a+') as fp:
@@ -90,7 +89,7 @@ def writeResultAndExit(exitStatus, useOsExit=False, omc=None, omc_new=None):
   else:
     sys.exit(exitStatus)
 
-def sendExpressionTimeout(omc, cmd, timeout):
+def sendExpressionTimeout(omc: OMCSessionZMQ, cmd: str, timeout: int):
   with open(errFile, 'a+') as fp:
     fp.write("%s [Timeout %s]\n" % (cmd, timeout))
   def target(res):
