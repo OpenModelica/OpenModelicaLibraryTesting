@@ -5,7 +5,7 @@ import argparse, os, sys, signal, threading, psutil, subprocess, shutil
 from asyncio.subprocess import STDOUT
 import simplejson as json
 from monotonic import monotonic
-from OMPython import OMCSession, OMCSessionZMQ
+from OMPython import OMCSessionZMQ, OMCProcessDocker
 import shared, glob
 
 parser = argparse.ArgumentParser(description='OpenModelica library testing tool helper (single model)')
@@ -251,7 +251,11 @@ omhome = conf["omhome"]
 os.environ["OPENMODELICAHOME"] = omhome
 
 def createOmcSession():
-  return OMCSession(docker=docker, dockerExtraArgs=dockerExtraArgs, timeout=5) if corbaStyle else OMCSessionZMQ(docker=docker, dockerExtraArgs=dockerExtraArgs, timeout=5)
+  if docker:
+    return OMCProcessDocker(docker=docker, dockerExtraArgs=dockerExtraArgs, timeout=5)
+  else:
+    return OMCSessionZMQ(timeout=5)
+
 def createOmcSessionNew():
   if ompython_omhome != "":
     os.environ["OPENMODELICAHOME"] = ompython_omhome
