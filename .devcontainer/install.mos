@@ -1,0 +1,2 @@
+updatePackageIndex(); getErrorString();
+installPackage(Modelica, version="4.0.0", exactMatch=true); getErrorString();

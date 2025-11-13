@@ -8,11 +8,10 @@ import sys
 if (sys.version_info < (3, 0)):
   raise Exception("Python2 is no longer supported")
 
-import html, shutil, os, re, glob, time, argparse, sqlite3, datetime, math, platform
+import html, shutil, os, re, glob, time, argparse, sqlite3, datetime, math
 from joblib import Parallel, delayed
 import simplejson as json
 import psutil, subprocess, threading, hashlib
-from subprocess import call
 from monotonic import monotonic
 from omcommon import friendlyStr, multiple_replace
 from natsort import natsorted
@@ -260,14 +259,19 @@ if configs == []:
   print("Error: Expected at least one configuration file to start the library test")
   sys.exit(1)
 
-from OMPython import OMCSession, OMCSessionZMQ
+from OMPython import OMCSessionZMQ, OMCProcessDocker
 
 # Try to make the processes a bit nicer...
 os.environ["GC_MARKERS"]="1"
 
 print("Start OMC version")
 
-if ompython_omhome != "":
+if docker:
+  omc = OMCProcessDocker(docker=docker, dockerExtraArgs=dockerExtraArgs)
+  omhome=omc.sendExpression('getInstallationDirectoryPath()')
+  omc_version=omc.sendExpression('getVersion()')
+  ompython_omc_version=omc_version
+elif ompython_omhome != "":
   # Use a different OMC for running OMPython than for running the tests
   omhome = os.environ["OPENMODELICAHOME"]
   omc_version = check_output_log(omc_cmd + ["--version"], stderr=subprocess.STDOUT).decode("ascii").strip()
@@ -276,10 +280,11 @@ if ompython_omhome != "":
   ompython_omc_version=omc.sendExpression('getVersion()')
   os.environ["OPENMODELICAHOME"] = omhome
 else:
-  omc = OMCSessionZMQ(docker=docker, dockerExtraArgs=dockerExtraArgs)
+  omc = OMCSessionZMQ()
   omhome=omc.sendExpression('getInstallationDirectoryPath()')
   omc_version=omc.sendExpression('getVersion()')
   ompython_omc_version=omc_version
+
 ompython_omc_version=ompython_omc_version.replace("OMCompiler","").strip()
 
 def timeSeconds(f):

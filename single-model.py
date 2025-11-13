@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys, argparse
-import simplejson as json
+import argparse
 import shared
 
 parser = argparse.ArgumentParser(description='OpenModelica model testing report generation tool')
@@ -21,8 +20,7 @@ entryhead = "<tr><th>Branch</th><th>Total</th><th>Frontend</th><th>Backend</th><
 
 libs = {}
 
-import cgi, sqlite3, time, datetime
-from omcommon import friendlyStr, multiple_replace
+import sqlite3, datetime
 
 conn = sqlite3.connect('sqlite3.db')
 cursor = conn.cursor()

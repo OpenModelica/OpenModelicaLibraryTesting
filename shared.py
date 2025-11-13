@@ -74,6 +74,9 @@ def getReferenceFileName(conf):
       else:
         modelName += "."+conf["referenceFileNameExtraName"]
     referenceFile = conf["referenceFiles"]+"/"+modelName.replace(".",conf["referenceFileNameDelimiter"])+(conf.get("referenceFinalDot") or ".")+conf["referenceFileExtension"]
+    if os.path.exists(referenceFile):
+      referenceFile = os.path.abspath(referenceFile)
+
     if not os.path.exists(referenceFile) and not os.path.isdir(referenceFile):
       if conf.get("allReferenceFilesExist"):
         raise Exception("Missing reference file %s for config %s" % (referenceFile,conf))
@@ -105,5 +108,3 @@ def isFMPy(fmisimulator):
     return 'fmpy' in fmisimulator
   else:
     return False
-
-
