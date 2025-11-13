@@ -728,7 +728,7 @@ for (library,conf) in configs:
   if conf.get("fmi") and fmisimulatorversion:
     conf["libraryVersionRevision"] = conf["libraryVersionRevision"] + " " + fmisimulatorversion.decode("ascii")
     conf["libraryLastChange"] = conf["libraryLastChange"] + " " + fmisimulatorversion.decode("ascii")
-  res=omc.sendExpression('{c for c guard isExperiment(c) and not regexBool(typeNameString(x), "^Modelica_Synchronous\\\\.WorkInProgress") in getClassNames(%s, recursive=true)}' % library)
+  res=omc.sendExpression('{c for c guard isExperiment(c) and not regexBool(typeNameString(x), "^Modelica_Synchronous\\.WorkInProgress") in getClassNames(%s, recursive=true)}' % library)
   if conf.get("ignoreModelPrefix"):
     if isinstance(conf["ignoreModelPrefix"], list):
       prefixes = conf["ignoreModelPrefix"]
