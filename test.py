@@ -259,7 +259,7 @@ if configs == []:
   print("Error: Expected at least one configuration file to start the library test")
   sys.exit(1)
 
-from OMPython import OMCSessionZMQ, OMCProcessDocker
+from OMPython import OMCSessionZMQ, OMCProcessDocker, OMCSessionException
 
 # Try to make the processes a bit nicer...
 os.environ["GC_MARKERS"]="1"
@@ -663,7 +663,9 @@ for (library,conf) in configs:
         raise Exception("Library %s has both libraryVersionLatestInPackageManager:true and libraryVersionExactMatch:true! Make up your mind." % libName)
       exactMatch=', requireExactVersion=true'
 
-    if not omc.sendExpression('loadModel(%s,%s%s)' % (lib,versions,exactMatch)):
+    try:
+      omc.sendExpression('loadModel(%s,%s%s)' % (lib,versions,exactMatch))
+    except OMCSessionException:
       try:
         print("Failed to load library %s %s: %s" % (library,versions,omc.sendExpression('OpenModelica.Scripting.getErrorString()')))
       except:
@@ -726,7 +728,7 @@ for (library,conf) in configs:
   if conf.get("fmi") and fmisimulatorversion:
     conf["libraryVersionRevision"] = conf["libraryVersionRevision"] + " " + fmisimulatorversion.decode("ascii")
     conf["libraryLastChange"] = conf["libraryLastChange"] + " " + fmisimulatorversion.decode("ascii")
-  res=omc.sendExpression('{c for c guard isExperiment(c) and not regexBool(typeNameString(x), "^Modelica_Synchronous\\.WorkInProgress") in getClassNames(%s, recursive=true)}' % library)
+  res=omc.sendExpression('{c for c guard isExperiment(c) and not regexBool(typeNameString(x), "^Modelica_Synchronous\\\\.WorkInProgress") in getClassNames(%s, recursive=true)}' % library)
   if conf.get("ignoreModelPrefix"):
     if isinstance(conf["ignoreModelPrefix"], list):
       prefixes = conf["ignoreModelPrefix"]
