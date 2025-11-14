@@ -13,7 +13,6 @@ import subprocess
 from multiprocessing import Pool
 import time
 
-
 parser = argparse.ArgumentParser(description='OpenModelica library testing tool')
 parser.add_argument('libdir', nargs=1)
 parser.add_argument('--diff', action="store_true")
@@ -32,17 +31,6 @@ except:
 os.mkdir("converted-libraries")
 os.mkdir("converted-libraries/.openmodelica")
 os.mkdir("converted-libraries/.openmodelica/libraries")
-
-def omcAssert(omc: OMCSessionZMQ, cmd: str, extra: str = ""):
-  res = omc.sendExpression(cmd)
-  if not res:
-    raise Exception(cmd + "\n" + extra + "\n" + (omc.sendExpression("getErrorString()") or ""))
-
-def omcSendExpression(omc: OMCSessionZMQ, cmd: str, extra: str = ""):
-  try:
-    return omc.sendExpression(cmd)
-  except pyparsing.ParseException as e:
-    raise Exception(str(e) + "\n" + cmd + "\n" + extra + "\n" + (omc.sendExpression("getErrorString()") or ""))
 
 mslPath = "%s/Modelica 4.0.0+maint.om/" % libdir
 with open("%s/openmodelica.metadata.json" % mslPath) as f:
@@ -84,7 +72,7 @@ def convertPackage(p):
   print("Start working on %s" % libnameOnFile)
   omc = OMCSessionZMQ()
   libnameOnFileFullPath = "converted-libraries/.openmodelica/libraries/%s/package.mo" % libnameOnFile
-  omcAssert(omc, 'loadFile("%s", uses=false)' % libnameOnFileFullPath)
+  omc.sendExpression('loadFile("%s", uses=false)' % libnameOnFileFullPath)
   errString = omc.sendExpression("getErrorString()")
   if errString:
     print(errString)
@@ -93,12 +81,12 @@ def convertPackage(p):
     raise Exception("Expected to have loaded %s but got %s" % (libnameOnFileFullPath, loadedFilePath))
   gcProfStatsBeforeConversion = omc.sendExpression("GC_get_prof_stats()")
   timeBeforeConvert = time.time()
-  omcAssert(omc, 'runConversionScript(%s, "%s")' % (libname, conversionScript))
+  omc.sendExpression('runConversionScript(%s, "%s")' % (libname, conversionScript))
   print("runConversionScript(%s, %s) OK" % (libnameOnFile, conversionScript))
   uses = data["uses"]
   for (n,v) in data["uses"].items():
     if n in ["Modelica", "ModelicaServices", "Complex"]:
-      omcAssert(omc, 'addClassAnnotation(%s, annotate=$annotation(uses(%s(version="4.0.0"))))' % (libname, n))
+      omc.sendExpression('addClassAnnotation(%s, annotate=$annotation(uses(%s(version="4.0.0"))))' % (libname, n))
       data["uses"][n] = "4.0.0"
   names = omc.sendExpression('getClassNames(%s, sort=true, recursive=true)' % libname)
   names = list(names)
@@ -150,7 +138,7 @@ def convertPackage(p):
           print(errStr)
         raise Exception('--allowErrorsInDiff is not active:\necho(false);before:=readFile("%s");\nafter:=readFile("%s");echo(true);\ndiffModelicaFileListings(before, after, OpenModelica.Scripting.DiffFormat.plain, failOnSemanticsChange=true);\ngetErrorString();' % (oldFile, newFile))
     else:
-      omcAssert(omc, 'writeFile("%s", res)' % (newFile))
+      omc.sendExpression('writeFile("%s", res)' % (newFile))
     isDiff = before != res
     if before != res:
       nDiff += 1
