@@ -1,14 +1,14 @@
 using ModelingToolkit
 
 """
-    dump_parsed_model([io::IO=stdout], model::ModelingToolkit.AbstractODESystem)
+    dump_parsed_model([io::IO=stdout], model::ModelingToolkit.AbstractSystem)
 
 Dumps equations, unknowns and parameters of `model`.
 If `io` is not supplied, prints to the default output stream `stdout`.
 """
 function dump_parsed_model(
   io::IO=stdout,
-  model::Union{ModelingToolkit.AbstractODESystem,Nothing}=nothing
+  model::Union{ModelingToolkit.AbstractSystem, Nothing}=nothing
 )
 
   if isnothing(model)
