@@ -665,11 +665,10 @@ for (library,conf) in configs:
 
     try:
       omc.sendExpression('loadModel(%s,%s%s)' % (lib,versions,exactMatch))
-    except OMCSessionException:
-      try:
-        print("Failed to load library %s %s: %s" % (library,versions,omc.sendExpression('OpenModelica.Scripting.getErrorString()')))
-      except:
-        print("Failed to load library %s %s. OpenModelica.Scripting.getErrorString() failed..." % (library,conf["libraryVersion"]))
+    except OMCSessionException as e:
+        print("Failed to load library %s %s" % (library,versions))
+        print(e)
+
   # adrpo: do not sort the top level names as sometimes that loads a bad MSL version
   # conf["loadFiles"] = sorted(omc.sendExpression("{getSourceFile(cl) for cl in getClassNames()}"))
   conf["loadFiles"] = omc.sendExpression("{getSourceFile(cl) for cl in getClassNames()}")
@@ -728,7 +727,13 @@ for (library,conf) in configs:
   if conf.get("fmi") and fmisimulatorversion:
     conf["libraryVersionRevision"] = conf["libraryVersionRevision"] + " " + fmisimulatorversion.decode("ascii")
     conf["libraryLastChange"] = conf["libraryLastChange"] + " " + fmisimulatorversion.decode("ascii")
-  res=omc.sendExpression('{c for c guard isExperiment(c) and not regexBool(typeNameString(x), "^Modelica_Synchronous\\.WorkInProgress") in getClassNames(%s, recursive=true)}' % library)
+  res = []
+  try:
+    res = omc.sendExpression('{c for c guard isExperiment(c) and not regexBool(typeNameString(x), "^Modelica_Synchronous\\\\.WorkInProgress") in getClassNames(%s, recursive=true)}' % library)
+  except OMCSessionException as e:
+    print("Failed to get class names of library %s", library)
+    print(e)
+
   if conf.get("ignoreModelPrefix"):
     if isinstance(conf["ignoreModelPrefix"], list):
       prefixes = conf["ignoreModelPrefix"]
