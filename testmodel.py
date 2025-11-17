@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import argparse, os, sys, signal, threading, psutil, subprocess, shutil
+from asyncio.subprocess import STDOUT
 import simplejson as json
 from monotonic import monotonic
-from OMPython import OMCSessionZMQ, OMCProcessDocker
+from OMPython import FindBestOMCSession, OMCSession, OMCSessionZMQ
 import shared, glob
 
 parser = argparse.ArgumentParser(description='OpenModelica library testing tool helper (single model)')
@@ -57,7 +58,7 @@ def writeResult():
 
 startJob=monotonic()
 
-def quit_omc(omc: OMCSessionZMQ | None):
+def quit_omc(omc):
   if omc is None:
     return omc
   try:
@@ -71,7 +72,7 @@ def quit_omc(omc: OMCSessionZMQ | None):
   omc = None
   return omc
 
-def writeResultAndExit(exitStatus: int, useOsExit: bool = False, omc: OMCSessionZMQ | None = None, omc_new: OMCSessionZMQ | None = None):
+def writeResultAndExit(exitStatus, useOsExit=False, omc=None, omc_new=None):
   writeResult()
   print("Calling exit ...")
   with open(errFile, 'a+') as fp:
@@ -89,7 +90,7 @@ def writeResultAndExit(exitStatus: int, useOsExit: bool = False, omc: OMCSession
   else:
     sys.exit(exitStatus)
 
-def sendExpressionTimeout(omc: OMCSessionZMQ, cmd: str, timeout: int):
+def sendExpressionTimeout(omc, cmd, timeout):
   with open(errFile, 'a+') as fp:
     fp.write("%s [Timeout %s]\n" % (cmd, timeout))
   def target(res):
@@ -250,11 +251,7 @@ omhome = conf["omhome"]
 os.environ["OPENMODELICAHOME"] = omhome
 
 def createOmcSession():
-  if docker:
-    return OMCProcessDocker(docker=docker, dockerExtraArgs=dockerExtraArgs, timeout=5)
-  else:
-    return OMCSessionZMQ(timeout=5)
-
+  return OMCSession(docker=docker, dockerExtraArgs=dockerExtraArgs, timeout=5) if corbaStyle else OMCSessionZMQ(docker=docker, dockerExtraArgs=dockerExtraArgs, timeout=5)
 def createOmcSessionNew():
   if ompython_omhome != "":
     os.environ["OPENMODELICAHOME"] = ompython_omhome
