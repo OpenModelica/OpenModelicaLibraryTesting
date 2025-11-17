@@ -3,7 +3,7 @@ module TestBaseModelica
 import BaseModelica
 import CSV
 import DataFrames
-import DifferentialEquations
+import OrdinaryDiffEqDefault
 
 include("dump.jl")
 include("settings.jl")

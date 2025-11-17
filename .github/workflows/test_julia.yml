@@ -45,7 +45,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        julia-version: [1.11]
+        julia-version: [1.12]
         omc-version: [stable]
         python-version: ['3.10']
       fail-fast: false
