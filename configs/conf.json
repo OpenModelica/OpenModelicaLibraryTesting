@@ -552,11 +552,12 @@
     ]
   },
   {
-    "library":"TILMedia_AddOn_Tests ",
+    "library":"TILMedia_AddOn_Tests",
     "libraryVersion":"main",
     "libraryVersionNameForTests":"",
     "extraLibraries":[
-      ["TILMedia", "ClaRa", "default"]
+      ["TILMedia", "default"],
+      ["ClaRa", "default"]
     ]
   },
   {
