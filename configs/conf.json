@@ -552,6 +552,15 @@
     ]
   },
   {
+    "library":"TILMedia_AddOn_Tests",
+    "libraryVersion":"main",
+    "libraryVersionNameForTests":"",
+    "extraLibraries":[
+      ["TILMedia", "default"],
+      ["ClaRa", "default"]
+    ]
+  },
+  {
     "library":"ThermoPower",
     "optlevel":"-Os -march=native"
   },

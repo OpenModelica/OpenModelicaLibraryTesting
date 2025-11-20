@@ -112,6 +112,7 @@ for l in {
   {"ThermoPower", "master"},
   {"ThermoSysPro", "master"},
   {"TILMedia", "main"},
+  {"TILMedia_AddOn_Tests", "main"},
   {"TransiEnt", "master"},
   {"VehicleInterfaces", "master"},
   {"URDFModelica", "main"}
