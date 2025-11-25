@@ -1,10 +1,12 @@
+//! base 0.1.0
 package 'FirstOrder'
   model 'FirstOrder'
     parameter Real 'x0' = 0 "Initial value for 'x'";
+    parameter Real 'a' = 1.1 "Parameter to multiply with 'x'";
     Real 'x' "Real variable called 'x'";
   initial equation
     'x' = 'x0' "Set initial value of 'x' to 'x0'";
   equation
-    der('x') = 1.0 - 'x';
+    der('x') = 1.0 - 'a' * 'x';
   end 'FirstOrder';
 end 'FirstOrder';

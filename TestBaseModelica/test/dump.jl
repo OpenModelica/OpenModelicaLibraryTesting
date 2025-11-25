@@ -17,7 +17,7 @@ function test_first_order_dump()
     end
   end
 
-  @mtkbuild firstOrder = FirstOrder()
+  @mtkcompile firstOrder = FirstOrder()
 
   io = IOBuffer()
   TestBaseModelica.dump_parsed_model(io, firstOrder)

@@ -8,12 +8,16 @@ BaseModelica = "a17d5099-185d-4ff5-b5d3-51aa4569e56d"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
-OrdinaryDiffEqDefault = "50262376-6c5a-4cf5-baba-aaf4f84d72d7"
+OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
+SciMLBase = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
+
+[sources]
+BaseModelica = {rev = "main", url = "https://github.com/SciML/BaseModelica.jl.git"}
 
 [compat]
-DifferentialEquations = "7"
 ModelingToolkit = "10"
-OrdinaryDiffEqDefault = "1.8.0"
+OrdinaryDiffEq = "6"
+SciMLBase = "2"
 
 [extras]
 SafeTestsets = "1bc83da4-3b8d-516f-aca4-4fe02f6d838f"

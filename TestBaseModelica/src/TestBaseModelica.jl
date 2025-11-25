@@ -3,7 +3,8 @@ module TestBaseModelica
 import BaseModelica
 import CSV
 import DataFrames
-import OrdinaryDiffEqDefault
+import SciMLBase
+import OrdinaryDiffEq
 
 include("dump.jl")
 include("settings.jl")
@@ -37,30 +38,31 @@ function run_test(base_modelica_file::AbstractString; settings::TestSettings)
   # Create ODEProblem
   ode_problem = nothing
   time_ODEProblem = @elapsed begin
-    ode_problem = DifferentialEquations.ODEProblem(parsed_model)
+    ode_problem = SciMLBase.ODEProblem(
+      parsed_model,
+      [],
+      (settings.solver_settings.start_time, settings.solver_settings.stop_time))
   end
   open(settings.time_measurements_file, "a") do file
-    write(file, "DifferentialEquations.ODEProblem, $(time_ODEProblem)\n")
+    write(file, "SciMLBase.ODEProblem, $(time_ODEProblem)\n")
   end
 
   # Simulate
   ode_solution = nothing
   time_solve = @elapsed begin
     if isnothing(settings.solver_settings.solver)
-      ode_solution = DifferentialEquations.solve(
+      ode_solution = OrdinaryDiffEq.solve(
         ode_problem,
-        tspan = (settings.solver_settings.start_time, settings.solver_settings.stop_time),
         saveat = settings.solver_settings.interval)
     else
-      ode_solution = DifferentialEquations.solve(
+      ode_solution = OrdinaryDiffEq.solve(
         ode_problem,
         settings.solver_settings.solver,
-        tspan = (settings.solver_settings.start_time, settings.solver_settings.stop_time),
         saveat = settings.solver_settings.interval)
     end
   end
   open(settings.time_measurements_file, "a") do file
-    write(file, "DifferentialEquations.solve, $(time_solve)\n")
+    write(file, "OrdinaryDiffEq.solve, $(time_solve)\n")
   end
 
   # Save simulation result
