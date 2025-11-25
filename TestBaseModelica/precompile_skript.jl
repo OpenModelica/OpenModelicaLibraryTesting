@@ -4,7 +4,7 @@ using TestBaseModelica
 examples = [
   (splitext(basename(file))[1], file) for file in filter(
     f -> endswith(f, ".bmo"),
-    readdir(joinpath("examples"), join=true)
+    readdir(joinpath(@__DIR__, "examples"), join=true)
   )
 ]
 
