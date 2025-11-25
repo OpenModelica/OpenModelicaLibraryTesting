@@ -1,14 +1,23 @@
 name = "TestBaseModelica"
 uuid = "bba3f925-4bbc-4b14-b723-9b95a7c9c63c"
-authors = ["AnHeuermann <38031952+AnHeuermann@users.noreply.github.com>"]
 version = "0.1.0"
+authors = ["AnHeuermann <38031952+AnHeuermann@users.noreply.github.com>"]
 
 [deps]
 BaseModelica = "a17d5099-185d-4ff5-b5d3-51aa4569e56d"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
-DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
 ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
+OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
+SciMLBase = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
+
+[sources]
+BaseModelica = {rev = "main", url = "https://github.com/SciML/BaseModelica.jl.git"}
+
+[compat]
+ModelingToolkit = "10"
+OrdinaryDiffEq = "6"
+SciMLBase = "2"
 
 [extras]
 SafeTestsets = "1bc83da4-3b8d-516f-aca4-4fe02f6d838f"

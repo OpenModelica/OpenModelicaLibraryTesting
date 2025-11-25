@@ -1,9 +1,5 @@
-using DifferentialEquations
-
 """
 Solver settings to solve ODE system.
-
-If `solver` is `nothing` DifferentialEquations.jl will select a default solver.
 """
 struct SolverSettings
   solver
