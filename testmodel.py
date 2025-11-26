@@ -549,9 +549,17 @@ try:
         fp.write("test_settings = TestSettings(modelname=\"%s\", solver_settings=solver_settings)\n" % (conf["fileName"]))
         fp.write("run_test(\"%s.mo\"; settings = test_settings)\n" % (conf["modelName"]))
 
-      cmd = "julia"
+      # Get correct julia executable / system image
       if conf["julia-system-image"] != "":
-        cmd += " --sysimage=%s" % conf["julia-system-image"]
+        cmd = "julia --sysimage=%s" % conf["julia-system-image"]
+      else:
+        try:
+          from juliacall import CONFIG
+          cmd = CONFIG["exepath"]
+        except (ImportError, Exception) as e:
+          print(e)
+          cmd = "julia"  # Fallback to system Julia
+
       cmd += " %s" % juliaCallFile
       with open(simFile,"w") as fp:
         with open(juliaCallFile, "r") as juliaFile:

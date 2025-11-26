@@ -718,7 +718,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
     sh """
     julia --project=TestBaseModelica -e 'import Pkg; Pkg.build(verbose=true); Pkg.precompile()'
     """
-    JULIA_TESTTING_FLAG="--basemodelica-mtk-import"
+    JULIA_TESTTING_FLAG="--basemodelica-mtk-import --no-julia-sys-image"
   }
 
   OMCPATH = "${omcompiler ? '../' : './'}OMCompiler"
