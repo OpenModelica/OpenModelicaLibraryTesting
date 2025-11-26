@@ -1,7 +1,6 @@
 import monotonic
 import os.path
 import shutil
-import subprocess
 import warnings
 
 from omcommon import friendlyStr
@@ -35,8 +34,8 @@ def precompile_testbaesmodelica(systemImage: os.PathLike | None = None) -> None:
   """
 
   start = monotonic.monotonic()
-  print("Updating Julia package TestBaseModelica")
 
+  print("Updating Julia package TestBaseModelica.jl")
   jl.seval('import Pkg;'
            'Pkg.activate();'
            'Pkg.add("PackageCompiler");'
@@ -46,6 +45,7 @@ def precompile_testbaesmodelica(systemImage: os.PathLike | None = None) -> None:
            'Pkg.status();')
 
   if systemImage == None:
+    print("Developing TestBaseModelica.jl")
     jl.seval('Pkg.activate();'
              'Pkg.develop(path="TestBaseModelica");'
              'Pkg.precompile("TestBaseModelica")')
