@@ -362,7 +362,7 @@ if extraflags:
   defaultCustomCommands += [extraflags]
 
 if basemodelica_mtk_import:
-  defaultCustomCommands += ['setCommandLineOptions("--baseModelica --frontendInline -d=evaluateAllParameters");']
+  defaultCustomCommands += ['setCommandLineOptions("--baseModelica --frontendInline  --baseModelicaOptions=scalarize -d=evaluateAllParameters");']
 
 def testHelloWorld(cmd):
   with open("HelloWorld.mos") as fin:
