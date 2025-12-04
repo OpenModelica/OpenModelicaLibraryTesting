@@ -55,7 +55,7 @@ for l in {
   {"FluxTubesExtension","main"},
   {"Greenhouses", "master"},
   {"HanserModelica", "master"},
-  {"HelmholtzMedia", "master"},
+  {"HelmholtzMedia", "main"},
   {"IBPSA", "master"},
   {"IdealizedContact", "master"},
   {"IDEAS", ""},
