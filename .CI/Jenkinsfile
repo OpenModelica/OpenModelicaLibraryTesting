@@ -353,7 +353,7 @@ pipeline {
           expression { params.gbode }
         }
         steps {
-          runRegressiontest('master', 'gbode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '-s gbode', false, false)
+          runRegressiontest('master', 'gbode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '-s gbode -gbnls=internal -gberr=embedded -gbm=radauIIA3', false, false)
         }
       }
       stage('generateSymbolicJacobian') {
