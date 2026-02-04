@@ -32,6 +32,7 @@ for l in {
   {"BuildSysPro", "master"},
   {"BusinessSimulation", ""},
   {"BusinessSimulation", "main"},
+  {"Chemical", "1.4.1"},
   {"Chemical", "master"},
   {"ClaRa", ""},
   {"ClaRa", "main"},
