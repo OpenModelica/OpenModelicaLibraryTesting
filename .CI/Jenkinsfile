@@ -34,6 +34,7 @@ pipeline {
     booleanParam(name: 'conversion_script', defaultValue: false, description: 'master branch with conversion script from MSL 3 to 4 (ryzen-5950x-1). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'cvode', defaultValue: false, description: 'master branch, with -d=newInst and -s cvode (ryzen-5950x-2). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'gbode', defaultValue: false, description: 'master branch, with -d=newInst and -s gbode (ryzen-5950x-2). This is an experimental job that does not run on a fixed schedule.')
+    booleanParam(name: 'ida', defaultValue: false, description: 'master branch, with -d=newInst and -s ida (ryzen-5950x-2). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'generateSymbolicJacobian', defaultValue: false, description: 'master branch, with --generateSymbolicJacobian (ryzen-5950x-1). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'heavy_tests', defaultValue: false, description: 'master branch, runs one test at a time. That is, no parallel launching of tests. omc will use multiple threads for each test (-n=1 is not set unlike the other regression tests.), (ryzen-5950x-1). This is an experimental job that does not run on a fixed schedule.')
   }
@@ -356,6 +357,22 @@ pipeline {
           runRegressiontest('master', 'gbode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '-s gbode -gbnls=internal -gberr=embedded -gbm=radauIIA3', false, false)
         }
       }
+      stage('ida') {
+        agent {
+          node {
+            label 'ryzen-5950x-2-1'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.ida }
+        }
+        steps {
+          runRegressiontest('master', 'ida', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '-s ida', false, false)
+        }
+      }
       stage('generateSymbolicJacobian') {
         agent {
           node {
@@ -512,7 +529,7 @@ pipeline {
         }
         when {
           beforeAgent true
-          expression { params.fmi_v1_24 || params.fmi_v1_25 || params.fmi_master || params.fmpy_fmi_v1_24 || params.fmpy_fmi_v1_25 || params.fmpy_fmi_master || params.newInst_daeMode || params.oldInst || params.report_ryzen_5950x_2 || params.cpp || params.cvode || params.gbode}
+          expression { params.fmi_v1_24 || params.fmi_v1_25 || params.fmi_master || params.fmpy_fmi_v1_24 || params.fmpy_fmi_v1_25 || params.fmpy_fmi_master || params.newInst_daeMode || params.oldInst || params.report_ryzen_5950x_2 || params.cpp || params.cvode || params.gbode || params.ida}
         }
         environment {
           GITBRANCHES_FMI = 'maintenance/v1.12-fmi maintenance/v1.13-fmi maintenance/v1.14-fmi maintenance/v1.16-fmi maintenance/v1.17-fmi maintenance/v1.18-fmi maintenance/v1.19-fmi maintenance/v1.20-fmi maintenance/v1.21-fmi maintenance/v1.22-fmi maintenance/v1.23-fmi maintenance/v1.24-fmi maintenance/v1.25-fmi maintenance/v1.22-fmi-fmpy maintenance/v1.23-fmi-fmpy maintenance/v1.24-fmi-fmpy maintenance/v1.25-fmi-fmpy master-fmi master-fmi-fmpy'
@@ -537,8 +554,8 @@ pipeline {
           sh 'wget -q https://libraries.openmodelica.org/sqlite3/ripper2/sqlite3.db'
           sh './clean-empty-omcversion-dates.py'
 
-          sh "./all-reports.py --email --omcgitdir=OpenModelica ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_CPP} gbode cvode"
-          sh "./all-plots.py ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_CPP} gbode cvode"
+          sh "./all-reports.py --email --omcgitdir=OpenModelica ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_CPP} gbode cvode ida"
+          sh "./all-plots.py ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_CPP} gbode cvode ida"
 
           sh "./report.py --branches='${env.GITBRANCHES_NEWINST}' configs/conf.json"
           sh "mv overview.html overview-oldinst.html"
@@ -572,6 +589,9 @@ pipeline {
 
           sh "./report.py --branches='gbode' configs/conf.json"
           sh "mv overview.html overview-gbode.html"
+
+          sh "./report.py --branches='ida' configs/conf.json"
+          sh "mv overview.html overview-ida.html"
 
           sh "./report.py --branches='${env.GITBRANCHES_CPP}' configs/conf.json"
           sh "mv overview.html overview-c++.html"
