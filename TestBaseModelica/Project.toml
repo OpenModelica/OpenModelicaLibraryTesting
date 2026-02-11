@@ -15,7 +15,7 @@ SciMLBase = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
 BaseModelica = {rev = "main", url = "https://github.com/SciML/BaseModelica.jl.git"}
 
 [compat]
-ModelingToolkit = "10"
+ModelingToolkit = "11"
 OrdinaryDiffEq = "6"
 SciMLBase = "2"
 
