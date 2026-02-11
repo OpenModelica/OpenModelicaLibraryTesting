@@ -21,6 +21,7 @@ pipeline {
 
     booleanParam(name: 'newInst_daeMode', defaultValue: false, description: 'master branch, --daeMode with -d=newInst (ryzen-5950x-2)')
     booleanParam(name: 'newInst_newBackend', defaultValue: false, description: 'master branch, -d=newInst --newBackend, (ryzen-5950x-1)')
+    booleanParam(name: 'newBackend_daeMode', defaultValue: false, description: 'master branch, --newBackend --daeMode with -d=newInst (ryzen-5950x-2). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'oldInst', defaultValue: false, description: 'master branch, with -d=nonewInst (ryzen-5950x-2)')
 
     booleanParam(name: 'cpp_v1_24', defaultValue: false, description: 'maintenance/v1.24 branch, with --simCodeTarget=Cpp (ryzen-5950x-2).')
@@ -309,6 +310,22 @@ pipeline {
           runRegressiontest('master', 'newInst-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --daeMode=true")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
         }
       }
+      stage('newBackend-daeMode') {
+        agent {
+          node {
+            label 'ryzen-5950x-2-1'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.newBackend_daeMode }
+        }
+        steps {
+          runRegressiontest('master', 'newBackend-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --newBackend --daeMode=true")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+        }
+      }
       stage('oldInst') {
         agent {
           node {
@@ -529,12 +546,13 @@ pipeline {
         }
         when {
           beforeAgent true
-          expression { params.fmi_v1_24 || params.fmi_v1_25 || params.fmi_master || params.fmpy_fmi_v1_24 || params.fmpy_fmi_v1_25 || params.fmpy_fmi_master || params.newInst_daeMode || params.oldInst || params.report_ryzen_5950x_2 || params.cpp || params.cvode || params.gbode || params.ida}
+          expression { params.fmi_v1_24 || params.fmi_v1_25 || params.fmi_master || params.fmpy_fmi_v1_24 || params.fmpy_fmi_v1_25 || params.fmpy_fmi_master || params.newInst_daeMode || params.newBackend_daeMode || params.oldInst || params.report_ryzen_5950x_2 || params.cpp || params.cvode || params.gbode || params.ida}
         }
         environment {
           GITBRANCHES_FMI = 'maintenance/v1.12-fmi maintenance/v1.13-fmi maintenance/v1.14-fmi maintenance/v1.16-fmi maintenance/v1.17-fmi maintenance/v1.18-fmi maintenance/v1.19-fmi maintenance/v1.20-fmi maintenance/v1.21-fmi maintenance/v1.22-fmi maintenance/v1.23-fmi maintenance/v1.24-fmi maintenance/v1.25-fmi maintenance/v1.22-fmi-fmpy maintenance/v1.23-fmi-fmpy maintenance/v1.24-fmi-fmpy maintenance/v1.25-fmi-fmpy master-fmi master-fmi-fmpy'
           GITBRANCHES_NEWINST = 'oldInst'
           GITBRANCHES_DAE = 'newInst-daeMode'
+          GITBRANCHES_NEWBACKEND_DAE = 'newBackend-daeMode'
           GITBRANCHES_CPP = 'v1.19-cpp v1.20-cpp v1.21-cpp v1.22-cpp v1.23-cpp v1.24-cpp v1.25-cpp cpp'
           PYTHONIOENCODING = 'utf-8'
           IDA_EMAIL = credentials('IDA email')
@@ -554,8 +572,8 @@ pipeline {
           sh 'wget -q https://libraries.openmodelica.org/sqlite3/ripper2/sqlite3.db'
           sh './clean-empty-omcversion-dates.py'
 
-          sh "./all-reports.py --email --omcgitdir=OpenModelica ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_CPP} gbode cvode ida"
-          sh "./all-plots.py ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_CPP} gbode cvode ida"
+          sh "./all-reports.py --email --omcgitdir=OpenModelica ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} gbode cvode ida"
+          sh "./all-plots.py ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} gbode cvode ida"
 
           sh "./report.py --branches='${env.GITBRANCHES_NEWINST}' configs/conf.json"
           sh "mv overview.html overview-oldinst.html"
@@ -583,6 +601,15 @@ pipeline {
           sh "mv overview.html overview-old-libs-dae.html"
           sh "./report.py --branches='${env.GITBRANCHES_DAE}' configs/conf-nonstandard.json"
           sh "mv overview.html overview-nonstandard-libs-dae.html"
+
+          sh "./report.py --branches='${env.GITBRANCHES_NEWBACKEND_DAE}' configs/conf.json"
+          sh "mv overview.html overview-newbackend-dae.html"
+          sh "./report.py --branches='${env.GITBRANCHES_NEWBACKEND_DAE}' configs/conf.json configs/conf-old.json configs/conf-nonstandard.json"
+          sh "mv overview.html overview-combined-newbackend-dae.html"
+          sh "./report.py --branches='${env.GITBRANCHES_NEWBACKEND_DAE}' configs/conf-old.json"
+          sh "mv overview.html overview-old-libs-newbackend-dae.html"
+          sh "./report.py --branches='${env.GITBRANCHES_NEWBACKEND_DAE}' configs/conf-nonstandard.json"
+          sh "mv overview.html overview-nonstandard-libs-newbackend-dae.html"
 
           sh "./report.py --branches='cvode' configs/conf.json"
           sh "mv overview.html overview-cvode.html"
