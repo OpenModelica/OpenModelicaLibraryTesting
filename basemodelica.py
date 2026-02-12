@@ -1,5 +1,6 @@
 import monotonic
 import os.path
+import os
 import shutil
 import warnings
 
@@ -38,6 +39,11 @@ def precompile_testbaesmodelica(systemImage: os.PathLike | None = None) -> None:
   start = monotonic.monotonic()
 
   print("Updating Julia package TestBaseModelica.jl")
+  try:
+    os.remove("TestBaseModelica/Manifest.toml")
+  except FileNotFoundError:
+    pass
+
   jl.seval('import Pkg;'
            'Pkg.activate();'
            'Pkg.add("PackageCompiler");'
