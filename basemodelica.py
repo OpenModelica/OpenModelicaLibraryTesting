@@ -1,5 +1,6 @@
 import monotonic
 import os.path
+import os
 import shutil
 import warnings
 
@@ -21,7 +22,9 @@ def print_julia_version() -> None:
   julia = shutil.which("julia")
   print("Julia executable: %s" %(julia))
 
-  jl.seval("using InteractiveUtils; versioninfo()")
+  # Jenkins might redirect STDOUT and Julia prints aren't displayed
+  versioninfo = jl.seval("using InteractiveUtils; buf = IOBuffer(); versioninfo(buf); String(take!(buf))")
+  print(versioninfo)
 
 def precompile_testbaesmodelica(systemImage: os.PathLike | None = None) -> None:
   """Update and pre-compile TestBaseModelica to `sysimage`.
@@ -36,6 +39,11 @@ def precompile_testbaesmodelica(systemImage: os.PathLike | None = None) -> None:
   start = monotonic.monotonic()
 
   print("Updating Julia package TestBaseModelica.jl")
+  try:
+    os.remove("TestBaseModelica/Manifest.toml")
+  except FileNotFoundError:
+    pass
+
   jl.seval('import Pkg;'
            'Pkg.activate();'
            'Pkg.add("PackageCompiler");'
