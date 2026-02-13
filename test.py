@@ -19,7 +19,6 @@ from natsort import natsorted
 from shared import readConfig, getReferenceFileName, simulationAcceptsFlag, isFMPy
 from platform import processor
 import shared
-import basemodelica
 
 import signal
 
@@ -320,6 +319,9 @@ sys.stdout.flush()
 # Print Julia versions for BaseModelica.jl import
 julia_sysimage = os.path.abspath("TestBaseModelica.so") if julia_sys_image else None
 if basemodelica_mtk_import:
+  # Only import basemodelica if needed.
+  # Python package juliacall will install Julia and can fail with unsatisfiable requirments.
+  import basemodelica
   basemodelica.print_julia_version()
   basemodelica.precompile_testbaesmodelica(julia_sysimage)
 
