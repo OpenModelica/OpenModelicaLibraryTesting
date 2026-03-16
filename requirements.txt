@@ -1,6 +1,5 @@
 datetime
 joblib
-juliacall
 matplotlib
 monotonic
 natsort

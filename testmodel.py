@@ -400,8 +400,6 @@ total_before = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerToc
 start=monotonic()
 if conf.get("fmi"):
   cmd='"" <> buildModelFMU(%s,fileNamePrefix="%s",fmuType="%s",version="%s",platforms={"static"})' % (conf["modelName"],conf["fileName"].replace(".","_"),conf["fmuType"],conf["fmi"])
-elif conf.get("basemodelica-export"):
-  cmd = 'writeFile("%s.mo", OpenModelica.Scripting.instantiateModel(%s))' % (conf["modelName"], conf["modelName"])
 else:
   cmd='translateModel(%s,tolerance=%g,outputFormat="%s",numberOfIntervals=%d,variableFilter="%s",fileNamePrefix="%s")' % (conf["modelName"],tolerance,outputFormat,numberOfIntervals,variableFilter,conf["fileName"])
 with open(errFile, 'a+') as fp:
@@ -459,10 +457,6 @@ if backend != -1:
   else:
     execstat["phase"]=1
     execstat["backend"]=backend
-elif conf.get("basemodelica-export"):
-  # TODO: No way to measure success or time of instantiate yet
-  execstat["phase"] = 4
-  execstat["frontend"]=total
 else:
   execstat["phase"]=0
   execstat["frontend"]=frontend
@@ -482,15 +476,6 @@ try:
       if not os.path.exists(os.path.normpath(fmuExpectedLocation)):
         err += "\nFMU was not generated in the expected location: %s" % fmuExpectedLocation
         execstat["phase"]=4
-        writeResultAndExit(0, False, omc, omc_new)
-      execstat["phase"] = 5
-  elif conf.get("basemodelica-export"):
-    if res:
-      baseModelicaExpectedLocation = "%s.mo" % conf["modelName"]
-      execstat["build"] = buildmodel
-      if not os.path.exists(os.path.normpath(baseModelicaExpectedLocation)):
-        err += "\nBaseModelica was not generated in the expected location: %s" % baseModelicaExpectedLocation
-        execstat["phase"] = 4
         writeResultAndExit(0, False, omc, omc_new)
       execstat["phase"] = 5
   else:
@@ -536,44 +521,6 @@ try:
     with open(simFile,"w") as fp:
       fp.write("%s %s\n" % (fmisimulator, cmd))
     res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,fmisimulator,cmd,conf["fileName"]), 1.05*conf["ulimitExe"], conf)
-  elif conf.get("basemodelica-export"):
-    if conf.get("basemodelica-mtk-import"):
-
-      juliaCallFile=os.path.normpath("%s_test.jl" % conf["modelName"])
-      with open(juliaCallFile,"w") as fp:
-        if conf["julia-system-image"] == "":
-          fp.write("using TestBaseModelica\n")
-        else:
-          fp.write("using .TestBaseModelica\n")
-        fp.write("solver_settings = SolverSettings(start_time=%g,stop_time=%g,interval=%g,tolerance=%g)\n" %(startTime,stopTime,stepSize,tolerance))
-        fp.write("test_settings = TestSettings(modelname=\"%s\", solver_settings=solver_settings)\n" % (conf["fileName"]))
-        fp.write("run_test(\"%s.mo\"; settings = test_settings)\n" % (conf["modelName"]))
-
-      # Get correct julia executable / system image
-      if conf["julia-system-image"] != "":
-        cmd = "julia --sysimage=%s" % conf["julia-system-image"]
-      else:
-        try:
-          from juliacall import CONFIG
-          cmd = CONFIG["exepath"]
-        except (ImportError, Exception) as e:
-          print(e)
-          cmd = "julia"  # Fallback to system Julia
-
-      cmd += " %s" % juliaCallFile
-      with open(simFile,"w") as fp:
-        with open(juliaCallFile, "r") as juliaFile:
-          file_content = juliaFile.read()
-          fp.write("%s_test.jl:\n\n" % conf["modelName"])
-          fp.write(file_content)
-          fp.write("\n")
-
-        fp.write("%s\n" % (cmd))
-      res = checkOutputTimeout(
-      "(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s > %s.pipe 2>&1)"
-        % (conf["fileName"], conf["fileName"], conf["fileName"], simFile, cmd, conf["fileName"]), 1.05*conf["ulimitExe"], conf)
-    else:
-        print("BaseModelica import with OpenModelica not yet implemented.")
   else:
     if isWin:
       cmd = (".\\%s.bat %s %s %s" % (conf["fileName"],annotationSimFlags,conf["simFlags"],emit_protected)).strip()
