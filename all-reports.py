@@ -79,7 +79,7 @@ for branch in branches:
       continue
     else:
       v = one[0]
-  except:    
+  except:
     #raise Exception("No such table '%s'; specify it using --branch=XXX" % branch)
     print("No such table '%s'; specify it using --branch=XXX when running test.py" % branch)
     # ignore this table and continue
@@ -95,7 +95,8 @@ for branch in branches:
     urlContents = urllib.request.urlopen(urlToOpen).read().decode('utf-8')
   except:
     print(urlToOpen + " failed to open")
-    raise
+    missing_branches.append(branch)
+    continue
 
   generated = False
 
@@ -143,13 +144,13 @@ for branch in branches:
         gitlog = "<tr><td>%s..%s</td></tr>" % (v1,v2)
     else:
       gitlog = ""
-    
+
     try:
       gitloglibrarytesting = subprocess.check_output(["git", "log", '--pretty=<tr><td><a href="%s/%%h">%%h</a></td><td>%%ai</td><td>%%an</td><td>%%s</td></tr>' % (githuburltesting), "-2"], cwd="./").decode("utf-8")
     except subprocess.CalledProcessError as e:
       print(str(e))
       gitloglibrarytesting = "<tr><td>could not get the git log for OpenModelicaLibraryTesting</td></tr>"
-    
+
     tpl = tpl.replace("#OMCGITLOG#",gitlog).replace("#NUMCOMMITS#",str(gitlog.count("<tr>"))).replace("#3rdParty#",thirdPartyChanged).replace("#OMCLIBRARYTESTINGGITLOG#",gitloglibrarytesting)
     libnames = [libname for (libname,) in cursor.execute("""SELECT libname FROM [%s] WHERE date=? GROUP BY libname""" % branch, (d2,))]
     startdates = {}
