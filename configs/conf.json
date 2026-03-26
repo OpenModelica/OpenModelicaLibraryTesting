@@ -567,7 +567,7 @@
   },
   {
     "library":"ThermoPower",
-    "libraryVersion":"v4.0.0-dev",
+    "libraryVersion":"v4.0.0",
     "optlevel":"-Os -march=native"
   },
   {
