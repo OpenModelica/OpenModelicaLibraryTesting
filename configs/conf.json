@@ -566,6 +566,11 @@
     "optlevel":"-Os -march=native"
   },
   {
+    "library":"ThermoPower",
+    "libraryVersion":"v4.0.0-dev",
+    "optlevel":"-Os -march=native"
+  },
+  {
     "library":"ThermoSysPro",
     "libraryVersion":"master",
     "libraryVersionNameForTests":""
