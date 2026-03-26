@@ -111,6 +111,7 @@ for l in {
   {"ThermofluidStream", ""},
   {"ThermofluidStream", "main"},
   {"ThermoPower", "master"},
+  {"ThermoPower", "4.0.0-dev"},
   {"ThermoSysPro", "master"},
   {"TILMedia", "main"},
   {"TILMedia_AddOn_Tests", "main"},
