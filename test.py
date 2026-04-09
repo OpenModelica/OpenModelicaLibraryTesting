@@ -296,11 +296,9 @@ sys.stdout.flush()
 
 fmisimulatorversion = None
 if fmisimulator:
+  flag = '-v' if not isFMPy(fmisimulator) else  '--version'
   try:
-    if not isFMPy(fmisimulator):
-      fmisimulatorversion = check_output_log([fmisimulator, "-v"], stderr=subprocess.STDOUT).strip()
-    else:
-      fmisimulatorversion = subprocess.getoutput(fmisimulator + " -h | grep version | tr '\n' ' ' | tr -s ' '" ).strip().encode('ascii')
+      fmisimulatorversion = check_output_log([fmisimulator, flag], stderr=subprocess.STDOUT).strip()
   except subprocess.CalledProcessError as e:
     print("Failure to run %s:\n%s" %(fmisimulator, e.output))
     raise e
