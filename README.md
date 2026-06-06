@@ -208,7 +208,7 @@ rm -rf $refdir/MAP-LIB_ReferenceResults/
 test -f MAP-LIB_ReferenceResults.git/config || git clone --bare https://github.com/modelica/MAP-LIB_ReferenceResults.git MAP-LIB_ReferenceResults.git
 cd MAP-LIB_ReferenceResults.git
 git fetch origin '*:*'
-git fetch --tags
+git fetch --tags --force
 
 for tag in $(git for-each-ref --format="%(refname:lstrip=-1)" refs/heads/)
 do
