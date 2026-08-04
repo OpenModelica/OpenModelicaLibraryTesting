@@ -34,6 +34,8 @@ parser.add_argument('--extraflags', default='')
 parser.add_argument('--extrasimflags', default='')
 parser.add_argument('--ompython_omhome', default='')
 parser.add_argument('--noclean', action="store_true", default=False)
+parser.add_argument('--nobuildmodel', action="store_true", help="Translate, build and simulate in a single simulate() call instead of translateModel() followed by simulate(resimulateExecutable=...), so the JIT compile is reported as build time rather than simulation time. Only used by simCodeTarget=wasm-jit.", default=False)
+parser.add_argument('--coldhot', action="store_true", help="Simulate each model twice in the same omc; the second run reuses the compiled module. Both times are printed, but only the hot one is stored. Only used by simCodeTarget=wasm-jit.", default=False)
 parser.add_argument('--fmisimulator', default='')
 parser.add_argument('--ulimitvmem', help="Virtual memory limit (in kB) (linux only)", type=int, default=8*1024*1024)
 parser.add_argument('--default', action='append', help="Add a default value for some configuration key, such as --default=ulimitExe=60. The equals sign is mandatory.", default=[])
@@ -572,6 +574,11 @@ stats_by_libname = {}
 skipped_libs = {}
 tests=[]
 for (library,conf) in configs:
+  # Only when asked, so a normal run's confighash is unchanged
+  if args.nobuildmodel:
+    conf["noBuildModel"] = True
+  if args.coldhot:
+    conf["coldHot"] = True
   c=conf.copy()
   del(c["configFromFile"])
   if "referenceFiles" in c:
@@ -900,6 +907,15 @@ def loadJsonOrEmptySet(f):
 stats=dict([(name,(name,model,libname,loadJsonOrEmptySet("files/%s.stat.json" % name))) for (model,lib,libname,name,conf) in tests])
 #for k in sorted(stats.keys(), key=lambda c: stats[c][3]["exectime"], reverse=True):
 #  print("%s: exectime %.2f" % (k, stats[k][3]["exectime"]))
+
+if args.coldhot:
+  # Only "sim" (the hot run) is stored; the cold one is reported here
+  print("Cold vs hot simulation time:")
+  for key in sorted(stats.keys(), key=lambda k: stats[k][1]):
+    (name,model,libname,data)=stats[key]
+    if data.get("simcold") is not None:
+      print("  %-70s cold %8.4f  hot %8.4f" % (model, data["simcold"], data.get("sim") or 0.0))
+  sys.stdout.flush()
 
 for key in stats.keys():
   (name,model,libname,data)=stats[key]

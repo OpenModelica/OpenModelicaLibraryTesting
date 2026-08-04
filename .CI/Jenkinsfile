@@ -57,7 +57,7 @@ pipeline {
           expression { params.v1_26 }
         }
         steps {
-          runRegressiontest('maintenance/v1.26', 'v1.26', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
+          runRegressiontest('maintenance/v1.26', 'v1.26', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', '', false, false)
         }
       }
 
@@ -74,7 +74,7 @@ pipeline {
           expression { params.v1_27 }
         }
         steps {
-          runRegressiontest('maintenance/v1.27', 'v1.27', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
+          runRegressiontest('maintenance/v1.27', 'v1.27', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', '', false, false)
         }
       }
 
@@ -91,7 +91,7 @@ pipeline {
           expression { params.master }
         }
         steps {
-          runRegressiontest('master', 'master', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
+          runRegressiontest('master', 'master', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', '', false, false)
         }
       }
 
@@ -108,7 +108,7 @@ pipeline {
           expression { params.conversion_script }
         }
         steps {
-          runRegressiontest('master', 'conversion', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, true)
+          runRegressiontest('master', 'conversion', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', '', false, true)
         }
       }
 
@@ -125,7 +125,7 @@ pipeline {
           expression { params.newInst_newBackend }
         }
         steps {
-          runRegressiontest('master', 'newInst-newBackend', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --newBackend")', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
+          runRegressiontest('master', 'newInst-newBackend', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --newBackend")', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', '', false, false)
         }
       }
 
@@ -142,7 +142,7 @@ pipeline {
           expression { params.fmi_v1_26 }
         }
         steps {
-          runRegressiontest('maintenance/v1.26', 'v1.26-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('maintenance/v1.26', 'v1.26-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
         }
       }
       stage('v1.27 FMI with OMSimulator') {
@@ -158,7 +158,7 @@ pipeline {
           expression { params.fmi_v1_27 }
         }
         steps {
-          runRegressiontest('maintenance/v1.27', 'v1.27-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('maintenance/v1.27', 'v1.27-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
         }
       }
       stage('master FMI with OMSimulator') {
@@ -174,7 +174,7 @@ pipeline {
           expression { params.fmi_master }
         }
         steps {
-          runRegressiontest('master', 'master-fmi', '', 'origin/master', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('master', 'master-fmi', '', 'origin/master', 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
         }
       }
 
@@ -191,7 +191,7 @@ pipeline {
           expression { params.cs_fmu_cvode_v1_26 }
         }
         steps {
-          runRegressiontest('maintenance/v1.26', 'v1.26-cs-fmu-cvode', 'setCommandLineOptions("--fmiFlags=s:cvode --fmuRuntimeDepends=modelica")', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('maintenance/v1.26', 'v1.26-cs-fmu-cvode', 'setCommandLineOptions("--fmiFlags=s:cvode --fmuRuntimeDepends=modelica")', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
         }
       }
       stage('v1.27 CVODE CS-FMUs with OMSimulator') {
@@ -207,7 +207,7 @@ pipeline {
           expression { params.cs_fmu_cvode_v1_27 }
         }
         steps {
-          runRegressiontest('maintenance/v1.27', 'v1.27-cs-fmu-cvode', 'setCommandLineOptions("--fmiFlags=s:cvode --fmuRuntimeDepends=modelica")', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('maintenance/v1.27', 'v1.27-cs-fmu-cvode', 'setCommandLineOptions("--fmiFlags=s:cvode --fmuRuntimeDepends=modelica")', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
         }
       }
       stage('master CVODE CS-FMUs with OMSimulator') {
@@ -223,7 +223,7 @@ pipeline {
           expression { params.cs_fmu_cvode_master }
         }
         steps {
-          runRegressiontest('master', 'master-cs-fmu-cvode', 'setCommandLineOptions("--fmiFlags=s:cvode --fmuRuntimeDepends=modelica")', 'origin/master', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('master', 'master-cs-fmu-cvode', 'setCommandLineOptions("--fmiFlags=s:cvode --fmuRuntimeDepends=modelica")', 'origin/master', 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
         }
       }
 
@@ -240,7 +240,7 @@ pipeline {
           expression { params.fmpy_fmi_v1_26 }
         }
         steps {
-          runRegressiontest('maintenance/v1.26', 'v1.26-fmi-fmpy', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('maintenance/v1.26', 'v1.26-fmi-fmpy', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
         }
       }
 
@@ -257,7 +257,7 @@ pipeline {
           expression { params.fmpy_fmi_v1_27 }
         }
         steps {
-          runRegressiontest('maintenance/v1.27', 'v1.27-fmi-fmpy', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('maintenance/v1.27', 'v1.27-fmi-fmpy', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
         }
       }
 
@@ -274,7 +274,7 @@ pipeline {
           expression { params.fmpy_fmi_master }
         }
         steps {
-          runRegressiontest('master', 'master-fmi-fmpy', '', 'origin/master', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('master', 'master-fmi-fmpy', '', 'origin/master', 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
         }
       }
 
@@ -291,7 +291,7 @@ pipeline {
           expression { params.newInst_daeMode }
         }
         steps {
-          runRegressiontest('master', 'newInst-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --daeMode=true")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('master', 'newInst-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --daeMode=true")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
         }
       }
       stage('newBackend-daeMode') {
@@ -307,7 +307,7 @@ pipeline {
           expression { params.newBackend_daeMode }
         }
         steps {
-          runRegressiontest('master', 'newBackend-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --newBackend --daeMode=true")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('master', 'newBackend-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --newBackend --daeMode=true")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
         }
       }
       stage('oldInst') {
@@ -323,7 +323,7 @@ pipeline {
           expression { params.oldInst }
         }
         steps {
-          runRegressiontest('master', 'oldInst', 'setCommandLineOptions("-d=nonewInst")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('master', 'oldInst', 'setCommandLineOptions("-d=nonewInst")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
         }
       }
       stage('cvode') {
@@ -339,7 +339,7 @@ pipeline {
           expression { params.cvode }
         }
         steps {
-          runRegressiontest('master', 'cvode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '-s cvode', false, false)
+          runRegressiontest('master', 'cvode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '-s cvode', '', false, false)
         }
       }
       stage('gbode') {
@@ -355,7 +355,7 @@ pipeline {
           expression { params.gbode }
         }
         steps {
-          runRegressiontest('master', 'gbode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '-s gbode -gbm=radauIIA3', false, false)
+          runRegressiontest('master', 'gbode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '-s gbode -gbm=radauIIA3', '', false, false)
         }
       }
       stage('ida') {
@@ -371,7 +371,7 @@ pipeline {
           expression { params.ida }
         }
         steps {
-          runRegressiontest('master', 'ida', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '-s ida', false, false)
+          runRegressiontest('master', 'ida', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '-s ida', '', false, false)
         }
       }
       stage('wasm-jit') {
@@ -387,7 +387,7 @@ pipeline {
           expression { params.wasm_jit }
         }
         steps {
-          runRegressiontest('master', 'wasm-jit', 'setCommandLineOptions("--simCodeTarget=wasm-jit")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('master', 'wasm-jit', 'setCommandLineOptions("--simCodeTarget=wasm-jit")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', '--nobuildmodel', false, false)
         }
       }
       stage('generateSymbolicJacobian') {
@@ -403,7 +403,7 @@ pipeline {
           expression { params.generateSymbolicJacobian }
         }
         steps {
-          runRegressiontest('master', 'generateSymbolicJacobian', 'setCommandLineOptions("--generateSymbolicJacobian")', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false)
+          runRegressiontest('master', 'generateSymbolicJacobian', 'setCommandLineOptions("--generateSymbolicJacobian")', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', '', false, false)
         }
       }
       stage('heavy_tests') {
@@ -419,7 +419,7 @@ pipeline {
           expression { params.heavy_tests }
         }
         steps {
-            runRegressiontest('master', 'heavy_tests', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', false, false, 1, 'configs/heavy_tests.json')
+            runRegressiontest('master', 'heavy_tests', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', '', false, false, 1, 'configs/heavy_tests.json')
         }
       }
 
@@ -436,7 +436,7 @@ pipeline {
           expression { params.cpp_v1_26 }
         }
         steps {
-          runRegressiontest('maintenance/v1.26', 'v1.26-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('maintenance/v1.26', 'v1.26-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
         }
       }
       stage('C++ v1.27') {
@@ -452,7 +452,7 @@ pipeline {
           expression { params.cpp_v1_27 }
         }
         steps {
-          runRegressiontest('maintenance/v1.27', 'v1.27-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('maintenance/v1.27', 'v1.27-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
         }
       }
 
@@ -469,7 +469,7 @@ pipeline {
           expression { params.cpp }
         }
         steps {
-          runRegressiontest('master', 'cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', false, false)
+          runRegressiontest('master', 'cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
         }
       }
     } }
@@ -694,6 +694,7 @@ done
   * @parm sshConfig:            SSH configuration saved on test node.
   * @param omcompiler:          Checkout old OMCompiler submodule. Should be `false` nowadays.
   * @param extrasimflags:       Additional simulation flags passed to test.py via flag `--extrasimflags`.
+  * @param testFlags:           Additional flags passed to test.py verbatim, e.g. `--nobuildmodel`.
   * @param removePackageOrder:  Passed to `installLibraries`.
   * @param conversionScript:    Passed to `installLibraries`.
   * @param jobs:                The number of tests/jobs to launch in parallel.
@@ -702,7 +703,7 @@ done
   * @param libs_config_file:    The config file to be used for testing.
   *                             This file specifies which libraries to test and what options to use for them.
   */
-def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, omcompiler, extrasimflags, boolean removePackageOrder, boolean conversionScript, int jobs=0, libs_config_file = 'configs/conf.json') {
+def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, omcompiler, extrasimflags, testFlags, boolean removePackageOrder, boolean conversionScript, int jobs=0, libs_config_file = 'configs/conf.json') {
   sh '''
   find /tmp  -name "*openmodelica.hudson*" -exec rm {} ";" || true
   mkdir -p ~/TEST_LIBS_BACKUP
@@ -911,7 +912,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
 
   cd OpenModelicaLibraryTesting
   # Force /usr/bin/omc as being used for generating the mos-files. Ensures consistent behavior among all tested OMC versions
-  stdbuf -oL -eL time ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags='${extraFlags}' --extrasimflags='${extrasimflags}' --branch="${name}" --output="libraries.openmodelica.org:/var/www/libraries.openmodelica.org/branches/${name}/" --libraries='${libraryPath}/.openmodelica/libraries/'  --jobs=${jobs} ${libs_config_file} ${params.OLDLIBS ? "configs/conf-old.json configs/conf-nonstandard.json" : ""} || (killall omc ; false) || exit 1
+  stdbuf -oL -eL time ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags='${extraFlags}' --extrasimflags='${extrasimflags}' ${testFlags} --branch="${name}" --output="libraries.openmodelica.org:/var/www/libraries.openmodelica.org/branches/${name}/" --libraries='${libraryPath}/.openmodelica/libraries/'  --jobs=${jobs} ${libs_config_file} ${params.OLDLIBS ? "configs/conf-old.json configs/conf-nonstandard.json" : ""} || (killall omc ; false) || exit 1
   """
   sh 'date'
   sh "rm -f OpenModelicaLibraryTesting/${dbPrefix}-sqlite3.db.tmp"

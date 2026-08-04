@@ -214,6 +214,7 @@ execstat = {
   "templates":None,
   "build":None,
   "sim":None,
+  "simcold":None,
   "diff":None,
   "phase":0
 }
@@ -252,6 +253,12 @@ if conf["simCodeTarget"] not in ["Cpp","C","wasm-jit"]:
 # wasm-jit builds no makefile and no executable; the model is JIT-compiled inside
 # the omc that translated it and simulated there via simulate(resimulateExecutable=)
 isWasmJit = conf["simCodeTarget"]=="wasm-jit"
+# --nobuildmodel: one simulate() instead of translateModel()+resimulate, so omc
+# reports the build/simulation split itself
+useSimulate = isWasmJit and conf.get("noBuildModel") and not conf.get("fmi")
+# --coldhot: simulate again in the same session, where the module is already
+# compiled, and report that run instead
+useColdHot = isWasmJit and conf.get("coldHot") and not conf.get("fmi")
 if isWasmJit and conf.get("fmi"):
   with open(errFile, 'a+') as fp:
     fp.write("FMI export is not supported for simCodeTarget=wasm-jit")
@@ -418,17 +425,25 @@ if conf["simCodeTarget"]=="C" and sendExpressionOldOrNew('classAnnotationExists(
       with open(errFile, 'a+') as fp:
         fp.write("Ignoring simflag %s since it seems broken on HelloWorld\n" % flagVal)
 
+def simulateCmd(resimulate):
+  simflags = ("%s %s -lv LOG_STATS" % (conf["simFlags"],emit_protected)).strip()
+  return 'simulate(%s,startTime=%g,stopTime=%g,tolerance=%g,numberOfIntervals=%d,outputFormat="%s",variableFilter="%s",fileNamePrefix="%s",simflags="%s"%s)' % (conf["modelName"],startTime,stopTime,tolerance,numberOfIntervals,outputFormat,variableFilter,conf["fileName"],simflags,(',resimulateExecutable="%s"' % conf["fileName"]) if resimulate else "")
+
 # TODO: Detect and handle the case where RT_CLOCK is not available in OMC
 total_before = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_SIMULATE_TOTAL)")
 start=monotonic()
+timeout = conf["ulimitOmc"]
 if conf.get("fmi"):
   cmd='"" <> buildModelFMU(%s,fileNamePrefix="%s",fmuType="%s",version="%s",platforms={"static"})' % (conf["modelName"],conf["fileName"].replace(".","_"),conf["fmuType"],conf["fmi"])
+elif useSimulate:
+  cmd=simulateCmd(resimulate=False)
+  timeout = conf["ulimitOmc"] + conf["ulimitExe"]
 else:
   cmd='translateModel(%s,tolerance=%g,outputFormat="%s",numberOfIntervals=%d,variableFilter="%s",fileNamePrefix="%s")' % (conf["modelName"],tolerance,outputFormat,numberOfIntervals,variableFilter,conf["fileName"])
 with open(errFile, 'a+') as fp:
   fp.write("Running command: %s\n"%(cmd))
 try:
-  res=sendExpressionTimeout(omc, cmd, conf["ulimitOmc"])
+  res=sendExpressionTimeout(omc, cmd, timeout)
 except TimeoutError as e:
   execstat["frontend"]=monotonic()-start
 
@@ -447,6 +462,11 @@ except TimeoutError as e:
 # See which translateModel phases completed
 
 execTimeTranslateModel=monotonic()-start
+simres = None
+if useSimulate:
+  simres = res or {}
+  # A failed translate/build is only reported in the messages of the record
+  res = not (simres.get("messages") or "").startswith("Failed to build model")
 err        = omc.sendExpression("OpenModelica.Scripting.getErrorString()")
 total      = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_SIMULATE_TOTAL)")-total_before
 buildmodel = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_BUILD_MODEL)")
@@ -456,7 +476,7 @@ backend    = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(
 frontend   = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_FRONTEND)")
 
 writeResult()
-if not isWasmJit:
+if not isWasmJit or (useSimulate and not useColdHot):
   # wasm-jit keeps the translated model in this session; it is needed to simulate
   omc = quit_omc(omc)
 
@@ -504,8 +524,9 @@ try:
         writeResultAndExit(0, False, omc, omc_new)
       execstat["phase"] = 5
   elif isWasmJit:
-    # Nothing to build; omc JIT-compiles the model as part of the simulation
-    execstat["build"] = 0.0
+    # Nothing to build; simulate() reports the JIT compile as timeCompile, while
+    # a resimulate leaves it in the simulation time
+    execstat["build"] = simres["timeCompile"] if useSimulate else 0.0
     execstat["phase"] = 5
   else:
     if isWin:
@@ -527,6 +548,12 @@ writeResult()
 # FMPy generates csv, OMSimulator generates mat (outputFormat)
 fmisimulator = conf.get("fmisimulator")
 resFile = "%s_res.%s" % (conf["fileName"], outputFormat if not shared.isFMPy(fmisimulator) else 'csv')
+
+def simElapsed():
+  # omc's own time: the wall clock here covers the wrong run for both flags
+  if useSimulate or useColdHot:
+    return (simres or {}).get("timeSimulation") or 0.0
+  return monotonic()-start
 
 start=monotonic()
 try:
@@ -551,17 +578,31 @@ try:
       fp.write("%s %s\n" % (fmisimulator, cmd))
     res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,fmisimulator,cmd,conf["fileName"]), 1.05*conf["ulimitExe"], conf)
   elif isWasmJit:
-    simflags = ("%s %s -lv LOG_STATS" % (conf["simFlags"],emit_protected)).strip()
-    cmd = 'simulate(%s,startTime=%g,stopTime=%g,tolerance=%g,numberOfIntervals=%d,outputFormat="%s",variableFilter="%s",fileNamePrefix="%s",simflags="%s",resimulateExecutable="%s")' % (conf["modelName"],startTime,stopTime,tolerance,numberOfIntervals,outputFormat,variableFilter,conf["fileName"],simflags,conf["fileName"])
+    if not useSimulate:
+      cmd = simulateCmd(resimulate=True)
     with open(simFile,"w") as fp:
       fp.write("startTime=%g\nstopTime=%g\ntolerance=%g\nnumberOfIntervals=%d\nstepSize=%g\n" % (startTime,stopTime,tolerance,numberOfIntervals,stepSize))
       fp.write("wasm-jit simulation: %s\n" % cmd)
-    simres = sendExpressionTimeout(omc, cmd, conf["ulimitExe"]) or {}
+    if not useSimulate:
+      simres = sendExpressionTimeout(omc, cmd, conf["ulimitExe"]) or {}
     with open(simFile,"a+") as fp:
       fp.write(simres.get("messages") or "")
     if not simres.get("resultFile"):
-      execstat["sim"] = monotonic()-start
+      execstat["sim"] = simElapsed()
       writeResultAndExit(0, False, omc, omc_new)
+    if useColdHot:
+      execstat["simcold"] = simElapsed()
+      cmd = simulateCmd(resimulate=True)
+      with open(simFile,"a+") as fp:
+        fp.write("wasm-jit hot simulation: %s\n" % cmd)
+      hotres = sendExpressionTimeout(omc, cmd, conf["ulimitExe"]) or {}
+      with open(simFile,"a+") as fp:
+        fp.write(hotres.get("messages") or "")
+      if hotres.get("resultFile"):
+        simres = hotres
+      else:
+        with open(errFile, 'a+') as fp:
+          fp.write("The hot simulation failed; keeping the cold time\n")
   else:
     if isWin:
       cmd = (".\\%s.bat %s %s %s" % (conf["fileName"],annotationSimFlags,conf["simFlags"],emit_protected)).strip()
@@ -586,7 +627,7 @@ try:
       res = checkOutputTimeout("%s >> %s" % (cmd,simFile), conf["ulimitExe"], conf)
     else:
       res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,cmd,conf["fileName"]), conf["ulimitExe"], conf)
-  execstat["sim"] = monotonic()-start
+  execstat["sim"] = simElapsed()
   execstat["phase"] = 6
 except TimeoutError as e:
   execstat["sim"] = monotonic()-start
