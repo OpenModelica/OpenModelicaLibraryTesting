@@ -387,7 +387,7 @@ pipeline {
           expression { params.wasm_jit }
         }
         steps {
-          runRegressiontest('master', 'wasm-jit', 'setCommandLineOptions("--simCodeTarget=wasm-jit")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', '--nobuildmodel', false, false)
+          runRegressiontest('master', 'wasm-jit', 'setCommandLineOptions("--simCodeTarget=wasm-jit")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', '--nobuildmodel', false, false, 0, 'configs/conf.json', '-DOM_OMC_ENABLE_RUST=ON -DRUST_OMC_CI=ON -DRUST_OMC_THREADS=4')
         }
       }
       stage('generateSymbolicJacobian') {
@@ -683,6 +683,50 @@ done
 }
 
 /**
+  * Runs `body` with the shared Rust compile cache of the OpenModelica job (OpenModelica/.CI/sccache/),
+  * which builds the same commits first. Hitting its keys needs the same rust settings (opt-level 2,
+  * -DRUST_OMC_THREADS=4 at the call site) and SCCACHE_BASEDIRS set to the checkout directory, which
+  * is a subdirectory of the workspace here but the workspace itself there.
+  */
+def withSccache(Closure body) {
+  if (sh(script: 'command -v sccache', returnStatus: true) != 0) {
+    echo 'sccache was not found; building without a compile cache'
+    body()
+    return
+  }
+  withCredentials([string(credentialsId: 'sccache-ci-secret-key',
+                          variable: 'AWS_SECRET_ACCESS_KEY')]) {
+    withEnv(['RUSTC_WRAPPER=sccache',
+             'SCCACHE_BUCKET=omc-sccache',
+             'SCCACHE_ENDPOINT=https://sccache.openmodelica.org',
+             'SCCACHE_REGION=auto',
+             'SCCACHE_S3_USE_SSL=true',
+             'AWS_ACCESS_KEY_ID=sccache-ci',
+             'CARGO_INCREMENTAL=0',
+             'CARGO_PROFILE_RELEASE_OPT_LEVEL=2',
+             "SCCACHE_BASEDIRS=${env.WORKSPACE}/OpenModelica"]) {
+      // A running server keeps the environment it was started with, so restart it.
+      sh '''
+      log="`mktemp`"
+      sccache --stop-server > /dev/null 2>&1 || true
+      SCCACHE_ERROR_LOG="$log" SCCACHE_LOG=warn sccache --start-server
+      sccache --show-stats
+      if grep -qiE "storage (write )?check failed|read-only storage|cache storage failed" "$log"; then
+        echo "WARNING: the sccache S3 backend is unusable; building without a shared cache:" >&2
+        cat "$log" >&2
+      fi
+      rm -f "$log"
+      '''
+      try {
+        body()
+      } finally {
+        sh 'sccache --show-stats || true'
+      }
+    }
+  }
+}
+
+/**
   * Launches the test.py script with the given options.
   *
   * @param branch:              OpenModelica branch to test. Will checkout the branch and build omc from it.
@@ -702,8 +746,10 @@ done
   *                             physical cpus on the machine'.
   * @param libs_config_file:    The config file to be used for testing.
   *                             This file specifies which libraries to test and what options to use for them.
+  * @param cmakeFlags:          Target-specific cmake flags, e.g. `-DOM_OMC_ENABLE_RUST=ON`. If non-empty, omc is
+  *                             built with cmake instead of autotools; the shared release flags are added here.
   */
-def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, omcompiler, extrasimflags, testFlags, boolean removePackageOrder, boolean conversionScript, int jobs=0, libs_config_file = 'configs/conf.json') {
+def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, omcompiler, extrasimflags, testFlags, boolean removePackageOrder, boolean conversionScript, int jobs=0, libs_config_file = 'configs/conf.json', cmakeFlags = '') {
   sh '''
   find /tmp  -name "*openmodelica.hudson*" -exec rm {} ";" || true
   mkdir -p ~/TEST_LIBS_BACKUP
@@ -765,6 +811,45 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
 
   OMCPATH = "${omcompiler ? '../' : './'}OMCompiler"
 
+  // The build runs in OMCompiler, one level below the cmake source tree.
+  if (cmakeFlags && omcompiler) {
+    error 'cmake builds need the OMCompiler directory of the OpenModelica repository (omcompiler=false)'
+  }
+  def buildOMC
+  if (cmakeFlags) {
+    buildOMC = """
+    cmake -S .. -B ../build_cmake -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_INSTALL_PREFIX="`pwd`/build" \
+      -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_Fortran_COMPILER=gfortran \
+      -DCMAKE_C_FLAGS=-march=native -DCMAKE_CXX_FLAGS=-march=native \
+      -DOM_USE_CCACHE=OFF -DOM_ENABLE_GUI_CLIENTS=OFF -DOM_ENABLE_OMSIMULATOR=OFF \
+      ${cmakeFlags} || exit 1
+    if ! time cmake --build ../build_cmake --parallel 16 --target install > log 2>&1; then
+      cat log
+      exit 1
+    fi
+    build/bin/omc --version || exit 1
+    """
+  } else {
+    buildOMC = """
+    autoreconf --install
+    ./configure --with-cppruntime --without-omc --disable-modelica3d CC=clang CXX=clang++ FC=gfortran CFLAGS='-O2 -march=native' --with-omlibrary=all --with-omniORB
+    time make -j16 clean
+    if ! time make -j9 omc > log 2>&1; then
+      cat log
+      exit 1
+    fi
+    if ! time make -j16 runtimeCPPinstall > log 2>&1; then
+      cat log
+      if test "${name}" = "master"; then
+        exit 1
+      else
+        echo "Ignoring failed C++ runtime"
+      fi
+    fi
+    """
+  }
+
   sh '''
   FREE=`df -k --output=avail "$PWD" | tail -n1`   # df -k not df -h
   if test "$FREE" -lt 31457280; then               # 30G = 30*1024*1024k
@@ -775,7 +860,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
 
   sh 'killall omc || true'
 
-  sh """
+  def checkoutAndBuild = """
   if test ! -d OpenModelica; then
     git clone --recursive https://openmodelica.org/git-readonly/OpenModelica.git OpenModelica
   fi
@@ -814,21 +899,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
   cat ~/saved_omc/${name}/.githash || true
   # TODO: Create a docker image for these things instead?
   if ! (cmp ~/saved_omc/${name}/.githash .newhash || test -f ~/saved_omc/${name}/.nogit); then
-    autoreconf --install
-    ./configure --with-cppruntime --without-omc --disable-modelica3d CC=clang CXX=clang++ FC=gfortran CFLAGS='-O2 -march=native' --with-omlibrary=all --with-omniORB
-    time make -j16 clean
-    if ! time make -j9 omc > log 2>&1; then
-      cat log
-      exit 1
-    fi
-    if ! time make -j16 runtimeCPPinstall > log 2>&1; then
-      cat log
-      if test "${name}" = "master"; then
-        exit 1
-      else
-        echo "Ignoring failed C++ runtime"
-      fi
-    fi
+    ${buildOMC}
     rm -rf ~/saved_omc/${name}/
     mkdir -p ~/saved_omc/${name}/
     CMD="rsync -a --delete build/ \$HOME/saved_omc/${name}/"
@@ -840,6 +911,12 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
     echo "Restoring cached OMC version: ${name}, `cat ~/saved_omc/${name}/.githash`"
   fi
   """
+
+  if (cmakeFlags) {
+    withSccache { sh checkoutAndBuild }
+  } else {
+    sh checkoutAndBuild
+  }
 
   sh """
   cd OpenModelica
