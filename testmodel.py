@@ -84,7 +84,7 @@ def writeResultAndExit(exitStatus, useOsExit=False, omc=None, omc_new=None):
     fp.flush()
   sys.stdout.flush()
   omc = quit_omc(omc)
-  omc_new = quit(omc_new)
+  omc_new = quit_omc(omc_new)
   if useOsExit:
     os._exit(exitStatus)
   else:
@@ -108,7 +108,23 @@ def sendExpressionTimeout(omc, cmd, timeout):
   res=[None,None]
   thread = threading.Thread(target=target, args=(res,))
   thread.start()
-  thread.join(timeout)
+  # Poll instead of a single join: if omc dies (crash, ulimit, ...) the thread is
+  # stuck in a ZMQ receive that never returns, so waiting out the timeout and then
+  # exiting normally would hang forever on that non-daemon thread
+  deadline = monotonic() + timeout
+  while thread.is_alive() and monotonic() < deadline:
+    thread.join(1)
+    status = omc._omc_process.poll()
+    if thread.is_alive() and status is not None:
+      with open(errFile, 'a+') as fp:
+        fp.write("OMC exited with status %s while running: %s\n" % (status, cmd))
+        try:
+          with open(os.path.normpath(omc._omc_log_file.name)) as omcLog:
+            for line in omcLog:
+              fp.write(line)
+        except IOError:
+          pass
+      writeResultAndExit(0, True, omc, omc_new)
 
   if thread.is_alive():
     with open(errFile, 'a+') as fp:
@@ -229,10 +245,17 @@ except OSError:
 with open(errFile, 'a+') as fp:
   fp.write("Running: %s\n" % " ".join(sys.argv))
 
-if conf["simCodeTarget"] not in ["Cpp","C"]:
+if conf["simCodeTarget"] not in ["Cpp","C","wasm-jit"]:
   with open(errFile, 'a+') as fp:
     fp.write("Unknown simCodeTarget in %s" % conf["simCodeTarget"])
   writeResultAndExit(1)
+# wasm-jit builds no makefile and no executable; the model is JIT-compiled inside
+# the omc that translated it and simulated there via simulate(resimulateExecutable=)
+isWasmJit = conf["simCodeTarget"]=="wasm-jit"
+if isWasmJit and conf.get("fmi"):
+  with open(errFile, 'a+') as fp:
+    fp.write("FMI export is not supported for simCodeTarget=wasm-jit")
+  writeResultAndExit(0)
 if conf["simCodeTarget"]=="Cpp" and not conf["haveCppRuntime"]:
   with open(errFile, 'a+') as fp:
     fp.write("C++ runtime not supported in this installation (HelloWorld failed)")
@@ -433,7 +456,9 @@ backend    = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(
 frontend   = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_FRONTEND)")
 
 writeResult()
-omc = quit_omc(omc)
+if not isWasmJit:
+  # wasm-jit keeps the translated model in this session; it is needed to simulate
+  omc = quit_omc(omc)
 
 print(execTimeTranslateModel,frontend,backend)
 if backend != -1:
@@ -478,6 +503,10 @@ try:
         execstat["phase"]=4
         writeResultAndExit(0, False, omc, omc_new)
       execstat["phase"] = 5
+  elif isWasmJit:
+    # Nothing to build; omc JIT-compiles the model as part of the simulation
+    execstat["build"] = 0.0
+    execstat["phase"] = 5
   else:
     if isWin:
       res = checkOutputTimeout("\"%s\\share\\omc\\scripts\\Compile.bat\" %s gcc %s parallel dynamic 24 0" % (conf["omhome"], conf["fileName"], msysEnvironment), conf["ulimitOmc"], conf)
@@ -521,6 +550,18 @@ try:
     with open(simFile,"w") as fp:
       fp.write("%s %s\n" % (fmisimulator, cmd))
     res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,fmisimulator,cmd,conf["fileName"]), 1.05*conf["ulimitExe"], conf)
+  elif isWasmJit:
+    simflags = ("%s %s -lv LOG_STATS" % (conf["simFlags"],emit_protected)).strip()
+    cmd = 'simulate(%s,startTime=%g,stopTime=%g,tolerance=%g,numberOfIntervals=%d,outputFormat="%s",variableFilter="%s",fileNamePrefix="%s",simflags="%s",resimulateExecutable="%s")' % (conf["modelName"],startTime,stopTime,tolerance,numberOfIntervals,outputFormat,variableFilter,conf["fileName"],simflags,conf["fileName"])
+    with open(simFile,"w") as fp:
+      fp.write("startTime=%g\nstopTime=%g\ntolerance=%g\nnumberOfIntervals=%d\nstepSize=%g\n" % (startTime,stopTime,tolerance,numberOfIntervals,stepSize))
+      fp.write("wasm-jit simulation: %s\n" % cmd)
+    simres = sendExpressionTimeout(omc, cmd, conf["ulimitExe"]) or {}
+    with open(simFile,"a+") as fp:
+      fp.write(simres.get("messages") or "")
+    if not simres.get("resultFile"):
+      execstat["sim"] = monotonic()-start
+      writeResultAndExit(0, False, omc, omc_new)
   else:
     if isWin:
       cmd = (".\\%s.bat %s %s %s" % (conf["fileName"],annotationSimFlags,conf["simFlags"],emit_protected)).strip()
@@ -529,6 +570,12 @@ try:
 
     if conf["simCodeTarget"]=="C":
       cmd = cmd + " -lv LOG_STATS"
+    executable = os.path.normpath("%s.bat" % conf["fileName"] if isWin else conf["fileName"])
+    if not os.path.exists(executable):
+      with open(errFile, 'a+') as fp:
+        fp.write("The simulation executable %s does not exist\n" % executable)
+      execstat["sim"] = monotonic()-start
+      writeResultAndExit(0, False, omc, omc_new)
     with open(simFile,"w") as fp:
       fp.write("Environment - simulationEnvironment:\n")
       for e in conf["environmentSimulation"]:

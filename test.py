@@ -599,6 +599,10 @@ for (library,conf) in configs:
   conf["omc_thread_cmd"] = omc_threads
   conf["haveCppRuntime"] = haveCppRuntime
   conf["ulimitMemory"] = conf.get("ulimitMemory") or ulimitMemory
+  if conf["simCodeTarget"]=="wasm-jit":
+    # The JIT reserves ~4 GB of address space per wasm memory on top of what omc
+    # itself maps, which does not fit in the default virtual memory limit
+    conf["ulimitMemory"] = max(conf["ulimitMemory"], 16*1024*1024)
   if conf.get("fmi"):
     conf["haveFMI"] = fmiOK_C
     conf["haveFMICpp"] = fmiOK_Cpp
