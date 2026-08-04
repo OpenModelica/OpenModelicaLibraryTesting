@@ -3,6 +3,15 @@
 import re, os, subprocess
 import simplejson as json
 
+simCodeTargetRe = re.compile('--simCodeTarget=([^"\'\\s,;)]+)')
+
+def simCodeTargetFromCommands(target, commands):
+  for cmd in commands:
+    found = simCodeTargetRe.findall(str(cmd))
+    if found:
+      target = found[-1]
+  return target
+
 def fixData(data,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCommands,extrasimflags,environmentTranslation,environmentSimulation):
   data["configFromFile"] = dict(data)
   for (key,default) in overrideDefaults:
@@ -24,6 +33,9 @@ def fixData(data,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCom
     else:
       defaultCustomCommands2 = defaultCustomCommands
     data["customCommands"] = (data.get("customCommands") or defaultCustomCommands2) + (data.get("extraCustomCommands") or [])
+    # A --simCodeTarget in the commands (e.g. from --extraflags) is what omc will
+    # actually use, so the rest of the testing scripts need to see it
+    data["simCodeTarget"] = simCodeTargetFromCommands(data["simCodeTarget"], data["customCommands"])
     data["ulimitOmc"] = int(data.get("ulimitOmc") or 660) # 11 minutes to generate the C-code
     data["ulimitExe"] = int(data.get("ulimitExe") or 8*60) # 8 additional minutes to initialize and run the simulation
     data["ulimitLoadModel"] = int(data.get("ulimitLoadModel") or 3*60) # 3 minutes to load the files (could take a while if the ssd is doing backup)
