@@ -285,7 +285,10 @@ def timeSeconds(f):
 if not docker:
   omc.sendExpression('setModelicaPath("%s")' % (librariespath.replace('\\','/') + MSLpath,))
 omc_exe=os.path.normpath(os.path.join(omhome,"bin","omc"))
-dygraphs=os.path.normpath(os.path.join(ompython_omhome or omhome,"share","doc","omc","testmodels","dygraph-combined.js"))
+dygraphs=""
+for p in os.path.normpath(os.path.join(ompython_omhome or omhome,"share","doc","omc","testmodels","dygraph-combined.js")):
+    if os.path.exists(dygraphs): # docker images strip /usr/share/doc from the image...
+        dygraphs = p
 print(omc_exe,omc_version,dygraphs)
 
 sys.stdout.flush()
@@ -1158,7 +1161,7 @@ for libname in stats_by_libname.keys():
       check_output_log(["rsync", "-aR", "emptydir/", result_location_libname])
       check_output_log(["rsync", "-aR", "emptydir/", result_location_libname+"/files"])
       check_output_log(["rsync", "-aR", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", result_location_libname])
-    if (conf.get("referenceFiles") or "") != "":
+    if (conf.get("referenceFiles") or "") != "" and dygraphs:
       check_output_log(["rsync", "-a", dygraphs, result_location_libname+"/files"])
   else:
     print("No Sync: result_location [%s] != "" and not isWin [%s] and not noSync [%s] : library: %s" % (result_location, isWin, noSync, libname))
