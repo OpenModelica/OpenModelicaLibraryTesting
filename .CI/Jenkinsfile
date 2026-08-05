@@ -387,7 +387,9 @@ pipeline {
           expression { params.wasm_jit }
         }
         steps {
-          runRegressiontest('master', 'wasm-jit', 'setCommandLineOptions("--simCodeTarget=wasm-jit")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', '--nobuildmodel', false, false, 0, 'configs/conf.json', '-DOM_OMC_ENABLE_RUST=ON -DRUST_OMC_CI=ON -DRUST_OMC_THREADS=4')
+          runRegressiontest('master', 'wasm-jit', 'setCommandLineOptions("--simCodeTarget=wasm-jit")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', '--nobuildmodel', false, false, 0, 'configs/conf.json',
+                            '-DOM_OMC_ENABLE_RUST=ON -DRUST_OMC_CI=ON -DRUST_OMC_THREADS=4 -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache',
+                            '.CI/wasm-jit')
         }
       }
       stage('generateSymbolicJacobian') {
@@ -683,17 +685,16 @@ done
 }
 
 /**
-  * Runs `body` with the shared Rust compile cache of the OpenModelica job (OpenModelica/.CI/sccache/),
-  * which builds the same commits first. Hitting its keys needs the same rust settings (opt-level 2,
-  * -DRUST_OMC_THREADS=4 at the call site) and SCCACHE_BASEDIRS set to the checkout directory, which
-  * is a subdirectory of the workspace here but the workspace itself there.
+  * Runs `body` with the environment of the shared Rust compile cache of the OpenModelica job
+  * (OpenModelica/.CI/sccache/), which builds the same commits first. Hitting its keys needs the
+  * same rust settings (opt-level 2, -DRUST_OMC_THREADS=4 at the call site), the same toolchain
+  * (hence the same docker image) and SCCACHE_BASEDIRS set to the checkout directory, which is a
+  * subdirectory of the workspace here but the workspace itself there.
+  *
+  * The server is started by sccachePreamble() instead, since a build in a container cannot use
+  * one started outside it.
   */
 def withSccache(Closure body) {
-  if (sh(script: 'command -v sccache', returnStatus: true) != 0) {
-    echo 'sccache was not found; building without a compile cache'
-    body()
-    return
-  }
   withCredentials([string(credentialsId: 'sccache-ci-secret-key',
                           variable: 'AWS_SECRET_ACCESS_KEY')]) {
     withEnv(['RUSTC_WRAPPER=sccache',
@@ -705,25 +706,32 @@ def withSccache(Closure body) {
              'CARGO_INCREMENTAL=0',
              'CARGO_PROFILE_RELEASE_OPT_LEVEL=2',
              "SCCACHE_BASEDIRS=${env.WORKSPACE}/OpenModelica"]) {
-      // A running server keeps the environment it was started with, so restart it.
-      sh '''
-      log="`mktemp`"
-      sccache --stop-server > /dev/null 2>&1 || true
-      SCCACHE_ERROR_LOG="$log" SCCACHE_LOG=warn sccache --start-server
-      sccache --show-stats
-      if grep -qiE "storage (write )?check failed|read-only storage|cache storage failed" "$log"; then
-        echo "WARNING: the sccache S3 backend is unusable; building without a shared cache:" >&2
-        cat "$log" >&2
-      fi
-      rm -f "$log"
-      '''
-      try {
-        body()
-      } finally {
-        sh 'sccache --show-stats || true'
-      }
+      body()
     }
   }
+}
+
+/**
+  * Prepended to a build running under withSccache: starts a server with the current environment
+  * (a running one keeps the one it was started with), or drops RUSTC_WRAPPER if there is no sccache.
+  */
+def sccachePreamble() {
+  return '''
+  if command -v sccache > /dev/null; then
+    log="`mktemp`"
+    sccache --stop-server > /dev/null 2>&1 || true
+    SCCACHE_ERROR_LOG="$log" SCCACHE_LOG=warn sccache --start-server
+    sccache --show-stats
+    if grep -qiE "storage (write )?check failed|read-only storage|cache storage failed" "$log"; then
+      echo "WARNING: the sccache S3 backend is unusable; building without a shared cache:" >&2
+      cat "$log" >&2
+    fi
+    rm -f "$log"
+  else
+    echo "sccache was not found; building without a compile cache"
+    unset RUSTC_WRAPPER
+  fi
+  '''
 }
 
 /**
@@ -748,8 +756,11 @@ def withSccache(Closure body) {
   *                             This file specifies which libraries to test and what options to use for them.
   * @param cmakeFlags:          Target-specific cmake flags, e.g. `-DOM_OMC_ENABLE_RUST=ON`. If non-empty, omc is
   *                             built with cmake instead of autotools; the shared release flags are added here.
+  * @param dockerfile:          Directory with a Dockerfile, relative to the testing repository, e.g.
+  *                             `.CI/wasm-jit`. If non-empty, the omc build and test.py run in that image
+  *                             instead of on the node; everything using the node's own omc stays outside.
   */
-def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, omcompiler, extrasimflags, testFlags, boolean removePackageOrder, boolean conversionScript, int jobs=0, libs_config_file = 'configs/conf.json', cmakeFlags = '') {
+def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, omcompiler, extrasimflags, testFlags, boolean removePackageOrder, boolean conversionScript, int jobs=0, libs_config_file = 'configs/conf.json', cmakeFlags = '', dockerfile = '') {
   sh '''
   find /tmp  -name "*openmodelica.hudson*" -exec rm {} ";" || true
   mkdir -p ~/TEST_LIBS_BACKUP
@@ -760,6 +771,46 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
     exit 1
   fi
   '''
+
+  // Checked out before the omc build rather than just before test.py: it provides the Dockerfile.
+  sh """
+  if test ! -d OpenModelicaLibraryTesting; then
+    git clone --recursive https://openmodelica.org/git-readonly/OpenModelicaLibraryTesting.git OpenModelicaLibraryTesting
+  fi
+  cd OpenModelicaLibraryTesting
+  git fetch
+  git reset --hard origin/master
+  """
+
+  def image = null
+  if (dockerfile) {
+    // Build context is the Dockerfile directory; the workspace has a directory per tested model.
+    sh "cp OpenModelicaLibraryTesting/requirements.txt OpenModelicaLibraryTesting/${dockerfile}/"
+    image = docker.build("openmodelica-library-testing:${name}", "--pull OpenModelicaLibraryTesting/${dockerfile}")
+  }
+  // --init reaps the omc processes test.py orphans. ssh refuses to run for a uid it cannot look
+  // up, so the node's passwd entry is needed to publish the results. The home holds the cached omc
+  // build, the libraries (HOME during the test) and the ssh key; test.py writes a hash next to
+  // every reference file. rust-cargo-registry is the volume the OpenModelica job uses.
+  def dockerArgs = "--init" +
+                   " -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro" +
+                   " -v ${env.HOME}:${env.HOME}" +
+                   " -v /mnt/ReferenceFiles:/mnt/ReferenceFiles" +
+                   " --mount type=volume,source=rust-cargo-registry,target=/opt/rust/cargo/registry"
+  // Jenkins exports the node's environment into the container, hiding the image's.
+  def dockerEnv = ['PATH+VENV=/opt/libtest-venv/bin',
+                   'PATH+CARGO=/opt/rust/cargo/bin',
+                   'CARGO_HOME=/opt/rust/cargo',
+                   'RUSTUP_HOME=/opt/rust/rustup']
+  // Runs a script in the image if the target uses one, on the node otherwise.
+  def runSh = { args ->
+    if (image) {
+      image.inside(dockerArgs) { withEnv(dockerEnv) { sh(args) } }
+    } else {
+      sh(args)
+    }
+  }
+
   FMI_TESTING_FLAG=""
   if (!name.contains('fmpy') && omsHash) {
     sh """
@@ -817,7 +868,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
   }
   def buildOMC
   if (cmakeFlags) {
-    buildOMC = """
+    buildOMC = sccachePreamble() + """
     cmake -S .. -B ../build_cmake -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_INSTALL_PREFIX="`pwd`/build" \
       -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_Fortran_COMPILER=gfortran \
@@ -829,6 +880,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
       exit 1
     fi
     build/bin/omc --version || exit 1
+    sccache --show-stats || true
     """
   } else {
     buildOMC = """
@@ -913,9 +965,9 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
   """
 
   if (cmakeFlags) {
-    withSccache { sh checkoutAndBuild }
+    withSccache { runSh(checkoutAndBuild) }
   } else {
-    sh checkoutAndBuild
+    runSh(checkoutAndBuild)
   }
 
   sh """
@@ -948,13 +1000,6 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
   sh """
   test -f "${MSLREFERENCE}/MAP-LIB_ReferenceResults/v4.0.0/README.md" || exit 1
 
-  if test ! -d OpenModelicaLibraryTesting; then
-    git clone --recursive https://openmodelica.org/git-readonly/OpenModelicaLibraryTesting.git OpenModelicaLibraryTesting
-  fi
-  cd OpenModelicaLibraryTesting
-  git fetch
-  git reset --hard origin/master
-
   mkdir -p "/var/www/libraries.openmodelica.org/branches/${name}/"
   """
 
@@ -973,7 +1018,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
 
   sh 'date'
 
-  sh """
+  runSh("""
   export OPENMODELICAHOME="${WORKSPACE}/OpenModelica/${OMCPATH}/build"
   export MSLREFERENCE="${MSLREFERENCE}"
   export REFERENCEFILES="${REFERENCEFILES}"
@@ -990,7 +1035,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
   cd OpenModelicaLibraryTesting
   # Force /usr/bin/omc as being used for generating the mos-files. Ensures consistent behavior among all tested OMC versions
   stdbuf -oL -eL time ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags='${extraFlags}' --extrasimflags='${extrasimflags}' ${testFlags} --branch="${name}" --output="libraries.openmodelica.org:/var/www/libraries.openmodelica.org/branches/${name}/" --libraries='${libraryPath}/.openmodelica/libraries/'  --jobs=${jobs} ${libs_config_file} ${params.OLDLIBS ? "configs/conf-old.json configs/conf-nonstandard.json" : ""} || (killall omc ; false) || exit 1
-  """
+  """)
   sh 'date'
   sh "rm -f OpenModelicaLibraryTesting/${dbPrefix}-sqlite3.db.tmp"
   sh "ln OpenModelicaLibraryTesting/sqlite3.db OpenModelicaLibraryTesting/${dbPrefix}-sqlite3.db.tmp"
