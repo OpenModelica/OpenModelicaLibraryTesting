@@ -549,7 +549,7 @@ pipeline {
         }
         when {
           beforeAgent true
-          expression { params.fmi_v1_25 || params.fmi_v1_26 || params.fmi_v1_27 || params.fmi_master || params.fmpy_fmi_v1_25 || params.fmpy_fmi_v1_26 || params.fmpy_fmi_v1_27 || params.fmpy_fmi_master || params.newInst_daeMode || params.newBackend_daeMode || params.oldInst || params.report_ryzen_5950x_2 || params.cpp || params.cvode || params.gbode || params.ida}
+          expression { params.fmi_v1_25 || params.fmi_v1_26 || params.fmi_v1_27 || params.fmi_master || params.fmpy_fmi_v1_25 || params.fmpy_fmi_v1_26 || params.fmpy_fmi_v1_27 || params.fmpy_fmi_master || params.newInst_daeMode || params.newBackend_daeMode || params.oldInst || params.report_ryzen_5950x_2 || params.cpp || params.cvode || params.gbode || params.ida || params.wasm_jit}
         }
         environment {
           GITBRANCHES_FMI = 'maintenance/v1.20-fmi maintenance/v1.21-fmi maintenance/v1.22-fmi maintenance/v1.23-fmi maintenance/v1.24-fmi maintenance/v1.25-fmi maintenance/v1.26-fmi maintenance/v1.27-fmi maintenance/v1.22-fmi-fmpy maintenance/v1.23-fmi-fmpy maintenance/v1.24-fmi-fmpy maintenance/v1.25-fmi-fmpy maintenance/v1.26-fmi-fmpy maintenance/v1.27-fmi-fmpy master-fmi master-fmi-fmpy'
@@ -622,6 +622,9 @@ pipeline {
 
           sh "./report.py --branches='ida' configs/conf.json"
           sh "mv overview.html overview-ida.html"
+
+          sh "./report.py --branches='wasm-jit' configs/conf.json"
+          sh "mv overview.html overview-wasm-jit.html"
 
           sh "./report.py --branches='${env.GITBRANCHES_CPP}' configs/conf.json"
           sh "mv overview.html overview-c++.html"
