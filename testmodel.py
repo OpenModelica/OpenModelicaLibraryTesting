@@ -410,23 +410,33 @@ def sendExpressionOldOrNew(cmd):
     loadLibraryInNewOM()
     return omc_new.sendExpression(cmd)
 
+haveFlagCheckModel=False
+def wasmJitAcceptsFlag(flagVal):
+  # There is no HelloWorld executable to probe: the wasm-jit runtime lives in
+  # omc, so ask it directly whether a trivial model still simulates.
+  global haveFlagCheckModel
+  if not haveFlagCheckModel:
+    sendExpressionOldOrNew('loadString("model OMLibTestFlagCheck Real x(start = 1, fixed = true); equation der(x) = -x; end OMLibTestFlagCheck;")')
+    haveFlagCheckModel=True
+  return bool((sendExpressionOldOrNew('simulate(OMLibTestFlagCheck,simflags="%s")' % flagVal) or {}).get("resultFile"))
+
 annotationSimFlags=""
 (startTime,stopTime,tolerance,numberOfIntervals,stepSize)=sendExpressionOldOrNew('getSimulationOptions(%s,defaultTolerance=%s,defaultNumberOfIntervals=%s)' % (conf["modelName"], conf["defaultTolerance"], max(conf["defaultNumberOfIntervals"], numberOfIntervalsInReference)))
-if conf["simCodeTarget"]=="C" and sendExpressionOldOrNew('classAnnotationExists(%s, __OpenModelica_simulationFlags)' % conf["modelName"]):
+if conf["simCodeTarget"] in ("C","wasm-jit") and sendExpressionOldOrNew('classAnnotationExists(%s, __OpenModelica_simulationFlags)' % conf["modelName"]):
   for flag in sendExpressionOldOrNew('getAnnotationNamedModifiers(%s,"__OpenModelica_simulationFlags")' % conf["modelName"]):
     if flag=="The searched annotation name not found":
       # Old, stupid API
       continue
     val=sendExpressionOldOrNew('getAnnotationModifierValue(%s,"__OpenModelica_simulationFlags","%s")' % (conf["modelName"],flag))
     flagVal=" -noemit -%s=%s" % (flag,val)
-    if shared.simulationAcceptsFlag(flagVal, checkOutput=False, cwd="..", isWin=isWin):
+    if wasmJitAcceptsFlag("-%s=%s" % (flag,val)) if isWasmJit else shared.simulationAcceptsFlag(flagVal, checkOutput=False, cwd="..", isWin=isWin):
       annotationSimFlags+=" -%s=%s" % (flag,val)
     else:
       with open(errFile, 'a+') as fp:
-        fp.write("Ignoring simflag %s since it seems broken on HelloWorld\n" % flagVal)
+        fp.write("Ignoring simflag %s since the simulation runtime does not accept it\n" % flagVal)
 
 def simulateCmd(resimulate):
-  simflags = ("%s %s -lv LOG_STATS" % (conf["simFlags"],emit_protected)).strip()
+  simflags = ("%s %s %s -lv LOG_STATS" % (annotationSimFlags,conf["simFlags"],emit_protected)).strip()
   return 'simulate(%s,startTime=%g,stopTime=%g,tolerance=%g,numberOfIntervals=%d,outputFormat="%s",variableFilter="%s",fileNamePrefix="%s",simflags="%s"%s)' % (conf["modelName"],startTime,stopTime,tolerance,numberOfIntervals,outputFormat,variableFilter,conf["fileName"],simflags,(',resimulateExecutable="%s"' % conf["fileName"]) if resimulate else "")
 
 # TODO: Detect and handle the case where RT_CLOCK is not available in OMC
