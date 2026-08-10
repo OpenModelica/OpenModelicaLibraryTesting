@@ -264,6 +264,88 @@ Indexes are created by `sqlite2postgres.py --index` rather than on the fly:
 `(branch, libname, date)` on `libversion` and `(libname, date)` on the branch
 tables.
 
+## Using the shared database
+
+Every script takes `--db`, which is a path to a local sqlite3 file (the default,
+`sqlite3.db`) or a `postgresql://` URL:
+
+```bash
+./test.py --branch=master --db=postgresql://om@openmodelica.org/omdb configs/conf.json
+./report.py --branches=master --db=postgresql://om@openmodelica.org/omdb configs/conf.json
+```
+
+The password comes from `PGPASSWORD` or `~/.pgpass`, never from the URL or the
+command line. `resultsdb.py` holds the two backends behind one interface; the
+scripts write the same statements for both, with `?` as the placeholder, and ask
+the connection where the dialects genuinely differ (`quote()`, `tableExists()`,
+`groupConcat()`, `countIf()`, `likeNoCase()`, `insertIgnore()`).
+
+### Job claiming
+
+The point of the shared database is that two machines can test at the same time
+without overwriting each other. Before testing a library, `test.py` claims the
+job in
+
+```sql
+CREATE TABLE job_claim (
+  branch text, libname text, libversion text, omcversion text, confighash bigint,
+  host text NOT NULL, state text NOT NULL,
+  claimed_at timestamptz NOT NULL DEFAULT now(),
+  heartbeat  timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (branch, libname, libversion, omcversion, confighash)
+);
+```
+
+The key is exactly the question "which library, in which version, against which
+compiler and configuration": the same combination the run already uses to decide
+whether results exist. A claim is taken with `INSERT ... ON CONFLICT DO UPDATE
+... WHERE` so that only one machine can win it, and a machine that loses prints
+
+```
+Skipping Buildings_9.1.0 as ripper2 has been testing it since 2026-08-10 22:14:03
+```
+
+and moves on to the next library instead of repeating the work. The winner
+refreshes `heartbeat` every minute from a background thread and sets
+`state='done'` when the results are written. A machine that dies stops sending
+its heartbeat, and after 30 minutes (`STALE_CLAIM_MINUTES`) another machine may
+take its jobs over, so a crash does not park a library forever.
+
+Nothing of this applies to a local sqlite3 file: it has a single writer, and
+`claim()` always says yes.
+
+### In Jenkins
+
+The pipeline has a `postgres` parameter, on by default, and sets two variables
+for every stage:
+
+```groovy
+environment {
+  LIBTEST_DB = "${params.postgres ? 'postgresql://om@openmodelica.org/omdb' : 'sqlite3.db'}"
+  PGPASSFILE = credentials('omdb-pgpass')
+}
+```
+
+`LIBTEST_DB` is where `--db` defaults to, so no invocation has to spell it out,
+and `omdb-pgpass` is a Jenkins *secret file* credential holding a single line:
+
+```
+openmodelica.org:5432:omdb:om:<password>
+```
+
+libpq reads the password from that file, so it never appears on a command line
+or in the build log. `resultsdb.py` takes a private copy of the file when its
+permissions let anyone else read it, because libpq silently ignores such a file
+and then fails with `fe_sendauth: no password supplied`.
+
+With `postgres` ticked, a job no longer downloads the machine's `sqlite3.db`
+before the run nor publishes it back afterwards - the step that made two
+machines overwrite each other. Untick the parameter and the old behaviour is
+back, unchanged.
+
+The test machines need `psycopg2`: `pip3 install psycopg2-binary`, or a rebuild
+of the images, since it is in `requirements.txt` and in `.CI/build-dep`.
+
 ## Migrating
 
 Run this **on omod-r630-2 (openmodelica.org)**: the sqlite3 files and the

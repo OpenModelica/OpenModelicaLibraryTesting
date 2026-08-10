@@ -3,11 +3,12 @@
 
 import sys, argparse
 import simplejson as json
-import shared
+import shared, resultsdb
 
 parser = argparse.ArgumentParser(description='OpenModelica model testing report generation tool')
 parser.add_argument('models', nargs='*')
 parser.add_argument('--branch', default='')
+resultsdb.addArgument(parser)
 
 args = parser.parse_args()
 
@@ -21,28 +22,28 @@ entryhead = "<tr><th>Branch</th><th>Total</th><th>Frontend</th><th>Backend</th><
 
 libs = {}
 
-import cgi, sqlite3, time, datetime
+import cgi, time, datetime
 from omcommon import friendlyStr, multiple_replace
 
-conn = sqlite3.connect('sqlite3.db')
-cursor = conn.cursor()
+db = resultsdb.connect(args.db)
+cursor = db.cursor()
 
 try:
-  cursor.execute("SELECT name FROM [sqlite_master] WHERE type='table' AND name=?", (branch,))
-  v = cursor.fetchone()[0]
+  if not db.tableExists(branch):
+    raise Exception("no table")
 except:
   raise Exception("No such table '%s'; specify it using --branch=XXX" % branch)
 
 for model in models:
   lines=[]
   c=0
-  libnames = [libname for (libname,) in cursor.execute("SELECT DISTINCT libname FROM [%s] WHERE model=? ORDER BY libname ASC" % (branch), (model,))]
+  libnames = [libname for (libname,) in cursor.execute("SELECT DISTINCT libname FROM %s WHERE model=? ORDER BY libname ASC" % (db.quote(branch)), (model,))]
   for libname in libnames:
-    for (finalphase,dint,libversion) in cursor.execute("SELECT finalphase,date,libversion FROM [%s] NATURAL JOIN [libversion] WHERE model=? AND libname=? ORDER BY date ASC" % (branch), (model,libname)):
+    for (finalphase,dint,libversion) in cursor.execute("SELECT finalphase,date,libversion FROM %s NATURAL JOIN libversion WHERE model=? AND libname=? ORDER BY date ASC" % (db.quote(branch)), (model,libname)):
       c+=1
       dstr = str(datetime.datetime.fromtimestamp(dint).strftime('%Y-%m-%d %H:%M:%S'))
-      cursor2 = conn.cursor()
-      omcversion = cursor2.execute("SELECT omcversion FROM [omcversion] WHERE date=? AND branch=?", (dint,branch)).fetchone()[0]
+      cursor2 = db.cursor()
+      omcversion = cursor2.execute("SELECT omcversion FROM omcversion WHERE date=? AND branch=?", (dint,branch)).fetchone()[0]
       omcversion = omcversion.replace("OpenModelica ","").replace("OMCompiler ","")
       lines.insert(0, "%s %s %s %s" % (dstr,shared.finalphaseName(finalphase),omcversion,libversion.strip()))
     if c==0:

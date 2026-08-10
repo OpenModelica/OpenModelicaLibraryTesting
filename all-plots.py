@@ -3,7 +3,7 @@
 
 import sys, argparse, subprocess, os
 import simplejson as json
-import shared
+import shared, resultsdb
 import re, time, math
 from omcommon import friendlyStr
 
@@ -18,6 +18,7 @@ from matplotlib.font_manager import FontProperties
 parser = argparse.ArgumentParser(description='OpenModelica model testing report generation tool')
 parser.add_argument('branches', nargs='*')
 parser.add_argument('--historypath', default="history")
+resultsdb.addArgument(parser)
 args = parser.parse_args()
 
 branches = [branch.split("/")[-1] for branch in args.branches]
@@ -25,11 +26,11 @@ fnameprefix = args.historypath
 
 libs = {}
 
-import cgi, sqlite3, time, datetime
+import cgi, time, datetime
 from omcommon import friendlyStr, multiple_replace
 
-conn = sqlite3.connect('sqlite3.db')
-cursor = conn.cursor()
+db = resultsdb.connect(args.db)
+cursor = db.cursor()
 
 def dateStr(dint):
   return str(datetime.datetime.fromtimestamp(dint).strftime('%Y-%m-%d %H:%M:%S'))
@@ -98,8 +99,7 @@ def plotLibrary(branch, libname, xs, total, frontend,backend,simcode,template,co
 
 for branch in branches:
   try:
-    cursor.execute("SELECT name FROM [sqlite_master] WHERE type='table' AND name=?", (branch,))
-    one = cursor.fetchone()
+    one = (branch,) if db.tableExists(branch) else None
     if one == None:
       print("No such table '%s'; specify it using --branch=XXX when running test.py" % branch)
       # ignore this table and continue
@@ -112,13 +112,13 @@ for branch in branches:
     # ignore this table and continue
     continue
   
-  cursor.execute('''CREATE INDEX IF NOT EXISTS [idx_%s_date] ON [%s](date)''' % (branch,branch))
+  db.createDateIndex(branch)
   libs = {}
-  for (date,libname,total,frontend,backend,simcode,template,compile,simulate,verify) in cursor.execute("""SELECT date,libname,COUNT(finalphase),COUNT(finalphase>=1 or null),COUNT(finalphase>=2 or null),COUNT(finalphase>=3 or null),COUNT(finalphase>=4 or null),COUNT(finalphase>=5 or null),COUNT(finalphase>=6 or null),COUNT(finalphase>=7 or null)
-    FROM [%s]
+  for (date,libname,total,frontend,backend,simcode,template,compile,simulate,verify) in cursor.execute("""SELECT date,libname,COUNT(finalphase),%s
+    FROM %s
     GROUP BY date,libname
     ORDER BY libname,date ASC
-""" % (branch)):
+""" % (",".join(db.countIf("finalphase>=%d" % i) for i in range(1,8)), db.quote(branch))):
     if libname not in libs:
       libs[libname] = ([],[],[],[],[],[],[],[],[])
     libs[libname][0].append(datetime.datetime.fromtimestamp(date))

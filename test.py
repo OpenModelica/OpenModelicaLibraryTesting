@@ -8,7 +8,7 @@ import sys
 if (sys.version_info < (3, 0)):
   raise Exception("Python2 is no longer supported")
 
-import html, shutil, os, re, glob, time, argparse, sqlite3, datetime, math, platform
+import html, shutil, os, re, glob, time, argparse, datetime, math, platform
 from joblib import Parallel, delayed
 import simplejson as json
 import psutil, subprocess, threading, hashlib
@@ -18,7 +18,7 @@ from omcommon import friendlyStr, multiple_replace
 from natsort import natsorted
 from shared import readConfig, getReferenceFileName, simulationAcceptsFlag, isFMPy
 from platform import processor
-import shared
+import shared, resultsdb
 
 import signal
 
@@ -47,6 +47,7 @@ parser.add_argument('--timeout', default=0, help="=[value] timeout in seconds fo
 parser.add_argument('--msysEnvironment', help = 'MSYS2 environment used by OpenModelica on Windows.',  default = 'ucrt64')
 parser.add_argument('--debug', action="store_true", help="turn on the DEBUG mode", default=False)
 parser.add_argument('--addmsl', action="store_true", help="add the MSL path to the OPENMODELICAPATH if the MSL is not detected in the libraries path", default=False)
+resultsdb.addArgument(parser)
 
 args = parser.parse_args()
 configs = args.configs
@@ -557,43 +558,10 @@ for (lib,c) in configs:
 
 # Create mos-files
 
-conn = sqlite3.connect('sqlite3.db')
-cursor = conn.cursor()
-
-user_version = cursor.execute("PRAGMA user_version").fetchone()[0]
-
-if user_version==0:
-  # BOOLEAN NOT NULL CHECK (verify IN (0,1) AND builds IN (0,1) AND simulates IN (0,1))
-  # Table to lookup from a run (date, branch) to omcversion used
-  cursor.execute("CREATE TABLE if not exists [omcversion] (date integer NOT NULL, branch text NOT NULL, omcversion text NOT NULL)")
-  # Table to lookup from a run (date, branch) which library versions were used
-  cursor.execute("CREATE TABLE if not exists [libversion] (date integer NOT NULL, branch text NOT NULL, libname text NOT NULL, libversion text NOT NULL, confighash integer NOT NULL)")
-elif user_version==1:
-  cursor.execute("ALTER TABLE [libversion] ADD COLUMN confighash integer NOT NULL DEFAULT(0)")
-elif user_version==2:
-  tables = [tbl for (tbl,) in cursor.execute("SELECT name FROM sqlite_master WHERE type='table'") if tbl not in ["libversion","omcversion"]]
-  for tbl in tables:
-    cursor.execute("ALTER TABLE [%s] ADD COLUMN parsing real NOT NULL DEFAULT(0.0)" % tbl)
-elif user_version in [3]:
-  pass
-else:
-  print("Unknown schema user_version=%d" % user_version)
-  sys.exit(1)
-
-def createBranchTable(branch):
-  """A run fills one table per FMI simulator, so this happens more than once."""
-  cursor.execute('''CREATE TABLE if not exists [%s]
-             (date integer NOT NULL, libname text NOT NULL, model text NOT NULL, exectime real NOT NULL,
-             frontend real NOT NULL, backend real NOT NULL, simcode real NOT NULL, templates real NOT NULL, compile real NOT NULL, simulate real NOT NULL,
-             verify real NOT NULL, verifyfail integer NOT NULL, verifytotal integer NOT NULL, finalphase integer NOT NULL, parsing real NOT NULL)''' % branch)
-  cursor.execute('''DROP INDEX IF EXISTS [idx_%s_date]''' % branch)
-
-createBranchTable(primaryBranch)
-cursor.execute('''DROP INDEX IF EXISTS idx_omcversion_date''')
-cursor.execute('''DROP INDEX IF EXISTS idx_libversion_date''')
-
-# Set user_version to the current schema
-cursor.execute("PRAGMA user_version=3")
+db = resultsdb.connect(args.db)
+cursor = db.cursor()
+# One table per simulator, so this happens once per branch the run fills.
+db.createTables(primaryBranch)
 
 def strToHashInt(s):
   return int(hashlib.sha1((s+"fixCorruptBuilds-2017-03-26").encode("utf-8")).hexdigest()[0:8],16)
@@ -778,11 +746,18 @@ for (library,conf) in configs:
       prefix = conf["ignoreModelPrefix"]
       res=list(filter(lambda x: not x.startswith(prefix), res))
   libName=shared.libname(library, conf)
-  v = cursor.execute("""SELECT date,libversion,libname,branch,omcversion FROM [libversion] NATURAL JOIN [omcversion]
+  v = cursor.execute("""SELECT date,libversion,libname,branch,omcversion FROM libversion NATURAL JOIN omcversion
   WHERE libversion=? AND libname=? AND branch=? AND omcversion=? AND confighash=? ORDER BY date DESC LIMIT 1""", (conf["libraryLastChange"],libName,primaryBranch,omc_version,confighash)).fetchone()
   if libName in stats_by_libname or libName in skipped_libs:
     raise Exception("Duplicate libName found: %s" % libName)
   if v is None or execAllTests:
+    # On the shared database another machine may already be running this exact
+    # job; claiming it is what keeps the two from testing the same thing.
+    if not db.claim(primaryBranch, libName, conf["libraryLastChange"], omc_version, confighash):
+      (host, since) = db.claimedBy(primaryBranch, libName, conf["libraryLastChange"], omc_version, confighash)
+      print("Skipping %s as %s has been testing it since %s" % (libName, host, since))
+      skipped_libs[libName] = None
+      continue
     stats_by_libname[libName] = {"conf":conf, "stats":[]}
     tests = tests + [(r,library,libName,libName+"_"+r,conf) for r in res]
     print("Running library %s (%d tests)" % (libName, len(res)))
@@ -899,7 +874,7 @@ def expectedExec(c):
   (model,lib,libName,name,data) = c
   if "expectedExec" in data:
     return data["expectedExec"]
-  cursor.execute("SELECT exectime FROM [%s] WHERE libname = ? AND model = ? ORDER BY date DESC LIMIT 1" % primaryBranch, (libName,model))
+  cursor.execute("SELECT exectime FROM %s WHERE libname = ? AND model = ? ORDER BY date DESC LIMIT 1" % db.quote(primaryBranch), (libName,model))
   v = cursor.fetchone()
   data["expectedExec"] = (v or (0.0,))[0]
   return data["expectedExec"]
@@ -1003,17 +978,17 @@ def resultValues(model, libname, data, simulator=None):
   )
 
 for (resultBranch, simulator) in resultBranches:
-  createBranchTable(resultBranch)
+  db.createTables(resultBranch)
   for key in stats.keys():
     (name,model,libname,data)=stats[key]
     if simulator is None:
       stats_by_libname[libname]["stats"].append(stats[key])
-    cursor.execute("INSERT INTO [%s] VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" % resultBranch,
+    cursor.execute("INSERT INTO %s VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)%s" % (db.quote(resultBranch), db.insertIgnore()),
                    resultValues(model, libname, data, simulator))
   for libname in stats_by_libname.keys():
     confighash = stats_by_libname[libname]["conf"]["confighash"]
-    cursor.execute("INSERT INTO [libversion] VALUES (?,?,?,?,?)", (testRunStartTimeAsEpoch, resultBranch, libname, stats_by_libname[libname]["conf"]["libraryLastChange"], confighash))
-  cursor.execute("INSERT INTO [omcversion] VALUES (?,?,?)", (testRunStartTimeAsEpoch, resultBranch, omc_version))
+    cursor.execute("INSERT INTO libversion VALUES (?,?,?,?,?)%s" % db.insertIgnore(), (testRunStartTimeAsEpoch, resultBranch, libname, stats_by_libname[libname]["conf"]["libraryLastChange"], confighash))
+  cursor.execute("INSERT INTO omcversion VALUES (?,?,?)%s" % db.insertIgnore(), (testRunStartTimeAsEpoch, resultBranch, omc_version))
 """
 # Not really a good thing to do; was just done to make generation of the report simpler
 for libname in skipped_libs.keys():
@@ -1364,7 +1339,8 @@ if clean and (result_location == "" or (not isWin and not noSync)):
     print("-- problem during removing of ./files dir")
 
 # Do not commit until we have generated and uploaded the reports
-conn.commit()
-conn.close()
+db.commit()
+db.release()
+db.close()
 
 print("all tests done ...")

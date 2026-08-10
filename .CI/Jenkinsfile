@@ -3,6 +3,8 @@ pipeline {
   parameters {
     booleanParam(name: 'OLDLIBS', defaultValue: false, description: 'Also test some outdated libraries')
 
+    booleanParam(name: 'postgres', defaultValue: true, description: 'Store the results in the shared PostgreSQL database (omdb on openmodelica.org) rather than in the per-machine sqlite3 file. Machines coordinate through it, so two of them no longer overwrite each other. Untick to go back to the sqlite3 files.')
+
     booleanParam(name: 'v1_26', defaultValue: false, description: 'maintenance/v1.26 branch (ryzen-5950x-1)')
     booleanParam(name: 'v1_27', defaultValue: false, description: 'maintenance/v1.27 branch (ryzen-5950x-1)')
     booleanParam(name: 'master', defaultValue: false, description: 'master branch (ryzen-5950x-1)')
@@ -40,6 +42,12 @@ pipeline {
   }
   environment {
     LC_ALL = 'C.UTF-8'
+    // Where the results go. The scripts take it from here instead of a --db
+    // option on every single invocation.
+    LIBTEST_DB = "${params.postgres ? 'postgresql://om@openmodelica.org/omdb' : 'sqlite3.db'}"
+    // A secret file holding one pgpass line; libpq reads the password from it,
+    // so it never reaches a command line or the build log.
+    PGPASSFILE = credentials('omdb-pgpass')
   }
   stages {
     stage('test') { parallel {
@@ -455,7 +463,12 @@ pipeline {
           cd OpenModelica
           git fetch
           '''
-          sh 'wget -q https://libraries.openmodelica.org/sqlite3/ripper1/sqlite3.db'
+          // The reports read the shared database directly when it is in use.
+          script {
+            if (!params.postgres) {
+              sh 'wget -q https://libraries.openmodelica.org/sqlite3/ripper1/sqlite3.db'
+            }
+          }
           sh './clean-empty-omcversion-dates.py'
 
           sh "./all-reports.py --email --omcgitdir=OpenModelica ${env.GITBRANCHES} conversion heavy_tests"
@@ -521,7 +534,11 @@ pipeline {
           cd OpenModelica
           git fetch
           '''
-          sh 'wget -q https://libraries.openmodelica.org/sqlite3/ripper2/sqlite3.db'
+          script {
+            if (!params.postgres) {
+              sh 'wget -q https://libraries.openmodelica.org/sqlite3/ripper2/sqlite3.db'
+            }
+          }
           sh './clean-empty-omcversion-dates.py'
 
           sh "./all-reports.py --email --omcgitdir=OpenModelica ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} gbode cvode ida"
@@ -978,14 +995,17 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
 
   sh "test -d '${libraryPath}/.openmodelica/libraries/Modelica trunk'"
 
-  sh """
-  if ! test -f ~/TEST_LIBS_BACKUP/${dbPrefix}-sqlite3.db; then
-    wget -O ~/TEST_LIBS_BACKUP/${dbPrefix}-sqlite3.db.tmp -q https://libraries.openmodelica.org/sqlite3/${dbPrefix}/sqlite3.db
-	mv ~/TEST_LIBS_BACKUP/${dbPrefix}-sqlite3.db.tmp ~/TEST_LIBS_BACKUP/${dbPrefix}-sqlite3.db
-  fi
-  cp ~/TEST_LIBS_BACKUP/${dbPrefix}-sqlite3.db OpenModelicaLibraryTesting/sqlite3.db
-  test -s OpenModelicaLibraryTesting/sqlite3.db
-  """
+  // The shared database needs none of this: the results go straight into it.
+  if (!params.postgres) {
+    sh """
+    if ! test -f ~/TEST_LIBS_BACKUP/${dbPrefix}-sqlite3.db; then
+      wget -O ~/TEST_LIBS_BACKUP/${dbPrefix}-sqlite3.db.tmp -q https://libraries.openmodelica.org/sqlite3/${dbPrefix}/sqlite3.db
+	  mv ~/TEST_LIBS_BACKUP/${dbPrefix}-sqlite3.db.tmp ~/TEST_LIBS_BACKUP/${dbPrefix}-sqlite3.db
+    fi
+    cp ~/TEST_LIBS_BACKUP/${dbPrefix}-sqlite3.db OpenModelicaLibraryTesting/sqlite3.db
+    test -s OpenModelicaLibraryTesting/sqlite3.db
+    """
+  }
 
   sh 'date'
 
@@ -1008,11 +1028,16 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
   stdbuf -oL -eL time ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags='${extraFlags}' --extrasimflags='${extrasimflags}' ${testFlags} --branch="${name}" --output="libraries.openmodelica.org:/var/www/libraries.openmodelica.org/branches/${name}/" --libraries='${libraryPath}/.openmodelica/libraries/'  --jobs=${jobs} ${libs_config_file} ${params.OLDLIBS ? "configs/conf-old.json configs/conf-nonstandard.json" : ""} || (killall omc ; false) || exit 1
   """)
   sh 'date'
-  sh "rm -f OpenModelicaLibraryTesting/${dbPrefix}-sqlite3.db.tmp"
-  sh "ln OpenModelicaLibraryTesting/sqlite3.db OpenModelicaLibraryTesting/${dbPrefix}-sqlite3.db.tmp"
   sh "cd OpenModelicaLibraryTesting/ && ./clean-empty-omcversion-dates.py"
-  sh "cp OpenModelicaLibraryTesting/sqlite3.db ~/TEST_LIBS_BACKUP/${dbPrefix}-sqlite3.db"
-  sh "rm -f ~/TEST_LIBS_BACKUP/${dbPrefix}-`date +sqlite3.%Y%m%d.db`"
 
-  sshPublisher(publishers: [sshPublisherDesc(configName: sshConfig, transfers: [sshTransfer(removePrefix: 'OpenModelicaLibraryTesting', sourceFiles: 'OpenModelicaLibraryTesting/sqlite3.db')])], failOnError: true)
+  // Copying the file back is what made two machines overwrite each other's
+  // results, so it only happens while a job still writes its own sqlite3 file.
+  if (!params.postgres) {
+    sh "rm -f OpenModelicaLibraryTesting/${dbPrefix}-sqlite3.db.tmp"
+    sh "ln OpenModelicaLibraryTesting/sqlite3.db OpenModelicaLibraryTesting/${dbPrefix}-sqlite3.db.tmp"
+    sh "cp OpenModelicaLibraryTesting/sqlite3.db ~/TEST_LIBS_BACKUP/${dbPrefix}-sqlite3.db"
+    sh "rm -f ~/TEST_LIBS_BACKUP/${dbPrefix}-`date +sqlite3.%Y%m%d.db`"
+
+    sshPublisher(publishers: [sshPublisherDesc(configName: sshConfig, transfers: [sshTransfer(removePrefix: 'OpenModelicaLibraryTesting', sourceFiles: 'OpenModelicaLibraryTesting/sqlite3.db')])], failOnError: true)
+  }
 }

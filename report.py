@@ -3,11 +3,12 @@
 
 import sys, argparse
 import simplejson as json
-import shared
+import shared, resultsdb
 
 parser = argparse.ArgumentParser(description='OpenModelica library testing report generation tool')
 parser.add_argument('configs', nargs='*')
 parser.add_argument('--branches', default='master')
+resultsdb.addArgument(parser)
 args = parser.parse_args()
 configs = args.configs
 
@@ -23,7 +24,7 @@ entryhead = "<tr><th>Branch</th><th>Total</th><th>Parsing</th><th>Frontend</th><
 
 libs = {}
 
-import html, sqlite3, time, datetime
+import html, time, datetime
 from omcommon import friendlyStr, multiple_replace
 
 configs_lst = [shared.readConfig(c) for c in configs]
@@ -32,8 +33,8 @@ for c in configs_lst:
   configs = configs + c
 libnames = set(shared.libname(library,conf) for (library,conf) in configs)
 
-conn = sqlite3.connect('sqlite3.db')
-cursor = conn.cursor()
+db = resultsdb.connect(args.db)
+cursor = db.cursor()
 
 nmodels = {}
 nsimulate = {}
@@ -42,7 +43,7 @@ exectime = {}
 missing_branches = []
 for branch in branches:
   try:
-    cursor.execute("SELECT date FROM [%s] ORDER BY date DESC LIMIT 1" % branch)
+    cursor.execute("SELECT date FROM %s ORDER BY date DESC LIMIT 1" % db.quote(branch))
     one = cursor.fetchone()
     if one == None:
       print("No such table '%s'; specify it using --branch=XXX when running test.py" % branch)
@@ -58,18 +59,18 @@ for branch in branches:
     continue
 
   dates_str[branch] = str(datetime.datetime.fromtimestamp(v).strftime('%Y-%m-%d %H:%M:%S'))
-  cursor.execute('''CREATE INDEX IF NOT EXISTS [idx_%s_date] ON [%s](date)''' % (branch,branch))
+  db.createDateIndex(branch)
 
   dates[branch] = {}
   branch_nmodels = 0
   for libname in libnames:
-    cursor.execute("SELECT date FROM [%s] WHERE libname=? ORDER BY date DESC LIMIT 1" % branch, (libname,))
+    cursor.execute("SELECT date FROM %s WHERE libname=? ORDER BY date DESC LIMIT 1" % db.quote(branch), (libname,))
     v = cursor.fetchone()
     if v is None:
       dates[branch][libname] = 0
       continue
     dates[branch][libname] = v[0]
-    for x in cursor.execute("SELECT model FROM [%s] WHERE libname=? AND date=?" % branch, (libname,v[0])):
+    for x in cursor.execute("SELECT model FROM %s WHERE libname=? AND date=?" % db.quote(branch), (libname,v[0])):
       if libname not in libs:
         libs[libname] = set()
       libs[libname].add(x[0])
@@ -89,7 +90,7 @@ def checkEqual(iterator):
 for lib in sorted(libs.keys()):
   models = libs[lib]
   entries += "<hr><h3>%s</h3>\n" % lib
-  branches_versions = [(cursor.execute("SELECT libversion FROM [libversion] WHERE libname=? AND branch=? ORDER BY date DESC LIMIT 1", (lib,branch)).fetchone() or ["unknown"])[0] for branch in branches]
+  branches_versions = [(cursor.execute("SELECT libversion FROM libversion WHERE libname=? AND branch=? ORDER BY date DESC LIMIT 1", (lib,branch)).fetchone() or ["unknown"])[0] for branch in branches]
   all_equal = checkEqual(branches_versions)
   if not all_equal:
     entries += "<table>\n"
@@ -109,12 +110,12 @@ for lib in sorted(libs.keys()):
     master_models = []
     for i in range(0,8):
       i_models = set()
-      for v in cursor.execute("SELECT model FROM [%s] WHERE date=? AND finalphase>=? AND libname=?" % (branch), (dates[branch][lib],i,lib)):
+      for v in cursor.execute("SELECT model FROM %s WHERE date=? AND finalphase>=? AND libname=?" % (db.quote(branch)), (dates[branch][lib],i,lib)):
         i_models.add(v[0])
       master_models.append(i_models)
     models[branch] = master_models
   for branch in branches:
-    vs = [cursor.execute("SELECT COUNT(*) FROM [%s] WHERE date=? AND finalphase>=? AND libname=?" % (branch), (dates[branch][lib],i,lib)).fetchone()[0] for i in range(0,8)]
+    vs = [cursor.execute("SELECT COUNT(*) FROM %s WHERE date=? AND finalphase>=? AND libname=?" % (db.quote(branch)), (dates[branch][lib],i,lib)).fetchone()[0] for i in range(0,8)]
     warnings = []
     entries += '<tr><td><a href="%s/%s/%s.html">%s</a></td>' % (branch,lib,lib,branch)
     for i in [0]+list(range(0,len(vs))):
@@ -138,8 +139,8 @@ for lib in sorted(libs.keys()):
   entries += "<table>\n"
   entries += entryhead
   for branch in branches:
-    vs = [cursor.execute("SELECT COUNT(*) FROM [%s] WHERE date=? AND finalphase>=? AND libname=?" % (branch), (dates[branch][lib],i,lib)).fetchone()[0] for i in range(0,8)]
-    sums = [cursor.execute("SELECT SUM(%s) FROM [%s] WHERE date=? AND libname=?" % (fields[i],branch), (dates[branch][lib],lib)).fetchone()[0] or 0 for i in range(0,9)]
+    vs = [cursor.execute("SELECT COUNT(*) FROM %s WHERE date=? AND finalphase>=? AND libname=?" % (db.quote(branch)), (dates[branch][lib],i,lib)).fetchone()[0] for i in range(0,8)]
+    sums = [cursor.execute("SELECT SUM(%s) FROM %s WHERE date=? AND libname=?" % (fields[i],db.quote(branch)), (dates[branch][lib],lib)).fetchone()[0] or 0 for i in range(0,9)]
     entries += '<tr><td><a href="%s/%s/%s.html">%s</a></td>' % (branch,lib,lib,branch)
     entries += ("<td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n" % (friendlyStr(sums[0]),friendlyStr(sums[1]),friendlyStr(sums[2]),friendlyStr(sums[3]),friendlyStr(sums[4]),friendlyStr(sums[5]),friendlyStr(sums[6]),friendlyStr(sums[7]),friendlyStr(sums[8])))
     exectime[branch] += sums[0]
@@ -148,7 +149,7 @@ for lib in sorted(libs.keys()):
 
 nummodels = sum(len(l) for l in libs.values())
 branches_lines = [("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td%s>%d</td><td>%d</td></tr>\n" % (html.escape(branch), html.escape(
-  (cursor.execute("SELECT omcversion FROM [omcversion] WHERE date=? AND branch=?", (max(dates[branch][lib] for lib in libnames),branch)).fetchone() or ["unknown"])[0]
+  (cursor.execute("SELECT omcversion FROM omcversion WHERE date=? AND branch=?", (max(dates[branch][lib] for lib in libnames),branch)).fetchone() or ["unknown"])[0]
   ), html.escape(dates_str[branch]), friendlyStr(exectime[branch]),
   " class=\"warning\"" if nummodels!=nmodels[branch] else "",
   nsimulate[branch],

@@ -1,4 +1,4 @@
 FROM docker.openmodelica.org/build-deps:v1.16.3
 
 RUN apt-get update && apt-get install libxml2 libxslt1.1 libxml2-dev libxslt1-dev
-RUN pip3 install matplotlib FMPy
+RUN pip3 install matplotlib FMPy psycopg2-binary
