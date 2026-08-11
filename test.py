@@ -70,6 +70,44 @@ ompython_omhome = args.ompython_omhome
 fmisimulators = shared.parseFmiSimulators(args.fmisimulator)
 # The first simulator is the one the single-simulator code paths use.
 fmisimulator = fmisimulators[0][1] if fmisimulators else None
+
+# One branch per simulator. The first reports itself in the results of the
+# model and the others under their own name, but every one of them stores its
+# results where its own simulator belongs: a job given only FMPy on
+# --branch=v1.27-fmi fills v1.27-fmi-fmpy, not v1.27-fmi.
+resultBranches = [(branch, None)]
+if fmisimulators:
+  resultBranches = [(shared.branchForSimulator(branch, fmisimulators[0][0]), None)]
+  for (simulatorName, _) in fmisimulators[1:]:
+    resultBranches.append((shared.branchForSimulator(branch, simulatorName), simulatorName))
+# What the run asks about when it looks for results it already has.
+primaryBranch = resultBranches[0][0]
+
+jobOutput = result_location
+
+def outputFor(resultBranch):
+  """Where a branch publishes.
+
+  --output names the directory of the job, which ends in the branch the job was
+  started with, so every simulator gets the directory of its own branch beside
+  it: a job given only FMPy on --branch=v1.27-fmi publishes v1.27-fmi-fmpy, the
+  same branch its results are stored under.
+
+  rsync runs from the directory a branch is staged in, so a local destination
+  has to be absolute; a remote one, host:path, already is.
+  """
+  location = jobOutput
+  if jobOutput:
+    base = jobOutput.rstrip("/")
+    if base.endswith("/" + branch):
+      location = "%s%s" % (base[:-len(branch)], resultBranch)
+    elif resultBranch != primaryBranch:
+      location = "%s/%s" % (base, resultBranch)
+  if location and ":" not in location.split("/")[0]:
+    location = os.path.abspath(location)
+  return location
+
+
 allTestsFmi = args.fmi
 fmuType = args.fmuType
 ulimitMemory = args.ulimitvmem
@@ -252,8 +290,8 @@ else:
     omc_cmd = [os.path.normpath(os.path.join(os.environ.get("OPENMODELICAHOME"), 'bin', 'omc'))]
   else:
     omc_cmd = ["omc"]
-if result_location != "" and not os.path.exists(result_location):
-  os.makedirs(result_location)
+if result_location != "" and not os.path.exists(outputFor(primaryBranch)):
+  os.makedirs(outputFor(primaryBranch))
 
 if configs == []:
   print("Error: Expected at least one configuration file to start the library test")
@@ -550,7 +588,7 @@ def createBranchTable(branch):
              verify real NOT NULL, verifyfail integer NOT NULL, verifytotal integer NOT NULL, finalphase integer NOT NULL, parsing real NOT NULL)''' % branch)
   cursor.execute('''DROP INDEX IF EXISTS [idx_%s_date]''' % branch)
 
-createBranchTable(branch)
+createBranchTable(primaryBranch)
 cursor.execute('''DROP INDEX IF EXISTS idx_omcversion_date''')
 cursor.execute('''DROP INDEX IF EXISTS idx_libversion_date''')
 
@@ -741,7 +779,7 @@ for (library,conf) in configs:
       res=list(filter(lambda x: not x.startswith(prefix), res))
   libName=shared.libname(library, conf)
   v = cursor.execute("""SELECT date,libversion,libname,branch,omcversion FROM [libversion] NATURAL JOIN [omcversion]
-  WHERE libversion=? AND libname=? AND branch=? AND omcversion=? AND confighash=? ORDER BY date DESC LIMIT 1""", (conf["libraryLastChange"],libName,branch,omc_version,confighash)).fetchone()
+  WHERE libversion=? AND libname=? AND branch=? AND omcversion=? AND confighash=? ORDER BY date DESC LIMIT 1""", (conf["libraryLastChange"],libName,primaryBranch,omc_version,confighash)).fetchone()
   if libName in stats_by_libname or libName in skipped_libs:
     raise Exception("Duplicate libName found: %s" % libName)
   if v is None or execAllTests:
@@ -861,7 +899,7 @@ def expectedExec(c):
   (model,lib,libName,name,data) = c
   if "expectedExec" in data:
     return data["expectedExec"]
-  cursor.execute("SELECT exectime FROM [%s] WHERE libname = ? AND model = ? ORDER BY date DESC LIMIT 1" % branch, (libName,model))
+  cursor.execute("SELECT exectime FROM [%s] WHERE libname = ? AND model = ? ORDER BY date DESC LIMIT 1" % primaryBranch, (libName,model))
   v = cursor.fetchone()
   data["expectedExec"] = (v or (0.0,))[0]
   return data["expectedExec"]
@@ -963,12 +1001,6 @@ def resultValues(model, libname, data, simulator=None):
     simulated.get("phase") or 0,
     data.get("parsing") or 0.0
   )
-
-# One branch per FMI simulator: the first one reports itself in the results of
-# the model, the others under their own name, see testmodel.py.
-resultBranches = [(branch, None)]
-for (simulatorName, _) in fmisimulators[1:]:
-  resultBranches.append((shared.branchForSimulator(branch, simulatorName), simulatorName))
 
 for (resultBranch, simulator) in resultBranches:
   createBranchTable(resultBranch)
@@ -1089,25 +1121,6 @@ def dataForSimulator(data, simulator):
 def artifactSuffix(simulator):
   """What tells the files of one simulator from those of another."""
   return "_%s" % simulator if simulator and len(fmisimulators) > 1 else ""
-
-jobOutput = result_location
-
-def outputFor(resultBranch):
-  """Where a branch publishes; --output names the directory of the job.
-
-  rsync runs from the directory a branch is staged in, so a local destination
-  has to be absolute; a remote one, host:path, already is.
-  """
-  location = jobOutput
-  if jobOutput and resultBranch != branch:
-    base = jobOutput.rstrip("/")
-    if base.endswith("/" + branch):
-      location = "%s%s" % (base[:-len(branch)], resultBranch)
-    else:
-      location = "%s/%s" % (base, resultBranch)
-  if location and ":" not in location.split("/")[0]:
-    location = os.path.abspath(location)
-  return location
 
 # Every simulator publishes its own results - .sim and diff files included - to
 # the directory of its own branch; the .err of the build is shared, so each of
