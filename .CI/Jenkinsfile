@@ -3,8 +3,6 @@ pipeline {
   parameters {
     booleanParam(name: 'OLDLIBS', defaultValue: false, description: 'Also test some outdated libraries')
 
-    booleanParam(name: 'postgres', defaultValue: true, description: 'Store the results in the shared PostgreSQL database (omdb on openmodelica.org) rather than in the per-machine sqlite3 file. Machines coordinate through it, so two of them no longer overwrite each other. Untick to go back to the sqlite3 files.')
-
     booleanParam(name: 'v1_26', defaultValue: false, description: 'maintenance/v1.26 branch (ryzen-5950x-1)')
     booleanParam(name: 'v1_27', defaultValue: false, description: 'maintenance/v1.27 branch (ryzen-5950x-1)')
     booleanParam(name: 'master', defaultValue: false, description: 'master branch (ryzen-5950x-1)')
@@ -44,7 +42,7 @@ pipeline {
     LC_ALL = 'C.UTF-8'
     // Where the results go. The scripts take it from here instead of a --db
     // option on every single invocation.
-    LIBTEST_DB = "${params.postgres ? 'postgresql://om@openmodelica.org/omdb' : 'sqlite3.db'}"
+    LIBTEST_DB = 'postgresql://om@openmodelica.org/omdb'
   }
   stages {
     stage('test') { parallel {
@@ -62,7 +60,7 @@ pipeline {
           expression { params.v1_26 }
         }
         steps {
-          runRegressiontest('maintenance/v1.26', 'v1.26', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', '', false, false)
+          runRegressiontest('maintenance/v1.26', 'v1.26', '', '', false, '', '', false, false)
         }
       }
 
@@ -79,7 +77,7 @@ pipeline {
           expression { params.v1_27 }
         }
         steps {
-          runRegressiontest('maintenance/v1.27', 'v1.27', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', '', false, false)
+          runRegressiontest('maintenance/v1.27', 'v1.27', '', '', false, '', '', false, false)
         }
       }
 
@@ -96,7 +94,7 @@ pipeline {
           expression { params.master }
         }
         steps {
-          runRegressiontest('master', 'master', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', '', false, false)
+          runRegressiontest('master', 'master', '', '', false, '', '', false, false)
         }
       }
 
@@ -113,7 +111,7 @@ pipeline {
           expression { params.conversion_script }
         }
         steps {
-          runRegressiontest('master', 'conversion', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', '', false, true)
+          runRegressiontest('master', 'conversion', '', '', false, '', '', false, true)
         }
       }
 
@@ -130,7 +128,7 @@ pipeline {
           expression { params.newInst_newBackend }
         }
         steps {
-          runRegressiontest('master', 'newInst-newBackend', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --newBackend")', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', '', false, false)
+          runRegressiontest('master', 'newInst-newBackend', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --newBackend")', '', false, '', '', false, false)
         }
       }
 
@@ -147,7 +145,7 @@ pipeline {
           expression { params.fmi_v1_26 || params.fmpy_fmi_v1_26 }
         }
         steps {
-          runRegressiontest('maintenance/v1.26', 'v1.26-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false, 0, 'configs/conf.json', '', '', fmiSimulators(params.fmi_v1_26, params.fmpy_fmi_v1_26))
+          runRegressiontest('maintenance/v1.26', 'v1.26-fmi', '', omsimulatorHash(), false, '', '', false, false, 0, 'configs/conf.json', '', '', fmiSimulators(params.fmi_v1_26, params.fmpy_fmi_v1_26))
         }
       }
       stage('v1.27 FMI') {
@@ -163,7 +161,7 @@ pipeline {
           expression { params.fmi_v1_27 || params.fmpy_fmi_v1_27 }
         }
         steps {
-          runRegressiontest('maintenance/v1.27', 'v1.27-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false, 0, 'configs/conf.json', '', '', fmiSimulators(params.fmi_v1_27, params.fmpy_fmi_v1_27))
+          runRegressiontest('maintenance/v1.27', 'v1.27-fmi', '', omsimulatorHash(), false, '', '', false, false, 0, 'configs/conf.json', '', '', fmiSimulators(params.fmi_v1_27, params.fmpy_fmi_v1_27))
         }
       }
       stage('master FMI') {
@@ -179,7 +177,7 @@ pipeline {
           expression { params.fmi_master || params.fmpy_fmi_master }
         }
         steps {
-          runRegressiontest('master', 'master-fmi', '', 'origin/master', 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false, 0, 'configs/conf.json', '', '', fmiSimulators(params.fmi_master, params.fmpy_fmi_master))
+          runRegressiontest('master', 'master-fmi', '', 'origin/master', false, '', '', false, false, 0, 'configs/conf.json', '', '', fmiSimulators(params.fmi_master, params.fmpy_fmi_master))
         }
       }
 
@@ -196,7 +194,7 @@ pipeline {
           expression { params.cs_fmu_cvode_v1_26 }
         }
         steps {
-          runRegressiontest('maintenance/v1.26', 'v1.26-cs-fmu-cvode', 'setCommandLineOptions("--fmiFlags=s:cvode --fmuRuntimeDepends=modelica")', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
+          runRegressiontest('maintenance/v1.26', 'v1.26-cs-fmu-cvode', 'setCommandLineOptions("--fmiFlags=s:cvode --fmuRuntimeDepends=modelica")', omsimulatorHash(), false, '', '', false, false)
         }
       }
       stage('v1.27 CVODE CS-FMUs with OMSimulator') {
@@ -212,7 +210,7 @@ pipeline {
           expression { params.cs_fmu_cvode_v1_27 }
         }
         steps {
-          runRegressiontest('maintenance/v1.27', 'v1.27-cs-fmu-cvode', 'setCommandLineOptions("--fmiFlags=s:cvode --fmuRuntimeDepends=modelica")', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
+          runRegressiontest('maintenance/v1.27', 'v1.27-cs-fmu-cvode', 'setCommandLineOptions("--fmiFlags=s:cvode --fmuRuntimeDepends=modelica")', omsimulatorHash(), false, '', '', false, false)
         }
       }
       stage('master CVODE CS-FMUs with OMSimulator') {
@@ -228,7 +226,7 @@ pipeline {
           expression { params.cs_fmu_cvode_master }
         }
         steps {
-          runRegressiontest('master', 'master-cs-fmu-cvode', 'setCommandLineOptions("--fmiFlags=s:cvode --fmuRuntimeDepends=modelica")', 'origin/master', 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
+          runRegressiontest('master', 'master-cs-fmu-cvode', 'setCommandLineOptions("--fmiFlags=s:cvode --fmuRuntimeDepends=modelica")', 'origin/master', false, '', '', false, false)
         }
       }
 
@@ -245,7 +243,7 @@ pipeline {
           expression { params.newInst_daeMode }
         }
         steps {
-          runRegressiontest('master', 'newInst-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --daeMode=true")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
+          runRegressiontest('master', 'newInst-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --daeMode=true")', '', false, '', '', false, false)
         }
       }
       stage('newBackend-daeMode') {
@@ -261,7 +259,7 @@ pipeline {
           expression { params.newBackend_daeMode }
         }
         steps {
-          runRegressiontest('master', 'newBackend-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --newBackend --daeMode=true")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
+          runRegressiontest('master', 'newBackend-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --newBackend --daeMode=true")', '', false, '', '', false, false)
         }
       }
       stage('oldInst') {
@@ -277,7 +275,7 @@ pipeline {
           expression { params.oldInst }
         }
         steps {
-          runRegressiontest('master', 'oldInst', 'setCommandLineOptions("-d=nonewInst")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
+          runRegressiontest('master', 'oldInst', 'setCommandLineOptions("-d=nonewInst")', '', false, '', '', false, false)
         }
       }
       stage('cvode') {
@@ -293,7 +291,7 @@ pipeline {
           expression { params.cvode }
         }
         steps {
-          runRegressiontest('master', 'cvode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '-s cvode', '', false, false)
+          runRegressiontest('master', 'cvode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', false, '-s cvode', '', false, false)
         }
       }
       stage('gbode') {
@@ -309,7 +307,7 @@ pipeline {
           expression { params.gbode }
         }
         steps {
-          runRegressiontest('master', 'gbode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '-s gbode -gbm=radauIIA3', '', false, false)
+          runRegressiontest('master', 'gbode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', false, '-s gbode -gbm=radauIIA3', '', false, false)
         }
       }
       stage('ida') {
@@ -325,7 +323,7 @@ pipeline {
           expression { params.ida }
         }
         steps {
-          runRegressiontest('master', 'ida', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '-s ida', '', false, false)
+          runRegressiontest('master', 'ida', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', false, '-s ida', '', false, false)
         }
       }
       stage('wasm-jit') {
@@ -341,7 +339,7 @@ pipeline {
           expression { params.wasm_jit }
         }
         steps {
-          runRegressiontest('master', 'wasm-jit', 'setCommandLineOptions("--simCodeTarget=wasm-jit")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', '--nobuildmodel', false, false, 0, 'configs/conf.json',
+          runRegressiontest('master', 'wasm-jit', 'setCommandLineOptions("--simCodeTarget=wasm-jit")', '', false, '', '--nobuildmodel', false, false, 0, 'configs/conf.json',
                             '-DOM_OMC_ENABLE_RUST=ON -DRUST_OMC_CI=ON -DRUST_OMC_THREADS=4 -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache',
                             '.CI/wasm-jit')
         }
@@ -359,7 +357,7 @@ pipeline {
           expression { params.generateSymbolicJacobian }
         }
         steps {
-          runRegressiontest('master', 'generateSymbolicJacobian', 'setCommandLineOptions("--generateSymbolicJacobian")', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', '', false, false)
+          runRegressiontest('master', 'generateSymbolicJacobian', 'setCommandLineOptions("--generateSymbolicJacobian")', '', false, '', '', false, false)
         }
       }
       stage('heavy_tests') {
@@ -375,7 +373,7 @@ pipeline {
           expression { params.heavy_tests }
         }
         steps {
-            runRegressiontest('master', 'heavy_tests', '', '', 'ripper1', 'LibraryTestingRipper1DB', false, '', '', false, false, 1, 'configs/heavy_tests.json')
+            runRegressiontest('master', 'heavy_tests', '', '', false, '', '', false, false, 1, 'configs/heavy_tests.json')
         }
       }
 
@@ -392,7 +390,7 @@ pipeline {
           expression { params.cpp_v1_26 }
         }
         steps {
-          runRegressiontest('maintenance/v1.26', 'v1.26-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
+          runRegressiontest('maintenance/v1.26', 'v1.26-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', false, '', '', false, false)
         }
       }
       stage('C++ v1.27') {
@@ -408,7 +406,7 @@ pipeline {
           expression { params.cpp_v1_27 }
         }
         steps {
-          runRegressiontest('maintenance/v1.27', 'v1.27-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
+          runRegressiontest('maintenance/v1.27', 'v1.27-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', false, '', '', false, false)
         }
       }
 
@@ -425,7 +423,7 @@ pipeline {
           expression { params.cpp }
         }
         steps {
-          runRegressiontest('master', 'cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
+          runRegressiontest('master', 'cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', false, '', '', false, false)
         }
       }
     } }
@@ -457,7 +455,7 @@ pipeline {
           //sshagent (credentials: ['Hudson-SSH-Key']) {
           //  createInitialHistoryFilesOnRemote()
           //}
-          sh 'rm -rf sqlite3.db *.html history'
+          sh 'rm -rf *.html history'
           sh '''
           if ! test -d OpenModelica; then
             git clone https://openmodelica.org/git-readonly/OpenModelica.git
@@ -465,12 +463,6 @@ pipeline {
           cd OpenModelica
           git fetch
           '''
-          // The reports read the shared database directly when it is in use.
-          script {
-            if (!params.postgres) {
-              sh 'wget -q https://libraries.openmodelica.org/sqlite3/ripper1/sqlite3.db'
-            }
-          }
           sh './clean-empty-omcversion-dates.py'
 
           sh "./all-reports.py --email --omcgitdir=OpenModelica ${env.GITBRANCHES} conversion heavy_tests"
@@ -533,7 +525,7 @@ pipeline {
           //sshagent (credentials: ['Hudson-SSH-Key']) {
           //  createInitialHistoryFilesOnRemote()
           //}
-          sh 'rm -f sqlite3.db *.html'
+          sh 'rm -f *.html'
           sh '''
           if ! test -d OpenModelica; then
             git clone https://openmodelica.org/git-readonly/OpenModelica.git
@@ -541,11 +533,6 @@ pipeline {
           cd OpenModelica
           git fetch
           '''
-          script {
-            if (!params.postgres) {
-              sh 'wget -q https://libraries.openmodelica.org/sqlite3/ripper2/sqlite3.db'
-            }
-          }
           sh './clean-empty-omcversion-dates.py'
 
           sh "./all-reports.py --email --omcgitdir=OpenModelica ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} gbode cvode ida"
@@ -718,8 +705,6 @@ def sccachePreamble() {
   *                             Also used for stashing omc and uploading results to https://test.openmodelica.org.
   * @param extraFlags:          Additional compiler flags passed to test.py via flag `--extraflags`.
   * @param omsHash:             OMSimulator SHA.
-  * @param dbPrefix:            Prefix for test results data base `sqlite3.db`.
-  * @parm sshConfig:            SSH configuration saved on test node.
   * @param omcompiler:          Checkout old OMCompiler submodule. Should be `false` nowadays.
   * @param extrasimflags:       Additional simulation flags passed to test.py via flag `--extrasimflags`.
   * @param testFlags:           Additional flags passed to test.py verbatim, e.g. `--nobuildmodel`.
@@ -746,11 +731,9 @@ def fmiSimulators(boolean omsimulator, boolean fmpy) {
   return simulators
 }
 
-def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, omcompiler, extrasimflags, testFlags, boolean removePackageOrder, boolean conversionScript, int jobs=0, libs_config_file = 'configs/conf.json', cmakeFlags = '', dockerfile = '', fmiSimulators = null) {
+def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimflags, testFlags, boolean removePackageOrder, boolean conversionScript, int jobs=0, libs_config_file = 'configs/conf.json', cmakeFlags = '', dockerfile = '', fmiSimulators = null) {
   sh '''
   find /tmp  -name "*openmodelica.hudson*" -exec rm {} ";" || true
-  mkdir -p ~/TEST_LIBS_BACKUP
-  find ~/TEST_LIBS_BACKUP -name *sqlite3.*.db -mtime +7 -exec rm {} ";"
 
   if test -z "$WORKSPACE"; then
     echo "Odd workspace"
@@ -1002,18 +985,6 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
 
   sh "test -d '${libraryPath}/.openmodelica/libraries/Modelica trunk'"
 
-  // The shared database needs none of this: the results go straight into it.
-  if (!params.postgres) {
-    sh """
-    if ! test -f ~/TEST_LIBS_BACKUP/${dbPrefix}-sqlite3.db; then
-      wget -O ~/TEST_LIBS_BACKUP/${dbPrefix}-sqlite3.db.tmp -q https://libraries.openmodelica.org/sqlite3/${dbPrefix}/sqlite3.db
-	  mv ~/TEST_LIBS_BACKUP/${dbPrefix}-sqlite3.db.tmp ~/TEST_LIBS_BACKUP/${dbPrefix}-sqlite3.db
-    fi
-    cp ~/TEST_LIBS_BACKUP/${dbPrefix}-sqlite3.db OpenModelicaLibraryTesting/sqlite3.db
-    test -s OpenModelicaLibraryTesting/sqlite3.db
-    """
-  }
-
   sh 'date'
 
   // The password of the results database comes from a secret file, bound here
@@ -1042,14 +1013,4 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
     sh "cd OpenModelicaLibraryTesting/ && ./clean-empty-omcversion-dates.py"
   }
 
-  // Copying the file back is what made two machines overwrite each other's
-  // results, so it only happens while a job still writes its own sqlite3 file.
-  if (!params.postgres) {
-    sh "rm -f OpenModelicaLibraryTesting/${dbPrefix}-sqlite3.db.tmp"
-    sh "ln OpenModelicaLibraryTesting/sqlite3.db OpenModelicaLibraryTesting/${dbPrefix}-sqlite3.db.tmp"
-    sh "cp OpenModelicaLibraryTesting/sqlite3.db ~/TEST_LIBS_BACKUP/${dbPrefix}-sqlite3.db"
-    sh "rm -f ~/TEST_LIBS_BACKUP/${dbPrefix}-`date +sqlite3.%Y%m%d.db`"
-
-    sshPublisher(publishers: [sshPublisherDesc(configName: sshConfig, transfers: [sshTransfer(removePrefix: 'OpenModelicaLibraryTesting', sourceFiles: 'OpenModelicaLibraryTesting/sqlite3.db')])], failOnError: true)
-  }
 }
