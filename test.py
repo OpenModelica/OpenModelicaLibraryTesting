@@ -1043,7 +1043,7 @@ def cpu_name():
   else:
     for line in open("/proc/cpuinfo").readlines():
       if "model name" in line.strip():
-        return (re.sub( ".*model name.*:", "", line,1)).strip()
+        return (re.sub( ".*model name.*:", "", line, count=1)).strip()
 
 if isWin:
   lsb_release = ""
