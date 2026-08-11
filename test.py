@@ -542,11 +542,15 @@ else:
   print("Unknown schema user_version=%d" % user_version)
   sys.exit(1)
 
-cursor.execute('''CREATE TABLE if not exists [%s]
+def createBranchTable(branch):
+  """A run fills one table per FMI simulator, so this happens more than once."""
+  cursor.execute('''CREATE TABLE if not exists [%s]
              (date integer NOT NULL, libname text NOT NULL, model text NOT NULL, exectime real NOT NULL,
              frontend real NOT NULL, backend real NOT NULL, simcode real NOT NULL, templates real NOT NULL, compile real NOT NULL, simulate real NOT NULL,
              verify real NOT NULL, verifyfail integer NOT NULL, verifytotal integer NOT NULL, finalphase integer NOT NULL, parsing real NOT NULL)''' % branch)
-cursor.execute('''DROP INDEX IF EXISTS [idx_%s_date]''' % branch)
+  cursor.execute('''DROP INDEX IF EXISTS [idx_%s_date]''' % branch)
+
+createBranchTable(branch)
 cursor.execute('''DROP INDEX IF EXISTS idx_omcversion_date''')
 cursor.execute('''DROP INDEX IF EXISTS idx_libversion_date''')
 
@@ -930,10 +934,20 @@ if args.coldhot:
       print("  %-70s cold %8.4f  hot %8.4f" % (model, data["simcold"], data.get("sim") or 0.0))
   sys.stdout.flush()
 
-for key in stats.keys():
-  (name,model,libname,data)=stats[key]
-  stats_by_libname[libname]["stats"].append(stats[key])
-  values = (testRunStartTimeAsEpoch,
+def resultValues(model, libname, data, simulator=None):
+  """One row of a branch table.
+
+  Everything up to the build is what the model cost whatever simulates it, so
+  the simulators of one FMU share it and differ only in the simulation, the
+  verification and how far they got.
+  """
+  simulated = data if simulator is None else (data.get("simulators") or {}).get(simulator)
+  if simulated is None:
+    # The model never got as far as being simulated, so every simulator of it
+    # reports the phase the build stopped at rather than a failure of its own.
+    simulated = {"phase": data.get("phase") or 0}
+  diff = simulated.get("diff") or {}
+  return (testRunStartTimeAsEpoch,
     libname,
     model,
     data.get("exectime") or 0.0,
@@ -942,19 +956,32 @@ for key in stats.keys():
     data.get("simcode") or 0.0,
     data.get("templates") or 0.0,
     data.get("build") or 0.0,
-    data.get("sim") or 0.0,
-    (data.get("diff") or {}).get("time") or 0.0,
-    len((data.get("diff") or {}).get("vars") or []),
-    (data.get("diff") or {}).get("numCompared") or 0,
-    data.get("phase") or 0,
+    simulated.get("sim") or 0.0,
+    diff.get("time") or 0.0,
+    len(diff.get("vars") or []),
+    diff.get("numCompared") or 0,
+    simulated.get("phase") or 0,
     data.get("parsing") or 0.0
   )
-  # print values
-  cursor.execute("INSERT INTO [%s] VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" % branch, values)
-for libname in stats_by_libname.keys():
-  confighash = stats_by_libname[libname]["conf"]["confighash"]
-  cursor.execute("INSERT INTO [libversion] VALUES (?,?,?,?,?)", (testRunStartTimeAsEpoch, branch, libname, stats_by_libname[libname]["conf"]["libraryLastChange"], confighash))
-cursor.execute("INSERT INTO [omcversion] VALUES (?,?,?)", (testRunStartTimeAsEpoch, branch, omc_version))
+
+# One branch per FMI simulator: the first one reports itself in the results of
+# the model, the others under their own name, see testmodel.py.
+resultBranches = [(branch, None)]
+for (simulatorName, _) in fmisimulators[1:]:
+  resultBranches.append((shared.branchForSimulator(branch, simulatorName), simulatorName))
+
+for (resultBranch, simulator) in resultBranches:
+  createBranchTable(resultBranch)
+  for key in stats.keys():
+    (name,model,libname,data)=stats[key]
+    if simulator is None:
+      stats_by_libname[libname]["stats"].append(stats[key])
+    cursor.execute("INSERT INTO [%s] VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" % resultBranch,
+                   resultValues(model, libname, data, simulator))
+  for libname in stats_by_libname.keys():
+    confighash = stats_by_libname[libname]["conf"]["confighash"]
+    cursor.execute("INSERT INTO [libversion] VALUES (?,?,?,?,?)", (testRunStartTimeAsEpoch, resultBranch, libname, stats_by_libname[libname]["conf"]["libraryLastChange"], confighash))
+  cursor.execute("INSERT INTO [omcversion] VALUES (?,?,?)", (testRunStartTimeAsEpoch, resultBranch, omc_version))
 """
 # Not really a good thing to do; was just done to make generation of the report simpler
 for libname in skipped_libs.keys():

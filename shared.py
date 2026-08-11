@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import re, os, subprocess
+import re, os, string, subprocess
 import simplejson as json
 
 simCodeTargetRe = re.compile('--simCodeTarget=([^"\'\\s,;)]+)')
@@ -182,13 +182,20 @@ def fmiSimulator(name):
   return known[name]
 
 def fmiSimulatorCommand(name, command, **values):
-  """The command line that runs one FMU with one simulator."""
+  """The command line that runs one FMU with one simulator.
+
+  arguments is a template over the values below plus anything the entry defines
+  in optionalArguments, which are the flags that have to disappear when there
+  is nothing to put in them: OMSimulator crashes on --stepSize=0 rather than
+  ignoring it, while FMPy wants --output-interval 0 all the same and therefore
+  writes the value straight into its arguments.
+  """
   spec = fmiSimulator(name)
   values["simulator"] = command
-  # Only a tool that leaves the flag out when there is no step size has one;
-  # the others put the step size in their arguments and always pass it.
-  values["stepSizeArgument"] = (spec["stepSizeArgument"].format(**values)
-                                if values.get("stepSize") and "stepSizeArgument" in spec else "")
+  for (key, template) in (spec.get("optionalArguments") or {}).items():
+    used = [f.split(":")[0].split(".")[0].split("[")[0]
+            for (_, f, _, _) in string.Formatter().parse(template) if f]
+    values[key] = template.format(**values) if all(values.get(u) for u in used) else ""
   return "%s %s" % (spec.get("command", "{simulator}").format(**values),
                     spec["arguments"].format(**values))
 
