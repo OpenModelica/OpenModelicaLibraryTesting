@@ -119,19 +119,23 @@ def isFMPy(fmisimulator):
     return False
 
 def fmiSimulatorName(command):
-  """The short name of an FMI simulator, used to name its branch and its files."""
-  if isFMPy(command):
-    return "fmpy"
-  if "pyfmi" in command.lower():
-    return "pyfmi"
+  """The name of the simulator a bare --fmisimulator runs.
+
+  Any of the known names appearing in the command wins; a command that names
+  none of them is OMSimulator, which is how --fmisimulator was used before it
+  could name its simulator.
+  """
+  for name in sorted(fmiSimulators(), key=len, reverse=True):
+    if name.lower() in command.lower():
+      return name
   return "OMSimulator"
 
 def parseFmiSimulators(fmisimulators):
   """The --fmisimulator values as an ordered list of (name, command).
 
   A value is either "name=command" or just the command, whose name is then
-  taken from the command itself.  The order matters: the first simulator keeps
-  the branch the job was started with and the others get one of their own, see
+  taken from the command itself.  The name decides which simulator of
+  configs/fmi-simulators.json is run and which branch its results go to, see
   branchForSimulator.
   """
   res = []
@@ -145,14 +149,48 @@ def parseFmiSimulators(fmisimulators):
   names = [n for (n, _) in res]
   if len(set(names)) != len(names):
     raise Exception("The same FMI simulator name is used twice: %s" % ", ".join(names))
+  for name in names:
+    if fmiSimulator(name).get("untested"):
+      print("Warning: nobody has run %s through the testing yet; if its flags in %s are wrong, "
+            "every model will fail to simulate." % (name, FMI_SIMULATORS_FILE))
   return res
 
-# The branch a simulator stores its results in is its name appended to the
-# branch of the job, except for OMSimulator, which has always had the plain
-# -fmi table to itself.  Keyed by the simulator rather than by the order it was
-# given in, so that a job running only FMPy still fills v1.27-fmi-fmpy and not
-# v1.27-fmi.
-BRANCH_SUFFIX = {"OMSimulator": ""}
+# The FMI simulators live in configs/fmi-simulators.json, so that adding one is
+# an entry in a file rather than a change to the scripts.  A simulator stores
+# its results in the branch of the job with its name appended, except
+# OMSimulator, which has always had the plain -fmi table to itself; the mapping
+# is keyed by the simulator and not by the order it was given in, so that a job
+# running only FMPy still fills v1.27-fmi-fmpy and not v1.27-fmi.
+FMI_SIMULATORS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   "configs", "fmi-simulators.json")
+_fmiSimulators = None
+
+def fmiSimulators(path=None):
+  """Everything the testing knows about the FMI simulators."""
+  global _fmiSimulators
+  if _fmiSimulators is None or path:
+    with open(path or FMI_SIMULATORS_FILE) as fin:
+      _fmiSimulators = dict((k, v) for (k, v) in json.load(fin).items() if not k.startswith("_"))
+  return _fmiSimulators
+
+def fmiSimulator(name):
+  """What is known about an FMI simulator, by the name --fmisimulator gave it."""
+  known = fmiSimulators()
+  if name not in known:
+    raise Exception("Unknown FMI simulator %s; known are %s. Adding one is an entry in %s."
+                    % (name, ", ".join(sorted(known)), FMI_SIMULATORS_FILE))
+  return known[name]
+
+def fmiSimulatorCommand(name, command, **values):
+  """The command line that runs one FMU with one simulator."""
+  spec = fmiSimulator(name)
+  values["simulator"] = command
+  # Only a tool that leaves the flag out when there is no step size has one;
+  # the others put the step size in their arguments and always pass it.
+  values["stepSizeArgument"] = (spec["stepSizeArgument"].format(**values)
+                                if values.get("stepSize") and "stepSizeArgument" in spec else "")
+  return "%s %s" % (spec.get("command", "{simulator}").format(**values),
+                    spec["arguments"].format(**values))
 
 def branchForSimulator(branch, name):
   """Where the results of one FMI simulator of a run are stored.
@@ -161,6 +199,6 @@ def branchForSimulator(branch, name):
   it: OMSimulator fills v1.27-fmi, FMPy v1.27-fmi-fmpy, whether they run
   together or on their own.
   """
-  return branch + BRANCH_SUFFIX.get(name, "-%s" % name)
+  return branch + fmiSimulator(name).get("branchSuffix", "-%s" % name)
 
 

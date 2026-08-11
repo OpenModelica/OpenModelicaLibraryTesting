@@ -1,0 +1,35 @@
+{
+  "_comment": [
+    "The FMI simulators the testing knows how to run. Adding one is an entry here and nothing else.",
+    "",
+    "arguments        the command line, formatted with: simulator, fmu, result, tempDir,",
+    "                 startTime, stopTime, tolerance, timeout, stepSize and stepSizeArgument.",
+    "command          how the tool is invoked, {simulator} by default; FMPy needs a subcommand.",
+    "resultExtension  what the tool writes, so the verification knows what to compare.",
+    "versionArgument  the flag that prints the version, recorded with the results.",
+    "stepSizeArgument the step size flag for a tool that leaves it out when the experiment has no step size; a tool that always wants one puts {stepSize:g} in arguments instead.",
+    "branchSuffix     appended to --branch to get the table of this simulator; the default is",
+    "                 -<name>, so OMSimulator is the only one that needs to say anything here.",
+    "untested         set it while nobody has run the entry yet; the run then says so."
+  ],
+  "OMSimulator": {
+    "branchSuffix": "",
+    "resultExtension": "mat",
+    "versionArgument": "-v",
+    "stepSizeArgument": " --stepSize={stepSize:g}",
+    "arguments": "-r={result} --tempDir={tempDir} --startTime={startTime:g} --stopTime={stopTime:g}{stepSizeArgument} --timeout={timeout:g} --tolerance={tolerance:g} {fmu}"
+  },
+  "fmpy": {
+    "resultExtension": "csv",
+    "versionArgument": "--version",
+    "command": "{simulator} simulate",
+    "arguments": "--output-file {result} --start-time {startTime:g} --stop-time {stopTime:g} --timeout {timeout:g} --relative-tolerance {tolerance:g} --interface-type ModelExchange --solver CVode --output-interval {stepSize:g} {fmu}"
+  },
+  "fmusim": {
+    "untested": true,
+    "resultExtension": "csv",
+    "versionArgument": "--version",
+    "stepSizeArgument": " --output-interval {stepSize:g}",
+    "arguments": "--interface-type ModelExchange --output-file {result} --start-time {startTime:g} --stop-time {stopTime:g}{stepSizeArgument} {fmu}"
+  }
+}
