@@ -1,0 +1,46 @@
+{
+  "_comment": [
+    "The FMI simulators the testing knows how to run. Adding one is an entry here and nothing else.",
+    "",
+    "arguments         the command line, a template over: simulator, fmu, result, tempDir,",
+    "                  startTime, stopTime, tolerance, timeout, stepSize, and every name",
+    "                  defined in optionalArguments.",
+    "optionalArguments flags that have to disappear when there is nothing to put in them, as a",
+    "                  result is always the file the tool should write; requestedResult is empty",
+    "                  when the run wants no result file at all, which only OMSimulator acts on.",
+    "                  name and its own template. OMSimulator crashes on --stepSize=0 instead of",
+    "                  ignoring it, so its step size flag lives here; FMPy wants --output-interval 0",
+    "                  all the same and writes the value straight into arguments.",
+    "command           how the tool is invoked, {simulator} by default; FMPy needs a subcommand.",
+    "resultExtension   what the tool writes, so the verification knows what to compare.",
+    "versionArgument   the flag that prints the version, recorded with the results.",
+    "branchSuffix      appended to --branch to get the table of this simulator; the default is",
+    "                  -<name>, so OMSimulator is the only one that needs to say anything here.",
+    "untested          set it while nobody has run the entry yet; the run then says so."
+  ],
+  "OMSimulator": {
+    "branchSuffix": "",
+    "resultExtension": "mat",
+    "versionArgument": "-v",
+    "arguments": "{resultArgument} --tempDir={tempDir} --startTime={startTime:g} --stopTime={stopTime:g}{stepSizeArgument} --timeout={timeout:g} --tolerance={tolerance:g} {fmu}",
+    "optionalArguments": {
+      "resultArgument": "-r={requestedResult}",
+      "stepSizeArgument": " --stepSize={stepSize:g}"
+    }
+  },
+  "fmpy": {
+    "resultExtension": "csv",
+    "versionArgument": "--version",
+    "command": "{simulator} simulate",
+    "arguments": "--output-file {result} --start-time {startTime:g} --stop-time {stopTime:g} --timeout {timeout:g} --relative-tolerance {tolerance:g} --interface-type ModelExchange --solver CVode --output-interval {stepSize:g} {fmu}"
+  },
+  "fmusim": {
+    "untested": true,
+    "resultExtension": "csv",
+    "versionArgument": "--version",
+    "arguments": "--interface-type ModelExchange --output-file {result} --start-time {startTime:g} --stop-time {stopTime:g}{stepSizeArgument} {fmu}",
+    "optionalArguments": {
+      "stepSizeArgument": " --output-interval {stepSize:g}"
+    }
+  }
+}

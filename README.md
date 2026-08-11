@@ -158,8 +158,12 @@ Options:
 - `--ompython_omhome=''`: Path to OpenModelica for OMPython (can be different to
                           the OM running the tests)
 - `--noclean=False`: Clean (most) generated files.
-- `--fmisimulator=''`: The default is nothing but you can use the path to
-                       OMSimulator executable or 'fmpy'
+- `--fmisimulator=''`: The FMI simulator to run the FMUs with, as `name=command`
+                       or just the command, e.g. the path to the OMSimulator
+                       executable or `'python3 -m fmpy'`. Repeat the option to
+                       simulate every FMU with several tools without building it
+                       more than once, see [Testing FMI with several
+                       simulators](#testing-fmi-with-several-simulators)
 - `--ulimitvmem=8388608`: Virtual memory limit (in kB)
 - `--default=[]`: Add a default value for some configuration key, such as
                   `--default=ulimitExe=60`. The equals sign is mandatory
@@ -167,6 +171,89 @@ Options:
                  use `1` to run serial (for large tests) and see `procOMC` and
                  `procCCompile` above for more insight into individual test
                  parallelization.
+
+### Testing FMI with several simulators
+
+Building an FMU costs far more than simulating it. Measured on the twelve
+models of ExternData: 178 seconds building the FMUs, 0.7 simulating them with
+OMSimulator and 2.6 with FMPy. Testing the same FMUs with a second tool
+therefore used to cost almost twice as much as testing them with one, because
+each job built its own copy of them.
+
+Give `--fmisimulator` once per tool and the FMUs are built once and simulated
+with each of them:
+
+```bash
+./test.py --branch=v1.27-fmi --fmi=true \
+          --fmisimulator=/path/to/OMSimulator \
+          --fmisimulator='python3 -m fmpy' \
+          configs/myConf.json
+```
+
+`--branch` names the job; every simulator stores its results in a branch of its
+own derived from it, so the run above fills
+
+| simulator | branch | published to |
+| --- | --- | --- |
+| OMSimulator | `v1.27-fmi` | `branches/v1.27-fmi` |
+| FMPy | `v1.27-fmi-fmpy` | `branches/v1.27-fmi-fmpy` |
+
+which is where those results have always been. OMSimulator keeps the plain
+`-fmi` branch; every other tool adds its name. The branch a tool fills depends
+on the tool and not on the order, so asking for FMPy alone still fills
+`v1.27-fmi-fmpy` and leaves `v1.27-fmi` alone.
+
+A branch directory looks the same as it always did, file names included. The
+`.err` of a model is written by the build, so every simulator of it publishes
+the same one; the `.sim` and the difference files are the ones that simulator
+produced.
+
+Only the simulator may differ between the results that share an FMU. Anything
+that changes the FMU itself - a different compiler, a different library, a
+different `--fmuType` or `--fmiFlags` - is a different job, which is why the
+Co-Simulation jobs with CVODE are not merged with the Model Exchange ones.
+
+In Jenkins the parameters keep their meaning: `fmi_v1_27` asks for OMSimulator
+and `fmpy_fmi_v1_27` for FMPy. Ticking both runs one job that builds every FMU
+once and simulates it with both; ticking one runs that tool alone.
+
+### Adding an FMI simulator
+
+The simulators live in [configs/fmi-simulators.json](configs/fmi-simulators.json).
+Adding one is an entry there and no change to any script:
+
+```json
+"fmusim": {
+  "resultExtension": "csv",
+  "versionArgument": "--version",
+  "optionalArguments": { "stepSizeArgument": " --output-interval {stepSize:g}" },
+  "arguments": "--interface-type ModelExchange --output-file {result} --start-time {startTime:g} --stop-time {stopTime:g}{stepSizeArgument} {fmu}"
+}
+```
+
+- `arguments` is the command line, a template over `simulator`, `fmu`,
+  `result`, `requestedResult`, `tempDir`, `startTime`, `stopTime`, `tolerance`,
+  `timeout`, `stepSize` and anything named in `optionalArguments`.
+- `optionalArguments` are the flags that have to disappear when there is nothing
+  to put in them. OMSimulator hangs on `--stepSize=0` rather than ignoring it,
+  so its step size flag lives here, while FMPy wants `--output-interval 0` all
+  the same and writes the value straight into its `arguments`.
+- `command` is how the tool is invoked, `{simulator}` by default. FMPy needs a
+  subcommand, `{simulator} simulate`.
+- `resultExtension` is what the tool writes, so that the comparison against the
+  reference file knows what to read.
+- `versionArgument` prints the version, which is recorded with the results.
+- `branchSuffix` overrides the `-<name>` a tool adds to the branch. Only
+  OMSimulator needs it, with `""`.
+- `untested` marks an entry nobody has run yet; the run then says so instead of
+  failing every model with a puzzling error. Remove it once it works.
+
+Then run it with `--fmisimulator=fmusim=/path/to/fmusim`, or just
+`--fmisimulator=/path/to/fmusim` if the command contains the name.
+
+A tool that is a Python package rather than a command line needs a small driver
+script that takes the arguments its entry passes, simulates, writes the result
+file and exits non-zero when it fails; the entry then points `command` at it.
 
 ### Generate HTML results
 

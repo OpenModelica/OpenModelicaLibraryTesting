@@ -216,8 +216,12 @@ execstat = {
   "sim":None,
   "simcold":None,
   "diff":None,
-  "phase":0
+  "phase":0,
+  # One entry per FMI simulator beyond the first, which reports itself in the
+  # keys above; see configs/fmi-simulators.json.
+  "simulators":{}
 }
+simulators = execstat["simulators"]
 
 with open(config) as fp:
   conf = json.load(fp)
@@ -555,9 +559,54 @@ except TimeoutError as e:
 writeResult()
 # Do the simulation
 
-# FMPy generates csv, OMSimulator generates mat (outputFormat)
+# The FMU is built once and simulated with every tool the job asked for, so
+# that testing FMPy no longer means building the same FMU a second time.  The
+# tools are described in configs/fmi-simulators.json.
 fmisimulator = conf.get("fmisimulator")
-resFile = "%s_res.%s" % (conf["fileName"], outputFormat if not shared.isFMPy(fmisimulator) else 'csv')
+fmisimulators = shared.parseFmiSimulators(conf.get("fmisimulators")) if conf.get("fmi") else []
+if conf.get("fmi") and not fmisimulators and fmisimulator:
+  fmisimulators = shared.parseFmiSimulators([fmisimulator])
+
+def resultFile(name=None):
+  """Where a simulator writes its results.
+
+  Every tool writes what its entry says, and they only need to be told apart
+  when more than one of them runs on the same FMU.
+  """
+  if not name:
+    return "%s_res.%s" % (conf["fileName"], outputFormat)
+  extension = shared.fmiSimulator(name)["resultExtension"]
+  if len(fmisimulators) < 2:
+    return "%s_res.%s" % (conf["fileName"], extension)
+  return "%s_%s_res.%s" % (conf["fileName"], name, extension)
+
+def artifactPrefix(name=None):
+  """The files a simulator's results are written to, under files/."""
+  if not name or len(fmisimulators) < 2:
+    return os.path.abspath("../files/%s" % conf["fileName"]).replace('\\','/')
+  return os.path.abspath("../files/%s_%s" % (conf["fileName"], name)).replace('\\','/')
+
+resFile = resultFile(fmisimulators[0][0]) if fmisimulators else resultFile()
+
+def simulateFmu(name, command, resFile, simFile):
+  """Run the FMU with one simulator, writing what it says to simFile."""
+  # Only tell the runs apart when more than one of them shares the directory.
+  suffix = "_%s" % name if len(fmisimulators) > 1 else ""
+  fmitmpdir = "temp_%s%s_fmu" % (conf["fileName"].replace(".","_"), suffix)
+  with open("%s.tmpfiles" % conf["fileName"], "a+") as fp:
+    fp.write("%s\n" % fmitmpdir)
+  cmd = shared.fmiSimulatorCommand(name, command,
+                                   fmu="%s.fmu" % conf["fileName"].replace(".","_"),
+                                   result=resFile,
+                                   requestedResult=resFile if outputFormat != "empty" else "",
+                                   tempDir=fmitmpdir, startTime=startTime, stopTime=stopTime,
+                                   tolerance=tolerance, timeout=conf["ulimitExe"],
+                                   stepSize=stepSize)
+  with open(simFile,"w") as fp:
+    fp.write("%s\n" % cmd)
+  pipe = "%s%s" % (conf["fileName"], suffix)
+  return checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s > %s.pipe 2>&1)"
+                            % (pipe,pipe,pipe,simFile,cmd,pipe), 1.05*conf["ulimitExe"], conf)
 
 def simElapsed():
   # omc's own time: the wall clock here covers the wrong run for both flags
@@ -569,24 +618,12 @@ start=monotonic()
 try:
   # TODO: Timeout more reliably...
   if conf.get("fmi"):
-    if not conf.get("fmisimulator"):
+    if not fmisimulators:
       with open(simFile,"w") as fp:
-        fp.write("OMSimulator not available\n")
+        fp.write("No FMI simulator available\n")
       writeResultAndExit(0, False, omc, omc_new)
-    fmitmpdir = "temp_%s_fmu" % conf["fileName"].replace(".","_")
-    with open("%s.tmpfiles" % conf["fileName"], "a+") as fp:
-      fp.write("%s\n" % fmitmpdir)
-    if shared.isFMPy(fmisimulator):
-      fmisimulator = "%s simulate " % fmisimulator
-      cmd = "%s --start-time %g --stop-time %g --timeout %g --relative-tolerance %g --interface-type ModelExchange --solver CVode --output-interval %g %s.fmu" % (("--output-file %s" % resFile),startTime,stopTime,conf["ulimitExe"],tolerance,stepSize,conf["fileName"].replace(".","_"))
-    else: # OMSimulator
-      stepSizeStr = ""
-      if stepSize != 0.0:
-        stepSizeStr = " --stepSize=%g" % stepSize
-      cmd = "%s --tempDir=%s --startTime=%g --stopTime=%g%s --timeout=%g --tolerance=%g %s.fmu" % (("-r=%s" % resFile) if outputFormat != "empty" else "",fmitmpdir,startTime,stopTime,stepSizeStr,conf["ulimitExe"],tolerance,conf["fileName"].replace(".","_"))
-    with open(simFile,"w") as fp:
-      fp.write("%s %s\n" % (fmisimulator, cmd))
-    res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,fmisimulator,cmd,conf["fileName"]), 1.05*conf["ulimitExe"], conf)
+    (name, command) = fmisimulators[0]
+    res = simulateFmu(name, command, resFile, simFile)
   elif isWasmJit:
     if not useSimulate:
       cmd = simulateCmd(resimulate=True)
@@ -643,112 +680,141 @@ except TimeoutError as e:
   execstat["sim"] = monotonic()-start
   writeResultAndExit(0, True, omc, omc_new)
 
-if referenceFile=="":
-  writeResultAndExit(0, False, omc, omc_new)
-if len(referenceVars)==0:
-  execstat["diff"] = {"time":0.0, "vars":[], "numCompared":0}
-  execstat["phase"]=7
-  writeResultAndExit(0, False, omc, omc_new)
+def verifyAgainstReference(resFile, prefix, stat):
+  """Compare one simulation result against the reference file.
 
-# Check the reference file...
+  Fills stat["diff"] and stat["phase"] exactly as the single simulator code
+  did, but returns instead of ending the run, so that the other simulators
+  of the same FMU can be verified too.
+  """
+  if referenceFile=="":
+    return
+  if len(referenceVars)==0:
+    stat["diff"] = {"time":0.0, "vars":[], "numCompared":0}
+    stat["phase"]=7
+    return
 
-prefix = os.path.abspath("../files/%s.diff" % conf["fileName"]).replace('\\','/')
 
-if not os.path.exists(os.path.normpath(resFile)):
-  with open(errFile, 'a+') as fp:
-    fp.write("TODO: How the !@#!# did the simulation report success but simulation result %s does not exist to compare? outputFormat=%s" % (resFile,outputFormat))
-  writeResultAndExit(0)
-
-start=monotonic()
-if False and conf["simCodeTarget"] in ["Cpp"]: # This is a work-around for older C++ runtime not supporting variable filters. We don't really need it for master, so let's no use it.
-  if not sendExpressionTimeout(omc_new, 'filterSimulationResults("%s", "updated%s", vars={%s}, removeDescription=false, hintReadAllVars=false)' % (resFile, resFile, ", ".join(['"%s"' % s for s in referenceVars])), conf["ulimitOmc"]):
+  if not os.path.exists(os.path.normpath(resFile)):
     with open(errFile, 'a+') as fp:
-      fp.write("Failed to filter simulation results. Took time: %.2f\n" % (monotonic()-start))
-    writeResultAndExit(0, False, omc, omc_new)
-  os.remove(resFile)
-  os.rename("updated" + resFile, resFile)
-  with open(errFile, 'a+') as fp:
-    fp.write("Filtered simulation results in time: %.2f\n" % (monotonic()-start))
-start=monotonic()
-try:
-  (referenceOK,diffVars) = sendExpressionTimeout(omc_new, 'diffSimulationResults("%s","%s","%s",relTol=%g,relTolDiffMinMax=%g,rangeDelta=%g)' %
-                             (resFile, referenceFile, prefix, conf["reference_reltol"],conf["reference_reltolDiffMinMax"], conf["reference_rangeDelta"]), conf["ulimitOmc"])
-except TimeoutError as e:
-  with open(errFile, 'a+') as fp:
-    fp.write("Timeout error for diffSimulationResults")
-  writeResultAndExit(0, False, omc, omc_new)
+      fp.write("TODO: How the !@#!# did the simulation report success but simulation result %s does not exist to compare? outputFormat=%s" % (resFile,outputFormat))
+    return
 
-execstat["diff"] = {"time":monotonic()-start, "vars":[], "numCompared":len(referenceVars)}
-if len(diffVars)==0 and referenceOK:
-  execstat["phase"]=7
-  with open(errFile, 'a+') as fp:
-    fp.write("Reference file matches\n")
-else:
-  with open(errFile, 'a+') as fp:
-    fp.write(omc_new.sendExpression('OpenModelica.Scripting.getErrorString()', parsed = False))
-    fp.write("\nVariables in the reference:" )
-    fp.write(",".join(referenceVars)+"\n")
-    resVars=omc_new.sendExpression('readSimulationResultVars("%s", readParameters=true, openmodelicaStyle=true)' % resFile)
-    fp.write("\nVariables in the result:" )
-    fp.write(",".join(resVars)+"\n")
-  diffFiles = [prefix + "." + var for var in diffVars]
-  execstat["diff"]["vars"]=diffVars
+  start=monotonic()
+  if False and conf["simCodeTarget"] in ["Cpp"]: # This is a work-around for older C++ runtime not supporting variable filters. We don't really need it for master, so let's no use it.
+    if not sendExpressionTimeout(omc_new, 'filterSimulationResults("%s", "updated%s", vars={%s}, removeDescription=false, hintReadAllVars=false)' % (resFile, resFile, ", ".join(['"%s"' % s for s in referenceVars])), conf["ulimitOmc"]):
+      with open(errFile, 'a+') as fp:
+        fp.write("Failed to filter simulation results. Took time: %.2f\n" % (monotonic()-start))
+      return
+    os.remove(resFile)
+    os.rename("updated" + resFile, resFile)
+    with open(errFile, 'a+') as fp:
+      fp.write("Filtered simulation results in time: %.2f\n" % (monotonic()-start))
+  start=monotonic()
+  try:
+    (referenceOK,diffVars) = sendExpressionTimeout(omc_new, 'diffSimulationResults("%s","%s","%s",relTol=%g,relTolDiffMinMax=%g,rangeDelta=%g)' %
+                               (resFile, referenceFile, prefix, conf["reference_reltol"],conf["reference_reltolDiffMinMax"], conf["reference_rangeDelta"]), conf["ulimitOmc"])
+  except TimeoutError as e:
+    with open(errFile, 'a+') as fp:
+      fp.write("Timeout error for diffSimulationResults")
+    return
 
-  # Create a file containing only the calibrated variables, for easy display
-  lstfiles = "\n".join(['<li>%s <a href="%s.html">(javascript)</a> <a href="%s.csv">(csv)</a></li>' % (str.split(str(f),".diff.",1)[1],str(os.path.basename(f)),str(os.path.basename(f))) for f in diffFiles])
-  with open(prefix+".html", 'w') as fp:
-    fp.write('<html lang="en"><body><h1>%s differences from the reference file</h1><p>startTime: %g</p><p>stopTime: %g</p><p>Simulated using tolerance: %g</p><ul>%s</ul></body></html>' % (conf["modelName"], startTime, stopTime, tolerance, lstfiles))
-  for var in diffVars:
-    if "/" in var:
-      continue # Quoted identifier, or possibly an error message... Either way, avoid crapping out below
-    with open(prefix+"."+var+".html", 'w') as fp:
-      fp.write("""<html lang="en">
-<head>
-<script type="text/javascript" src="dygraph-combined.js"></script>
-    <style type="text/css">
-    #graphdiv {
-      position: absolute;
-      left: 10px;
-      right: 10px;
-      top: 40px;
-      bottom: 10px;
-    }
-    </style>
-</head>
-<body>
-<div id="graphdiv"></div>
-<p><input type=checkbox id="0" checked onClick="change(this)">
-<label for="0">reference</label>
-<input type=checkbox id="1" checked onClick="change(this)">
-<label for="1">actual</label>
-<input type=checkbox id="2" checked onClick="change(this)">
-<label for="2">high</label>
-<input type=checkbox id="3" checked onClick="change(this)">
-<label for="3">low</label>
-<input type=checkbox id="4" checked onClick="change(this)">
-<label for="4">error</label>
-<input type=checkbox id="5" onClick="change(this)">
-<label for="5">actual (original)</label>
-Parameters used for the comparison: Relative tolerance %g (local), %g (relative to max-min). Range delta %g.</p>
-<script type="text/javascript">
-g = new Dygraph(document.getElementById("graphdiv"),
-                 "%s",{title: '"%s"',
-  legend: 'always',
-  connectSeparatedPoints: true,
-  xlabel: ['time'],
-  y2label: ['error'],
-  series : { 'error': { axis: 'y2' } },
-  colors: ['blue','red','teal','lightblue','orange','black'],
-  visibility: [true,true,true,true,true,false]
-});
-function change(el) {
-  g.setVisibility(parseInt(el.id), el.checked);
-}
-</script>
-</body>
-</html>""" % (tolerance, conf["reference_reltolDiffMinMax"], conf["reference_rangeDelta"], os.path.basename(prefix + "." + var + ".csv"), var))
+  stat["diff"] = {"time":monotonic()-start, "vars":[], "numCompared":len(referenceVars)}
+  if len(diffVars)==0 and referenceOK:
+    stat["phase"]=7
+    with open(errFile, 'a+') as fp:
+      fp.write("Reference file matches\n")
+  else:
+    with open(errFile, 'a+') as fp:
+      fp.write(omc_new.sendExpression('OpenModelica.Scripting.getErrorString()', parsed = False))
+      fp.write("\nVariables in the reference:" )
+      fp.write(",".join(referenceVars)+"\n")
+      resVars=omc_new.sendExpression('readSimulationResultVars("%s", readParameters=true, openmodelicaStyle=true)' % resFile)
+      fp.write("\nVariables in the result:" )
+      fp.write(",".join(resVars)+"\n")
+    diffFiles = [prefix + "." + var for var in diffVars]
+    stat["diff"]["vars"]=diffVars
 
-# quit omc_new
+    # Create a file containing only the calibrated variables, for easy display
+    lstfiles = "\n".join(['<li>%s <a href="%s.html">(javascript)</a> <a href="%s.csv">(csv)</a></li>' % (str.split(str(f),".diff.",1)[1],str(os.path.basename(f)),str(os.path.basename(f))) for f in diffFiles])
+    with open(prefix+".html", 'w') as fp:
+      fp.write('<html lang="en"><body><h1>%s differences from the reference file</h1><p>startTime: %g</p><p>stopTime: %g</p><p>Simulated using tolerance: %g</p><ul>%s</ul></body></html>' % (conf["modelName"], startTime, stopTime, tolerance, lstfiles))
+    for var in diffVars:
+      if "/" in var:
+        continue # Quoted identifier, or possibly an error message... Either way, avoid crapping out below
+      with open(prefix+"."+var+".html", 'w') as fp:
+        fp.write("""<html lang="en">
+  <head>
+  <script type="text/javascript" src="dygraph-combined.js"></script>
+      <style type="text/css">
+      #graphdiv {
+        position: absolute;
+        left: 10px;
+        right: 10px;
+        top: 40px;
+        bottom: 10px;
+      }
+      </style>
+  </head>
+  <body>
+  <div id="graphdiv"></div>
+  <p><input type=checkbox id="0" checked onClick="change(this)">
+  <label for="0">reference</label>
+  <input type=checkbox id="1" checked onClick="change(this)">
+  <label for="1">actual</label>
+  <input type=checkbox id="2" checked onClick="change(this)">
+  <label for="2">high</label>
+  <input type=checkbox id="3" checked onClick="change(this)">
+  <label for="3">low</label>
+  <input type=checkbox id="4" checked onClick="change(this)">
+  <label for="4">error</label>
+  <input type=checkbox id="5" onClick="change(this)">
+  <label for="5">actual (original)</label>
+  Parameters used for the comparison: Relative tolerance %g (local), %g (relative to max-min). Range delta %g.</p>
+  <script type="text/javascript">
+  g = new Dygraph(document.getElementById("graphdiv"),
+                   "%s",{title: '"%s"',
+    legend: 'always',
+    connectSeparatedPoints: true,
+    xlabel: ['time'],
+    y2label: ['error'],
+    series : { 'error': { axis: 'y2' } },
+    colors: ['blue','red','teal','lightblue','orange','black'],
+    visibility: [true,true,true,true,true,false]
+  });
+  function change(el) {
+    g.setVisibility(parseInt(el.id), el.checked);
+  }
+  </script>
+  </body>
+  </html>""" % (tolerance, conf["reference_reltolDiffMinMax"], conf["reference_rangeDelta"], os.path.basename(prefix + "." + var + ".csv"), var))
+
+
+# The first simulator's results are the ones every non-FMI code path expects.
+verifyAgainstReference(resFile, artifactPrefix(fmisimulators[0][0] if fmisimulators else None) + ".diff", execstat)
+
+# The FMU is built; every other simulator the job asked for is now only a
+# simulation and a comparison. A tool that times out or fails takes its own
+# results down with it and leaves the others alone - unlike the first one,
+# whose timeout ends the model as it always has.
+for (name, command) in fmisimulators[1:]:
+  stat = {"sim": None, "diff": None, "phase": 5}
+  simulators[name] = stat
+  simFileOther = os.path.abspath("../files/%s_%s.sim" % (conf["fileName"], name)).replace('\\','/')
+  other = resultFile(name)
+  start = monotonic()
+  try:
+    simulateFmu(name, command, other, simFileOther)
+    stat["sim"] = monotonic()-start
+    stat["phase"] = 6
+    verifyAgainstReference(other, artifactPrefix(name) + ".diff", stat)
+  except TimeoutError as e:
+    stat["sim"] = monotonic()-start
+    with open(errFile, 'a+') as fp:
+      fp.write("%s timed out simulating the FMU\n" % name)
+  writeResult()
+
+# quit omc_new: every verification needed it
 omc_new = quit_omc(omc_new)
 
 writeResultAndExit(0)

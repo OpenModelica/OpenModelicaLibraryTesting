@@ -7,17 +7,17 @@ pipeline {
     booleanParam(name: 'v1_27', defaultValue: false, description: 'maintenance/v1.27 branch (ryzen-5950x-1)')
     booleanParam(name: 'master', defaultValue: false, description: 'master branch (ryzen-5950x-1)')
 
-    booleanParam(name: 'fmi_v1_26', defaultValue: false, description: 'maintenance/v1.26 branch with FMI (ryzen-5950x-2)')
-    booleanParam(name: 'fmi_v1_27', defaultValue: false, description: 'maintenance/v1.27 branch with FMI (ryzen-5950x-2)')
-    booleanParam(name: 'fmi_master', defaultValue: false, description: 'master branch with FMI running OMSimulator (ryzen-5950x-2)')
+    booleanParam(name: 'fmi_v1_26', defaultValue: false, description: 'maintenance/v1.26 branch with FMI, simulated by OMSimulator, filling v1.26-fmi (ryzen-5950x-2). Ticking it together with fmpy_fmi_v1_26 runs one job that builds every FMU once and simulates it with both.')
+    booleanParam(name: 'fmi_v1_27', defaultValue: false, description: 'maintenance/v1.27 branch with FMI, simulated by OMSimulator, filling v1.27-fmi (ryzen-5950x-2). Ticking it together with fmpy_fmi_v1_27 runs one job that builds every FMU once and simulates it with both.')
+    booleanParam(name: 'fmi_master', defaultValue: false, description: 'master branch with FMI, simulated by OMSimulator, filling master-fmi (ryzen-5950x-2). Ticking it together with fmpy_fmi_master runs one job that builds every FMU once and simulates it with both.')
 
     booleanParam(name: 'cs_fmu_cvode_v1_26', defaultValue: false, description: 'maintenance/v1.26 branch with CVODE CS FMUs running OMSimulator (ryzen-5950x-2)')
     booleanParam(name: 'cs_fmu_cvode_v1_27', defaultValue: false, description: 'maintenance/v1.27 branch with CVODE CS FMUs running OMSimulator (ryzen-5950x-2)')
     booleanParam(name: 'cs_fmu_cvode_master', defaultValue: false, description: 'master branch with CVODE CS FMUs running OMSimulator (ryzen-5950x-2)')
 
-    booleanParam(name: 'fmpy_fmi_v1_26', defaultValue: false, description: 'maintenance/v1.26 branch with FMI (ryzen-5950x-2)')
-    booleanParam(name: 'fmpy_fmi_v1_27', defaultValue: false, description: 'maintenance/v1.27 branch with FMI (ryzen-5950x-2)')
-    booleanParam(name: 'fmpy_fmi_master', defaultValue: false, description: 'master branch with FMI running FMPy (ryzen-5950x-2)')
+    booleanParam(name: 'fmpy_fmi_v1_26', defaultValue: false, description: 'maintenance/v1.26 branch with FMI, simulated by FMPy, filling v1.26-fmi-fmpy (ryzen-5950x-2). Ticking it together with fmi_v1_26 runs one job that builds every FMU once and simulates it with both.')
+    booleanParam(name: 'fmpy_fmi_v1_27', defaultValue: false, description: 'maintenance/v1.27 branch with FMI, simulated by FMPy, filling v1.27-fmi-fmpy (ryzen-5950x-2). Ticking it together with fmi_v1_27 runs one job that builds every FMU once and simulates it with both.')
+    booleanParam(name: 'fmpy_fmi_master', defaultValue: false, description: 'master branch with FMI, simulated by FMPy, filling master-fmi-fmpy (ryzen-5950x-2). Ticking it together with fmi_master runs one job that builds every FMU once and simulates it with both.')
 
     booleanParam(name: 'newInst_daeMode', defaultValue: false, description: 'master branch, --daeMode with -d=newInst (ryzen-5950x-2)')
     booleanParam(name: 'newInst_newBackend', defaultValue: false, description: 'master branch, -d=newInst --newBackend, (ryzen-5950x-1)')
@@ -129,7 +129,7 @@ pipeline {
         }
       }
 
-      stage('v1.26 FMI with OMSimulator') {
+      stage('v1.26 FMI') {
         agent {
           node {
             label 'ryzen-5950x-2-1'
@@ -139,13 +139,13 @@ pipeline {
         options { skipDefaultCheckout() }
         when {
           beforeAgent true
-          expression { params.fmi_v1_26 }
+          expression { params.fmi_v1_26 || params.fmpy_fmi_v1_26 }
         }
         steps {
-          runRegressiontest('maintenance/v1.26', 'v1.26-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
+          runRegressiontest('maintenance/v1.26', 'v1.26-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false, 0, 'configs/conf.json', '', '', fmiSimulators(params.fmi_v1_26, params.fmpy_fmi_v1_26))
         }
       }
-      stage('v1.27 FMI with OMSimulator') {
+      stage('v1.27 FMI') {
         agent {
           node {
             label 'ryzen-5950x-2-1'
@@ -155,13 +155,13 @@ pipeline {
         options { skipDefaultCheckout() }
         when {
           beforeAgent true
-          expression { params.fmi_v1_27 }
+          expression { params.fmi_v1_27 || params.fmpy_fmi_v1_27 }
         }
         steps {
-          runRegressiontest('maintenance/v1.27', 'v1.27-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
+          runRegressiontest('maintenance/v1.27', 'v1.27-fmi', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false, 0, 'configs/conf.json', '', '', fmiSimulators(params.fmi_v1_27, params.fmpy_fmi_v1_27))
         }
       }
-      stage('master FMI with OMSimulator') {
+      stage('master FMI') {
         agent {
           node {
             label 'ryzen-5950x-2-1'
@@ -171,10 +171,10 @@ pipeline {
         options { skipDefaultCheckout() }
         when {
           beforeAgent true
-          expression { params.fmi_master }
+          expression { params.fmi_master || params.fmpy_fmi_master }
         }
         steps {
-          runRegressiontest('master', 'master-fmi', '', 'origin/master', 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
+          runRegressiontest('master', 'master-fmi', '', 'origin/master', 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false, 0, 'configs/conf.json', '', '', fmiSimulators(params.fmi_master, params.fmpy_fmi_master))
         }
       }
 
@@ -224,57 +224,6 @@ pipeline {
         }
         steps {
           runRegressiontest('master', 'master-cs-fmu-cvode', 'setCommandLineOptions("--fmiFlags=s:cvode --fmuRuntimeDepends=modelica")', 'origin/master', 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
-        }
-      }
-
-      stage('v1.26 FMI with FMPy') {
-        agent {
-          node {
-            label 'ryzen-5950x-2-1'
-            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
-          }
-        }
-        options { skipDefaultCheckout() }
-        when {
-          beforeAgent true
-          expression { params.fmpy_fmi_v1_26 }
-        }
-        steps {
-          runRegressiontest('maintenance/v1.26', 'v1.26-fmi-fmpy', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
-        }
-      }
-
-      stage('v1.27 FMI with FMPy') {
-        agent {
-          node {
-            label 'ryzen-5950x-2-1'
-            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
-          }
-        }
-        options { skipDefaultCheckout() }
-        when {
-          beforeAgent true
-          expression { params.fmpy_fmi_v1_27 }
-        }
-        steps {
-          runRegressiontest('maintenance/v1.27', 'v1.27-fmi-fmpy', '', omsimulatorHash(), 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
-        }
-      }
-
-      stage('master FMI with FMPy') {
-        agent {
-          node {
-            label 'ryzen-5950x-2-1'
-            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
-          }
-        }
-        options { skipDefaultCheckout() }
-        when {
-          beforeAgent true
-          expression { params.fmpy_fmi_master }
-        }
-        steps {
-          runRegressiontest('master', 'master-fmi-fmpy', '', 'origin/master', 'ripper2', 'LibraryTestingRipper2DB', false, '', '', false, false)
         }
       }
 
@@ -763,7 +712,17 @@ def sccachePreamble() {
   *                             `.CI/wasm-jit`. If non-empty, the omc build and test.py run in that image
   *                             instead of on the node; everything using the node's own omc stays outside.
   */
-def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, omcompiler, extrasimflags, testFlags, boolean removePackageOrder, boolean conversionScript, int jobs=0, libs_config_file = 'configs/conf.json', cmakeFlags = '', dockerfile = '') {
+/* The FMI simulators a job runs, from the parameters that used to start one job each.
+ * Both ticked is one job that builds every FMU once and simulates it with both,
+ * filling <branch>-fmi and <branch>-fmi-fmpy exactly as the two jobs did. */
+def fmiSimulators(boolean omsimulator, boolean fmpy) {
+  def simulators = []
+  if (omsimulator) simulators << 'OMSimulator'
+  if (fmpy) simulators << 'fmpy'
+  return simulators
+}
+
+def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, omcompiler, extrasimflags, testFlags, boolean removePackageOrder, boolean conversionScript, int jobs=0, libs_config_file = 'configs/conf.json', cmakeFlags = '', dockerfile = '', fmiSimulators = null) {
   sh '''
   find /tmp  -name "*openmodelica.hudson*" -exec rm {} ";" || true
   mkdir -p ~/TEST_LIBS_BACKUP
@@ -814,8 +773,13 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
     }
   }
 
-  FMI_TESTING_FLAG=""
-  if (!name.contains('fmpy') && omsHash) {
+  // A job that does not say which simulators it wants gets the one its name implies.
+  def simulators = fmiSimulators
+  if (simulators == null) {
+    simulators = name.contains('fmpy') ? ['fmpy'] : (omsHash ? ['OMSimulator'] : [])
+  }
+  FMI_TESTING_FLAG = ""
+  if (simulators.contains('OMSimulator') && omsHash) {
     sh """
     if ! test -d OMSimulator; then
       git clone --recursive https://openmodelica.org/git-readonly/OMSimulator.git || exit 1
@@ -848,19 +812,23 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
     echo OMSimulator version:
     ${env.HOME}/saved_omc/OMSimulator/install/bin/OMSimulator --version
     """
-    FMI_TESTING_FLAG="--fmi=true --fmisimulator=${env.HOME}/saved_omc/OMSimulator/install/bin/OMSimulator --default=ulimitExe=50"
-    if (name.contains('cvode')) {
-      FMI_TESTING_FLAG += " --fmuType=cs"
-    }
+    FMI_TESTING_FLAG = " --fmisimulator=${env.HOME}/saved_omc/OMSimulator/install/bin/OMSimulator"
   }
 
-  if (name.contains('fmpy')) {
+  if (simulators.contains('fmpy')) {
     sh """
     # update fmpy
     pip install FMPy || true
     python3 -m fmpy -h || exit 1
     """
-    FMI_TESTING_FLAG="--fmi=true --fmisimulator='python3 -m fmpy' --default=ulimitExe=50"
+    FMI_TESTING_FLAG += " --fmisimulator='python3 -m fmpy'"
+  }
+
+  if (FMI_TESTING_FLAG) {
+    FMI_TESTING_FLAG = "--fmi=true${FMI_TESTING_FLAG} --default=ulimitExe=50"
+    if (name.contains('cvode')) {
+      FMI_TESTING_FLAG += " --fmuType=cs"
+    }
   }
 
   OMCPATH = "${omcompiler ? '../' : './'}OMCompiler"
