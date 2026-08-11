@@ -605,6 +605,11 @@ for (library,conf) in configs:
   del(c["configFromFile"])
   if "referenceFiles" in c:
     del(c["referenceFilesURL"])
+    # Where the reference files happen to live on this machine must not go into
+    # the hash: their contents are hashed just below, and two machines sharing
+    # a database have to agree on what a configuration is. Each machine only
+    # ever had its own sqlite3 file before, so an absolute path was harmless.
+    c["referenceFiles"] = "referenceFiles"
     confighash = strToHashInt(str(c)+hashReferenceFiles(conf["referenceFiles"]))
   else:
     confighash = strToHashInt(str(c)+hashReferenceFiles(""))
