@@ -1025,213 +1025,312 @@ else:
 sysInfo = "%s, %d GB RAM, %s%s" % (cpu_name(), int(math.ceil(psutil.virtual_memory().total / (1024.0**3))), ("Docker " + docker + " ") if docker else "", lsb_release)
 
 # create target dir to move results without sync operations (win or when --noSync is used)
-if result_location != "" and (isWin or noSync):
-  resRootPath = os.path.join(result_location, branch)
-  if os.path.exists(resRootPath):
-    rmtree(resRootPath)
-  os.mkdir(resRootPath)
+def stageRootFor(simulator, suffix):
+  """The directory a branch is published from.
 
-htmltpl=open("library.html.tpl").read()
-for libname in stats_by_libname.keys():
-  if libname in skipped_libs:
-    continue
-  s = None # Make sure I don't use this
-  filesList = open(libname + ".files", "w")
-  filesList.write("/\n")
-  filesList.write("/%s.html\n" % libname)
-  filesList.write("/files/\n")
-  conf = stats_by_libname[libname]["conf"]
-  stats = stats_by_libname[libname]["stats"]
-  for s in stats:
-    filename_prefix = "files/%s_%s" % (s[2],s[1])
-    filesList.write("/%s*diff*csv\n" % filename_prefix)
-    filesList.write("/%s*diff*html\n" % filename_prefix)
-    if is_non_zero_file(filename_prefix+".sim"):
-      filesList.write("/%s.sim\n" % filename_prefix)
-    if is_non_zero_file(filename_prefix+".err"):
-      filesList.write("/%s.err\n" % filename_prefix)
-    variables = (s[3].get("diff") or {}).get("vars") or []
-    if len(variables)>0:
-      filesList.write("/%s.diff.html\n" % filename_prefix)
-    for v in variables:
-      filesList.write("/%s.diff.%s.csv\n" % (filename_prefix, v))
-      filesList.write("/%s.diff.%s.html\n" % (filename_prefix, v))
-  filesList.close()
-  testsHTML = "\n".join(['<tr><td>%s%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td>%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td>%s</td></tr>\n' %
-    (lambda filename_prefix, diff:
-      (
-      ('<a href="%s">%s</a>' % (filename_prefix + ".err", html.escape(s[1]))) if is_non_zero_file(filename_prefix + ".err") else html.escape(s[1]),
-      (' (<a href="%s">sim</a>)' % (filename_prefix + ".sim")) if is_non_zero_file(filename_prefix + ".sim") else "",
-      checkPhase(s[3]["phase"], 7) if s[3]["phase"]>=6 else "#FFFFFF",
-      ("%s (%d verified)" % (timeSeconds(diff.get("time")), diff.get("numCompared"))) if s[3]["phase"]>=7 else ("&nbsp;" if diff is None else
-      ('%s (<a href="%s.diff.html">%d/%d failed</a>)' % (timeSeconds(diff.get("time")), filename_prefix, len(diff.get("vars")), diff.get("numCompared")))),
-      checkPhase(s[3]["phase"], 6),
-      timeSeconds(s[3].get("sim") or 0),
-      checkPhase(s[3]["phase"], 5),
-      timeSeconds(sum(s[3].get(x) or 0.0 for x in ["frontend","backend","simcode","templates","build"])),
-      timeSeconds(s[3].get("parsing") or 0),
-      checkPhase(s[3]["phase"], 1),
-      timeSeconds(s[3].get("frontend") or 0),
-      checkPhase(s[3]["phase"], 2),
-      timeSeconds(s[3].get("backend") or 0),
-      checkPhase(s[3]["phase"], 3),
-      timeSeconds(s[3].get("simcode") or 0),
-      checkPhase(s[3]["phase"], 4),
-      timeSeconds(s[3].get("templates") or 0),
-      checkPhase(s[3]["phase"], 5),
-      timeSeconds(s[3].get("build") or 0),
-      timeSeconds(s[3].get("exectime") or 0)
-    ))(filename_prefix="files/%s_%s" % (s[2], s[1]), diff=s[3].get("diff"))
-    for s in natsorted(stats, key=lambda s: s[1])])
-  numSucceeded = [len(stats)] + [sum(1 if s[3]["phase"]>=i else 0 for s in stats) for i in range(1,8)]
-
-  try:
-    githuburltesting = "https://github.com/OpenModelica/OpenModelicaLibraryTesting/commit/"
-    gitloglibrarytesting = check_output_log(["git", "log", '--pretty=<table><tr><th>Commit</th><th>Date</th><th>Author</th><th>Summary</th></tr><tr><td><a href="%s/%%h">%%h</a></td><td>%%ai</td><td>%%an</td><td>%%s</td></tr></table>' % (githuburltesting), "-1"], cwd="./").decode("utf-8")
-  except subprocess.CalledProcessError as e:
-    print(str(e))
-    gitloglibrarytesting = "<table><tr><td>could not get the git log for OpenModelicaLibraryTesting</td></tr></table>"
-
-  # adrpo: attempt to get the revision of the reference files if possible
-  if conf.get("referenceFiles"):
-    c = conf.get("referenceFiles")
-    if DEBUG:
-      print("referenceFiles git ... attempting to retrieve info from directory: %s" % c)
-      sys.stdout.flush()
-    gitReferenceFiles = c
-    # see if we have a commit file
-    f = os.path.join(c, "commit")
-    if os.path.exists(f):
-      with open(f) as fin:
-        gitReferenceFilesVersion = fin.read()
-        print("referenceFiles git ... read from file %s" % f)
-        sys.stdout.flush()
-    else:
-      try:
-        if isinstance(c, (str, bytes)):
-          if DEBUG:
-            print("referenceFiles git ... see if directory has an evironment variable")
-            sys.stdout.flush()
-          m = re.search("^[$][A-Z_]+", c)
-          if m:
-            k = m.group(0)[1:]
-            if k not in os.environ:
-              if DEBUG:
-                print("referenceFiles git ... environment variable used in the directory cannot be found in the environment: %s" % k)
-                sys.stdout.flush()
-              raise Exception("Environment variable %s not defined, but used in JSON config for reference files" % k)
-            gitReferenceFiles = c.replace(m.group(0), os.environ[k])
-            if DEBUG:
-              print("referenceFiles git ... directory after replacing the environment variable: %s" % gitReferenceFiles)
-              sys.stdout.flush()
-          sys.stdout.flush()
-        try:
-          gitReferenceFilesURL = check_output_log(["git", "config", "--get", "remote.origin.url"], cwd=gitReferenceFiles).decode("utf-8")
-        except subprocess.CalledProcessError as e:
-          print(e)
-          gitReferenceFilesURL = gitReferenceFiles
-        gitReferenceFilesVersion = check_output_log(["git", "log", '--pretty=<table><tr><th>Commit</th><th>Date</th><th>Author</th><th>Summary</th></tr><tr><td><a href="%s/%%h">%%h</a></td><td>%%ai</td><td>%%an</td><td>%%s</td></tr></table>' % (gitReferenceFilesURL), "-1"], cwd=gitReferenceFiles).decode("utf-8")
-        print("referenceFiles git ... got version information: %s" % gitReferenceFilesVersion)
-        sys.stdout.flush()
-      except subprocess.CalledProcessError as e:
-        print("referenceFiles git ... something went wrong with getting the git info for directory: %s" % c)
-        print(str(e))
-        sys.stdout.flush()
-        gitReferenceFilesVersion = ""
-  else:
-    gitReferenceFilesVersion = ""
-
-  replacements = (
-    (u"#sysInfo#", html.escape(sysInfo)),
-    (u"#omcVersion#", html.escape(omc_version)),
-    (u"#fmiToolVersion#", ("<p>"+html.escape("FMI tool: %s" % fmisimulatorversion)+"</p>") if fmisimulatorversion else ""),
-    (u"#fmi#", ("<p>"+html.escape("FMI version: %s" % conf.get("fmi"))+"</p>") if conf.get("fmi") else ""),
-    (u"#optlevel#", html.escape(conf.get("optlevel")) if (canChangeOptLevel and conf.get("optlevel")) else "Tool default"),
-    (u"#timeStart#", html.escape(time.strftime('%Y-%m-%d %H:%M:%S', start_as_time))),
-    (u"#fileName#", html.escape(libname)),
-    (u"#customCommands#", html.escape("\n".join(conf["customCommands"]))),
-    (u"#libraryVersionRevision#", html.escape(conf["libraryVersionRevision"])),
-    (u"#OpenModelicaLibraryTesting#", gitloglibrarytesting),
-    (u"#metadata#", html.escape(conf["metadata"])),
-    (u"#ulimitOmc#", html.escape(str(conf["ulimitOmc"]))),
-    (u"#ulimitExe#", html.escape(str(conf["ulimitExe"]))),
-    (u"#defaultTolerance#", html.escape(str(conf["defaultTolerance"]))),
-    (u"#defaultNumberOfIntervals#", html.escape(str(conf["defaultNumberOfIntervals"]))),
-    (u"#simFlags#", html.escape(conf.get("simFlags") or "")),
-    (u"#referenceFiles#", ('<p>Reference Files: %s</p>%s' % ((conf["referenceFilesURL"].replace(os.path.dirname(os.path.realpath(__file__)),"")), gitReferenceFilesVersion)) if ((conf.get("referenceFilesURL") or "") != "") else ""),
-    (u"#referenceTool#", ('<p>Verified using: %s (diffSimulationResults)</p>' % html.escape(ompython_omc_version)) if ((conf.get("referenceFiles") or "") != "") else ""),
-    (u"#Total#", html.escape(str(numSucceeded[0]))),
-    (u"#FrontendColor#", checkNumSucceeded(numSucceeded, 1)),
-    (u"#BackendColor#", checkNumSucceeded(numSucceeded, 2)),
-    (u"#SimCodeColor#", checkNumSucceeded(numSucceeded, 3)),
-    (u"#TemplatesColor#", checkNumSucceeded(numSucceeded, 4)),
-    (u"#CompilationColor#", checkNumSucceeded(numSucceeded, 5)),
-    (u"#SimulationColor#", checkNumSucceeded(numSucceeded, 6)),
-    (u"#VerificationColor#", checkNumSucceeded(numSucceeded, 7)),
-    (u"#Frontend#", html.escape(str(numSucceeded[1]))),
-    (u"#Backend#", html.escape(str(numSucceeded[2]))),
-    (u"#SimCode#", html.escape(str(numSucceeded[3]))),
-    (u"#Templates#", html.escape(str(numSucceeded[4]))),
-    (u"#Compilation#", html.escape(str(numSucceeded[5]))),
-    (u"#Simulation#", html.escape(str(numSucceeded[6]))),
-    (u"#Verification#", html.escape(str(numSucceeded[7]))),
-    (u"#totalTime#", html.escape(str(datetime.timedelta(seconds=int(sum(s[3].get("exectime") or 0.0 for s in stats)))))),
-    (u"#config#", html.escape(json.dumps(conf["configFromFile"], indent=1, sort_keys=True))),
-    (u"#testsHTML#", testsHTML)
-  )
-  open("%s.html" % libname, "w").write(multiple_replace(htmltpl, *replacements))
-
-  # move results by sync operations (not available under win)
-  if result_location != "" and not isWin and not noSync:
-    result_location_libname = "%s/%s" % (result_location, libname)
+  The first simulator publishes the workspace itself, as a job always has. The
+  others write <model>_<simulator>.sim there so as not to overwrite it, and are
+  published from a directory of their own where the same files appear under the
+  plain <model>.sim a branch directory has always held.
+  """
+  if not suffix:
+    return "."
+  root = "publish_%s" % simulator
+  for d in (root, os.path.join(root, "files")):
     try:
-      os.mkdir("emptydir")
-    except:
+      os.mkdir(d)
+    except OSError:
       pass
-    check_output_log(["rsync", "-aR", "emptydir/", result_location])
-    check_output_log(["rsync", "-aR", "emptydir/", result_location_libname])
-    check_output_log(["rsync", "-aR", "emptydir/", result_location_libname+"/files"])
-    try:
-      check_output_log(["rsync", "-aR", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", result_location_libname])
-    except:
-      check_output_log(["rsync", "-aR", "emptydir/", result_location])
-      check_output_log(["rsync", "-aR", "emptydir/", result_location_libname])
-      check_output_log(["rsync", "-aR", "emptydir/", result_location_libname+"/files"])
-      check_output_log(["rsync", "-aR", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", result_location_libname])
-    if (conf.get("referenceFiles") or "") != "" and dygraphs:
-      check_output_log(["rsync", "-a", dygraphs, result_location_libname+"/files"])
-  else:
-    print("No Sync: result_location [%s] != "" and not isWin [%s] and not noSync [%s] : library: %s" % (result_location, isWin, noSync, libname))
+  return root
 
-  # move results without sync operations (win or when --noSync is used)
+def stagePublished(stageRoot, workspacePrefix, publishedPrefix, suffix):
+  """Link one model's results into the directory its branch is published from."""
+  if not suffix:
+    return
+  for f in glob.glob(glob.escape(workspacePrefix) + "*"):
+    published = os.path.join(stageRoot, publishedPrefix + f[len(workspacePrefix):])
+    try:
+      if os.path.exists(published):
+        os.unlink(published)
+      os.link(f, published)
+    except OSError:
+      shutil.copy2(f, published)
+
+def stageShared(stageRoot, prefix, suffix):
+  """The .err of the build belongs to every simulator of the model."""
+  if not suffix:
+    return
+  for f in glob.glob(glob.escape(prefix) + ".err"):
+    published = os.path.join(stageRoot, f)
+    try:
+      if os.path.exists(published):
+        os.unlink(published)
+      os.link(f, published)
+    except OSError:
+      shutil.copy2(f, published)
+
+def dataForSimulator(data, simulator):
+  """The results of one model as one simulator saw them.
+
+  Everything up to the build is shared, so only the simulation, the comparison
+  against the reference file and the phase come from the simulator itself.
+  """
+  if simulator is None:
+    return data
+  simulated = (data.get("simulators") or {}).get(simulator)
+  merged = dict(data)
+  merged["sim"] = (simulated or {}).get("sim")
+  merged["diff"] = (simulated or {}).get("diff")
+  # A model that never got as far as being simulated stopped in the build,
+  # which every simulator of it shares.
+  merged["phase"] = simulated.get("phase") if simulated else data.get("phase")
+  return merged
+
+def artifactSuffix(simulator):
+  """What tells the files of one simulator from those of another."""
+  return "_%s" % simulator if simulator and len(fmisimulators) > 1 else ""
+
+jobOutput = result_location
+
+def outputFor(resultBranch):
+  """Where a branch publishes; --output names the directory of the job.
+
+  rsync runs from the directory a branch is staged in, so a local destination
+  has to be absolute; a remote one, host:path, already is.
+  """
+  location = jobOutput
+  if jobOutput and resultBranch != branch:
+    base = jobOutput.rstrip("/")
+    if base.endswith("/" + branch):
+      location = "%s%s" % (base[:-len(branch)], resultBranch)
+    else:
+      location = "%s/%s" % (base, resultBranch)
+  if location and ":" not in location.split("/")[0]:
+    location = os.path.abspath(location)
+  return location
+
+# Every simulator publishes its own results - .sim and diff files included - to
+# the directory of its own branch; the .err of the build is shared, so each of
+# them gets a copy of it.
+for (resultBranch, simulator) in resultBranches:
+  result_location = outputFor(resultBranch)
+  suffix = artifactSuffix(simulator)
   if result_location != "" and (isWin or noSync):
-    print("--> copy res file of library: " + libname)
-    libPath = os.path.join(resRootPath, libname)
-    if not os.path.exists(libPath):
-      os.makedirs(libPath)
-    libFilesPath = os.path.join(libPath, 'files')
-    if os.path.exists(libFilesPath):
-      rmtree(libFilesPath)
-    os.makedirs(libFilesPath)
-    try:
-      if clean:
-        shutil.move("./" + libname + ".html", libPath)
-      else:
-        shutil.copy2("./" + libname + ".html", libPath)
-    except:
-      print("-- problem durin copy/move of html file of lib: " + libname)
+    # Unlike the rsync path, this one is given the directory the branches live
+    # in and appends the branch itself.
+    resRootPath = os.path.join(jobOutput, resultBranch)
+    if os.path.exists(resRootPath):
+      rmtree(resRootPath)
+    os.makedirs(resRootPath)
 
-    for file in glob.glob("./files/" + libname + '*.err') \
-              + glob.glob("./files/" + libname + '*.sim') \
-              + glob.glob("./files/" + libname + '*.csv') \
-              + glob.glob("./files/" + libname + '*.json') \
-              + glob.glob("./files/" + libname + '*.html'):
+  htmltpl=open("library.html.tpl").read()
+  for libname in stats_by_libname.keys():
+    if libname in skipped_libs:
+      continue
+    s = None # Make sure I don't use this
+    stageRoot = stageRootFor(simulator, suffix)
+    filesList = open(os.path.join(stageRoot, libname + ".files"), "w")
+    filesList.write("/\n")
+    filesList.write("/%s.html\n" % libname)
+    filesList.write("/files/\n")
+    conf = stats_by_libname[libname]["conf"]
+    stats = [(n, m, l, dataForSimulator(d, simulator)) for (n, m, l, d) in stats_by_libname[libname]["stats"]]
+    for s in stats:
+      # What the simulator wrote in the workspace, and what it is published as:
+      # the branch of a simulator holds its results under the plain name.
+      workspace_prefix = "files/%s_%s%s" % (s[2],s[1],suffix)
+      filename_prefix = "files/%s_%s" % (s[2],s[1])
+      stagePublished(stageRoot, workspace_prefix, filename_prefix, suffix)
+      stageShared(stageRoot, "files/%s_%s" % (s[2],s[1]), suffix)
+      filesList.write("/%s*diff*csv\n" % filename_prefix)
+      filesList.write("/%s*diff*html\n" % filename_prefix)
+      if is_non_zero_file(workspace_prefix+".sim"):
+        filesList.write("/%s.sim\n" % filename_prefix)
+      errPrefix = "files/%s_%s" % (s[2],s[1])
+      if is_non_zero_file(errPrefix+".err"):
+        filesList.write("/%s.err\n" % errPrefix)
+      variables = (s[3].get("diff") or {}).get("vars") or []
+      if len(variables)>0:
+        filesList.write("/%s.diff.html\n" % filename_prefix)
+      for v in variables:
+        filesList.write("/%s.diff.%s.csv\n" % (filename_prefix, v))
+        filesList.write("/%s.diff.%s.html\n" % (filename_prefix, v))
+    filesList.close()
+    testsHTML = "\n".join(['<tr><td>%s%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td>%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td>%s</td></tr>\n' %
+      (lambda filename_prefix, errPrefix, diff:
+        (
+        ('<a href="%s">%s</a>' % (errPrefix + ".err", html.escape(s[1]))) if is_non_zero_file(errPrefix + ".err") else html.escape(s[1]),
+        (' (<a href="%s">sim</a>)' % (filename_prefix + ".sim")) if is_non_zero_file(filename_prefix + suffix + ".sim") else "",
+        checkPhase(s[3]["phase"], 7) if s[3]["phase"]>=6 else "#FFFFFF",
+        ("%s (%d verified)" % (timeSeconds(diff.get("time")), diff.get("numCompared"))) if s[3]["phase"]>=7 else ("&nbsp;" if diff is None else
+        ('%s (<a href="%s.diff.html">%d/%d failed</a>)' % (timeSeconds(diff.get("time")), filename_prefix, len(diff.get("vars")), diff.get("numCompared")))),
+        checkPhase(s[3]["phase"], 6),
+        timeSeconds(s[3].get("sim") or 0),
+        checkPhase(s[3]["phase"], 5),
+        timeSeconds(sum(s[3].get(x) or 0.0 for x in ["frontend","backend","simcode","templates","build"])),
+        timeSeconds(s[3].get("parsing") or 0),
+        checkPhase(s[3]["phase"], 1),
+        timeSeconds(s[3].get("frontend") or 0),
+        checkPhase(s[3]["phase"], 2),
+        timeSeconds(s[3].get("backend") or 0),
+        checkPhase(s[3]["phase"], 3),
+        timeSeconds(s[3].get("simcode") or 0),
+        checkPhase(s[3]["phase"], 4),
+        timeSeconds(s[3].get("templates") or 0),
+        checkPhase(s[3]["phase"], 5),
+        timeSeconds(s[3].get("build") or 0),
+        timeSeconds(s[3].get("exectime") or 0)
+      ))(filename_prefix="files/%s_%s" % (s[2], s[1]), errPrefix="files/%s_%s" % (s[2], s[1]), diff=s[3].get("diff"))
+      for s in natsorted(stats, key=lambda s: s[1])])
+    numSucceeded = [len(stats)] + [sum(1 if s[3]["phase"]>=i else 0 for s in stats) for i in range(1,8)]
+
+    try:
+      githuburltesting = "https://github.com/OpenModelica/OpenModelicaLibraryTesting/commit/"
+      gitloglibrarytesting = check_output_log(["git", "log", '--pretty=<table><tr><th>Commit</th><th>Date</th><th>Author</th><th>Summary</th></tr><tr><td><a href="%s/%%h">%%h</a></td><td>%%ai</td><td>%%an</td><td>%%s</td></tr></table>' % (githuburltesting), "-1"], cwd="./").decode("utf-8")
+    except subprocess.CalledProcessError as e:
+      print(str(e))
+      gitloglibrarytesting = "<table><tr><td>could not get the git log for OpenModelicaLibraryTesting</td></tr></table>"
+
+    # adrpo: attempt to get the revision of the reference files if possible
+    if conf.get("referenceFiles"):
+      c = conf.get("referenceFiles")
+      if DEBUG:
+        print("referenceFiles git ... attempting to retrieve info from directory: %s" % c)
+        sys.stdout.flush()
+      gitReferenceFiles = c
+      # see if we have a commit file
+      f = os.path.join(c, "commit")
+      if os.path.exists(f):
+        with open(f) as fin:
+          gitReferenceFilesVersion = fin.read()
+          print("referenceFiles git ... read from file %s" % f)
+          sys.stdout.flush()
+      else:
+        try:
+          if isinstance(c, (str, bytes)):
+            if DEBUG:
+              print("referenceFiles git ... see if directory has an evironment variable")
+              sys.stdout.flush()
+            m = re.search("^[$][A-Z_]+", c)
+            if m:
+              k = m.group(0)[1:]
+              if k not in os.environ:
+                if DEBUG:
+                  print("referenceFiles git ... environment variable used in the directory cannot be found in the environment: %s" % k)
+                  sys.stdout.flush()
+                raise Exception("Environment variable %s not defined, but used in JSON config for reference files" % k)
+              gitReferenceFiles = c.replace(m.group(0), os.environ[k])
+              if DEBUG:
+                print("referenceFiles git ... directory after replacing the environment variable: %s" % gitReferenceFiles)
+                sys.stdout.flush()
+            sys.stdout.flush()
+          try:
+            gitReferenceFilesURL = check_output_log(["git", "config", "--get", "remote.origin.url"], cwd=gitReferenceFiles).decode("utf-8")
+          except subprocess.CalledProcessError as e:
+            print(e)
+            gitReferenceFilesURL = gitReferenceFiles
+          gitReferenceFilesVersion = check_output_log(["git", "log", '--pretty=<table><tr><th>Commit</th><th>Date</th><th>Author</th><th>Summary</th></tr><tr><td><a href="%s/%%h">%%h</a></td><td>%%ai</td><td>%%an</td><td>%%s</td></tr></table>' % (gitReferenceFilesURL), "-1"], cwd=gitReferenceFiles).decode("utf-8")
+          print("referenceFiles git ... got version information: %s" % gitReferenceFilesVersion)
+          sys.stdout.flush()
+        except subprocess.CalledProcessError as e:
+          print("referenceFiles git ... something went wrong with getting the git info for directory: %s" % c)
+          print(str(e))
+          sys.stdout.flush()
+          gitReferenceFilesVersion = ""
+    else:
+      gitReferenceFilesVersion = ""
+
+    replacements = (
+      (u"#sysInfo#", html.escape(sysInfo)),
+      (u"#omcVersion#", html.escape(omc_version)),
+      (u"#fmiToolVersion#", ("<p>"+html.escape("FMI tool: %s" % fmisimulatorversion)+"</p>") if fmisimulatorversion else ""),
+      (u"#fmi#", ("<p>"+html.escape("FMI version: %s" % conf.get("fmi"))+"</p>") if conf.get("fmi") else ""),
+      (u"#optlevel#", html.escape(conf.get("optlevel")) if (canChangeOptLevel and conf.get("optlevel")) else "Tool default"),
+      (u"#timeStart#", html.escape(time.strftime('%Y-%m-%d %H:%M:%S', start_as_time))),
+      (u"#fileName#", html.escape(libname)),
+      (u"#customCommands#", html.escape("\n".join(conf["customCommands"]))),
+      (u"#libraryVersionRevision#", html.escape(conf["libraryVersionRevision"])),
+      (u"#OpenModelicaLibraryTesting#", gitloglibrarytesting),
+      (u"#metadata#", html.escape(conf["metadata"])),
+      (u"#ulimitOmc#", html.escape(str(conf["ulimitOmc"]))),
+      (u"#ulimitExe#", html.escape(str(conf["ulimitExe"]))),
+      (u"#defaultTolerance#", html.escape(str(conf["defaultTolerance"]))),
+      (u"#defaultNumberOfIntervals#", html.escape(str(conf["defaultNumberOfIntervals"]))),
+      (u"#simFlags#", html.escape(conf.get("simFlags") or "")),
+      (u"#referenceFiles#", ('<p>Reference Files: %s</p>%s' % ((conf["referenceFilesURL"].replace(os.path.dirname(os.path.realpath(__file__)),"")), gitReferenceFilesVersion)) if ((conf.get("referenceFilesURL") or "") != "") else ""),
+      (u"#referenceTool#", ('<p>Verified using: %s (diffSimulationResults)</p>' % html.escape(ompython_omc_version)) if ((conf.get("referenceFiles") or "") != "") else ""),
+      (u"#Total#", html.escape(str(numSucceeded[0]))),
+      (u"#FrontendColor#", checkNumSucceeded(numSucceeded, 1)),
+      (u"#BackendColor#", checkNumSucceeded(numSucceeded, 2)),
+      (u"#SimCodeColor#", checkNumSucceeded(numSucceeded, 3)),
+      (u"#TemplatesColor#", checkNumSucceeded(numSucceeded, 4)),
+      (u"#CompilationColor#", checkNumSucceeded(numSucceeded, 5)),
+      (u"#SimulationColor#", checkNumSucceeded(numSucceeded, 6)),
+      (u"#VerificationColor#", checkNumSucceeded(numSucceeded, 7)),
+      (u"#Frontend#", html.escape(str(numSucceeded[1]))),
+      (u"#Backend#", html.escape(str(numSucceeded[2]))),
+      (u"#SimCode#", html.escape(str(numSucceeded[3]))),
+      (u"#Templates#", html.escape(str(numSucceeded[4]))),
+      (u"#Compilation#", html.escape(str(numSucceeded[5]))),
+      (u"#Simulation#", html.escape(str(numSucceeded[6]))),
+      (u"#Verification#", html.escape(str(numSucceeded[7]))),
+      (u"#totalTime#", html.escape(str(datetime.timedelta(seconds=int(sum(s[3].get("exectime") or 0.0 for s in stats)))))),
+      (u"#config#", html.escape(json.dumps(conf["configFromFile"], indent=1, sort_keys=True))),
+      (u"#testsHTML#", testsHTML)
+    )
+    open(os.path.join(stageRoot, "%s.html" % libname), "w").write(multiple_replace(htmltpl, *replacements))
+
+    # move results by sync operations (not available under win)
+    if result_location != "" and not isWin and not noSync:
+      result_location_libname = "%s/%s" % (result_location, libname)
       try:
-        print("copy: " + file)
-        shutil.copy2(file, libFilesPath)
+        os.mkdir(os.path.join(stageRoot, "emptydir"))
       except:
-        print("-- problem during file copy... maybe the file is still hooked by a process... :" + file)
         pass
+      check_output_log(["rsync", "-aR", "emptydir/", result_location], cwd=stageRoot)
+      check_output_log(["rsync", "-aR", "emptydir/", result_location_libname], cwd=stageRoot)
+      check_output_log(["rsync", "-aR", "emptydir/", result_location_libname+"/files"], cwd=stageRoot)
+      try:
+        check_output_log(["rsync", "-aR", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", result_location_libname], cwd=stageRoot)
+      except:
+        check_output_log(["rsync", "-aR", "emptydir/", result_location], cwd=stageRoot)
+        check_output_log(["rsync", "-aR", "emptydir/", result_location_libname], cwd=stageRoot)
+        check_output_log(["rsync", "-aR", "emptydir/", result_location_libname+"/files"], cwd=stageRoot)
+        check_output_log(["rsync", "-aR", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", result_location_libname], cwd=stageRoot)
+      if (conf.get("referenceFiles") or "") != "" and dygraphs:
+        check_output_log(["rsync", "-a", dygraphs, result_location_libname+"/files"])
+    else:
+      print("No Sync: result_location [%s] != "" and not isWin [%s] and not noSync [%s] : library: %s" % (result_location, isWin, noSync, libname))
+
+    # move results without sync operations (win or when --noSync is used)
+    if result_location != "" and (isWin or noSync):
+      print("--> copy res file of library: " + libname)
+      libPath = os.path.join(resRootPath, libname)
+      if not os.path.exists(libPath):
+        os.makedirs(libPath)
+      libFilesPath = os.path.join(libPath, 'files')
+      if os.path.exists(libFilesPath):
+        rmtree(libFilesPath)
+      os.makedirs(libFilesPath)
+      try:
+        if clean:
+          shutil.move("./" + libname + ".html", libPath)
+        else:
+          shutil.copy2("./" + libname + ".html", libPath)
+      except:
+        print("-- problem durin copy/move of html file of lib: " + libname)
+
+      for file in glob.glob("./files/" + libname + '*.err') \
+                + glob.glob("./files/" + libname + '*.sim') \
+                + glob.glob("./files/" + libname + '*.csv') \
+                + glob.glob("./files/" + libname + '*.json') \
+                + glob.glob("./files/" + libname + '*.html'):
+        try:
+          print("copy: " + file)
+          shutil.copy2(file, libFilesPath)
+        except:
+          print("-- problem during file copy... maybe the file is still hooked by a process... :" + file)
+          pass
 
 if clean:
   for g in ["*.o","*.so","*.h","*.c","*.cpp","*.simsuccess","*.conf.json","*.tmpfiles","*.log","*.libs","OMCpp*","*.fmu*","temp_*", "*.exe", "HelloWorld.bat", "*.makefile", "*.mat","*.xml", "*.bin", "*.json"]:
