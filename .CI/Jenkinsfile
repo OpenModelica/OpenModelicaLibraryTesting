@@ -45,9 +45,6 @@ pipeline {
     // Where the results go. The scripts take it from here instead of a --db
     // option on every single invocation.
     LIBTEST_DB = "${params.postgres ? 'postgresql://om@openmodelica.org/omdb' : 'sqlite3.db'}"
-    // A secret file holding one pgpass line; libpq reads the password from it,
-    // so it never reaches a command line or the build log.
-    PGPASSFILE = credentials('omdb-pgpass')
   }
   stages {
     stage('test') { parallel {
@@ -450,6 +447,11 @@ pipeline {
           GITBRANCHES = 'maintenance/v1.20 maintenance/v1.21 maintenance/v1.22 maintenance/v1.23 maintenance/v1.24 maintenance/v1.25 maintenance/v1.26 maintenance/v1.27 master newInst-newBackend'
           PYTHONIOENCODING = 'utf-8'
           IDA_EMAIL = credentials('IDA email')
+          // A secret file holding one pgpass line; libpq reads the password from
+          // it, so it never reaches a command line or the build log. It is bound
+          // per stage because writing the file needs the workspace of a node,
+          // which the pipeline as a whole does not have (agent none).
+          PGPASSFILE = credentials('omdb-pgpass')
         }
         steps {
           //sshagent (credentials: ['Hudson-SSH-Key']) {
@@ -521,6 +523,11 @@ pipeline {
           GITBRANCHES_CPP = 'v1.19-cpp v1.20-cpp v1.21-cpp v1.22-cpp v1.23-cpp v1.24-cpp v1.25-cpp cpp v1.26-cpp v1.27-cpp'
           PYTHONIOENCODING = 'utf-8'
           IDA_EMAIL = credentials('IDA email')
+          // A secret file holding one pgpass line; libpq reads the password from
+          // it, so it never reaches a command line or the build log. It is bound
+          // per stage because writing the file needs the workspace of a node,
+          // which the pipeline as a whole does not have (agent none).
+          PGPASSFILE = credentials('omdb-pgpass')
         }
         steps {
           //sshagent (credentials: ['Hudson-SSH-Key']) {
@@ -1009,26 +1016,31 @@ def runRegressiontest(branch, name, extraFlags, omsHash, dbPrefix, sshConfig, om
 
   sh 'date'
 
-  runSh("""
-  export OPENMODELICAHOME="${WORKSPACE}/OpenModelica/${OMCPATH}/build"
-  export MSLREFERENCE="${MSLREFERENCE}"
-  export REFERENCEFILES="${REFERENCEFILES}"
-  export GITREPOS="${GITREPOS}"
-  export PNLIBREFS="${PNLIBREFS}"
-  export THERMOFLUIDSTREAMREFS="${THERMOFLUIDSTREAMREFS}"
-  export THERMOFLUIDSTREAMREFSOM="${THERMOFLUIDSTREAMREFSOM}"
-  export PREVIOUSHOME="${env.HOME}"
-  export HOME="${libraryPath}"
-  # we need to do some crap magic here to make sure python3 finds fmpy as we change the HOME here
-  # too bad if we cannot do it, just continue
-  ln -s -t \${HOME} \${PREVIOUSHOME}/.local .local || true
+  // The password of the results database comes from a secret file, bound here
+  // rather than for the pipeline as a whole: writing the file needs the
+  // workspace of a node, and the pipeline has agent none.
+  withCredentials([file(credentialsId: 'omdb-pgpass', variable: 'PGPASSFILE')]) {
+    runSh("""
+    export OPENMODELICAHOME="${WORKSPACE}/OpenModelica/${OMCPATH}/build"
+    export MSLREFERENCE="${MSLREFERENCE}"
+    export REFERENCEFILES="${REFERENCEFILES}"
+    export GITREPOS="${GITREPOS}"
+    export PNLIBREFS="${PNLIBREFS}"
+    export THERMOFLUIDSTREAMREFS="${THERMOFLUIDSTREAMREFS}"
+    export THERMOFLUIDSTREAMREFSOM="${THERMOFLUIDSTREAMREFSOM}"
+    export PREVIOUSHOME="${env.HOME}"
+    export HOME="${libraryPath}"
+    # we need to do some crap magic here to make sure python3 finds fmpy as we change the HOME here
+    # too bad if we cannot do it, just continue
+    ln -s -t \${HOME} \${PREVIOUSHOME}/.local .local || true
 
-  cd OpenModelicaLibraryTesting
-  # Force /usr/bin/omc as being used for generating the mos-files. Ensures consistent behavior among all tested OMC versions
-  stdbuf -oL -eL time ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags='${extraFlags}' --extrasimflags='${extrasimflags}' ${testFlags} --branch="${name}" --output="libraries.openmodelica.org:/var/www/libraries.openmodelica.org/branches/${name}/" --libraries='${libraryPath}/.openmodelica/libraries/'  --jobs=${jobs} ${libs_config_file} ${params.OLDLIBS ? "configs/conf-old.json configs/conf-nonstandard.json" : ""} || (killall omc ; false) || exit 1
-  """)
-  sh 'date'
-  sh "cd OpenModelicaLibraryTesting/ && ./clean-empty-omcversion-dates.py"
+    cd OpenModelicaLibraryTesting
+    # Force /usr/bin/omc as being used for generating the mos-files. Ensures consistent behavior among all tested OMC versions
+    stdbuf -oL -eL time ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags='${extraFlags}' --extrasimflags='${extrasimflags}' ${testFlags} --branch="${name}" --output="libraries.openmodelica.org:/var/www/libraries.openmodelica.org/branches/${name}/" --libraries='${libraryPath}/.openmodelica/libraries/'  --jobs=${jobs} ${libs_config_file} ${params.OLDLIBS ? "configs/conf-old.json configs/conf-nonstandard.json" : ""} || (killall omc ; false) || exit 1
+    """)
+    sh 'date'
+    sh "cd OpenModelicaLibraryTesting/ && ./clean-empty-omcversion-dates.py"
+  }
 
   // Copying the file back is what made two machines overwrite each other's
   // results, so it only happens while a job still writes its own sqlite3 file.
