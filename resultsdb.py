@@ -50,18 +50,27 @@ KEYS = {
 }
 BRANCH_KEY = ["date", "libname", "model"]
 
+# What a claim is about: this machine is testing this library of this branch.
+# Not the configuration it is testing it with - the configuration hash covers
+# the reference files, and two machines that fetched them either side of an
+# upstream commit would then both claim the same library and both test it,
+# which is the duplication the claim exists to prevent. The versions are kept
+# to say who is testing what, and the run still decides for itself whether it
+# already has results for an exact configuration.
+JOB_CLAIM_KEY = ("branch", "libname")
+
 JOB_CLAIM = """
 CREATE TABLE IF NOT EXISTS job_claim (
   branch     text   NOT NULL,
   libname    text   NOT NULL,
-  libversion text   NOT NULL,
-  omcversion text   NOT NULL,
-  confighash bigint NOT NULL,
+  libversion text,
+  omcversion text,
+  confighash bigint,
   host       text   NOT NULL,
   state      text   NOT NULL,
   claimed_at timestamptz NOT NULL DEFAULT now(),
   heartbeat  timestamptz NOT NULL DEFAULT now(),
-  PRIMARY KEY (branch, libname, libversion, omcversion, confighash)
+  PRIMARY KEY (branch, libname)
 )
 """
 
@@ -283,6 +292,7 @@ class _Postgres(_Db):
     self.claims = []
     self.heartbeatThread = None
     self.execute(JOB_CLAIM)
+    self._migrateJobClaim()
     self.commit()
 
   def _connect(self):
@@ -334,6 +344,31 @@ class _Postgres(_Db):
       self.recover()
       self.conn.commit()
     self.pending = []
+
+  def _migrateJobClaim(self):
+    """Narrow an older job_claim to (branch, libname).
+
+    It used to be keyed by the configuration as well, so two machines whose
+    reference files had been updated at different times each got a claim on the
+    same library. Claims of a run in progress are kept, the freshest per
+    library, so migrating does not let a second machine in.
+    """
+    key = [c for (c,) in self.execute("""SELECT a.attname FROM pg_index i
+             JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
+             WHERE i.indrelid = 'job_claim'::regclass AND i.indisprimary
+             ORDER BY a.attnum""")]
+    if tuple(key) == JOB_CLAIM_KEY:
+      return
+    print("Narrowing job_claim from (%s) to (%s)" % (", ".join(key), ", ".join(JOB_CLAIM_KEY)))
+    cursor = self.cursor()
+    cursor.execute(JOB_CLAIM.replace("job_claim", "job_claim_migrated"))
+    cursor.execute("""INSERT INTO job_claim_migrated
+        SELECT DISTINCT ON (branch, libname) branch, libname, libversion, omcversion,
+               confighash, host, state, claimed_at, heartbeat
+          FROM job_claim ORDER BY branch, libname, heartbeat DESC""")
+    cursor.execute("DROP TABLE job_claim")
+    cursor.execute("ALTER TABLE job_claim_migrated RENAME TO job_claim")
+    self.commit()
 
   def sql(self, sql, hasParams=False):
     """sqlite spells the placeholder "?" and psycopg2 spells it "%s".
@@ -420,16 +455,18 @@ class _Postgres(_Db):
     A machine that dies stops sending its heartbeat, and after
     STALE_CLAIM_MINUTES its jobs are up for grabs again.
     """
-    key = (branch, libname, libversion, omcversion, confighash)
+    key = (branch, libname)
     got = self.execute("""INSERT INTO job_claim
         (branch, libname, libversion, omcversion, confighash, host, state)
         VALUES (?,?,?,?,?,?,'running')
-        ON CONFLICT (branch, libname, libversion, omcversion, confighash) DO UPDATE
-        SET host = EXCLUDED.host, state = 'running', claimed_at = now(), heartbeat = now()
+        ON CONFLICT (branch, libname) DO UPDATE
+        SET host = EXCLUDED.host, state = 'running', claimed_at = now(), heartbeat = now(),
+            libversion = EXCLUDED.libversion, omcversion = EXCLUDED.omcversion,
+            confighash = EXCLUDED.confighash
         WHERE job_claim.state <> 'running'
            OR job_claim.heartbeat < now() - interval '%d minutes'
         RETURNING host""" % STALE_CLAIM_MINUTES,
-        key + (self.host,)).fetchone()
+        (branch, libname, libversion, omcversion, confighash, self.host)).fetchone()
     self.commit()
     if got is None:
       return False
@@ -439,9 +476,8 @@ class _Postgres(_Db):
 
   def claimedBy(self, branch, libname, libversion, omcversion, confighash):
     """The machine holding that job, for the message telling the user why we skip."""
-    row = self.execute("""SELECT host, claimed_at FROM job_claim WHERE branch=? AND libname=?
-                          AND libversion=? AND omcversion=? AND confighash=?""",
-                       (branch, libname, libversion, omcversion, confighash)).fetchone()
+    row = self.execute("SELECT host, claimed_at FROM job_claim WHERE branch=? AND libname=?",
+                       (branch, libname)).fetchone()
     return row or ("unknown", None)
 
   def _startHeartbeat(self):
@@ -463,16 +499,15 @@ class _Postgres(_Db):
     import psycopg2
     with psycopg2.connect(self.url) as conn:
       with conn.cursor() as cur:
-        for (branch, libname, libversion, omcversion, confighash) in list(self.claims):
-          cur.execute("""UPDATE job_claim SET heartbeat = now() WHERE branch=%s AND libname=%s
-                         AND libversion=%s AND omcversion=%s AND confighash=%s AND host=%s""",
-                      (branch, libname, libversion, omcversion, confighash, self.host))
+        for (branch, libname) in list(self.claims):
+          cur.execute("""UPDATE job_claim SET heartbeat = now()
+                         WHERE branch=%s AND libname=%s AND host=%s""",
+                      (branch, libname, self.host))
 
   def release(self):
-    for (b, libname, libversion, omcversion, confighash) in self.claims:
+    for (branch, libname) in self.claims:
       self.execute("""UPDATE job_claim SET state='done', heartbeat=now()
-                      WHERE branch=? AND libname=? AND libversion=? AND omcversion=? AND confighash=?
-                        AND host=?""",
-                   (b, libname, libversion, omcversion, confighash, self.host))
+                      WHERE branch=? AND libname=? AND host=?""",
+                   (branch, libname, self.host))
     self.claims = []
     self.commit()
