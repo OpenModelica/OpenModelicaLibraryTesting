@@ -5,7 +5,7 @@ import urllib.request
 import codecs
 import sys, argparse, subprocess, os, time
 import simplejson as json
-import shared
+import shared, resultsdb
 import re
 from omcommon import friendlyStr
 
@@ -17,6 +17,7 @@ parser.add_argument('--githuburl', default="https://github.com/OpenModelica/Open
 parser.add_argument('--githuburltesting', default="https://github.com/OpenModelica/OpenModelicaLibraryTesting/commit")
 parser.add_argument('--omcgitdir', default="../OpenModelica/OpenModelica")
 parser.add_argument('--email', default=False, action='store_true')
+resultsdb.addArgument(parser)
 args = parser.parse_args()
 
 os.environ['TZ'] = 'Europe/Stockholm'
@@ -44,11 +45,11 @@ timeAbs = 10 # Ignore performance regressions for times <10s...
 
 libs = {}
 
-import cgi, sqlite3, time, datetime
+import cgi, time, datetime
 from omcommon import friendlyStr, multiple_replace
 
-conn = sqlite3.connect('sqlite3.db')
-cursor = conn.cursor()
+db = resultsdb.connect(args.db)
+cursor = db.cursor()
 
 def dateStr(dint):
   return str(datetime.datetime.fromtimestamp(dint).strftime('%Y-%m-%d %H:%M:%S'))
@@ -70,8 +71,7 @@ missing_branches = []
 emails_to_send = {}
 for branch in branches:
   try:
-    cursor.execute("SELECT name FROM [sqlite_master] WHERE type='table' AND name=?", (branch,))
-    one = cursor.fetchone()
+    one = (branch,) if db.tableExists(branch) else None
     if one == None:
       print("No such table '%s'; specify it using --branch=XXX when running test.py" % branch)
       # ignore this table and continue
@@ -86,8 +86,8 @@ for branch in branches:
     missing_branches.append(branch)
     continue
 
-  cursor.execute('''CREATE INDEX IF NOT EXISTS [idx_%s_date] ON [%s](date)''' % (branch,branch))
-  cursor.execute("SELECT date,omcversion FROM [omcversion] WHERE branch LIKE ? COLLATE NOCASE ORDER BY date ASC", (branch,))
+  db.createDateIndex(branch)
+  cursor.execute("SELECT date,omcversion FROM omcversion WHERE %s ORDER BY date ASC" % db.likeNoCase("branch"), (branch,))
   entries = cursor.fetchall()
   n = len(entries)
   urlToOpen = "%s/%s/00_history.html" % (historyurl, branch)
@@ -152,11 +152,11 @@ for branch in branches:
       gitloglibrarytesting = "<tr><td>could not get the git log for OpenModelicaLibraryTesting</td></tr>"
 
     tpl = tpl.replace("#OMCGITLOG#",gitlog).replace("#NUMCOMMITS#",str(gitlog.count("<tr>"))).replace("#3rdParty#",thirdPartyChanged).replace("#OMCLIBRARYTESTINGGITLOG#",gitloglibrarytesting)
-    libnames = [libname for (libname,) in cursor.execute("""SELECT libname FROM [%s] WHERE date=? GROUP BY libname""" % branch, (d2,))]
+    libnames = [libname for (libname,) in cursor.execute("""SELECT libname FROM %s WHERE date=? GROUP BY libname""" % db.quote(branch), (d2,))]
     startdates = {}
     # Get previous date of each library run and group them together for fast queries later
     for libname in libnames:
-      ds = cursor.execute("""SELECT date FROM [%s] WHERE date<? AND libname=? ORDER BY date DESC LIMIT 1""" % branch, (d2,libname)).fetchall()
+      ds = cursor.execute("""SELECT date FROM %s WHERE date<? AND libname=? ORDER BY date DESC LIMIT 1""" % db.quote(branch), (d2,libname)).fetchall()
       if len(ds)==0:
         continue
       ((d1lib,),) = ds
@@ -166,10 +166,14 @@ for branch in branches:
     regressions = []
     for d1lib in startdates.keys():
     # Order by date so we can select and know which is the older and which is the newer value... for finalphase, and the execution times
-    # Note: GROUP_CONCAT returns both values as a string... So you need to split it later
-      query = """SELECT model,libname,GROUP_CONCAT(finalphase),GROUP_CONCAT(frontend),GROUP_CONCAT(backend),GROUP_CONCAT(simcode),GROUP_CONCAT(templates),GROUP_CONCAT(compile),GROUP_CONCAT(simulate) FROM
-    (SELECT model,libname,finalphase,frontend,backend,simcode,templates,compile,simulate FROM [%s] WHERE date IN (?,?) AND libname IN (%s) ORDER BY date)
-  GROUP BY model,libname HAVING
+    # Note: the group concatenation returns both values as a string... So you need to split it
+    # later. The order is the one of the dates, which PostgreSQL only guarantees when the
+    # aggregate says so, hence the date column in the inner query.
+      concat = ",".join(db.groupConcat(c, "date") for c in
+                        ["finalphase","frontend","backend","simcode","templates","compile","simulate"])
+      query = ("""SELECT model,libname,%s FROM
+    (SELECT model,libname,date,finalphase,frontend,backend,simcode,templates,compile,simulate FROM %%s WHERE date IN (?,?) AND libname IN (%%s) ORDER BY date) AS phases
+  GROUP BY model,libname HAVING""" % concat + """
     (MIN(finalphase) <> MAX(finalphase)) OR
     ((MIN(finalphase) >= ?) AND
       (MAX(frontend) > ?*MIN(frontend) AND MAX(frontend) > ?) OR
@@ -179,7 +183,7 @@ for branch in branches:
       (MAX(compile) > ?*MIN(compile) AND MAX(compile) > ?) OR
       (MAX(simulate) > ?*MIN(simulate) AND MAX(simulate) > ?)
     )
-  """ % (branch,",".join(["'%s'" % libname for libname in startdates[d1lib]]))
+  """) % (db.quote(branch),",".join(["'%s'" % libname for libname in startdates[d1lib]]))
       cursor.execute(query, (d1lib,d2,timeMinPhase,timeRel,timeAbs,timeRel,timeAbs,timeRel,timeAbs,timeRel,timeAbs,timeRel,2*timeAbs,timeRel,timeAbs))
       regressions += cursor.fetchall()
     regressions = sorted(regressions, key = lambda x: (x[1],x[0]))
@@ -228,10 +232,10 @@ for branch in branches:
 
     libstrs = []
     for libname in sorted(list(libs)):
-      cursor.execute("SELECT libversion,confighash FROM [libversion] WHERE branch LIKE ? COLLATE NOCASE AND date<=? AND libname=? ORDER BY date DESC LIMIT 1", (branch,d1,libname))
+      cursor.execute("SELECT libversion,confighash FROM libversion WHERE %s AND date<=? AND libname=? ORDER BY date DESC LIMIT 1" % db.likeNoCase("branch"), (branch,d1,libname))
       (lv1,lh1) = cursor.fetchone()
       lv1 = lv1.strip()
-      cursor.execute("SELECT libversion,confighash FROM [libversion] WHERE branch LIKE ? COLLATE NOCASE AND date<=? AND libname=? ORDER BY date DESC LIMIT 1", (branch,d2,libname))
+      cursor.execute("SELECT libversion,confighash FROM libversion WHERE %s AND date<=? AND libname=? ORDER BY date DESC LIMIT 1" % db.likeNoCase("branch"), (branch,d2,libname))
       (lv2,lh2) = cursor.fetchone()
       lv2 = lv2.strip()
       if lv1 != lv2:

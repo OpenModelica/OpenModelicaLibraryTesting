@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 
-import argparse, sqlite3, sys
+import argparse, sys
+import resultsdb
 from datetime import datetime
 
 parser = argparse.ArgumentParser(description='OpenModelica library testing tool')
 parser.add_argument('startDate')
 parser.add_argument('stopDate')
+resultsdb.addArgument(parser)
 
 args = parser.parse_args()
 
@@ -29,12 +31,12 @@ else:
    sys.stdout.write("Please respond with 'yes' or 'no'")
    sys.exit(1)
 
-conn = sqlite3.connect('sqlite3.db')
-cursor = conn.cursor()
+db = resultsdb.connect(args.db)
+cursor = db.cursor()
 
-tables = [tbl for (tbl,) in cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")]
+tables = db.tables()
 for tbl in tables:
-  cursor.execute("DELETE FROM [%s] WHERE date<? AND date>?" % tbl, (stopTime.timestamp(),startTime.timestamp()))
-conn.commit()
-conn.execute("VACUUM")
-conn.close()
+  cursor.execute("DELETE FROM %s WHERE date<? AND date>?" % db.quote(tbl), (stopTime.timestamp(),startTime.timestamp()))
+db.commit()
+db.vacuum()
+db.close()
