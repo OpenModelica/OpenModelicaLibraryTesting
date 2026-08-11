@@ -122,6 +122,16 @@ class _Db:
   def close(self):
     self.conn.close()
 
+  # The errors that mean the connection is gone rather than the statement bad.
+  lostConnection = ()
+
+  def record(self, statement, params):
+    """Remember a statement in case the transaction has to be replayed."""
+
+  def recover(self):
+    """Reconnect after the connection was lost and replay the transaction."""
+    raise NotImplementedError
+
   def insertIgnore(self):
     """The clause that makes an INSERT skip a row that is already there."""
     return ""
@@ -159,7 +169,19 @@ class _Cursor:
     # psycopg2 only looks for placeholders when parameters are passed, so a
     # statement without any must not be handed an empty tuple.
     params = tuple(params)
-    self.cursor.execute(self.db.sql(sql, bool(params)), self.db.params(params))
+    statement = self.db.sql(sql, bool(params))
+    try:
+      self.cursor.execute(statement, self.db.params(params))
+    except self.db.lostConnection as e:
+      # The results of a run are written in one transaction at the end of it,
+      # after the connection has been idle for hours, which is exactly when a
+      # firewall or a restarted server has dropped it. Reconnecting and
+      # replaying what the transaction had so far costs nothing and saves the
+      # whole run; the keys make replaying it harmless.
+      print("Lost the connection to the database (%s); reconnecting" % str(e).strip())
+      self.cursor = self.db.recover()
+      self.cursor.execute(statement, self.db.params(params))
+    self.db.record(statement, self.db.params(params))
     return self
 
   def fetchone(self):
@@ -254,13 +276,64 @@ class _Postgres(_Db):
     # The password belongs in PGPASSWORD or ~/.pgpass, not in the URL.
     _fixPgpassPermissions()
     self.url = url
-    self.conn = psycopg2.connect(url)
-    self.conn.autocommit = False
+    self.lostConnection = (psycopg2.OperationalError, psycopg2.InterfaceError)
+    self.pending = []
+    self.conn = self._connect()
     self.host = socket.gethostname()
     self.claims = []
     self.heartbeatThread = None
     self.execute(JOB_CLAIM)
     self.commit()
+
+  def _connect(self):
+    """Open the connection, asking the kernel to keep it alive.
+
+    A run holds this connection open while it tests, which is hours during
+    which nothing is sent on it, and an idle connection is what a firewall or
+    a NAT quietly drops. The keepalives make that visible rather than fatal.
+    """
+    import psycopg2
+    conn = psycopg2.connect(self.url, keepalives=1, keepalives_idle=60,
+                            keepalives_interval=10, keepalives_count=5)
+    conn.autocommit = False
+    return conn
+
+  # Only what changes the database has to be replayed; a run also makes tens of
+  # thousands of queries, which would fill the buffer for nothing.
+  WRITES = ("insert", "update", "delete", "create", "drop", "alter")
+
+  def record(self, statement, params):
+    first = statement.lstrip().split(None, 1)
+    if first and first[0].lower() in self.WRITES:
+      self.pending.append((statement, params))
+
+  def recover(self):
+    """Reconnect and replay the transaction that the lost connection took.
+
+    Everything a run writes is an insert guarded by a key, so replaying it can
+    only produce the rows that were lost, never a duplicate.
+    """
+    try:
+      self.conn.close()
+    except Exception:
+      pass
+    self.conn = self._connect()
+    cursor = self.conn.cursor()
+    for (statement, params) in self.pending:
+      cursor.execute(statement, params)
+    if self.pending:
+      print("Replayed %d statements of the interrupted transaction" % len(self.pending))
+    return cursor
+
+  def commit(self):
+    try:
+      self.conn.commit()
+    except self.lostConnection as e:
+      print("Lost the connection to the database while committing (%s); reconnecting"
+            % str(e).strip())
+      self.recover()
+      self.conn.commit()
+    self.pending = []
 
   def sql(self, sql, hasParams=False):
     """sqlite spells the placeholder "?" and psycopg2 spells it "%s".
