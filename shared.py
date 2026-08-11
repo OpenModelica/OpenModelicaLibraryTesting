@@ -118,4 +118,49 @@ def isFMPy(fmisimulator):
   else:
     return False
 
+def fmiSimulatorName(command):
+  """The short name of an FMI simulator, used to name its branch and its files."""
+  if isFMPy(command):
+    return "fmpy"
+  if "pyfmi" in command.lower():
+    return "pyfmi"
+  return "OMSimulator"
+
+def parseFmiSimulators(fmisimulators):
+  """The --fmisimulator values as an ordered list of (name, command).
+
+  A value is either "name=command" or just the command, whose name is then
+  taken from the command itself.  The order matters: the first simulator keeps
+  the branch the job was started with and the others get one of their own, see
+  branchForSimulator.
+  """
+  res = []
+  for s in fmisimulators or []:
+    if not s:
+      continue
+    name, sep, command = s.partition("=")
+    if not sep or "/" in name or " " in name:
+      (name, command) = (fmiSimulatorName(s), s)
+    res.append((name, command))
+  names = [n for (n, _) in res]
+  if len(set(names)) != len(names):
+    raise Exception("The same FMI simulator name is used twice: %s" % ", ".join(names))
+  return res
+
+# The branch a simulator stores its results in is its name appended to the
+# branch of the job, except for OMSimulator, which has always had the plain
+# -fmi table to itself.  Keyed by the simulator rather than by the order it was
+# given in, so that a job running only FMPy still fills v1.27-fmi-fmpy and not
+# v1.27-fmi.
+BRANCH_SUFFIX = {"OMSimulator": ""}
+
+def branchForSimulator(branch, name):
+  """Where the results of one FMI simulator of a run are stored.
+
+  --branch names the job, v1.27-fmi, and every simulator derives its own from
+  it: OMSimulator fills v1.27-fmi, FMPy v1.27-fmi-fmpy, whether they run
+  together or on their own.
+  """
+  return branch + BRANCH_SUFFIX.get(name, "-%s" % name)
+
 

@@ -36,7 +36,7 @@ parser.add_argument('--ompython_omhome', default='')
 parser.add_argument('--noclean', action="store_true", default=False)
 parser.add_argument('--nobuildmodel', action="store_true", help="Translate, build and simulate in a single simulate() call instead of translateModel() followed by simulate(resimulateExecutable=...), so the JIT compile is reported as build time rather than simulation time. Only used by simCodeTarget=wasm-jit.", default=False)
 parser.add_argument('--coldhot', action="store_true", help="Simulate each model twice in the same omc; the second run reuses the compiled module. Both times are printed, but only the hot one is stored. Only used by simCodeTarget=wasm-jit.", default=False)
-parser.add_argument('--fmisimulator', default='')
+parser.add_argument('--fmisimulator', action='append', default=[], help="FMI simulator to run the FMUs with, as 'name=command' or just the command. Repeat it to simulate every FMU with several tools without building it more than once; the first one stores its results in --branch and each further one in <branch>-<name>, so --branch=master-fmi with OMSimulator and fmpy fills master-fmi and master-fmi-fmpy." )
 parser.add_argument('--ulimitvmem', help="Virtual memory limit (in kB) (linux only)", type=int, default=8*1024*1024)
 parser.add_argument('--default', action='append', help="Add a default value for some configuration key, such as --default=ulimitExe=60. The equals sign is mandatory.", default=[])
 parser.add_argument('-j', '--jobs', default=0, help="Ignored and deprecated, use procOMC:0 or procOMC:1 in the config")
@@ -67,7 +67,9 @@ runverbose = args.verbose
 extraflags = args.extraflags
 extrasimflags = args.extrasimflags
 ompython_omhome = args.ompython_omhome
-fmisimulator = args.fmisimulator or None
+fmisimulators = shared.parseFmiSimulators(args.fmisimulator)
+# The first simulator is the one the single-simulator code paths use.
+fmisimulator = fmisimulators[0][1] if fmisimulators else None
 allTestsFmi = args.fmi
 fmuType = args.fmuType
 ulimitMemory = args.ulimitvmem
@@ -299,17 +301,24 @@ check_output_log(omc_cmd + ["-n=1", "--version"], stderr=subprocess.STDOUT).stri
 
 sys.stdout.flush()
 
+def fmiSimulatorVersion(command):
+  try:
+    if not isFMPy(command):
+      return check_output_log([command, "-v"], stderr=subprocess.STDOUT).strip()
+    return subprocess.getoutput(command + " --version").strip().encode('ascii')
+  except subprocess.CalledProcessError as e:
+    print("Failure to run %s:\n%s" % (command, e.output))
+    raise e
+
+fmisimulatorversions = {}
 fmisimulatorversion = None
 if fmisimulator:
-  try:
-    if not isFMPy(fmisimulator):
-      fmisimulatorversion = check_output_log([fmisimulator, "-v"], stderr=subprocess.STDOUT).strip()
-    else:
-      fmisimulatorversion = subprocess.getoutput(fmisimulator + " --version" ).strip().encode('ascii')
-  except subprocess.CalledProcessError as e:
-    print("Failure to run %s:\n%s" %(fmisimulator, e.output))
-    raise e
-  print(fmisimulatorversion)
+  for (name, command) in fmisimulators:
+    fmisimulatorversions[name] = fmiSimulatorVersion(command)
+    print("%s: %s" % (name, fmisimulatorversions[name]))
+  # The version of the first one goes into the library version of every branch,
+  # as it did when a job ran a single simulator.
+  fmisimulatorversion = fmisimulatorversions[fmisimulators[0][0]]
 else:
   if allTestsFmi:
     raise Exception("No OMSimulator; trying to simulate using FMI")
@@ -617,6 +626,7 @@ for (library,conf) in configs:
     conf["haveFMI"] = fmiOK_C
     conf["haveFMICpp"] = fmiOK_Cpp
     conf["fmisimulator"] = fmisimulator
+    conf["fmisimulators"] = ["%s=%s" % (n, c) for (n, c) in fmisimulators]
     conf["fmuType"] = fmuType
   if (not canChangeOptLevel) and "optlevel" in conf:
     print("Deleting optlevel")
