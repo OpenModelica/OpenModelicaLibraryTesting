@@ -50,7 +50,29 @@ except OSError:
 class TimeoutError(Exception):
   pass
 
+runningPhase = None
+"""What is running now, as (key of execstat, when it started).
+
+A command the watchdog has to kill never returns to its caller -
+sendExpressionTimeout ends the process itself - so the caller's own timeout
+handler does not run and the phase reports no time at all. Recording it here
+instead covers every way out, because they all write the results first.
+"""
+
+def phaseStarts(key):
+  global runningPhase
+  runningPhase = (key, monotonic())
+
+def phaseEnded():
+  global runningPhase
+  runningPhase = None
+
 def writeResult():
+  if runningPhase is not None:
+    (key, started) = runningPhase
+    # Only if the phase did not get to report its own time.
+    if not execstat.get(key):
+      execstat[key] = monotonic() - started
   with open(statFile, 'w') as fp:
     json.dump(execstat, fp)
     fp.flush()
@@ -447,19 +469,28 @@ def simulateCmd(resimulate):
 total_before = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_SIMULATE_TOTAL)")
 start=monotonic()
 timeout = conf["ulimitOmc"]
+# If the command has to be killed there is no way to tell which phase it was in,
+# so its time is charged to what the command itself is: building an FMU to the
+# build, simulating to the simulation, translating to the front end - which is
+# also the phase such a model is reported as having failed in.
 if conf.get("fmi"):
   cmd='"" <> buildModelFMU(%s,fileNamePrefix="%s",fmuType="%s",version="%s",platforms={"static"})' % (conf["modelName"],conf["fileName"].replace(".","_"),conf["fmuType"],conf["fmi"])
+  timedPhase = "build"
 elif useSimulate:
   cmd=simulateCmd(resimulate=False)
   timeout = conf["ulimitOmc"] + conf["ulimitExe"]
+  timedPhase = "sim"
 else:
   cmd='translateModel(%s,tolerance=%g,outputFormat="%s",numberOfIntervals=%d,variableFilter="%s",fileNamePrefix="%s")' % (conf["modelName"],tolerance,outputFormat,numberOfIntervals,variableFilter,conf["fileName"])
+  timedPhase = "frontend"
 with open(errFile, 'a+') as fp:
   fp.write("Running command: %s\n"%(cmd))
 try:
+  phaseStarts(timedPhase)
   res=sendExpressionTimeout(omc, cmd, timeout)
+  phaseEnded()
 except TimeoutError as e:
-  execstat["frontend"]=monotonic()-start
+  execstat[timedPhase]=monotonic()-start
 
   with open(errFile, 'a+') as fp:
     fp.write("Timeout error for cmd: %s\n%s"%(cmd,str(e)))
