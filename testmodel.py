@@ -646,6 +646,9 @@ def simElapsed():
   return monotonic()-start
 
 start=monotonic()
+# Set when the first FMI simulator fails and there are others waiting for the
+# same FMU, so that its result file is not compared against the reference.
+firstSimulatorFailed = False
 try:
   # TODO: Timeout more reliably...
   if conf.get("fmi"):
@@ -709,7 +712,20 @@ try:
   execstat["phase"] = 6
 except TimeoutError as e:
   execstat["sim"] = monotonic()-start
-  writeResultAndExit(0, True, omc, omc_new)
+  # checkOutputTimeout raises TimeoutError for a command that fails as well as
+  # for one that runs out of time, so this covers both.
+  if len(fmisimulators) > 1:
+    # The FMU is built and the other simulators are about to run it. What the
+    # first one did says nothing about them, so record the failure and let them
+    # have their turn. Ending the model here would write them all down as having
+    # failed at this phase without ever being started, which is what the loop
+    # below already avoids for a failure in any simulator but the first.
+    firstSimulatorFailed = True
+    with open(errFile, 'a+') as fp:
+      fp.write("%s failed or timed out simulating the FMU; the other simulators still get to run it\n"
+               % fmisimulators[0][0])
+  else:
+    writeResultAndExit(0, True, omc, omc_new)
 
 def verifyAgainstReference(resFile, prefix, stat):
   """Compare one simulation result against the reference file.
@@ -822,12 +838,14 @@ def verifyAgainstReference(resFile, prefix, stat):
 
 
 # The first simulator's results are the ones every non-FMI code path expects.
-verifyAgainstReference(resFile, artifactPrefix(fmisimulators[0][0] if fmisimulators else None) + ".diff", execstat)
+# There is nothing to compare when it never produced any.
+if not firstSimulatorFailed:
+  verifyAgainstReference(resFile, artifactPrefix(fmisimulators[0][0] if fmisimulators else None) + ".diff", execstat)
 
 # The FMU is built; every other simulator the job asked for is now only a
 # simulation and a comparison. A tool that times out or fails takes its own
-# results down with it and leaves the others alone - unlike the first one,
-# whose timeout ends the model as it always has.
+# results down with it and leaves the others alone - the first one included,
+# see the TimeoutError handler above.
 for (name, command) in fmisimulators[1:]:
   stat = {"sim": None, "diff": None, "phase": 5}
   simulators[name] = stat
