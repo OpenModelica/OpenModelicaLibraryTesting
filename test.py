@@ -490,65 +490,65 @@ for (lib,c) in configs:
         refFilesGitTag = c["referenceFiles"]["git-ref"].strip()
         if not refFilesGitTag.startswith("origin/"):
           refFilesGitTag = 'origin/%s' % refFilesGitTag
-      if c["referenceFiles"]["destination"] in preparedReferenceDirs:
+      # Several libraries share one set of reference files. The first of them
+      # prepares the directory and the rest take what it recorded - but the rest
+      # of this loop still has to run for every one of them.
+      destination = os.path.normpath(c["referenceFiles"]["destination"])
+      if destination in preparedReferenceDirs:
         (c["referenceFiles"],c["referenceFilesURL"]) = preparedReferenceDirs[destination]
-        continue
-      giturl = c["referenceFiles"]["giturl"]
-      destination = c["referenceFiles"]["destination"]
-      if DEBUG:
-        print("destination %s" % destination)
-      destination = os.path.normpath(destination)
-      if DEBUG:
-        print("normalized destination %s" % destination)
-        print("not os.path.isdir(destination): %s" % (not os.path.isdir(destination)))
-      destinationReal = os.path.realpath(destination)
-      if DEBUG:
-        print("destinationReal %s" % destinationReal)
-      destinationReal = os.path.normpath(destinationReal)
-      if DEBUG:
-        print("normalized destinationReal %s" % destinationReal)
-        print("referenceFiles:", c["referenceFiles"])
+      else:
+        giturl = c["referenceFiles"]["giturl"]
+        if DEBUG:
+          print("destination %s" % destination)
+          print("not os.path.isdir(destination): %s" % (not os.path.isdir(destination)))
+        destinationReal = os.path.realpath(destination)
+        if DEBUG:
+          print("destinationReal %s" % destinationReal)
+        destinationReal = os.path.normpath(destinationReal)
+        if DEBUG:
+          print("normalized destinationReal %s" % destinationReal)
+          print("referenceFiles:", c["referenceFiles"])
 
-      if not os.path.isdir(destination):
+        if not os.path.isdir(destination):
+          if "git-directory" in c["referenceFiles"]:
+            # Sparse clone
+            os.makedirs(destination)
+            check_call_log(["git", "init"], stderr=subprocess.STDOUT, cwd=destinationReal)
+            check_call_log(["git", "remote", "add", "-f", "origin", giturl], stderr=subprocess.STDOUT, cwd=destinationReal)
+            check_call_log(["git", "config", "core.sparseCheckout", "true"], stderr=subprocess.STDOUT, cwd=destinationReal)
+            file = open(os.path.join(destinationReal,".git", "info", "sparse-checkout"), "a")
+            file.write(c["referenceFiles"]["git-directory"].strip())
+            file.close()
+          else:
+            # Clone
+            check_call_log(["git", "clone", giturl, destination], stderr=subprocess.STDOUT)
+
+        check_call_log(["git", "clean", "-fdx", "--exclude=*.hash"], stderr=subprocess.STDOUT, cwd=destinationReal)
+        check_call_log(["git", "fetch", "origin"], stderr=subprocess.STDOUT, cwd=destination)
+        # do not fail if the branch we were given doesn't exist
+        try:
+          check_call_log(["git", "reset", "--hard", refFilesGitTag], stderr=subprocess.STDOUT, cwd=destinationReal)
+        except subprocess.CalledProcessError as e:
+          print(e.output)
+        check_call_log(["git", "clean", "-fdx", "--exclude=*.hash"], stderr=subprocess.STDOUT, cwd=destinationReal)
+        if glob.glob(destinationReal + "/*.mat.xz"):
+          check_call_log(["find", ".", "-name", "*.mat.xz", "-exec", "xz", "--decompress", "--keep", "{}", ";"], stderr=subprocess.STDOUT, cwd=destinationReal)
+        try:
+          githash = check_output_log(["git", "rev-parse", "--verify", "HEAD"], stderr=subprocess.STDOUT, cwd=destinationReal, encoding='utf8')
+        except subprocess.CalledProcessError as e:
+          print(e.output)
+
         if "git-directory" in c["referenceFiles"]:
-          # Sparse clone
-          os.makedirs(destination)
-          check_call_log(["git", "init"], stderr=subprocess.STDOUT, cwd=destinationReal)
-          check_call_log(["git", "remote", "add", "-f", "origin", giturl], stderr=subprocess.STDOUT, cwd=destinationReal)
-          check_call_log(["git", "config", "core.sparseCheckout", "true"], stderr=subprocess.STDOUT, cwd=destinationReal)
-          file = open(os.path.join(destinationReal,".git", "info", "sparse-checkout"), "a")
-          file.write(c["referenceFiles"]["git-directory"].strip())
-          file.close()
+          c["referenceFiles"] = os.path.join(destinationReal, c["referenceFiles"]['git-directory'])
+          print(c["referenceFiles"])
         else:
-          # Clone
-          check_call_log(["git", "clone", giturl, destination], stderr=subprocess.STDOUT)
+          c["referenceFiles"] = destinationReal
 
-      check_call_log(["git", "clean", "-fdx", "--exclude=*.hash"], stderr=subprocess.STDOUT, cwd=destinationReal)
-      check_call_log(["git", "fetch", "origin"], stderr=subprocess.STDOUT, cwd=destination)
-      # do not fail if the branch we were given doesn't exist
-      try:
-        check_call_log(["git", "reset", "--hard", refFilesGitTag], stderr=subprocess.STDOUT, cwd=destinationReal)
-      except subprocess.CalledProcessError as e:
-        print(e.output)
-      check_call_log(["git", "clean", "-fdx", "--exclude=*.hash"], stderr=subprocess.STDOUT, cwd=destinationReal)
-      if glob.glob(destinationReal + "/*.mat.xz"):
-        check_call_log(["find", ".", "-name", "*.mat.xz", "-exec", "xz", "--decompress", "--keep", "{}", ";"], stderr=subprocess.STDOUT, cwd=destinationReal)
-      try:
-        githash = check_output_log(["git", "rev-parse", "--verify", "HEAD"], stderr=subprocess.STDOUT, cwd=destinationReal, encoding='utf8')
-      except subprocess.CalledProcessError as e:
-        print(e.output)
-
-      if "git-directory" in c["referenceFiles"]:
-        c["referenceFiles"] = os.path.join(destinationReal, c["referenceFiles"]['git-directory'])
-        print(c["referenceFiles"])
-      else:
-        c["referenceFiles"] = destinationReal
-
-      if giturl.startswith("https://github.com"):
-        c["referenceFilesURL"] = '<a href="%s/tree/%s">%s (%s)</a>' % (giturl, githash.strip(), giturl, githash.strip())
-      else:
-        c["referenceFilesURL"] = "%s (%s)" % (giturl, githash.strip())
-      preparedReferenceDirs[destination] = (c["referenceFiles"],c["referenceFilesURL"])
+        if giturl.startswith("https://github.com"):
+          c["referenceFilesURL"] = '<a href="%s/tree/%s">%s (%s)</a>' % (giturl, githash.strip(), giturl, githash.strip())
+        else:
+          c["referenceFilesURL"] = "%s (%s)" % (giturl, githash.strip())
+        preparedReferenceDirs[destination] = (c["referenceFiles"],c["referenceFilesURL"])
     else:
       raise Exception("Unknown referenceFiles in config: %s" % (str(c["referenceFiles"])))
 
@@ -952,6 +952,19 @@ if args.coldhot:
       print("  %-70s cold %8.4f  hot %8.4f" % (model, data["simcold"], data.get("sim") or 0.0))
   sys.stdout.flush()
 
+BUILD_PHASE = 5
+"""The last phase a model shares with every simulator of its FMU."""
+
+def phaseWithoutSimulator(data):
+  """How far a model got for a simulator that never ran it.
+
+  Everything up to the build is shared, so such a model reports the phase the
+  build reached and never the phase another simulator went on to reach with the
+  same FMU. Reporting that one would claim a simulation, and a verification,
+  that this simulator never performed.
+  """
+  return min(data.get("phase") or 0, BUILD_PHASE)
+
 def resultValues(model, libname, data, simulator=None):
   """One row of a branch table.
 
@@ -961,9 +974,7 @@ def resultValues(model, libname, data, simulator=None):
   """
   simulated = data if simulator is None else (data.get("simulators") or {}).get(simulator)
   if simulated is None:
-    # The model never got as far as being simulated, so every simulator of it
-    # reports the phase the build stopped at rather than a failure of its own.
-    simulated = {"phase": data.get("phase") or 0}
+    simulated = {"phase": phaseWithoutSimulator(data)}
   diff = simulated.get("diff") or {}
   return (testRunStartTimeAsEpoch,
     libname,
@@ -1095,7 +1106,7 @@ def dataForSimulator(data, simulator):
   merged["diff"] = (simulated or {}).get("diff")
   # A model that never got as far as being simulated stopped in the build,
   # which every simulator of it shares.
-  merged["phase"] = simulated.get("phase") if simulated else data.get("phase")
+  merged["phase"] = simulated.get("phase") if simulated is not None else phaseWithoutSimulator(data)
   return merged
 
 def artifactSuffix(simulator):
@@ -1155,7 +1166,9 @@ for (resultBranch, simulator) in resultBranches:
         ('<a href="%s">%s</a>' % (errPrefix + ".err", html.escape(s[1]))) if is_non_zero_file(errPrefix + ".err") else html.escape(s[1]),
         (' (<a href="%s">sim</a>)' % (filename_prefix + ".sim")) if is_non_zero_file(filename_prefix + suffix + ".sim") else "",
         checkPhase(s[3]["phase"], 7) if s[3]["phase"]>=6 else "#FFFFFF",
-        ("%s (%d verified)" % (timeSeconds(diff.get("time")), diff.get("numCompared"))) if s[3]["phase"]>=7 else ("&nbsp;" if diff is None else
+        # Nothing was compared, whatever phase the model reports.
+        "&nbsp;" if diff is None else
+        (("%s (%d verified)" % (timeSeconds(diff.get("time")), diff.get("numCompared"))) if s[3]["phase"]>=7 else
         ('%s (<a href="%s.diff.html">%d/%d failed</a>)' % (timeSeconds(diff.get("time")), filename_prefix, len(diff.get("vars")), diff.get("numCompared")))),
         checkPhase(s[3]["phase"], 6),
         timeSeconds(s[3].get("sim") or 0),
