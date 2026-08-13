@@ -15,6 +15,8 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 COPY requirements.txt /tmp/requirements.txt
 RUN python3 -m venv /opt/libtest-venv \
   && /opt/libtest-venv/bin/pip install --no-cache-dir -r /tmp/requirements.txt \
+  # Python dependencies of library install scripts (e.g. Buildings EnergyPlus)
+  && /opt/libtest-venv/bin/pip install --no-cache-dir jinja2 \
   && rm /tmp/requirements.txt
 ENV PATH=/opt/libtest-venv/bin:$PATH
 
