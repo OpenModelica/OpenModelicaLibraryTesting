@@ -56,6 +56,7 @@ def dateStr(dint):
 
 def getTagOrVersion(v):
   v = v.replace("OpenModelica ","").replace("OMCompiler ","")
+  v = re.sub(r"-rust$", "", v)
   m = re.search("[+]g([0-9a-f]{7}[0-9a-f]*)$", v)
   if m:
     return m.group(1)
