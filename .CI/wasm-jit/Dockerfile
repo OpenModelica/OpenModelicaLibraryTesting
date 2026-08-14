@@ -4,9 +4,11 @@
 FROM docker.openmodelica.org/build-deps:ubuntu-26.04-rust
 
 # rsync/ssh publish the results; time and killall are used around test.py.
+# libcomedi-dev libx11-dev is used by Modelica_DeviceDrivers
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update \
   && apt-get install -qy --no-install-recommends openssh-client psmisc rsync time \
+  && apt-get install -qy --no-install-recommends libcomedi-dev libx11-dev \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
