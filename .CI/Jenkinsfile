@@ -329,7 +329,7 @@ pipeline {
       stage('wasm-jit') {
         agent {
           node {
-            label 'ryzen-5950x-2-1'
+            label 'ryzen-5950x-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
