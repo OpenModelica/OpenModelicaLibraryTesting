@@ -599,6 +599,18 @@ done
 }
 
 /**
+  * `docker run` flags capping the container's cgroup at 90% of the node's RAM. test.py limits one
+  * test at a time, not the sum of the parallel ones. --memory-swap has to repeat the limit; docker
+  * reads 0 as "unset" and then allows swapping.
+  */
+def memoryLimitArgs() {
+  def mb = sh(script: '''awk '/^MemTotal:/ { print int($2 / 1024 * 0.85) }' /proc/meminfo''',
+              returnStdout: true).trim()
+  echo "Test container memory limit: ${mb} MB, no swap"
+  return "--memory=${mb}m --memory-swap=${mb}m"
+}
+
+/**
   * Runs `body` with the environment of the shared Rust compile cache of the OpenModelica job
   * (OpenModelica/.CI/sccache/), which builds the same commits first. Hitting its keys needs the
   * same rust settings (opt-level 2, -DRUST_OMC_THREADS=4 at the call site), the same toolchain
@@ -713,10 +725,17 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
   // build, the libraries (HOME during the test) and the ssh key; test.py writes a hash next to
   // every reference file. rust-cargo-registry is the volume the OpenModelica job uses.
   def dockerArgs = "--init" +
+                   (image ? " ${memoryLimitArgs()}" : '') +
                    " -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro" +
                    " -v ${env.HOME}:${env.HOME}" +
                    " -v /mnt/ReferenceFiles:/mnt/ReferenceFiles" +
                    " --mount type=volume,source=rust-cargo-registry,target=/opt/rust/cargo/registry"
+  // Only in a container is the cgroup this job's own; a breach kills the greediest omc, which need
+  // not be the model that caused it.
+  def cgroupReport = image ? """
+    cat /sys/fs/cgroup/memory.max || true
+    trap 'cat /sys/fs/cgroup/memory.peak /sys/fs/cgroup/memory.events || true' EXIT
+  """ : ''
   // Jenkins exports the node's environment into the container, hiding the image's.
   def dockerEnv = ['PATH+VENV=/opt/libtest-venv/bin',
                    'PATH+CARGO=/opt/rust/cargo/bin',
@@ -956,6 +975,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
     # too bad if we cannot do it, just continue
     ln -s -t \${HOME} \${PREVIOUSHOME}/.local .local || true
 
+    ${cgroupReport}
     cd OpenModelicaLibraryTesting
     # Force /usr/bin/omc as being used for generating the mos-files. Ensures consistent behavior among all tested OMC versions
     stdbuf -oL -eL time ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags='${extraFlags}' --extrasimflags='${extrasimflags}' ${testFlags} --branch="${name}" --output="libraries.openmodelica.org:/var/www/libraries.openmodelica.org/branches/${name}/" --libraries='${libraryPath}/.openmodelica/libraries/'  --jobs=${jobs} ${libs_config_file} ${params.OLDLIBS ? "configs/conf-old.json configs/conf-nonstandard.json" : ""} || (killall omc ; false) || exit 1
