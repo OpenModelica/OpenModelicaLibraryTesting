@@ -5,10 +5,14 @@ FROM docker.openmodelica.org/build-deps:ubuntu-26.04-rust
 
 # rsync/ssh publish the results; time and killall are used around test.py.
 # libcomedi-dev libx11-dev is used by Modelica_DeviceDrivers
+# Python 3.8 and 3.12 are used by Buildings
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update \
+  && apt-get install -qy software-properties-common \
+  && add-apt-repository -y ppa:deadsnakes/ppa \
   && apt-get install -qy --no-install-recommends openssh-client psmisc rsync time \
   && apt-get install -qy --no-install-recommends libcomedi-dev libx11-dev \
+  && apt-get install -qy python3.8 python3.12 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
