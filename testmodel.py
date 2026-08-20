@@ -508,10 +508,13 @@ except TimeoutError as e:
 
 execTimeTranslateModel=monotonic()-start
 simres = None
+buildFailed = False
 if useSimulate:
   simres = res or {}
-  # A failed translate/build is only reported in the messages of the record
-  res = not (simres.get("messages") or "").startswith("Failed to build model")
+  # A failed translate/build is only reported in the messages of the record; the
+  # translation clocks below say which of the two it was
+  buildFailed = (simres.get("messages") or "").startswith("Failed to build model")
+  res = True
 err        = omc.sendExpression("OpenModelica.Scripting.getErrorString()")
 total      = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_SIMULATE_TOTAL)")-total_before
 buildmodel = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_BUILD_MODEL)")
@@ -573,6 +576,10 @@ try:
     # a resimulate leaves it in the simulation time
     execstat["build"] = simres["timeCompile"] if useSimulate else 0.0
     execstat["phase"] = 5
+    if buildFailed:
+      with open(errFile, 'a+') as fp:
+        fp.write(simres.get("messages") or "")
+      writeResultAndExit(0, False, omc, omc_new)
   else:
     if isWin:
       res = checkOutputTimeout("\"%s\\share\\omc\\scripts\\Compile.bat\" %s gcc %s parallel dynamic 24 0" % (conf["omhome"], conf["fileName"], msysEnvironment), conf["ulimitOmc"], conf)

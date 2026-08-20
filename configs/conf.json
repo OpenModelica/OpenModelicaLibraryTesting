@@ -210,7 +210,9 @@
     "libraryVersionNameForTests":""
   },
   {
-    "library":"BuildSysPro"
+    "library":"BuildSysPro",
+    "_comment":"IncludeDirectory says modelica://BuildSysPro/Resources/C-Sources, which does not exist; the IBPSA C sources are in IBPSA/Resources/C-Sources (Resources/IBPSA/C-Sources in 3.5.0 and older). Some of them call str*/malloc/ModelicaError without including the header",
+    "extraCustomCommands":["setCFlags(getCFlags() + \" -include string.h -include stdlib.h -include ModelicaUtilities.h \\\"-I$libraryLocation/IBPSA/Resources/C-Sources\\\" \\\"-I$libraryLocation/Resources/IBPSA/C-Sources\\\"\")"]
   },
   {
     "library":"BusinessSimulation"
