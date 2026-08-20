@@ -12,7 +12,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && add-apt-repository -y ppa:deadsnakes/ppa \
   && apt-get install -qy --no-install-recommends openssh-client psmisc rsync time \
   && apt-get install -qy --no-install-recommends libcomedi-dev libx11-dev \
-  && apt-get install -qy python3.8 python3.12 \
+  && apt-get install -qy python3.8 python3.12 libpython3.8-dev libpython3.12-dev \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
