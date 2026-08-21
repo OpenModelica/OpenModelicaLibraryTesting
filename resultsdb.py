@@ -78,6 +78,30 @@ CREATE TABLE IF NOT EXISTS job_claim (
 # Jenkins sets LIBTEST_DB once for the whole pipeline rather than passing --db
 # to every script invocation.
 DEFAULT_DB = os.environ.get("LIBTEST_DB") or "sqlite3.db"
+
+
+def hostname():
+  """The machine the testing is running on, as something a human recognises.
+
+  socket.gethostname() is that machine, right up until the run is inside a
+  container, where it is the container id instead: job_claim holds rows saying
+  the wasm-jit libraries were tested by "e9725d308091", which identifies nothing
+  and is gone with the container. Jenkins does know the machine - it names its
+  agents - and propagates NODE_NAME into a container it starts, so prefer that
+  when there is a container to see through. LIBTEST_HOST overrides both, for
+  the same reason LIBTEST_DB exists.
+
+  Only consulted inside a container: outside one the kernel's answer is the
+  right one, and a NODE_NAME left over in the environment should not override
+  it.
+  """
+  explicit = os.environ.get("LIBTEST_HOST")
+  if explicit:
+    return explicit
+  # Docker leaves /.dockerenv behind, podman /run/.containerenv.
+  if os.path.exists("/.dockerenv") or os.path.exists("/run/.containerenv"):
+    return os.environ.get("NODE_NAME") or socket.gethostname()
+  return socket.gethostname()
 DB_HELP = ("Result database: a local sqlite3 file, or a postgresql://user@host/database URL for "
            "the shared one, taken from the LIBTEST_DB environment variable when not given. "
            "Several machines can write to the shared database at the same time; a library "
@@ -304,7 +328,7 @@ class _Postgres(_Db):
     self.lostConnection = (psycopg2.OperationalError, psycopg2.InterfaceError)
     self.pending = []
     self.conn = self._connect()
-    self.host = socket.gethostname()
+    self.host = hostname()
     self.claims = []
     self.heartbeatThread = None
     self.execute(JOB_CLAIM)
