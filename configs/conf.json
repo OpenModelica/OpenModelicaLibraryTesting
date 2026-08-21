@@ -178,7 +178,8 @@
     "runOnceBeforeTesting":[["$resourceLocation/src/ThermalZones/install.py", "--binaries-for-os-only"]],
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"_",
-    "referenceFiles":"/mnt/ReferenceFiles/Buildings/csv/maint_11.x"
+    "referenceFiles":"/mnt/ReferenceFiles/Buildings/csv/maint_11.x",
+	"extraCustomCommands":["setCFlags(getCFlags() + \" -Wno-error=implicit-function-declaration\")"]
   },
   {
     "library":"Buildings",
@@ -190,7 +191,8 @@
     "runOnceBeforeTesting":[["$resourceLocation/src/ThermalZones/install.py", "--binaries-for-os-only"]],
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"_",
-    "referenceFiles":"/mnt/ReferenceFiles/Buildings/csv/maint_12.x"
+    "referenceFiles":"/mnt/ReferenceFiles/Buildings/csv/maint_12.x",
+	"extraCustomCommands":["setCFlags(getCFlags() + \" -Wno-error=implicit-function-declaration\")"]
   },
   {
     "library":"Buildings",
