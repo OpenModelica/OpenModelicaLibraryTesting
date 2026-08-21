@@ -229,14 +229,19 @@ class _Sqlite(_Db):
     if user_version == 0:
       # Table to lookup from a run (date, branch) to omcversion used
       cursor.execute("CREATE TABLE if not exists [omcversion] (date integer NOT NULL, branch text NOT NULL, omcversion text NOT NULL)")
-      # Table to lookup from a run (date, branch) which library versions were used
-      cursor.execute("CREATE TABLE if not exists [libversion] (date integer NOT NULL, branch text NOT NULL, libname text NOT NULL, libversion text NOT NULL, confighash integer NOT NULL)")
+      # Table to lookup from a run (date, branch) which library versions were used,
+      # and the machine that produced them
+      cursor.execute("CREATE TABLE if not exists [libversion] (date integer NOT NULL, branch text NOT NULL, libname text NOT NULL, libversion text NOT NULL, confighash integer NOT NULL, host text, sysinfo text)")
     elif user_version == 1:
       cursor.execute("ALTER TABLE [libversion] ADD COLUMN confighash integer NOT NULL DEFAULT(0)")
+      self.addLibversionHost(cursor)
     elif user_version == 2:
       for tbl in [t for t in self.tables() if t not in ["libversion", "omcversion"]]:
         cursor.execute("ALTER TABLE [%s] ADD COLUMN parsing real NOT NULL DEFAULT(0.0)" % tbl)
-    elif user_version != 3:
+      self.addLibversionHost(cursor)
+    elif user_version == 3:
+      self.addLibversionHost(cursor)
+    elif user_version != 4:
       raise SystemExit("Unknown schema user_version=%d" % user_version)
 
     cols = ", ".join("%s %s NOT NULL" % (c, SQLITE_TYPES[t]) for c, t in BRANCH_COLUMNS)
@@ -245,7 +250,18 @@ class _Sqlite(_Db):
     cursor.execute("DROP INDEX IF EXISTS [idx_%s_date]" % branch)
     cursor.execute("DROP INDEX IF EXISTS idx_omcversion_date")
     cursor.execute("DROP INDEX IF EXISTS idx_libversion_date")
-    self.setUserVersion(3)
+    self.setUserVersion(4)
+
+  def addLibversionHost(self, cursor):
+    """Add the host columns to an existing [libversion].
+
+    ADD COLUMN only, so the rows already there keep their results and simply
+    read back NULL for a run whose machine was never recorded.
+    """
+    have = set(r[1] for r in cursor.execute("PRAGMA table_info([libversion])"))
+    for col in ["host", "sysinfo"]:
+      if col not in have:
+        cursor.execute("ALTER TABLE [libversion] ADD COLUMN %s text" % col)
 
   def tables(self):
     return [t for (t,) in self.conn.execute("SELECT name FROM sqlite_master WHERE type='table'")]
@@ -399,7 +415,12 @@ class _Postgres(_Db):
         date bigint NOT NULL, branch text NOT NULL, omcversion text)""")
     cursor.execute("""CREATE TABLE IF NOT EXISTS libversion (
         date bigint NOT NULL, branch text NOT NULL, libname text NOT NULL,
-        libversion text, confighash bigint NOT NULL)""")
+        libversion text, confighash bigint NOT NULL,
+        host text, sysinfo text)""")
+    # The shared database predates the host columns; add them without touching
+    # the rows already in there, which keep their results and read back NULL.
+    for col in ["host", "sysinfo"]:
+      cursor.execute("ALTER TABLE libversion ADD COLUMN IF NOT EXISTS %s text" % col)
     cols = ", ".join("%s %s%s" % (c, POSTGRES_TYPES[t], " NOT NULL" if c in BRANCH_KEY else "")
                      for c, t in BRANCH_COLUMNS)
     cursor.execute("CREATE TABLE IF NOT EXISTS %s (%s)" % (self.quote(branch), cols))

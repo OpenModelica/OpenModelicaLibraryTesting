@@ -12,6 +12,7 @@ import html, shutil, os, re, glob, time, argparse, datetime, math, platform
 from joblib import Parallel, delayed
 import simplejson as json
 import psutil, subprocess, threading, hashlib
+import socket
 from subprocess import call
 from monotonic import monotonic
 from omcommon import friendlyStr, multiple_replace
@@ -993,6 +994,26 @@ def resultValues(model, libname, data, simulator=None):
     data.get("parsing") or 0.0
   )
 
+def cpu_name():
+  if isWin:
+    return processor()
+  else:
+    for line in open("/proc/cpuinfo").readlines():
+      if "model name" in line.strip():
+        return (re.sub( ".*model name.*:", "", line, count=1)).strip()
+
+if isWin:
+  lsb_release = ""
+else:
+  try:
+    lsb_release = check_output_log(commands + ["cat","/etc/lsb-release"]).decode().strip()
+    lsb_release = dict(a.split("=") for a in lsb_release.split("\n"))["DISTRIB_DESCRIPTION"].strip('"')
+  except:
+    lsb_release = ""
+
+hostname = socket.gethostname()
+sysInfo = "%s: %s, %d GB RAM, %s%s" % (hostname, cpu_name(), int(math.ceil(psutil.virtual_memory().total / (1024.0**3))), ("Docker " + docker + " ") if docker else "", lsb_release)
+
 for (resultBranch, simulator) in resultBranches:
   db.createTables(resultBranch)
   for key in stats.keys():
@@ -1003,7 +1024,7 @@ for (resultBranch, simulator) in resultBranches:
                    resultValues(model, libname, data, simulator))
   for libname in stats_by_libname.keys():
     confighash = stats_by_libname[libname]["conf"]["confighash"]
-    cursor.execute("INSERT INTO libversion VALUES (?,?,?,?,?)%s" % db.insertIgnore(), (testRunStartTimeAsEpoch, resultBranch, libname, stats_by_libname[libname]["conf"]["libraryLastChange"], confighash))
+    cursor.execute("INSERT INTO libversion VALUES (?,?,?,?,?,?,?)%s" % db.insertIgnore(), (testRunStartTimeAsEpoch, resultBranch, libname, stats_by_libname[libname]["conf"]["libraryLastChange"], confighash, hostname, sysInfo))
   cursor.execute("INSERT INTO omcversion VALUES (?,?,?)%s" % db.insertIgnore(), (testRunStartTimeAsEpoch, resultBranch, omc_version))
 """
 # Not really a good thing to do; was just done to make generation of the report simpler
@@ -1027,25 +1048,6 @@ def checkPhase(phase, n):
 
 def is_non_zero_file(fpath):
     return os.path.isfile(os.path.normpath(fpath)) and os.path.getsize(os.path.normpath(fpath)) > 0
-
-def cpu_name():
-  if isWin:
-    return processor()
-  else:
-    for line in open("/proc/cpuinfo").readlines():
-      if "model name" in line.strip():
-        return (re.sub( ".*model name.*:", "", line, count=1)).strip()
-
-if isWin:
-  lsb_release = ""
-else:
-  try:
-    lsb_release = check_output_log(commands + ["cat","/etc/lsb-release"]).decode().strip()
-    lsb_release = dict(a.split("=") for a in lsb_release.split("\n"))["DISTRIB_DESCRIPTION"].strip('"')
-  except:
-    lsb_release = ""
-
-sysInfo = "%s, %d GB RAM, %s%s" % (cpu_name(), int(math.ceil(psutil.virtual_memory().total / (1024.0**3))), ("Docker " + docker + " ") if docker else "", lsb_release)
 
 # create target dir to move results without sync operations (win or when --noSync is used)
 def stageRootFor(simulator, suffix):
