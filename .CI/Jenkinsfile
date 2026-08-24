@@ -124,25 +124,34 @@ pipeline {
       stage('pull request') {
         agent {
           node {
-            label "${params.pull_request_node}"
+            label "${params.pull_request_node ?: 'ryzen-5950x-1'}"
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
         options { skipDefaultCheckout() }
         when {
           beforeAgent true
-          expression { params.pull_request.trim() }
+          expression { pullRequest() }
         }
         steps {
           script {
-            if (!(params.pull_request.trim() ==~ /[0-9]+/)) {
+            if (!(pullRequest() ==~ /[0-9]+/)) {
               error "pull_request is a pull request number; got '${params.pull_request}'"
             }
           }
+          // Before the clone, the reset and the build: a number that is not a
+          // pull request costs minutes to find out about otherwise. Issues and
+          // pull requests share one numbering, so an issue number gets this far.
+          sh """
+          if ! git ls-remote --exit-code https://github.com/OpenModelica/OpenModelica.git 'refs/pull/${pullRequest()}/*' > /dev/null; then
+            echo "OpenModelica/OpenModelica has no pull request ${pullRequest()}. Issues and pull requests share one numbering there, so check that ${pullRequest()} is not the number of an issue."
+            exit 1
+          fi
+          """
           // One build of omc per pull request is kept, as for a branch, and they
           // accumulate: a pull request is tested once and never again.
           sh 'find "$HOME/saved_omc" -maxdepth 1 -name "pr-*" -type d -mtime +14 -exec rm -rf {} ";" || true'
-          runRegressiontest("pr-${params.pull_request.trim()}", "pr-${params.pull_request.trim()}", '', '', false, '', '', false, false, 0, params.pull_request_config)
+          runRegressiontest("pr-${pullRequest()}", "pr-${pullRequest()}", '', '', false, '', '', false, false, 0, params.pull_request_config ?: 'configs/conf.json')
         }
       }
 
@@ -588,7 +597,7 @@ pipeline {
       }
       when {
         beforeAgent true
-        expression { params.drop_stale_pull_request_tables }
+        expression { params.drop_stale_pull_request_tables ?: false }
       }
       environment {
         PGPASSFILE = credentials('omdb-pgpass')
@@ -612,7 +621,7 @@ pipeline {
       }
       when {
         beforeAgent true
-        expression { params.pull_request.trim() }
+        expression { pullRequest() }
       }
       environment {
         PYTHONIOENCODING = 'utf-8'
@@ -620,12 +629,12 @@ pipeline {
       }
       steps {
         script {
-          if (!(params.pull_request.trim() ==~ /[0-9]+/)) {
+          if (!(pullRequest() ==~ /[0-9]+/)) {
             error "pull_request is a pull request number; got '${params.pull_request}'"
           }
         }
         sh 'rm -rf history'
-        sh "./pr-report.py '${params.pull_request.trim()}' --baseline='${params.pull_request_baseline.trim()}'"
+        sh "./pr-report.py '${pullRequest()}' --baseline='${(params.pull_request_baseline ?: 'master').trim()}'"
         // The summary to comment on the pull request with, in the build log
         // until there is a token to post it with.
         sh 'cat history/pr-*/00_comment.md'
@@ -634,6 +643,20 @@ pipeline {
     }
   }
 }
+/**
+  * The pull request this job is testing, or "" when it is testing branches.
+  *
+  * A job only learns of a parameter that has been added to it once a build has
+  * run with the definition, so the first build after this file changes sees the
+  * new ones as null - which is every build of the pipeline, not only one asking
+  * for a pull request, because the stages that ignore them still have to decide
+  * whether to run. Everything that reads them therefore falls back to what the
+  * definition says the default is.
+  */
+def pullRequest() {
+  return (params.pull_request ?: '').trim()
+}
+
 def omsimulatorHash() {
   return 'master'
 }
@@ -878,10 +901,23 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
   // same workspace to trip over.
   def pullRequest = branch.startsWith('pr-') && branch.substring(3).isInteger() ? branch.substring(3) : ''
   def checkoutRef = pullRequest ? """
-    if ! git fetch --force https://github.com/OpenModelica/OpenModelica.git refs/pull/${pullRequest}/merge; then
-      echo "Could not fetch refs/pull/${pullRequest}/merge: either there is no such pull request, or GitHub cannot merge it into its base branch."
-      exit 1
-    fi
+    REFS=`git ls-remote https://github.com/OpenModelica/OpenModelica.git "refs/pull/${pullRequest}/head" "refs/pull/${pullRequest}/merge"` || exit 1
+    case "\$REFS" in
+      *"refs/pull/${pullRequest}/merge"*)
+        PRREF="refs/pull/${pullRequest}/merge" ;;
+      *"refs/pull/${pullRequest}/head"*)
+        # GitHub only has a merge ref while it can merge the pull request into
+        # its base branch. Without one there is still something to test, only it
+        # is the pull request on its own rather than as it would land.
+        echo "WARNING: pull request ${pullRequest} has no merge ref: it conflicts with its base branch, or it is closed."
+        echo "WARNING: testing refs/pull/${pullRequest}/head, which does not have what was merged into the base branch since it was branched."
+        PRREF="refs/pull/${pullRequest}/head" ;;
+      *)
+        echo "OpenModelica/OpenModelica has no pull request ${pullRequest}."
+        exit 1 ;;
+    esac
+    echo "Testing \$PRREF"
+    git fetch --force https://github.com/OpenModelica/OpenModelica.git "\$PRREF" || exit 1
     git checkout -f --detach FETCH_HEAD || exit 1
     git fetch --tags --force || exit 1
 """ : """
