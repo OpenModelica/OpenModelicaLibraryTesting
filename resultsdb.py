@@ -163,6 +163,10 @@ class _Db:
   def release(self):
     """Mark the claims of this run as finished."""
 
+  def columns(self, table):
+    """The columns a table has, for the ones an older database may not have."""
+    raise NotImplementedError
+
   def vacuum(self):
     self.conn.execute("VACUUM")
 
@@ -265,6 +269,9 @@ class _Sqlite(_Db):
 
   def tables(self):
     return [t for (t,) in self.conn.execute("SELECT name FROM sqlite_master WHERE type='table'")]
+
+  def columns(self, table):
+    return [r[1] for r in self.conn.execute("PRAGMA table_info(%s)" % self.quote(table))]
 
   def tableExists(self, name):
     return self.conn.execute(
@@ -436,6 +443,11 @@ class _Postgres(_Db):
   def tables(self):
     return [t for (t,) in self.execute(
         "SELECT tablename FROM pg_tables WHERE schemaname=current_schema()")]
+
+  def columns(self, table):
+    return [c for (c,) in self.execute(
+        "SELECT column_name FROM information_schema.columns "
+        "WHERE table_schema=current_schema() AND table_name=?", (table,))]
 
   def tableExists(self, name):
     return self.execute("SELECT 1 FROM pg_tables WHERE schemaname=current_schema() AND tablename=?",

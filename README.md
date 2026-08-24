@@ -255,6 +255,58 @@ A tool that is a Python package rather than a command line needs a small driver
 script that takes the arguments its entry passes, simulates, writes the result
 file and exits non-zero when it fails; the entry then points `command` at it.
 
+### Testing a pull request
+
+A branch is tested against its own previous run, which says what broke *after* a
+change was merged. A pull request can be tested before that, against the newest
+run of `master`.
+
+In Jenkins, set the **`pull_request`** parameter to the pull request number and
+start the job; `pull_request_baseline`, `pull_request_config` and
+`pull_request_node` say what it is compared against, what it tests and where.
+None of the branch jobs run unless their own parameter is ticked as well.
+
+By hand it is two steps. The compiler is built from the merge ref - the pull
+request as it would land, not the branch on its own - and the run fills a
+`pr-<N>` table like any other branch:
+
+```bash
+git fetch --force https://github.com/OpenModelica/OpenModelica.git refs/pull/<N>/merge
+git checkout -f --detach FETCH_HEAD
+# build omc, then
+./test.py --branch=pr-<N> configs/conf.json
+```
+
+and the report compares that run against the newest run of `master`:
+
+```bash
+./pr-report.py <N>                 # --baseline=master by default
+```
+
+It writes `history/pr-<N>/<baseline run>..<pull request run>.html`, the same
+kind of page as the nightly regression reports, next to `00_comment.md`, a
+summary to comment on the pull request with. Both are published with the other
+reports.
+
+Two things make a difference mean something other than "the pull request did
+this", and the report says so when they apply: **the machine**, since two runs
+produced on different hardware compare the hardware as much as the change, and
+**the libraries**, since two runs that tested different library versions, or
+verified against different reference files, differ for reasons of their own. The
+baseline is also the newest `master` run rather than the commit the pull request
+is based on, so a difference can come from anything merged since it was
+branched - a reason to rebase before believing a surprising result.
+
+A full run takes days, so testing every pull request this way is not the idea;
+point `--branch=pr-<N>` at a smaller configuration file when the question is
+narrower.
+
+The tables accumulate, about 19500 rows each. `drop-pr-tables.py` drops the ones
+whose pull request has been merged or closed, and those tested more than
+`--older-than` days ago, together with the rows their runs left in the other
+tables; it lists them and does nothing unless it is given `--yes`. The reports
+published for them are not touched.
+
 ### Generate HTML results
 
   ```bash
