@@ -37,6 +37,12 @@ pipeline {
     booleanParam(name: 'generateSymbolicJacobian', defaultValue: false, description: 'master branch, with --generateSymbolicJacobian (ryzen-5950x-1). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'wasm_jit', defaultValue: false, description: 'master branch, with --simCodeTarget=wasm-jit (ryzen-5950x-2). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'heavy_tests', defaultValue: false, description: 'master branch, runs one test at a time. That is, no parallel launching of tests. omc will use multiple threads for each test (-n=1 is not set unlike the other regression tests.), (ryzen-5950x-1). This is an experimental job that does not run on a fixed schedule.')
+
+    string(name: 'pull_request', defaultValue: '', description: 'Test an OpenModelica pull request rather than a branch: its number, e.g. 16354. omc is built from refs/pull/<N>/merge - the pull request as it would land - the results fill a pr-<N> table, and the report compares them against the newest run of pull_request_baseline. Left empty, nothing of this runs.')
+    string(name: 'pull_request_baseline', defaultValue: 'master', description: 'The branch a pull request is compared against. Its newest run has to come from pull_request_node, or the report compares the machines as much as the pull request.')
+    string(name: 'pull_request_config', defaultValue: 'configs/conf.json', description: 'What a pull request run tests. A full run takes days, so a smaller configuration file is often the better question to ask.')
+    choice(name: 'pull_request_node', choices: ['ryzen-5950x-1', 'ryzen-5950x-2-1', 'ryzen-9950x'], description: 'The machine a pull request runs on. The default is the one that produces the master runs it is compared against.')
+    booleanParam(name: 'drop_stale_pull_request_tables', defaultValue: false, description: 'Drop the pr-<N> tables of pull requests that have been merged or closed, and of those tested more than 60 days ago. The reports published for them are not touched.')
   }
   environment {
     LC_ALL = 'C.UTF-8'
@@ -112,6 +118,31 @@ pipeline {
         }
         steps {
           runRegressiontest('master', 'conversion', '', '', false, '', '', false, true)
+        }
+      }
+
+      stage('pull request') {
+        agent {
+          node {
+            label "${params.pull_request_node}"
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.pull_request.trim() }
+        }
+        steps {
+          script {
+            if (!(params.pull_request.trim() ==~ /[0-9]+/)) {
+              error "pull_request is a pull request number; got '${params.pull_request}'"
+            }
+          }
+          // One build of omc per pull request is kept, as for a branch, and they
+          // accumulate: a pull request is tested once and never again.
+          sh 'find "$HOME/saved_omc" -maxdepth 1 -name "pr-*" -type d -mtime +14 -exec rm -rf {} ";" || true'
+          runRegressiontest("pr-${params.pull_request.trim()}", "pr-${params.pull_request.trim()}", '', '', false, '', '', false, false, 0, params.pull_request_config)
         }
       }
 
@@ -546,6 +577,61 @@ pipeline {
         sshPublisher(publishers: [sshPublisherDesc(configName: 'LibraryTestingReports', transfers: [sshTransfer(sourceFiles: 'overview*.html,history/**')])])
       }
     }
+
+    stage('drop stale pull request tables') {
+      agent {
+        dockerfile {
+          label 'linux'
+          dir '.CI/build-dep'
+          customWorkspace 'ws/OpenModelicaLibraryTestingReport'
+        }
+      }
+      when {
+        beforeAgent true
+        expression { params.drop_stale_pull_request_tables }
+      }
+      environment {
+        PGPASSFILE = credentials('omdb-pgpass')
+      }
+      steps {
+        sh './drop-pr-tables.py --yes'
+      }
+    }
+
+    /* A pull request is not reported on by the stage above: that one compares a
+     * branch against its own previous run, which a pull request has none of, and
+     * regenerating every overview for a job that tested one thing would take
+     * longer than the report itself. */
+    stage('pull request report') {
+      agent {
+        dockerfile {
+          label 'linux'
+          dir '.CI/build-dep'
+          customWorkspace 'ws/OpenModelicaLibraryTestingReport'
+        }
+      }
+      when {
+        beforeAgent true
+        expression { params.pull_request.trim() }
+      }
+      environment {
+        PYTHONIOENCODING = 'utf-8'
+        PGPASSFILE = credentials('omdb-pgpass')
+      }
+      steps {
+        script {
+          if (!(params.pull_request.trim() ==~ /[0-9]+/)) {
+            error "pull_request is a pull request number; got '${params.pull_request}'"
+          }
+        }
+        sh 'rm -rf history'
+        sh "./pr-report.py '${params.pull_request.trim()}' --baseline='${params.pull_request_baseline.trim()}'"
+        // The summary to comment on the pull request with, in the build log
+        // until there is a token to post it with.
+        sh 'cat history/pr-*/00_comment.md'
+        sshPublisher(publishers: [sshPublisherDesc(configName: 'LibraryTestingReports', transfers: [sshTransfer(sourceFiles: 'history/**')])])
+      }
+    }
   }
 }
 def omsimulatorHash() {
@@ -785,6 +871,23 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
     }
   }
 
+  // A pull request is fetched from GitHub itself: refs/pull/* is not on the
+  // read-only mirror the rest of the job clones. The merge ref rather than the
+  // head one, since the question is what happens once it is merged, and it is
+  // checked out detached so that nothing is left behind for the next run of the
+  // same workspace to trip over.
+  def pullRequest = branch.startsWith('pr-') && branch.substring(3).isInteger() ? branch.substring(3) : ''
+  def checkoutRef = pullRequest ? """
+    if ! git fetch --force https://github.com/OpenModelica/OpenModelica.git refs/pull/${pullRequest}/merge; then
+      echo "Could not fetch refs/pull/${pullRequest}/merge: either there is no such pull request, or GitHub cannot merge it into its base branch."
+      exit 1
+    fi
+    git checkout -f --detach FETCH_HEAD || exit 1
+    git fetch --tags --force || exit 1
+""" : """
+    git reset --hard && git checkout -f "${branch}" && (git rev-parse --verify "tags/${branch}"  || (git reset --hard "origin/${branch}" && git pull)) && git fetch --tags --force || exit 1
+"""
+
   OMCPATH = "${omcompiler ? '../' : './'}OMCompiler"
 
   // The build runs in OMCompiler, one level below the cmake source tree.
@@ -860,7 +963,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
   cd ${OMCPATH}
 
   if ! test -f ~/saved_omc/${name}/.nogit; then
-    git reset --hard && git checkout -f "${branch}" && (git rev-parse --verify "tags/${branch}"  || (git reset --hard "origin/${branch}" && git pull)) && git fetch --tags --force || exit 1
+    ${checkoutRef}
     git submodule update --init --recursive --force || (rm -rf * && git reset --hard && git submodule update --init --recursive --force) || exit 1
     git submodule foreach --recursive  "git fetch --tags --force && git reset --hard && git clean -fdxq -e /git -e /svn" || exit 1
     git clean -fdxq || exit 1
