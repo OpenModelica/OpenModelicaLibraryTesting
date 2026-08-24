@@ -657,6 +657,31 @@ def pullRequest() {
   return (params.pull_request ?: '').trim()
 }
 
+/**
+  * The cores of the node a build is running on, physical and logical, asked for
+  * the way the OpenModelica job asks (numPhysicalCPU in .CI/common.groovy
+  * there), so that a machine is built on as itself rather than as the machine
+  * the numbers were written for.
+  *
+  * Unlike that one the answer is not stashed in the environment: this pipeline
+  * is agent none and its stages run on several machines within one build, so a
+  * cached answer would be the first node's. An override set on the node itself
+  * is still honoured.
+  */
+def numPhysicalCPU() {
+  if (env.JENKINS_NUM_PHYSICAL_CPU) {
+    return env.JENKINS_NUM_PHYSICAL_CPU
+  }
+  return sh(script: 'lscpu -p | egrep -v "^#" | sort -u -t, -k 2,4 | wc -l', returnStdout: true).trim()
+}
+
+def numLogicalCPU() {
+  if (env.JENKINS_NUM_LOGICAL_CPU) {
+    return env.JENKINS_NUM_LOGICAL_CPU
+  }
+  return sh(script: 'nproc', returnStdout: true).trim()
+}
+
 def omsimulatorHash() {
   return 'master'
 }
@@ -930,6 +955,14 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
   if (cmakeFlags && omcompiler) {
     error 'cmake builds need the OMCompiler directory of the OpenModelica repository (omcompiler=false)'
   }
+  // The build used to say -j9, the cores of the machine this file was written
+  // for in 2019, and -j16, the cores of the ryzen-5950x machines that replaced
+  // it - the commit that raised the others to 16 left the omc build at 9. Named
+  // buildJobs rather than jobs: that is this method's own parameter, how many
+  // models test.py tests at a time.
+  def buildJobs = numPhysicalCPU()
+  echo "Building omc with -j${buildJobs} on ${env.NODE_NAME}"
+
   def buildOMC
   if (cmakeFlags) {
     buildOMC = sccachePreamble() + """
@@ -939,7 +972,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
       -DCMAKE_C_FLAGS=-march=native -DCMAKE_CXX_FLAGS=-march=native \
       -DOM_USE_CCACHE=OFF -DOM_ENABLE_GUI_CLIENTS=OFF -DOM_ENABLE_OMSIMULATOR=OFF \
       ${cmakeFlags} || exit 1
-    if ! time cmake --build ../build_cmake --parallel 16 --target install > log 2>&1; then
+    if ! time cmake --build ../build_cmake --parallel ${buildJobs} --target install > log 2>&1; then
       cat log
       exit 1
     fi
@@ -950,12 +983,12 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
     buildOMC = """
     autoreconf --install
     ./configure --with-cppruntime --without-omc --disable-modelica3d CC=clang CXX=clang++ FC=gfortran CFLAGS='-O2 -march=native' --with-omlibrary=all --with-omniORB
-    time make -j16 clean
-    if ! time make -j9 omc > log 2>&1; then
+    time make -j${buildJobs} clean
+    if ! time make -j${buildJobs} omc > log 2>&1; then
       cat log
       exit 1
     fi
-    if ! time make -j16 runtimeCPPinstall > log 2>&1; then
+    if ! time make -j${buildJobs} runtimeCPPinstall > log 2>&1; then
       cat log
       if test "${name}" = "master"; then
         exit 1
@@ -1043,7 +1076,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
   #   cat log
   #   exit 1
   # fi
-  if ! time make -j16 -C testsuite/ReferenceFiles > log 2>&1; then
+  if ! time make -j${numLogicalCPU()} -C testsuite/ReferenceFiles > log 2>&1; then
     cat log
     exit 1
   fi
