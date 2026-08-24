@@ -12,7 +12,6 @@ import html, shutil, os, re, glob, time, argparse, datetime, math, platform
 from joblib import Parallel, delayed
 import simplejson as json
 import psutil, subprocess, threading, hashlib
-import socket
 from subprocess import call
 from monotonic import monotonic
 from omcommon import friendlyStr, multiple_replace
@@ -1011,7 +1010,7 @@ else:
   except:
     lsb_release = ""
 
-hostname = socket.gethostname()
+hostname = resultsdb.hostname()
 sysInfo = "%s: %s, %d GB RAM, %s%s" % (hostname, cpu_name(), int(math.ceil(psutil.virtual_memory().total / (1024.0**3))), ("Docker " + docker + " ") if docker else "", lsb_release)
 
 for (resultBranch, simulator) in resultBranches:
