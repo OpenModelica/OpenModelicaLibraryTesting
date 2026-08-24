@@ -155,6 +155,45 @@ WHERE libversion=? AND libname=? AND branch=? AND omcversion=? AND confighash=? 
 and skips the library when the exact same combination of library version, OMC
 version and configuration was already tested.
 
+### `history`
+
+The regression reports `all-reports.py` has generated, one row per pair of runs
+of a branch:
+
+```sql
+CREATE TABLE IF NOT EXISTS history (
+  branch          text    NOT NULL,  -- branch/configuration name = result table name
+  date1           integer NOT NULL,  -- the older of the two runs compared
+  date2           integer NOT NULL,  -- the newer one
+  fname           text,              -- the report file, "<date1>..<date2>.html"
+  improved        integer,           -- models that reached a later phase than before
+  regressions     integer,           -- models that reached an earlier one
+  perfimproved    integer,           -- models that got faster by more than the threshold
+  perfregressions integer,           -- models that got slower
+  PRIMARY KEY (branch, date1, date2)
+)
+```
+
+The reports are published at
+`libraries.openmodelica.org/branches/history/<branch>/`, with an index,
+`00_history.html`, listing one line per report. That index used to be the only
+record of what had already been reported: `all-reports.py` read it back over
+HTTP and skipped the branch when it could not, since starting from an empty one
+would have published a history with only the newest report in it.
+
+This table holds the same list, so the index is a rendering of the database
+rather than the record itself. A branch that has no index yet gets one - which
+is what a per-pull-request branch needs, [#307][307] - and an index that is
+missing, unreadable or has lost entries is rebuilt from here rather than
+truncated. The published index is still read: it is where the reports generated
+before the table existed are, and they are copied into it the first time a
+branch is reported on.
+
+The table is created on demand by `all-reports.py`, and holds no results, so
+`clean-dates.py` leaves it alone (`resultsdb.NON_RESULT_TABLES`).
+
+[307]: https://github.com/OpenModelica/OpenModelicaLibraryTesting/issues/307
+
 ### `datelookup_<branch>` (obsolete)
 
 `datelookup_<branch>(date, runDate, libname, branch)` was a cache mapping every
@@ -185,15 +224,16 @@ separate files - whichever file is copied back last wins.
 ## Housekeeping scripts
 
 - `clean-dates.py --start --stop`: `DELETE FROM [<tbl>] WHERE date<? AND date>?`
-  over every table, then `VACUUM`. Removes a range of bad runs.
+  over every table that holds results, then `VACUUM`. Removes a range of bad
+  runs. `history` and `job_claim` are skipped; they have no `date` column.
 - `clean-empty-omcversion-dates.py`: drops `omcversion` rows whose date has no
   result rows in the corresponding branch table.
 
 ## PostgreSQL layout
 
 The PostgreSQL database is a **mirror** of the sqlite3 one: the same tables with
-the same names and columns, one table per branch plus `omcversion` and
-`libversion`. That way the test scripts can push new results to the network
+the same names and columns, one table per branch plus `omcversion`,
+`libversion` and `history`. That way the test scripts can push new results to the network
 database with the same statements they use today, and the report scripts need no
 query rewriting beyond the sqlite `[name]` / PostgreSQL `"name"` quoting.
 

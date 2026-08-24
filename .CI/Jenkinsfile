@@ -458,9 +458,6 @@ pipeline {
         PGPASSFILE = credentials('omdb-pgpass')
       }
       steps {
-        //sshagent (credentials: ['Hudson-SSH-Key']) {
-        //  createInitialHistoryFilesOnRemote()
-        //}
         sh 'rm -rf *.html history'
         sh '''
         if ! test -d OpenModelica; then
@@ -577,26 +574,6 @@ def installLibraries(boolean removePackageOrder, boolean conversionScript, name,
   }
 }
 
-
-def createInitialHistoryFilesOnRemote() {
-  sh """
-HISTORY_DIRECTORY='/var/www/libraries.openmodelica.org/branches/history/'
-SEPARATOR='/'
-HISTORY_FILE='00_history.html'
-
-for b in ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT}; do
- BRANCH=`echo \${b} | cut -d '/' -f2`
- FILE="\${HISTORY_DIRECTORY}\${BRANCH}\${SEPARATOR}\${HISTORY_FILE}"
-ssh hudson@build.openmodelica.org << EOF
-if [ ! -f \${FILE} ]; then
-  echo "Creating initial history: library.openmodelica.org: \${FILE}"
-  mkdir -p \${HISTORY_DIRECTORY}\${BRANCH}
-  touch \${FILE}
-fi
-EOF
-done
-"""
-}
 
 /**
   * `docker run` flags capping the container's cgroup at 90% of the node's RAM. test.py limits one

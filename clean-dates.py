@@ -34,7 +34,7 @@ else:
 db = resultsdb.connect(args.db)
 cursor = db.cursor()
 
-tables = db.tables()
+tables = [tbl for tbl in db.tables() if tbl not in resultsdb.NON_RESULT_TABLES]
 for tbl in tables:
   cursor.execute("DELETE FROM %s WHERE date<? AND date>?" % db.quote(tbl), (stopTime.timestamp(),startTime.timestamp()))
 db.commit()
