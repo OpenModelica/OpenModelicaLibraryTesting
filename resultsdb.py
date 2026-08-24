@@ -42,6 +42,23 @@ BRANCH_COLUMNS = [
 SQLITE_TYPES = {"bigint": "integer", "int": "integer", "real": "real", "text": "text"}
 POSTGRES_TYPES = {"bigint": "bigint", "int": "integer", "real": "double precision", "text": "text"}
 
+# The regression reports all-reports.py has generated, one row per pair of runs
+# of a branch.  The index published beside them, 00_history.html, lists the same
+# reports, so it can be rebuilt from here when the published one is missing,
+# unreadable or out of date - and a run that cannot read it back from the web
+# server no longer has to choose between skipping the branch and publishing a
+# history with only today's report in it.
+HISTORY_COLUMNS = [
+    ("branch", "text"), ("date1", "bigint"), ("date2", "bigint"), ("fname", "text"),
+    ("improved", "int"), ("regressions", "int"),
+    ("perfimproved", "int"), ("perfregressions", "int"),
+]
+HISTORY_KEY = ["branch", "date1", "date2"]
+
+# The tables that hold no results of a test run, and that the housekeeping
+# scripts must not treat as one: they have no date column to clean up by.
+NON_RESULT_TABLES = ["history", "job_claim"]
+
 # What identifies a row, so that two machines writing the same shared table
 # cannot store the same result twice.  Mirrors sqlite2postgres.py.
 KEYS = {
@@ -145,6 +162,14 @@ class _Db:
     """The clause that makes an INSERT skip a row that is already there."""
     return ""
 
+  def createHistoryTable(self):
+    """The table of generated reports, created by whoever needs it first."""
+    cols = ", ".join("%s %s%s" % (c, self.types[t], " NOT NULL" if c in HISTORY_KEY else "")
+                     for (c, t) in HISTORY_COLUMNS)
+    self.execute("CREATE TABLE IF NOT EXISTS history (%s, PRIMARY KEY (%s))"
+                 % (cols, ", ".join(HISTORY_KEY)))
+    self.commit()
+
   def createDateIndex(self, branch):
     """The index the report queries need; test.py drops it before a run."""
     self.execute("CREATE INDEX IF NOT EXISTS %s ON %s (date)"
@@ -207,6 +232,7 @@ class _Sqlite(_Db):
   """The per-machine sqlite3 file the testing has always used."""
 
   name = "sqlite3"
+  types = SQLITE_TYPES
 
   def __init__(self, path):
     self.conn = sqlite3.connect(path)
@@ -292,6 +318,7 @@ class _Postgres(_Db):
   """The shared database several test machines write to at the same time."""
 
   name = "postgresql"
+  types = POSTGRES_TYPES
 
   def __init__(self, url):
     try:

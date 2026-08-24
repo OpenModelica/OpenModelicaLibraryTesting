@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import urllib.request
+import urllib.request, urllib.error, urllib.parse
 import codecs
 import sys, argparse, subprocess, os, time
 import simplejson as json
@@ -45,10 +45,11 @@ timeAbs = 10 # Ignore performance regressions for times <10s...
 
 libs = {}
 
-import cgi, time, datetime
+import time, datetime
 from omcommon import friendlyStr, multiple_replace
 
 db = resultsdb.connect(args.db)
+db.createHistoryTable()
 cursor = db.cursor()
 
 def dateStr(dint):
@@ -67,6 +68,160 @@ def libraryLink(branch, libname):
 
 def modelLink(libname, modelname, extension, text):
   return '<a href="%s/%s/%s/files/%s_%s.%s">%s</a>' % (baseurl,branch,libname,libname,modelname,extension,text)
+
+# 00_history.html, the index of the reports generated for a branch, lives on the
+# web server next to them, and used to be the only record of what had already
+# been reported: all-reports.py read it back over HTTP and skipped the branch
+# when it could not, because starting from an empty index would have published a
+# history with only today's report in it. A branch that had never been published
+# had no index either, so its first run reported nothing until the file had been
+# created on the server by hand.
+#
+# The [history] table now holds the same list, one row per report, so the index
+# is a rendering of the database rather than the record itself. What the server
+# has is still read - it is where the reports generated before the table existed
+# are, and they are copied into it - but it is no longer needed to decide what
+# has been reported, and a file that is missing, unreadable or out of date is
+# rebuilt from the table instead of truncating the history.
+#
+# That leaves one case with nothing to go on: no rows in the table and no index
+# to read, which is either a genuinely new branch or a server that is unwell.
+# Two things have to agree before it is taken for a new branch, and anything
+# else leaves it alone until a human has looked at it:
+#
+#  - the history root is served, so the site is up and the index is a missing
+#    file rather than a broken deployment or something else answering;
+#  - the database holds at most FIRSTREPORT runs of the branch, so the report
+#    about to be generated is its first and none can have been lost.
+FIRSTREPORT = 2
+
+entryRe = re.compile(r'^<p><a href="[^"]*/(?P<fname>[^/"]+)">[^<]*</a> '
+                     r'(?P<improved>\d+) improved, (?P<regressions>\d+) regressions; '
+                     r'performance (?P<perfimproved>\d+) improved, '
+                     r'(?P<perfregressions>\d+) regressions</p>$')
+fnameRe = re.compile(r'^(.+)[.][.](.+)[.]html$')
+
+def epochOf(datestr):
+  return int(time.mktime(datetime.datetime.strptime(datestr, "%Y-%m-%d %H:%M:%S").timetuple()))
+
+def parseIndex(text):
+  """The reports an index lists, and whatever else it holds, kept verbatim."""
+  entries = []
+  preamble = []
+  for line in text.splitlines():
+    if not line.strip():
+      continue
+    m = entryRe.match(line.strip())
+    dates = fnameRe.match(urllib.parse.unquote(m.group("fname"))) if m else None
+    try:
+      (d1, d2) = (epochOf(dates.group(1)), epochOf(dates.group(2))) if dates else (None, None)
+    except ValueError:
+      (d1, d2) = (None, None)
+    if d1 is None:
+      preamble.append(line)
+      continue
+    entries.append((d1, d2, urllib.parse.unquote(m.group("fname")),
+                    int(m.group("improved")), int(m.group("regressions")),
+                    int(m.group("perfimproved")), int(m.group("perfregressions"))))
+  return (entries, preamble)
+
+def renderEntry(branch, entry):
+  """One line of an index; the same line the report generator has always written."""
+  (d1, d2, fname, improved, regressions, perfimproved, perfregressions) = entry
+  return ('<p><a href="%s/%s/%s">%s %s</a> %d improved, %d regressions; '
+          'performance %d improved, %d regressions</p>'
+          % (historyurl, branch, fname.replace(" ", "%20"), branch, fname,
+             improved, regressions, perfimproved, perfregressions))
+
+def renderIndex(branch, entries, preamble):
+  return "".join(line + "\n" for line in preamble + [renderEntry(branch, e) for e in entries])
+
+def storedEntries(branch):
+  """The reports the database has for a branch, oldest first."""
+  return [tuple(row) for row in cursor.execute(
+      "SELECT date1,date2,fname,improved,regressions,perfimproved,perfregressions "
+      "FROM history WHERE %s ORDER BY date1,date2" % db.likeNoCase("branch"), (branch,))]
+
+def storeEntries(branch, entries):
+  for entry in entries:
+    cursor.execute("INSERT INTO history (branch,date1,date2,fname,improved,regressions,"
+                   "perfimproved,perfregressions) VALUES (?,?,?,?,?,?,?,?)", (branch,) + entry)
+  db.commit()
+
+historyRootServed = None
+
+def historyRootIsServed():
+  """Is the server actually serving the history tree right now?"""
+  global historyRootServed
+  if historyRootServed is None:
+    url = historyurl if historyurl.endswith("/") else historyurl + "/"
+    try:
+      urllib.request.urlopen(url).read()
+      historyRootServed = True
+    except Exception as e:
+      print("%s could not be read (%s)" % (url, e))
+      historyRootServed = False
+  return historyRootServed
+
+def readPublishedIndex(branch):
+  """The index published for a branch, or None when it could not be read."""
+  url = "%s/%s/00_history.html" % (historyurl, branch)
+  try:
+    return urllib.request.urlopen(url).read().decode('utf-8')
+  except urllib.error.HTTPError as e:
+    if e.code == 404:
+      print("%s is not there" % url)
+    else:
+      print("%s failed to open: %s" % (url, e))
+    return None
+  except Exception as e:
+    print("%s failed to open: %s" % (url, e))
+    return None
+
+def historyOf(branch, nruns):
+  """What has been reported for a branch: its entries, anything else its index
+  holds, and the index as published, or None to leave the branch alone.
+
+  The database decides; the published index is read to fill it in with the
+  reports that predate it, and to say whether the two are in step.
+  """
+  historyindex = "history/%s/00_history.html" % branch
+  if os.path.exists(historyindex):
+    # Already started in this workspace, either by an earlier invocation or
+    # because the branch was named twice; that copy is the newer one.
+    with codecs.open(historyindex, "r", encoding="utf-8") as fin:
+      published = fin.read()
+  else:
+    published = readPublishedIndex(branch)
+  stored = storedEntries(branch)
+  if published is None:
+    if stored:
+      print("Rebuilding the index of %s from the %d reports in the database"
+            % (branch, len(stored)))
+      return (stored, [], None)
+    if not historyRootIsServed():
+      print("Neither the database nor the history root knows about %s; leaving it alone" % branch)
+      return None
+    if nruns > FIRSTREPORT:
+      print("%s has no index and no reports in the database although it has %d runs; "
+            "leaving it alone rather than publishing a history with only the newest "
+            "report in it" % (branch, nruns))
+      return None
+    print("Starting a new history for %s" % branch)
+    return ([], [], None)
+  (entries, preamble) = parseIndex(published)
+  known = set((e[0], e[1]) for e in stored)
+  missing = [e for e in entries if (e[0], e[1]) not in known]
+  if missing:
+    print("Copying %d reports of %s from its index into the database" % (len(missing), branch))
+    storeEntries(branch, missing)
+    stored = sorted(stored + missing)
+  inindex = set((e[0], e[1]) for e in entries)
+  onlyStored = [e for e in stored if (e[0], e[1]) not in inindex]
+  if onlyStored:
+    print("%d reports of %s are in the database but not in its index, which is "
+          "rewritten with all of them" % (len(onlyStored), branch))
+  return (stored, preamble, published)
 
 missing_branches = []
 emails_to_send = {}
@@ -91,24 +246,22 @@ for branch in branches:
   cursor.execute("SELECT date,omcversion FROM omcversion WHERE %s ORDER BY date ASC" % db.likeNoCase("branch"), (branch,))
   entries = cursor.fetchall()
   n = len(entries)
-  urlToOpen = "%s/%s/00_history.html" % (historyurl, branch)
-  try:
-    urlContents = urllib.request.urlopen(urlToOpen).read().decode('utf-8')
-  except:
-    print(urlToOpen + " failed to open")
+  historydir = "history/%s" % branch
+  historyindex = "%s/00_history.html" % historydir
+  history = historyOf(branch, n)
+  if history is None:
     missing_branches.append(branch)
     continue
-
-  generated = False
+  (reports, preamble, published) = history
+  reported = set((d1, d2) for (d1, d2, _, _, _, _, _) in reports)
 
   for i in range(1,n):
     d1 = entries[i-1][0]
     d2 = entries[i][0]
-    fname = "history/%s/%s..%s.html" % (branch,dateStr(d1),dateStr(d2))
-    if fname.replace(" ","%20") in urlContents or fname in urlContents:
+    if (d1, d2) in reported:
       continue
+    fname = "history/%s/%s..%s.html" % (branch,dateStr(d1),dateStr(d2))
     print("Generate %s" % fname)
-    generated = True
     v1 = getTagOrVersion(entries[i-1][1])
     v2 = getTagOrVersion(entries[i][1])
     thirdPartyChanged = ""
@@ -245,7 +398,9 @@ for branch in branches:
         libstrs.append("<tr><td>%s</td><td>Configuration hash (OMC settings or the testing script changed)</td></tr>" % libraryLink(branch, libname))
     tpl = tpl.replace("#LIBCHANGES#","\n".join(libstrs)).replace("#NUMLIBS#",str(len(libstrs)))
 
-    email_summary_html = '<p><a href="%s/%s/%s">%s %s</a> %d improved, %d regressions; performance %d improved, %d regressions</p>' % (historyurl, branch, os.path.basename(fname).replace(" ","%20"), branch, os.path.basename(fname),numImproved,numRegression,numPerformanceImproved,numPerformanceRegression)
+    entry = (d1, d2, os.path.basename(fname), numImproved, numRegression,
+             numPerformanceImproved, numPerformanceRegression)
+    email_summary_html = renderEntry(branch, entry)
     email_summary_plain = '%s/%s/%s: %d improved, %d regressions; performance %d improved, %d regressions</p>' % (historyurl, branch, os.path.basename(fname).replace(" ","%20"), numImproved, numRegression, numPerformanceImproved, numPerformanceRegression)
     if sum([numImproved,numRegression,numPerformanceImproved,numPerformanceRegression])>0:
       for email in emails_current:
@@ -253,16 +408,21 @@ for branch in branches:
           emails_to_send[email] = {"plain":[],"html":[]}
         emails_to_send[email]["plain"].append(email_summary_plain)
         emails_to_send[email]["html"].append(email_summary_html)
-    if not os.path.exists(os.path.dirname(fname)):
-      os.makedirs(os.path.dirname(fname))
+    os.makedirs(historydir, exist_ok=True)
     with codecs.open(fname, "w", encoding="utf-8") as fout:
       fout.write(tpl)
-    if not os.path.exists(os.path.dirname("history/%s" % branch)):
-      os.makedirs("history/%s" % branch)
-    urlContents = urlContents + email_summary_html + "\n"
-  if generated:
-    with open("history/%s/00_history.html" % branch, "w") as fout:
-      fout.write(urlContents)
+    storeEntries(branch, [entry])
+    reports = sorted(reports + [entry])
+
+  # The index is written whenever it does not already say what the database
+  # says, which covers the reports generated just now, an index that went
+  # missing or lost entries, and a branch that has none at all: publishing the
+  # directory is what creates it on the server.
+  index = renderIndex(branch, reports, preamble)
+  if published is None or index != published:
+    os.makedirs(historydir, exist_ok=True)
+    with codecs.open(historyindex, "w", encoding="utf-8") as fout:
+      fout.write(index)
 
 if not doemail:
   # We are done

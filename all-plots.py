@@ -26,7 +26,7 @@ fnameprefix = args.historypath
 
 libs = {}
 
-import cgi, time, datetime
+import time, datetime
 from omcommon import friendlyStr, multiple_replace
 
 db = resultsdb.connect(args.db)
