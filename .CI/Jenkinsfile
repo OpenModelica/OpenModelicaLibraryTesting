@@ -42,6 +42,7 @@ pipeline {
     string(name: 'pull_request_baseline', defaultValue: 'master', description: 'The branch a pull request is compared against. Its newest run has to come from pull_request_node, or the report compares the machines as much as the pull request.')
     string(name: 'pull_request_config', defaultValue: 'configs/conf.json', description: 'What a pull request run tests. A full run takes days, so a smaller configuration file is often the better question to ask.')
     choice(name: 'pull_request_node', choices: ['ryzen-5950x-1', 'ryzen-5950x-2-1', 'ryzen-9950x'], description: 'The machine a pull request runs on. The default is the one that produces the master runs it is compared against.')
+    booleanParam(name: 'pull_request_comment', defaultValue: false, description: 'Post the summary of a pull request run as a comment on the pull request, replacing the one an earlier run posted. Needs a github-token credential; without it the report is still written and published, only not commented.')
     booleanParam(name: 'drop_stale_pull_request_tables', defaultValue: false, description: 'Drop the pr-<N> tables of pull requests that have been merged or closed, and of those tested more than 60 days ago. The reports published for them are not touched.')
   }
   environment {
@@ -634,9 +635,19 @@ pipeline {
           }
         }
         sh 'rm -rf history'
-        sh "./pr-report.py '${pullRequest()}' --baseline='${(params.pull_request_baseline ?: 'master').trim()}'"
-        // The summary to comment on the pull request with, in the build log
-        // until there is a token to post it with.
+        script {
+          def report = "./pr-report.py '${pullRequest()}' --baseline='${(params.pull_request_baseline ?: 'master').trim()}'"
+          if (params.pull_request_comment) {
+            // Whoever the token belongs to is who the comment comes from.
+            withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
+              sh "${report} --comment"
+            }
+          } else {
+            sh report
+          }
+        }
+        // The summary is in the build log as well, so a run without a token
+        // still leaves it somewhere to copy from.
         sh 'cat history/pr-*/00_comment.md'
         sshPublisher(publishers: [sshPublisherDesc(configName: 'LibraryTestingReports', transfers: [sshTransfer(sourceFiles: 'history/**')])])
       }
