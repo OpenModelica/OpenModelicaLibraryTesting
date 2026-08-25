@@ -114,11 +114,11 @@ for branch in branches:
   
   db.createDateIndex(branch)
   libs = {}
-  for (date,libname,total,frontend,backend,simcode,template,compile,simulate,verify) in cursor.execute("""SELECT date,libname,COUNT(finalphase),%s
+  for (date,libname,total,frontend,backend,simcode,template,compile,simulate,verify) in cursor.execute("""SELECT date,libname,%s
     FROM %s
     GROUP BY date,libname
     ORDER BY libname,date ASC
-""" % (",".join(db.countIf("finalphase>=%d" % i) for i in range(1,8)), db.quote(branch))):
+""" % (",".join(db.countIf("finalphase>=%d" % i) for i in range(0,8)), db.quote(branch))):
     if libname not in libs:
       libs[libname] = ([],[],[],[],[],[],[],[],[])
     libs[libname][0].append(datetime.datetime.fromtimestamp(date))

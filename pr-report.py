@@ -102,7 +102,8 @@ def omcVersion(table, date):
 
 def models(table, libname, date):
   return set(mod for (mod,) in cursor.execute(
-      "SELECT model FROM %s WHERE date=? AND libname=?" % db.quote(table), (date, libname)))
+      "SELECT model FROM %s WHERE date=? AND libname=? AND finalphase>=0" % db.quote(table),
+      (date, libname)))
 
 def changedModels(table1, date1, table2, date2, libnames):
   """The models whose phase or timings differ between the two runs.
@@ -123,6 +124,7 @@ def changedModels(table1, date1, table2, date2, libnames):
        SELECT %s,1 AS ord FROM %s WHERE date=? AND libname IN (%s)) AS runs
      ORDER BY ord) AS phases
   GROUP BY model,libname HAVING
+    MIN(finalphase) >= 0 AND (
     (MIN(finalphase) <> MAX(finalphase)) OR
     (MIN(finalphase) >= ? AND (
       (MAX(frontend) > ?*MIN(frontend) AND MAX(frontend) > ?) OR
@@ -130,7 +132,7 @@ def changedModels(table1, date1, table2, date2, libnames):
       (MAX(simcode) > ?*MIN(simcode) AND MAX(simcode) > ?) OR
       (MAX(templates) > ?*MIN(templates) AND MAX(templates) > ?) OR
       (MAX(compile) > ?*MIN(compile) AND MAX(compile) > ?) OR
-      (MAX(simulate) > ?*MIN(simulate) AND MAX(simulate) > ?)))
+      (MAX(simulate) > ?*MIN(simulate) AND MAX(simulate) > ?))))
   """ % (concat, cols, db.quote(table1), inlibs, cols, db.quote(table2), inlibs)
   cursor.execute(query, (date1, date2, timeMinPhase,
                          timeRel, timeAbs, timeRel, timeAbs, timeRel, timeAbs,

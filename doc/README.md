@@ -98,6 +98,7 @@ Notes on the values, which are produced by `testmodel.py` and written by
 
 | value | name | meaning |
 | --- | --- | --- |
+| -1 | Removed | the library no longer has that model |
 | 0 | Failed | the front end did not finish |
 | 1 | FrontEnd | front end ok, back end failed |
 | 2 | BackEnd | back end ok, SimCode failed |
@@ -108,7 +109,18 @@ Notes on the values, which are produced by `testmodel.py` and written by
 | 7 | Verify | the result matches the reference file |
 
 Reports count models per phase with `WHERE finalphase >= i`, so the columns of
-the HTML tables are cumulative.
+the HTML tables are cumulative, and phase -1 falls outside all of them.
+
+A run writes a phase -1 row for every model the previous run of that library had
+and it no longer finds, so that a model dropped from a library stops being
+reported once the run that lost it is the newest one. Without it a library whose
+models all lose their `experiment` annotation - Physiomodel did in 2021 - keeps
+a newest run in this table from years ago, and is reported forever with the
+models of that run. The rows are written once, not at every run: the previous
+run of an empty library is the one holding the removals, which have no models
+left to remove. A library that fails to load has no models either, which is why
+`test.py` refuses to run at all when a `loadModel` fails rather than treating it
+as a library that lost every model.
 
 ### `omcversion`
 

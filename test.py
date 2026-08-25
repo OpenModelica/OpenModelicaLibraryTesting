@@ -594,8 +594,11 @@ def hashReferenceFiles(s):
 
 stats_by_libname = {}
 skipped_libs = {}
+# A library that did not load cannot be told apart from one with no models left.
+failedToLoad = []
 tests=[]
 for (library,conf) in configs:
+  loadFailed = False
   # Only when asked, so a normal run's confighash is unchanged
   if args.nobuildmodel:
     conf["noBuildModel"] = True
@@ -657,6 +660,7 @@ for (library,conf) in configs:
           print("Failed to run command %s: %s" % (command,omc.sendExpression('OpenModelica.Scripting.getErrorString()')))
         except:
           print("Failed to run command %s OpenModelica.Scripting.getErrorString() failed..." % command)
+        loadFailed = True
     librariesToLoad = []
   else:
     librariesToLoad = [[library,conf["libraryVersion"]]] + conf.get("extraLibraries", [])
@@ -683,6 +687,11 @@ for (library,conf) in configs:
         print("Failed to load library %s %s: %s" % (library,versions,omc.sendExpression('OpenModelica.Scripting.getErrorString()')))
       except:
         print("Failed to load library %s %s. OpenModelica.Scripting.getErrorString() failed..." % (library,conf["libraryVersion"]))
+      loadFailed = True
+  if loadFailed:
+    failedToLoad.append(shared.libname(library, conf))
+    continue
+
   # adrpo: do not sort the top level names as sometimes that loads a bad MSL version
   # conf["loadFiles"] = sorted(omc.sendExpression("{getSourceFile(cl) for cl in getClassNames()}"))
   conf["loadFiles"] = omc.sendExpression("{getSourceFile(cl) for cl in getClassNames()}")
@@ -774,6 +783,10 @@ try:
   del omc
 except:
   pass
+
+if failedToLoad:
+  db.release()
+  raise SystemExit("Failed to load: %s" % ", ".join(failedToLoad))
 
 print("Checked which libraries to run")
 sys.stdout.flush()
@@ -879,7 +892,7 @@ def expectedExec(c):
   (model,lib,libName,name,data) = c
   if "expectedExec" in data:
     return data["expectedExec"]
-  cursor.execute("SELECT exectime FROM %s WHERE libname = ? AND model = ? ORDER BY date DESC LIMIT 1" % db.quote(primaryBranch), (libName,model))
+  cursor.execute("SELECT exectime FROM %s WHERE libname = ? AND model = ? AND finalphase >= 0 ORDER BY date DESC LIMIT 1" % db.quote(primaryBranch), (libName,model))
   v = cursor.fetchone()
   data["expectedExec"] = (v or (0.0,))[0]
   return data["expectedExec"]
@@ -906,7 +919,7 @@ sys.stdout.flush()
 
 numberOfTests = len(tests)
 
-if numberOfTests==0:
+if numberOfTests==0 and not stats_by_libname:
   print("Everything already up to date. Not executing any tests.")
   sys.exit(0)
 
@@ -993,6 +1006,23 @@ def resultValues(model, libname, data, simulator=None):
     data.get("parsing") or 0.0
   )
 
+def removedModels(resultBranch, libname, tested):
+  """The models the previous run of that library had and this one no longer finds.
+
+  Once written, the removals are that library's newest rows, so a library that
+  stays empty is marked once rather than at every run.
+  """
+  previous = cursor.execute("""SELECT model FROM %s WHERE libname=? AND finalphase>=0
+      AND date=(SELECT MAX(date) FROM %s WHERE libname=? AND date<?)"""
+      % (db.quote(resultBranch), db.quote(resultBranch)),
+      (libname, libname, testRunStartTimeAsEpoch)).fetchall()
+  return sorted(set(model for (model,) in previous) - tested)
+
+def removedValues(model, libname):
+  """One row of a branch table saying the library no longer has that model."""
+  return (testRunStartTimeAsEpoch, libname, model,
+          0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, shared.DELETED_PHASE, 0.0)
+
 def cpu_name():
   if isWin:
     return processor()
@@ -1013,6 +1043,10 @@ else:
 hostname = resultsdb.hostname()
 sysInfo = "%s: %s, %d GB RAM, %s%s" % (hostname, cpu_name(), int(math.ceil(psutil.virtual_memory().total / (1024.0**3))), ("Docker " + docker + " ") if docker else "", lsb_release)
 
+testedModels = dict((libname, set()) for libname in stats_by_libname)
+for (name,model,libname,data) in stats.values():
+  testedModels[libname].add(model)
+
 for (resultBranch, simulator) in resultBranches:
   db.createTables(resultBranch)
   for key in stats.keys():
@@ -1022,6 +1056,10 @@ for (resultBranch, simulator) in resultBranches:
     cursor.execute("INSERT INTO %s VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)%s" % (db.quote(resultBranch), db.insertIgnore()),
                    resultValues(model, libname, data, simulator))
   for libname in stats_by_libname.keys():
+    for model in removedModels(resultBranch, libname, testedModels[libname]):
+      cursor.execute("INSERT INTO %s VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)%s"
+                     % (db.quote(resultBranch), db.insertIgnore()),
+                     removedValues(model, libname))
     confighash = stats_by_libname[libname]["conf"]["confighash"]
     cursor.execute("INSERT INTO libversion VALUES (?,?,?,?,?,?,?)%s" % db.insertIgnore(), (testRunStartTimeAsEpoch, resultBranch, libname, stats_by_libname[libname]["conf"]["libraryLastChange"], confighash, hostname, sysInfo))
   cursor.execute("INSERT INTO omcversion VALUES (?,?,?)%s" % db.insertIgnore(), (testRunStartTimeAsEpoch, resultBranch, omc_version))

@@ -328,6 +328,7 @@ for branch in branches:
       query = ("""SELECT model,libname,%s FROM
     (SELECT model,libname,date,finalphase,frontend,backend,simcode,templates,compile,simulate FROM %%s WHERE date IN (?,?) AND libname IN (%%s) ORDER BY date) AS phases
   GROUP BY model,libname HAVING""" % concat + """
+    MIN(finalphase) >= 0 AND (
     (MIN(finalphase) <> MAX(finalphase)) OR
     ((MIN(finalphase) >= ?) AND
       (MAX(frontend) > ?*MIN(frontend) AND MAX(frontend) > ?) OR
@@ -336,7 +337,7 @@ for branch in branches:
       (MAX(templates) > ?*MIN(templates) AND MAX(templates) > ?) OR
       (MAX(compile) > ?*MIN(compile) AND MAX(compile) > ?) OR
       (MAX(simulate) > ?*MIN(simulate) AND MAX(simulate) > ?)
-    )
+    ))
   """) % (db.quote(branch),",".join(["'%s'" % libname for libname in startdates[d1lib]]))
       cursor.execute(query, (d1lib,d2,timeMinPhase,timeRel,timeAbs,timeRel,timeAbs,timeRel,timeAbs,timeRel,timeAbs,timeRel,2*timeAbs,timeRel,timeAbs))
       regressions += cursor.fetchall()
