@@ -20,6 +20,12 @@
     simulation with FMI and C runtime
   - [FMI C++](https://libraries.openmodelica.org/branches/overview-c++.html):
     simulation with FMI and C++ runtime
+  - [wasm-jit](https://libraries.openmodelica.org/branches/overview-wasm-jit.html):
+    simulation with the WebAssembly runtime. Each model is exported once as a
+    wasm artifact and simulated three ways — `wasm-jit` runs the simulation
+    runtime inside it, `wasm-jit-me` its FMI 3.0 Model Exchange interface and
+    `wasm-jit-cs` its FMI 3.0 Co-Simulation one — so the three differ only in
+    how the same compiled model is driven
 
 - **Regression reports and history plots**:
   Regression reports are periodically generated, using the latest development

@@ -37,6 +37,7 @@ parser.add_argument('--noclean', action="store_true", default=False)
 parser.add_argument('--nobuildmodel', action="store_true", help="Translate, build and simulate in a single simulate() call instead of translateModel() followed by simulate(resimulateExecutable=...), so the JIT compile is reported as build time rather than simulation time. Only used by simCodeTarget=wasm-jit.", default=False)
 parser.add_argument('--coldhot', action="store_true", help="Simulate each model twice in the same omc; the second run reuses the compiled module. Both times are printed, but only the hot one is stored. Only used by simCodeTarget=wasm-jit.", default=False)
 parser.add_argument('--fmisimulator', action='append', default=[], help="FMI simulator to run the FMUs with, as 'name=command' or just the command. Repeat it to simulate every FMU with several tools without building it more than once; the first one stores its results in --branch and each further one in <branch>-<name>, so --branch=master-fmi with OMSimulator and fmpy fills master-fmi and master-fmi-fmpy." )
+parser.add_argument('--wasmjitrunner', action='append', default=[], help="Export every model once as a wasm artifact (buildModelFMU with fmuType=me_cs, platforms={wasm,<this machine>}) and simulate that one artifact each of these ways: 'sim' runs the simulation runtime inside it, 'me' and 'cs' its FMI 3.0 interfaces. Comma-separated or repeated; the first fills --branch and each further one <branch>-<name>, so --branch=master-wasm-jit with sim,me,cs fills master-wasm-jit, master-wasm-jit-me and master-wasm-jit-cs. See configs/wasm-jit-runners.json. Only for simCodeTarget=wasm-jit.")
 parser.add_argument('--ulimitvmem', help="Virtual memory limit (in kB) (linux only)", type=int, default=8*1024*1024)
 parser.add_argument('--default', action='append', help="Add a default value for some configuration key, such as --default=ulimitExe=60. The equals sign is mandatory.", default=[])
 parser.add_argument('-j', '--jobs', default=0, help="Ignored and deprecated, use procOMC:0 or procOMC:1 in the config")
@@ -71,16 +72,26 @@ ompython_omhome = args.ompython_omhome
 fmisimulators = shared.parseFmiSimulators(args.fmisimulator)
 # The first simulator is the one the single-simulator code paths use.
 fmisimulator = fmisimulators[0][1] if fmisimulators else None
+wasmjitrunners = shared.parseWasmJitRunners(args.wasmjitrunner)
+if fmisimulators and wasmjitrunners:
+  raise Exception("--fmisimulator and --wasmjitrunner both fan one build out into several result "
+                  "branches; a job runs one of them, not both.")
+# Everything one build is simulated by, whichever of the two it is.
+runnerNames = [n for (n, _) in fmisimulators or wasmjitrunners]
+
+def branchForRunner(name):
+  return (shared.branchForSimulator(branch, name) if fmisimulators
+          else shared.branchForWasmJitRunner(branch, name))
 
 # One branch per simulator. The first reports itself in the results of the
 # model and the others under their own name, but every one of them stores its
 # results where its own simulator belongs: a job given only FMPy on
 # --branch=v1.27-fmi fills v1.27-fmi-fmpy, not v1.27-fmi.
 resultBranches = [(branch, None)]
-if fmisimulators:
-  resultBranches = [(shared.branchForSimulator(branch, fmisimulators[0][0]), None)]
-  for (simulatorName, _) in fmisimulators[1:]:
-    resultBranches.append((shared.branchForSimulator(branch, simulatorName), simulatorName))
+if runnerNames:
+  resultBranches = [(branchForRunner(runnerNames[0]), None)]
+  for simulatorName in runnerNames[1:]:
+    resultBranches.append((branchForRunner(simulatorName), simulatorName))
 # What the run asks about when it looks for results it already has.
 primaryBranch = resultBranches[0][0]
 
@@ -646,6 +657,8 @@ for (library,conf) in configs:
     conf["fmisimulator"] = fmisimulator
     conf["fmisimulators"] = ["%s=%s" % (n, c) for (n, c) in fmisimulators]
     conf["fmuType"] = fmuType
+  if wasmjitrunners:
+    conf["wasmjitrunners"] = [n for (n, _) in wasmjitrunners]
   if (not canChangeOptLevel) and "optlevel" in conf:
     print("Deleting optlevel")
     del conf["optlevel"]
@@ -1150,7 +1163,7 @@ def dataForSimulator(data, simulator):
 
 def artifactSuffix(simulator):
   """What tells the files of one simulator from those of another."""
-  return "_%s" % simulator if simulator and len(fmisimulators) > 1 else ""
+  return "_%s" % simulator if simulator and len(runnerNames) > 1 else ""
 
 # Every simulator publishes its own results - .sim and diff files included - to
 # the directory of its own branch; the .err of the build is shared, so each of
