@@ -23,7 +23,9 @@ parser.add_argument('--yes', action='store_true', help='actually drop them')
 resultsdb.addArgument(parser)
 args = parser.parse_args()
 
-prTableRe = re.compile(r"^pr-([0-9]+)$")
+# pr/<N> is what a run fills; pr-<N> is what the runs before that filled, and
+# they are dropped by the same rule.
+prTableRe = re.compile(r"^pr[-/]([0-9]+)$")
 
 db = resultsdb.connect(args.db)
 cursor = db.cursor()

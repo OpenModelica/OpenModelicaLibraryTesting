@@ -3,6 +3,16 @@
 import re, os, string, subprocess
 import simplejson as json
 
+# A job is named after the branch it tests, and takes the last part of the name:
+# maintenance/v1.27 is stored and published as v1.27. A pull request is the
+# exception - pr/16370 keeps the directory it is in, so that the branches
+# directory holds branches and the pull requests sit together under one of them.
+prBranchRe = re.compile(r"^pr/[0-9]+$")
+
+def resultTable(branch):
+  """The results of a job named after this branch: its table and its directory."""
+  return branch if prBranchRe.match(branch) else branch.split("/")[-1]
+
 simCodeTargetRe = re.compile('--simCodeTarget=([^"\'\\s,;)]+)')
 
 def simCodeTargetFromCommands(target, commands):

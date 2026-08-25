@@ -150,9 +150,13 @@ pipeline {
           fi
           """
           // One build of omc per pull request is kept, as for a branch, and they
-          // accumulate: a pull request is tested once and never again.
-          sh 'find "$HOME/saved_omc" -maxdepth 1 -name "pr-*" -type d -mtime +14 -exec rm -rf {} ";" || true'
-          runRegressiontest("pr-${pullRequest()}", "pr-${pullRequest()}", '', '', false, '', '', false, false, 0, params.pull_request_config ?: 'configs/conf.json')
+          // accumulate: a pull request is tested once and never again. The
+          // second line is the layout of the runs before they moved under pr/.
+          sh '''
+          find "$HOME/saved_omc/pr" -mindepth 1 -maxdepth 1 -type d -mtime +14 -exec rm -rf {} ";" 2> /dev/null || true
+          find "$HOME/saved_omc" -mindepth 1 -maxdepth 1 -name "pr-*" -type d -mtime +14 -exec rm -rf {} ";" || true
+          '''
+          runRegressiontest("pr/${pullRequest()}", "pr/${pullRequest()}", '', '', false, '', '', false, false, 0, params.pull_request_config ?: 'configs/conf.json')
         }
       }
 
@@ -935,7 +939,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
   // head one, since the question is what happens once it is merged, and it is
   // checked out detached so that nothing is left behind for the next run of the
   // same workspace to trip over.
-  def pullRequest = branch.startsWith('pr-') && branch.substring(3).isInteger() ? branch.substring(3) : ''
+  def pullRequest = branch.startsWith('pr/') && branch.substring(3).isInteger() ? branch.substring(3) : ''
   def checkoutRef = pullRequest ? """
     REFS=`git ls-remote https://github.com/OpenModelica/OpenModelica.git "refs/pull/${pullRequest}/head" "refs/pull/${pullRequest}/merge"` || exit 1
     case "\$REFS" in

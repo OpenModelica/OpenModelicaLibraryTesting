@@ -12,7 +12,7 @@ resultsdb.addArgument(parser)
 
 args = parser.parse_args()
 
-branch = args.branch.split("/")[-1]
+branch = shared.resultTable(args.branch)
 models = args.models
 
 dates = {}
