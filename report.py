@@ -70,7 +70,7 @@ for branch in branches:
       dates[branch][libname] = 0
       continue
     dates[branch][libname] = v[0]
-    for x in cursor.execute("SELECT model FROM %s WHERE libname=? AND date=?" % db.quote(branch), (libname,v[0])):
+    for x in cursor.execute("SELECT model FROM %s WHERE libname=? AND date=? AND finalphase>=0" % db.quote(branch), (libname,v[0])):
       if libname not in libs:
         libs[libname] = set()
       libs[libname].add(x[0])

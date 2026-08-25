@@ -73,7 +73,12 @@ def libname(library, conf):
     return library+"_"+conf["libraryVersionNameForTests"] if conf["libraryVersionNameForTests"] else library
   return library+("_"+conf["libraryVersion"] if conf["libraryVersion"]!="default" else "")+(("_" + conf["configExtraName"]) if "configExtraName" in conf else "")
 
+# A model the run no longer found in its library; the reports ask for >= 0.
+DELETED_PHASE = -1
+
 def finalphaseName(finalphase):
+  if finalphase == DELETED_PHASE:
+    return "Removed"
   return ("Failed","FrontEnd","BackEnd","SimCode","Templates","Compile","Simulate","Verify")[finalphase]
 
 def getReferenceFileName(conf):
