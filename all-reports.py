@@ -23,7 +23,7 @@ args = parser.parse_args()
 os.environ['TZ'] = 'Europe/Stockholm'
 time.tzset()
 
-branches = [branch.split("/")[-1] for branch in args.branches]
+branches = [shared.resultTable(branch) for branch in args.branches]
 baseurl = args.baseurl
 historyurl  = args.historyurl
 githuburl = args.githuburl

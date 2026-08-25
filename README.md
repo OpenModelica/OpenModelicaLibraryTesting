@@ -268,14 +268,19 @@ None of the branch jobs run unless their own parameter is ticked as well.
 
 By hand it is two steps. The compiler is built from the merge ref - the pull
 request as it would land, not the branch on its own - and the run fills a
-`pr-<N>` table like any other branch:
+`pr/<N>` table like any other branch:
 
 ```bash
 git fetch --force https://github.com/OpenModelica/OpenModelica.git refs/pull/<N>/merge
 git checkout -f --detach FETCH_HEAD
 # build omc, then
-./test.py --branch=pr-<N> configs/conf.json
+./test.py --branch=pr/<N> configs/conf.json
 ```
+
+`pr/<N>` rather than `pr-<N>`: the results of a pull request are stored and
+published under `pr/`, so that `branches/` holds branches and the pull requests
+sit together in one directory of it. It is the one job name that keeps the
+directory part of its name - `maintenance/v1.27` is tested as `v1.27`.
 
 and the report compares that run against the newest run of `master`:
 
@@ -283,7 +288,7 @@ and the report compares that run against the newest run of `master`:
 ./pr-report.py <N>                 # --baseline=master by default
 ```
 
-It writes `history/pr-<N>/<baseline run>..<pull request run>.html`, the same
+It writes `history/pr/<N>/<baseline run>..<pull request run>.html`, the same
 kind of page as the nightly regression reports, next to `00_comment.md`, a
 summary to comment on the pull request with. Both are published with the other
 reports.
@@ -306,7 +311,7 @@ is based on, so a difference can come from anything merged since it was
 branched - a reason to rebase before believing a surprising result.
 
 A full run takes days, so testing every pull request this way is not the idea;
-point `--branch=pr-<N>` at a smaller configuration file when the question is
+point `--branch=pr/<N>` at a smaller configuration file when the question is
 narrower.
 
 The tables accumulate, about 19500 rows each. `drop-pr-tables.py` drops the ones

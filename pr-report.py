@@ -16,7 +16,7 @@ import shared, resultsdb
 from omcommon import friendlyStr, multiple_replace
 
 parser = argparse.ArgumentParser(description='OpenModelica library testing pull request report')
-parser.add_argument('pullrequest', help='the pull request number, or its branch name pr-<N>')
+parser.add_argument('pullrequest', help='the pull request number, or its branch name pr/<N>')
 parser.add_argument('--baseline', default="master", help='the branch the pull request is compared against')
 parser.add_argument('--date', type=int, default=0, help='the pull request run to report on (default: its newest)')
 parser.add_argument('--baselinedate', type=int, default=0, help='the baseline run to compare against (default: its newest)')
@@ -40,12 +40,14 @@ timeAbs = 10     # Ignore performance regressions for times <10s...
 
 PHASES = [(1,"frontend"),(2,"backend"),(3,"simcode"),(4,"templates"),(5,"compile"),(6,"simulate")]
 
-m = re.match(r"^(?:pr-)?([0-9]+)$", args.pullrequest.strip())
+m = re.match(r"^(?:pr[-/])?([0-9]+)$", args.pullrequest.strip())
 if not m:
-  raise SystemExit("Expected a pull request number or a pr-<N> branch name, got '%s'" % args.pullrequest)
+  raise SystemExit("Expected a pull request number or a pr/<N> branch name, got '%s'" % args.pullrequest)
 pr = m.group(1)
-branch = "pr-%s" % pr
-baseline = args.baseline.split("/")[-1]
+# The results of a pull request live under pr/, not beside the branches; see
+# shared.resultTable.
+branch = "pr/%s" % pr
+baseline = shared.resultTable(args.baseline)
 prurl = "%s/pull/%s" % (args.githuburl, pr)
 repo = args.githuburl.split("github.com/")[-1].strip("/")
 

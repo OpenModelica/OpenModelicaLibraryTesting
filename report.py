@@ -15,7 +15,7 @@ configs = args.configs
 if configs == []:
   raise Exception("Error: Expected at least one configuration file to start the library test")
 
-branches = [br.split("/")[-1] for br in args.branches.split(" ")]
+branches = [shared.resultTable(br) for br in args.branches.split(" ")]
 
 dates = {}
 dates_str = {}

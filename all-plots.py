@@ -21,7 +21,7 @@ parser.add_argument('--historypath', default="history")
 resultsdb.addArgument(parser)
 args = parser.parse_args()
 
-branches = [branch.split("/")[-1] for branch in args.branches]
+branches = [shared.resultTable(branch) for branch in args.branches]
 fnameprefix = args.historypath
 
 libs = {}
