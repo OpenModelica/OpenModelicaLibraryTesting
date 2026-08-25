@@ -214,6 +214,46 @@ def fmiSimulatorCommand(name, command, **values):
   return "%s %s" % (spec.get("command", "{simulator}").format(**values),
                     spec["arguments"].format(**values))
 
+# The ways an exported wasm artifact can be simulated, in configs/wasm-jit-runners.json.
+# The same shape as the FMI simulators above, except that a runner is not a tool
+# to invoke: it is a set of simulation flags omc itself is given, since the
+# artifact is run inside omc.
+WASM_JIT_RUNNERS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                     "configs", "wasm-jit-runners.json")
+_wasmJitRunners = None
+
+def wasmJitRunners(path=None):
+  """Everything the testing knows about the wasm-jit artifact runners."""
+  global _wasmJitRunners
+  if _wasmJitRunners is None or path:
+    with open(path or WASM_JIT_RUNNERS_FILE) as fin:
+      _wasmJitRunners = dict((k, v) for (k, v) in json.load(fin).items() if not k.startswith("_"))
+  return _wasmJitRunners
+
+def wasmJitRunner(name):
+  known = wasmJitRunners()
+  if name not in known:
+    raise Exception("Unknown wasm-jit runner %s; known are %s. Adding one is an entry in %s."
+                    % (name, ", ".join(sorted(known)), WASM_JIT_RUNNERS_FILE))
+  return known[name]
+
+def parseWasmJitRunners(names):
+  """The --wasmjitrunner values as an ordered list of (name, simflags)."""
+  res = []
+  for spec in names or []:
+    for name in spec.split(","):
+      name = name.strip()
+      if name:
+        res.append((name, wasmJitRunner(name).get("simflags") or ""))
+  seen = [n for (n, _) in res]
+  if len(set(seen)) != len(seen):
+    raise Exception("The same wasm-jit runner name is used twice: %s" % ", ".join(seen))
+  return res
+
+def branchForWasmJitRunner(branch, name):
+  """Where the results of one wasm-jit runner are stored: --branch, then -<name>."""
+  return branch + wasmJitRunner(name).get("branchSuffix", "-%s" % name)
+
 def branchForSimulator(branch, name):
   """Where the results of one FMI simulator of a run are stored.
 

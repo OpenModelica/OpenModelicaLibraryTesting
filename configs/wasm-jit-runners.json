@@ -1,0 +1,29 @@
+{
+  "_comment": [
+    "The ways one exported wasm artifact can be simulated. Adding one is an entry here and nothing else.",
+    "",
+    "A wasm artifact is what buildModelFMU(..., fmuType=\"me_cs\", platforms={\"wasm\", <this machine>})",
+    "writes: one .wasm component carrying the model kernel, the FMI 3.0 adapter and the model's own",
+    "simulation runtime, plus that component compiled ahead of time to a .cwasm. Every runner below",
+    "simulates that one artifact through simulate(..., resimulateExecutable=\"<model>.fmu\"), so the",
+    "model is translated and compiled once however many of them run.",
+    "",
+    "simflags       what is appended to the model's simulation flags; -s fmi3:… picks the interface.",
+    "description    what the runner is, for the reports.",
+    "branchSuffix   appended to --branch to get the table of this runner; the default is -<name>, so",
+    "               the artifact's own simulation runtime is the one that needs to say anything here."
+  ],
+  "sim": {
+    "branchSuffix": "",
+    "simflags": "",
+    "description": "the artifact's own simulation runtime, run inside the wasm module"
+  },
+  "me": {
+    "simflags": "-s fmi3:me:daskr",
+    "description": "FMI 3.0 Model Exchange, integrated by omc with DASKR"
+  },
+  "cs": {
+    "simflags": "-s fmi3:cs",
+    "description": "FMI 3.0 Co-Simulation, the artifact integrating itself with DASKR"
+  }
+}

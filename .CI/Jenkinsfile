@@ -35,7 +35,7 @@ pipeline {
     booleanParam(name: 'gbode', defaultValue: false, description: 'master branch, with -d=newInst and -s gbode (ryzen-5950x-2). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'ida', defaultValue: false, description: 'master branch, with -d=newInst and -s ida (ryzen-5950x-2). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'generateSymbolicJacobian', defaultValue: false, description: 'master branch, with --generateSymbolicJacobian (ryzen-5950x-1). This is an experimental job that does not run on a fixed schedule.')
-    booleanParam(name: 'wasm_jit', defaultValue: false, description: 'master branch, with --simCodeTarget=wasm-jit (ryzen-5950x-2). This is an experimental job that does not run on a fixed schedule.')
+    booleanParam(name: 'wasm_jit', defaultValue: false, description: 'master branch, with --simCodeTarget=wasm-jit (ryzen-9950x). Every model is exported once as a wasm artifact and simulated three ways, filling wasm-jit (the runtime inside the artifact), wasm-jit-me (FMI 3.0 Model Exchange) and wasm-jit-cs (FMI 3.0 Co-Simulation). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'heavy_tests', defaultValue: false, description: 'master branch, runs one test at a time. That is, no parallel launching of tests. omc will use multiple threads for each test (-n=1 is not set unlike the other regression tests.), (ryzen-5950x-1). This is an experimental job that does not run on a fixed schedule.')
 
     string(name: 'pull_request', defaultValue: '', description: 'Test an OpenModelica pull request rather than a branch: its number, e.g. 16354. omc is built from refs/pull/<N>/merge - the pull request as it would land - the results fill a pr-<N> table, and the report compares them against the newest run of pull_request_baseline. Left empty, nothing of this runs.')
@@ -384,7 +384,7 @@ pipeline {
           expression { params.wasm_jit }
         }
         steps {
-          runRegressiontest('master', 'wasm-jit', 'setCommandLineOptions("--simCodeTarget=wasm-jit")', '', false, '', '--nobuildmodel', false, false, 0, 'configs/conf.json',
+          runRegressiontest('master', 'wasm-jit', 'setCommandLineOptions("--simCodeTarget=wasm-jit")', '', false, '', '--wasmjitrunner=sim,me,cs', false, false, 0, 'configs/conf.json',
                             '-DOM_OMC_ENABLE_RUST=ON -DRUST_OMC_CI=ON -DRUST_OMC_THREADS=4 -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache',
                             '.CI/wasm-jit')
         }
@@ -492,7 +492,7 @@ pipeline {
         GITBRANCHES_DAE = 'newInst-daeMode'
         GITBRANCHES_NEWBACKEND_DAE = 'newBackend-daeMode'
         GITBRANCHES_CPP = 'v1.19-cpp v1.20-cpp v1.21-cpp v1.22-cpp v1.23-cpp v1.24-cpp v1.25-cpp cpp v1.26-cpp v1.27-cpp'
-        GITBRANCHES_WASM_JIT = 'wasm-jit'
+        GITBRANCHES_WASM_JIT = 'wasm-jit wasm-jit-me wasm-jit-cs'
         GITBRANCHES_SPECIAL = 'master wasm-jit newInst-newBackend'
         PYTHONIOENCODING = 'utf-8'
         IDA_EMAIL = credentials('IDA email')
@@ -576,7 +576,9 @@ pipeline {
         sh "./report.py --branches='ida master' configs/conf.json"
         sh "mv overview.html overview-ida.html"
 
-        sh "./report.py --branches='wasm-jit master' configs/conf.json"
+        // The three ways one wasm artifact is simulated, against master: they share
+        // an export, so only the simulation and the verification tell them apart.
+        sh "./report.py --branches='${env.GITBRANCHES_WASM_JIT} master' configs/conf.json"
         sh "mv overview.html overview-wasm-jit.html"
 
         sh "./report.py --branches='${env.GITBRANCHES_CPP}' configs/conf.json"
