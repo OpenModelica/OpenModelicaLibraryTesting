@@ -447,7 +447,12 @@ def wasmJitAcceptsFlag(flagVal):
   return bool((sendExpressionOldOrNew('simulate(OMLibTestFlagCheck,simflags="%s")' % flagVal) or {}).get("resultFile"))
 
 annotationSimFlags=""
-(startTime,stopTime,tolerance,numberOfIntervals,stepSize)=sendExpressionOldOrNew('getSimulationOptions(%s,defaultTolerance=%s,defaultNumberOfIntervals=%s)' % (conf["modelName"], conf["defaultTolerance"], max(conf["defaultNumberOfIntervals"], numberOfIntervalsInReference)))
+cmd = 'getSimulationOptions(%s,defaultTolerance=%s,defaultNumberOfIntervals=%s)' % (conf["modelName"], conf["defaultTolerance"], max(conf["defaultNumberOfIntervals"], numberOfIntervalsInReference))
+try:
+  (startTime,stopTime,tolerance,numberOfIntervals,stepSize)=sendExpressionOldOrNew(cmd)
+except:
+  # omc answers nothing when the call fails, and nothing else reads the buffer.
+  raise Exception("%s failed:\n%s" % (cmd, omc.sendExpression("getErrorString()", parsed = False)))
 if conf["simCodeTarget"] in ("C","wasm-jit") and sendExpressionOldOrNew('classAnnotationExists(%s, __OpenModelica_simulationFlags)' % conf["modelName"]):
   for flag in sendExpressionOldOrNew('getAnnotationNamedModifiers(%s,"__OpenModelica_simulationFlags")' % conf["modelName"]):
     if flag=="The searched annotation name not found":
