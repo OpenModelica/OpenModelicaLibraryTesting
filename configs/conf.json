@@ -396,7 +396,7 @@
   },
   {
     "library":"OpenHydraulics",
-    "libraryVersion":"master",
+    "libraryVersion":"main",
     "libraryVersionNameForTests":""
   },
   {
