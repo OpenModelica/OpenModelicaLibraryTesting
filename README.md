@@ -285,7 +285,7 @@ neither packed nor loaded:
 
 | runner | branch | what runs |
 | --- | --- | --- |
-| `sim` | `master-wasm-jit` | the simulation runtime inside the artifact, in wasm |
+| `sim` | `master-wasm-jit` | the translated model, run by omc's simulation runtime as `simulate()` runs it |
 | `me` | `master-wasm-jit-me` | FMI 3.0 Model Exchange, integrated by omc with DASKR |
 | `cs` | `master-wasm-jit-cs` | FMI 3.0 Co-Simulation, the artifact integrating itself with DASKR |
 

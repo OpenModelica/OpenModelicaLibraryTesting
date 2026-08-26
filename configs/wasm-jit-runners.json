@@ -16,7 +16,7 @@
   "sim": {
     "branchSuffix": "",
     "simflags": "",
-    "description": "the artifact's own simulation runtime, run inside the wasm module"
+    "description": "the artifact's own simulation: the translated model run by omc's simulation runtime, as simulate() runs it"
   },
   "me": {
     "simflags": "-s fmi3:me:daskr",
