@@ -38,7 +38,9 @@ cursor = db.cursor()
 
 nmodels = {}
 nsimulate = {}
+nverify = {}
 exectime = {}
+simtime = {}
 
 missing_branches = []
 for branch in branches:
@@ -77,7 +79,9 @@ for branch in branches:
       branch_nmodels += 1
   nmodels[branch] = branch_nmodels
   nsimulate[branch] = 0
+  nverify[branch] = 0
   exectime[branch] = 0.0
+  simtime[branch] = 0.0
 
 entries = ""
 # removing missing branches
@@ -131,6 +135,7 @@ for lib in sorted(libs.keys()):
       entries += '<td%s><a%s>%s%s</a></td>' % (' class="warning"' if old_vs and old_vs[i]>vs[i] else (' class="better"' if old_vs and old_vs[i]<vs[i] else ""),' class="dot"' if diff_text else "",vs[i],('<span class="tooltip">%s</span>' % diff_text) if diff_text else "")
     entries += "</tr>"
     nsimulate[branch] += vs[6]
+    nverify[branch] += vs[7]
     if old_vs:
       old_vs = [max(vs[i], old_vs[i]) for i in range(0, len(vs))]
     else:
@@ -144,15 +149,17 @@ for lib in sorted(libs.keys()):
     entries += '<tr><td><a href="%s/%s/%s.html">%s</a></td>' % (branch,lib,lib,branch)
     entries += ("<td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n" % (friendlyStr(sums[0]),friendlyStr(sums[1]),friendlyStr(sums[2]),friendlyStr(sums[3]),friendlyStr(sums[4]),friendlyStr(sums[5]),friendlyStr(sums[6]),friendlyStr(sums[7]),friendlyStr(sums[8])))
     exectime[branch] += sums[0]
+    simtime[branch] += sums[7]
   entries += "</table>\n"
   # print(sorted(list(libs[lib])))
 
 nummodels = sum(len(l) for l in libs.values())
-branches_lines = [("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td%s>%d</td><td>%d</td></tr>\n" % (html.escape(branch), html.escape(
+branches_lines = [("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td%s>%d</td><td>%d</td><td>%d</td></tr>\n" % (html.escape(branch), html.escape(
   (cursor.execute("SELECT omcversion FROM omcversion WHERE date=? AND branch=?", (max(dates[branch][lib] for lib in libnames),branch)).fetchone() or ["unknown"])[0]
-  ), html.escape(dates_str[branch]), friendlyStr(exectime[branch]),
+  ), html.escape(dates_str[branch]), friendlyStr(exectime[branch]), friendlyStr(simtime[branch]),
   " class=\"warning\"" if nummodels!=nmodels[branch] else "",
   nsimulate[branch],
+  nverify[branch],
   nmodels[branch]
 )) for branch in branches]
 template = open("overview.html.tpl").read()
