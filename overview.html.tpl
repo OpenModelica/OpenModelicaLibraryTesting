@@ -20,7 +20,7 @@
 </table>
 <h2>Tested branches</h2>
 <table>
-<tr><th>Branch</th><th>Version</th><th>Build time</th><th>Execution time</th><th># Simulate</th><th># Total</th></tr>
+<tr><th>Branch</th><th>Version</th><th>Build time</th><th>Execution time</th><th>Simulation time</th><th># Simulate</th><th># Verify</th><th># Total</th></tr>
 #branches#
 </table>
 #entries#

@@ -991,6 +991,26 @@ def phaseWithoutSimulator(data):
   """
   return min(data.get("phase") or 0, BUILD_PHASE)
 
+def simulatedTime(simulated):
+  """The wall clock simulating and verifying once cost.
+
+  An older result file has no simwall and only says what the tool spent.
+  """
+  sim = simulated.get("simwall")
+  if sim is None:
+    sim = simulated.get("sim") or 0.0
+  return sim + ((simulated.get("diff") or {}).get("time") or 0.0)
+
+def runnerExecTime(data, simulated):
+  """The wall clock one runner of an FMU or of an artifact cost.
+
+  exectime is the whole run of the model, and all but the simulations is shared
+  by its runners, so each reports the shared part plus only its own simulation.
+  """
+  runners = [data] + list((data.get("simulators") or {}).values())
+  shared_time = (data.get("exectime") or 0.0) - sum(simulatedTime(r) for r in runners)
+  return max(0.0, shared_time) + simulatedTime(simulated)
+
 def resultValues(model, libname, data, simulator=None):
   """One row of a branch table.
 
@@ -1005,7 +1025,7 @@ def resultValues(model, libname, data, simulator=None):
   return (testRunStartTimeAsEpoch,
     libname,
     model,
-    data.get("exectime") or 0.0,
+    runnerExecTime(data, simulated),
     data.get("frontend") or 0.0,
     data.get("backend") or 0.0,
     data.get("simcode") or 0.0,

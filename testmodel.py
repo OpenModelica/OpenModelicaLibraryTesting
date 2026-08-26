@@ -236,6 +236,7 @@ execstat = {
   "templates":None,
   "build":None,
   "sim":None,
+  "simwall":None, # Wall clock; sim is what the tool says it spent
   "simcold":None,
   "diff":None,
   "phase":0,
@@ -779,9 +780,11 @@ try:
     else:
       res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,cmd,conf["fileName"]), conf["ulimitExe"], conf)
   execstat["sim"] = simElapsed()
+  execstat["simwall"] = monotonic()-start
   execstat["phase"] = 6
 except TimeoutError as e:
   execstat["sim"] = monotonic()-start
+  execstat["simwall"] = execstat["sim"]
   # checkOutputTimeout raises TimeoutError for a command that fails as well as
   # for one that runs out of time, so this covers both.
   if len(runners) > 1:
@@ -917,7 +920,7 @@ if not firstSimulatorFailed:
 # results down with it and leaves the others alone - the first one included,
 # see the TimeoutError handler above.
 for (name, command) in runners[1:]:
-  stat = {"sim": None, "diff": None, "phase": 5}
+  stat = {"sim": None, "simwall": None, "diff": None, "phase": 5}
   simulators[name] = stat
   simFileOther = os.path.abspath("../files/%s_%s.sim" % (conf["fileName"], name)).replace('\\','/')
   other = resultFile(name)
@@ -926,16 +929,19 @@ for (name, command) in runners[1:]:
     if useArtifact:
       res = simulateArtifact(name, command, other, simFileOther)
       stat["sim"] = res.get("timeSimulation") or (monotonic()-start)
+      stat["simwall"] = monotonic()-start
       if not res.get("resultFile"):
         writeResult()
         continue
     else:
       simulateFmu(name, command, other, simFileOther)
       stat["sim"] = monotonic()-start
+      stat["simwall"] = stat["sim"]
     stat["phase"] = 6
     verifyAgainstReference(other, artifactPrefix(name) + ".diff", stat)
   except TimeoutError as e:
     stat["sim"] = monotonic()-start
+    stat["simwall"] = stat["sim"]
     with open(errFile, 'a+') as fp:
       fp.write("%s timed out simulating the %s\n" % (name, "artifact" if useArtifact else "FMU"))
   writeResult()
