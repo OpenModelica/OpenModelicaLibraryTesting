@@ -910,7 +910,10 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
     echo Old Hash:
     cat ~/saved_omc/OMSimulator/.githash || true
 
-    if ! (cmp ~/saved_omc/OMSimulator/.githash .newhash); then
+    # The second test rebuilds a cached build that does not run here: one made on
+    # the node before the job moved into a container, or against an older image,
+    # matches by hash but misses the libraries it was linked against.
+    if ! cmp ~/saved_omc/OMSimulator/.githash .newhash || ! ~/saved_omc/OMSimulator/install/bin/OMSimulator --version; then
 
       git submodule sync --recursive || exit 1
       git clean -ffdx || exit 1
@@ -1071,8 +1074,27 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
   cat .newhash
   echo Old Hash:
   cat ~/saved_omc/${name}/.githash || true
-  # TODO: Create a docker image for these things instead?
-  if ! (cmp ~/saved_omc/${name}/.githash .newhash || test -f ~/saved_omc/${name}/.nogit); then
+  REBUILD=""
+  if cmp ~/saved_omc/${name}/.githash .newhash || test -f ~/saved_omc/${name}/.nogit; then
+    rsync -a --delete ~/saved_omc/${name}/ build/ || exit 1
+    echo "Restoring cached OMC version: ${name}, `cat ~/saved_omc/${name}/.githash`"
+    # The hash says the sources match, not that the binary runs here: a cache
+    # filled on the node before the jobs moved into a container, or before the
+    # image changed, holds an omc linked against libraries that are missing now.
+    # Without this check the run dies much later, when test.py asks the restored
+    # binary for its version and gets exit code 127.
+    if ! build/bin/omc --version; then
+      if test -f ~/saved_omc/${name}/.nogit; then
+        echo "The cached omc of ${name} does not run in this environment, and .nogit forbids rebuilding it."
+        exit 1
+      fi
+      echo "The cached omc of ${name} does not run in this environment; rebuilding it."
+      REBUILD=1
+    fi
+  else
+    REBUILD=1
+  fi
+  if test -n "\$REBUILD"; then
     ${buildOMC}
     rm -rf ~/saved_omc/${name}/
     mkdir -p ~/saved_omc/${name}/
@@ -1080,9 +1102,6 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
     echo \$CMD
     \$CMD || exit 1
     cp .newhash ~/saved_omc/${name}/.githash
-  else
-    rsync -a --delete ~/saved_omc/${name}/ build/ || exit 1
-    echo "Restoring cached OMC version: ${name}, `cat ~/saved_omc/${name}/.githash`"
   fi
   """
 
@@ -1155,7 +1174,9 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
     stdbuf -oL -eL time ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags='${extraFlags}' --extrasimflags='${extrasimflags}' ${testFlags} --branch="${name}" --output="libraries.openmodelica.org:/var/www/libraries.openmodelica.org/branches/${name}/" --libraries='${libraryPath}/.openmodelica/libraries/'  --jobs=${jobs} ${libs_config_file} ${params.OLDLIBS ? "configs/conf-old.json configs/conf-nonstandard.json" : ""} || (killall omc ; false) || exit 1
     """)
     sh 'date'
-    sh "cd OpenModelicaLibraryTesting/ && ./clean-empty-omcversion-dates.py"
+    // In the image: the script talks to the results database through psycopg2,
+    // which is in the image's python environment and not on the node.
+    runSh("cd OpenModelicaLibraryTesting/ && ./clean-empty-omcversion-dates.py")
   }
 
 }
