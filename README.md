@@ -42,6 +42,16 @@ OpenModelica
 [issue tracker](https://github.com/OpenModelica/OpenModelica/issues/new/choose)
 and ask us to do it for you.
 
+### The pipeline
+
+[.CI/Jenkinsfile](.CI/Jenkinsfile) holds the stages; what they do is a function in
+[.CI/common.groovy](.CI/common.groovy), or in [.CI/report.groovy](.CI/report.groovy)
+for the pages published from the results. The `setup` stage loads both, and the
+others reach them as `common.<function>()` and `report.<function>()`. All of it is
+linted on every pull request by
+[.github/workflows/lint-groovy.yml](.github/workflows/lint-groovy.yml), so a
+Jenkinsfile that does not parse is found before a build runs it.
+
 ### The image the OSMC jobs run in
 
 Every job of [.CI/Jenkinsfile](.CI/Jenkinsfile) runs in one docker image, built
