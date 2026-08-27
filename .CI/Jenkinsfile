@@ -385,8 +385,7 @@ pipeline {
         }
         steps {
           runRegressiontest('master', 'wasm-jit', 'setCommandLineOptions("--simCodeTarget=wasm-jit")', '', false, '', '--wasmjitrunner=sim,me,cs', false, false, 0, 'configs/conf.json',
-                            '-DOM_OMC_ENABLE_RUST=ON -DRUST_OMC_CI=ON -DRUST_OMC_THREADS=4 -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache',
-                            '.CI/wasm-jit')
+                            '-DOM_OMC_ENABLE_RUST=ON -DRUST_OMC_CI=ON -DRUST_OMC_THREADS=4 -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache')
         }
       }
       stage('generateSymbolicJacobian') {
@@ -702,7 +701,12 @@ def numLogicalCPU() {
 def omsimulatorHash() {
   return 'master'
 }
-def installLibraries(boolean removePackageOrder, boolean conversionScript, name, String omhomeTestedOMC) {
+/**
+  * Installs the libraries a run tests, with the node's own omc, and returns the home directory
+  * holding them. `runSh` is how the conversion script is run: that one uses the omc that was just
+  * built, which is a binary of the image when the job has one.
+  */
+def installLibraries(boolean removePackageOrder, boolean conversionScript, name, String omhomeTestedOMC, Closure runSh) {
   sh "rm -rf '${env.HOME}/saved_omc/libraries/.openmodelica/libraries'"
   sh "mkdir -p '${env.HOME}/saved_omc/libraries/'"
   sh "HOME='${env.HOME}/saved_omc/libraries/' /usr/bin/omc OpenModelicaLibraryTesting/.CI/installLibraries.mos"
@@ -714,11 +718,11 @@ def installLibraries(boolean removePackageOrder, boolean conversionScript, name,
   sh "cp -ai /mnt/ReferenceFiles/ExtraLibs/packaged/* '${env.HOME}/saved_omc/libraries/'"
   echo "installLibraries removePackageOrder: ${removePackageOrder} conversionScript: ${conversionScript} name: ${name}"
   if (conversionScript) {
-    sh """
+    runSh("""
     cd '${WORKSPACE}/OpenModelicaLibraryTesting'
     OPENMODELICAHOME="${omhomeTestedOMC}" ./conversionscript.py --diff --allowErrorsInDiff '${env.HOME}/saved_omc/libraries/.openmodelica/libraries'
     scp converted-libraries/.openmodelica/libraries/*.diff 'libraries.openmodelica.org:/var/www/libraries.openmodelica.org/branches/${name}'
-    """
+    """)
     return "${WORKSPACE}/OpenModelicaLibraryTesting/converted-libraries"
   } else {
     return "${env.HOME}/saved_omc/libraries"
@@ -808,9 +812,10 @@ def sccachePreamble() {
   *                             This file specifies which libraries to test and what options to use for them.
   * @param cmakeFlags:          Target-specific cmake flags, e.g. `-DOM_OMC_ENABLE_RUST=ON`. If non-empty, omc is
   *                             built with cmake instead of autotools; the shared release flags are added here.
-  * @param dockerfile:          Directory with a Dockerfile, relative to the testing repository, e.g.
-  *                             `.CI/wasm-jit`. If non-empty, the omc build and test.py run in that image
-  *                             instead of on the node; everything using the node's own omc stays outside.
+  * @param dockerfile:          Directory with a Dockerfile, relative to the testing repository. Defaults to
+  *                             `.CI/testing`, the image every job runs in: the omc build, the OMSimulator
+  *                             build and test.py happen inside it, and only the steps using the node's own
+  *                             omc stay outside. Passing `''` runs the job on the node itself.
   */
 /* The FMI simulators a job runs, from the parameters that used to start one job each.
  * Both ticked is one job that builds every FMU once and simulates it with both,
@@ -822,7 +827,7 @@ def fmiSimulators(boolean omsimulator, boolean fmpy) {
   return simulators
 }
 
-def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimflags, testFlags, boolean removePackageOrder, boolean conversionScript, int jobs=0, libs_config_file = 'configs/conf.json', cmakeFlags = '', dockerfile = '', fmiSimulators = null) {
+def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimflags, testFlags, boolean removePackageOrder, boolean conversionScript, int jobs=0, libs_config_file = 'configs/conf.json', cmakeFlags = '', dockerfile = '.CI/testing', fmiSimulators = null) {
   sh '''
   find /tmp  -name "*openmodelica.hudson*" -exec rm {} ";" || true
 
@@ -846,7 +851,10 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
   if (dockerfile) {
     // Build context is the Dockerfile directory; the workspace has a directory per tested model.
     sh "cp OpenModelicaLibraryTesting/requirements.txt OpenModelicaLibraryTesting/${dockerfile}/"
-    image = docker.build("openmodelica-library-testing:${name}", "--pull OpenModelicaLibraryTesting/${dockerfile}")
+    // Tagged after the Dockerfile rather than after the job, so that jobs sharing an image share
+    // its tag as well and a node keeps one of them instead of one per job it has ever run.
+    image = docker.build("openmodelica-library-testing:${dockerfile.tokenize('/').last()}",
+                         "--pull OpenModelicaLibraryTesting/${dockerfile}")
   }
   // --init reaps the omc processes test.py orphans. ssh refuses to run for a uid it cannot look
   // up, so the node's passwd entry is needed to publish the results. The home holds the cached omc
@@ -885,7 +893,9 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
   }
   FMI_TESTING_FLAG = ""
   if (simulators.contains('OMSimulator') && omsHash) {
-    sh """
+    // In the image rather than on the node: test.py runs this binary from inside it, and one built
+    // against the node's libraries need not load there.
+    runSh("""
     if ! test -d OMSimulator; then
       git clone --recursive https://openmodelica.org/git-readonly/OMSimulator.git || exit 1
     fi
@@ -916,16 +926,14 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
     fi
     echo OMSimulator version:
     ${env.HOME}/saved_omc/OMSimulator/install/bin/OMSimulator --version
-    """
+    """)
     FMI_TESTING_FLAG = " --fmisimulator=${env.HOME}/saved_omc/OMSimulator/install/bin/OMSimulator"
   }
 
   if (simulators.contains('fmpy')) {
-    sh """
-    # update fmpy
-    pip install FMPy || true
-    python3 -m fmpy -h || exit 1
-    """
+    // The version is the image's; check it in the interpreter test.py will reach rather than
+    // installing one over it, which in a container would be thrown away with the container.
+    runSh('python3 -m fmpy -h > /dev/null || exit 1')
     FMI_TESTING_FLAG += " --fmisimulator='python3 -m fmpy'"
   }
 
@@ -1117,7 +1125,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
   mkdir -p "/var/www/libraries.openmodelica.org/branches/${name}/"
   """
 
-  def libraryPath = installLibraries(removePackageOrder, conversionScript, name, "${WORKSPACE}/OpenModelica/${OMCPATH}/build")
+  def libraryPath = installLibraries(removePackageOrder, conversionScript, name, "${WORKSPACE}/OpenModelica/${OMCPATH}/build", runSh)
 
   sh "test -d '${libraryPath}/.openmodelica/libraries/Modelica trunk'"
 

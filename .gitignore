@@ -1,5 +1,5 @@
 __pycache__
-/.CI/wasm-jit/requirements.txt
+/.CI/testing/requirements.txt
 !HelloWorld.mo
 !HelloWorld.mos
 /.venv/
