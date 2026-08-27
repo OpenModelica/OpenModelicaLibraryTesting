@@ -1,0 +1,37 @@
+name: Lint Groovy
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  npm-groovy-lint:
+    name: Lint .CI/Jenkinsfile and .CI/common.groovy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Java
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+
+      - name: Install npm-groovy-lint
+        run: npm install --global npm-groovy-lint@18
+
+      # Lints every Jenkinsfile and *.groovy of the repository (the default file
+      # pattern), with the rules in .groovylintrc.json. A syntax error, which is
+      # otherwise found by a Jenkins build that is already running, is reported
+      # here as an error; warnings fail the job as well, and the info-level
+      # findings that remain are style this repository does not follow.
+      - name: Run npm-groovy-lint
+        run: npm-groovy-lint --loglevel warning --failon warning --no-insight

@@ -1,0 +1,32 @@
+{
+  "extends": "recommended-jenkinsfile",
+  "rules": {
+    "DuplicateNumberLiteral": {
+      "enabled": false
+    },
+    "DuplicateStringLiteral": {
+      "enabled": false
+    },
+    "Indentation": {
+      "spacesPerIndentLevel": 2
+    },
+    "LineLength": {
+      "enabled": false
+    },
+    "MethodParameterTypeRequired": {
+      "enabled": false
+    },
+    "MethodSize": {
+      "enabled": false
+    },
+    "ParameterCount": {
+      "maxParameters": 15
+    },
+    "UnnecessaryElseStatement": {
+      "enabled": false
+    },
+    "UnnecessaryGString": {
+      "enabled": false
+    }
+  }
+}
