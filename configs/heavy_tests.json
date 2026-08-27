@@ -70,7 +70,7 @@
     "ulimitMemory":62914560,
     "procOMC":0,
     "procCCompile":0,
-    "optlevel":"-O2 -march=native",
+    "optlevel":"-O0 -march=native",
     "extraCustomCommands":["setCommandLineOptions(\"--newBackend -d=arrayConnect --simCodeScalarize=false\")"]
   }
 ]
