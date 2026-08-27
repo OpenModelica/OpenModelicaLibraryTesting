@@ -60,5 +60,17 @@
     "procCCompile":0,
     "optlevel":"-O0 -march=native",
     "extraCustomCommands":["setCommandLineOptions(\"--newBackend -d=mergeComponents --generateDynamicJacobian=symbolic --maxSizeNonlinearTearing=400\")"]
+  },
+  {
+    "library":"LargeTestSuite",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":"NB_simvec",
+    "ulimitOmc":400,
+    "ulimitExe":400,
+    "ulimitMemory":62914560,
+    "procOMC":0,
+    "procCCompile":0,
+    "optlevel":"-O2 -march=native",
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend -d=arrayConnect --simCodeScalarize=false\")"]
   }
 ]
