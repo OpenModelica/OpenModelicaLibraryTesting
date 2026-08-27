@@ -191,6 +191,155 @@ def fmiSimulators(boolean omsimulator, boolean fmpy) {
 }
 
 /**
+  * Checks out the sources of a run into OpenModelica/OMCompiler of the workspace:
+  * the clone if the node has none, the branch or the pull request ref, and the
+  * submodules. A `.nogit` in the cached build keeps the sources as they are, for
+  * a node the test was set up on by hand.
+  */
+def checkoutOMC(name, String checkoutRef, Closure runSh) {
+  runSh("""
+  if test ! -d OpenModelica; then
+    git clone --recursive https://openmodelica.org/git-readonly/OpenModelica.git OpenModelica
+  fi
+  cd OpenModelica
+  git fetch
+  git reset --hard origin/master
+  # -ff, or the directory of a submodule that has been dropped stays for ever:
+  # git clean skips an untracked directory that is a repository of its own.
+  # libraries/git is the one such directory to keep, the reference file clones
+  # test.py fills GITREPOS with.
+  git clean -ffdx -e /libraries/git
+
+  cd OMCompiler
+
+  if ! test -f ~/saved_omc/${name}/.nogit; then
+    ${checkoutRef}
+    git submodule update --init --recursive --force || (rm -rf * && git reset --hard && git submodule update --init --recursive --force) || exit 1
+    git submodule foreach --recursive  "git fetch --tags --force && git reset --hard && git clean -ffdxq -e /git -e /svn" || exit 1
+    git clean -ffdxq || exit 1
+    git submodule status --recursive
+  fi
+  """)
+}
+
+/**
+  * The shell that builds omc with cmake, in the build_cmake directory next to the
+  * source tree, and reports what the shared compile cache did for it. The target
+  * asking for a cmake build is what `cmakeFlags` comes from; the release flags
+  * every such build shares are here.
+  */
+def cmakeBuild(String cmakeFlags, buildJobs) {
+  // Run from OpenModelica/OMCompiler, one directory below the cmake source tree.
+  return sccachePreamble() + """
+    cmake -S .. -B ../build_cmake
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_INSTALL_PREFIX="`pwd`/build" \
+      -DCMAKE_C_COMPILER=clang \
+      -DCMAKE_CXX_COMPILER=clang++ \
+      -DCMAKE_Fortran_COMPILER=gfortran \
+      -DCMAKE_C_FLAGS=-march=native \
+      -DCMAKE_CXX_FLAGS=-march=native \
+      -DOM_USE_CCACHE=OFF \
+      -DOM_ENABLE_GUI_CLIENTS=OFF \
+      -DOM_ENABLE_OMSIMULATOR=OFF \
+      ${cmakeFlags} || exit 1
+    if ! time cmake --build ../build_cmake --parallel ${buildJobs} --target install > log 2>&1; then
+      cat log
+      exit 1
+    fi
+    build/bin/omc --version || exit 1
+    sccache --show-stats || true
+    """
+}
+
+/**
+  * The shell that builds omc with autotools, which is what a target that does not
+  * ask for a cmake build gets. A failing C++ runtime only fails the build of the
+  * master target: the maintenance branches have been living with it.
+  */
+def autoconfBuild(name, buildJobs) {
+  return """
+    autoreconf --install
+    ./configure --with-cppruntime --without-omc --disable-modelica3d CC=clang CXX=clang++ FC=gfortran CFLAGS='-O2 -march=native' --with-omniORB
+    time make -j${buildJobs} clean
+    if ! time make -j${buildJobs} omc > log 2>&1; then
+      cat log
+      exit 1
+    fi
+    if ! time make -j${buildJobs} runtimeCPPinstall > log 2>&1; then
+      cat log
+      if test "${name}" = "master"; then
+        exit 1
+      else
+        echo "Ignoring failed C++ runtime"
+      fi
+    fi
+    """
+}
+
+/**
+  * Builds omc, or restores the build of the same sources from ~/saved_omc/<name>.
+  * The hash of the checkout is the key of that cache, and a restored build that
+  * does not run here is built again: a cache filled on the node before the jobs
+  * moved into a container, or against an older image, matches by hash but holds a
+  * binary linked against libraries that are missing now.
+  *
+  * Target-specific `cmakeFlags` build omc with cmake and the shared release flags
+  * added here; empty is the autotools build every other target asks for.
+  */
+def buildOrRestoreOMC(name, String cmakeFlags, Closure runSh) {
+  // The build used to say -j9, the cores of the machine this file was written
+  // for in 2019, and -j16, the cores of the ryzen-5950x machines that replaced
+  // it - the commit that raised the others to 16 left the omc build at 9. Named
+  // buildJobs rather than jobs: that is this method's own parameter, how many
+  // models test.py tests at a time.
+  def buildJobs = numPhysicalCPU()
+  echo "Building omc with -j${buildJobs} on ${env.NODE_NAME}"
+
+  def buildOMC = cmakeFlags ? cmakeBuild(cmakeFlags, buildJobs) : autoconfBuild(name, buildJobs)
+
+  runSh("""
+  cd OpenModelica/OMCompiler
+  export OPENMODELICAHOME="`pwd`/build"
+
+  git rev-parse --verify HEAD > .newhash
+  echo New Hash:
+  cat .newhash
+  echo Old Hash:
+  cat ~/saved_omc/${name}/.githash || true
+  REBUILD=""
+  if cmp ~/saved_omc/${name}/.githash .newhash || test -f ~/saved_omc/${name}/.nogit; then
+    rsync -a --delete ~/saved_omc/${name}/ build/ || exit 1
+    echo "Restoring cached OMC version: ${name}, `cat ~/saved_omc/${name}/.githash`"
+    # The hash says the sources match, not that the binary runs here: a cache
+    # filled on the node before the jobs moved into a container, or before the
+    # image changed, holds an omc linked against libraries that are missing now.
+    # Without this check the run dies much later, when test.py asks the restored
+    # binary for its version and gets exit code 127.
+    if ! build/bin/omc --version; then
+      if test -f ~/saved_omc/${name}/.nogit; then
+        echo "The cached omc of ${name} does not run in this environment, and .nogit forbids rebuilding it."
+        exit 1
+      fi
+      echo "The cached omc of ${name} does not run in this environment; rebuilding it."
+      REBUILD=1
+    fi
+  else
+    REBUILD=1
+  fi
+  if test -n "\$REBUILD"; then
+    ${buildOMC}
+    rm -rf ~/saved_omc/${name}/
+    mkdir -p ~/saved_omc/${name}/
+    CMD="rsync -a --delete build/ \$HOME/saved_omc/${name}/"
+    echo \$CMD
+    \$CMD || exit 1
+    cp .newhash ~/saved_omc/${name}/.githash
+  fi
+  """)
+}
+
+/**
   * Launches the test.py script with the given options.
   *
   * @param branch:              OpenModelica branch to test. Will checkout the branch and build omc from it.
@@ -308,7 +457,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, extrasimflags, testFlag
       git submodule sync --recursive || exit 1
       git clean -ffdx || exit 1
       git submodule update --init --recursive --force || exit 1
-      git submodule foreach --recursive  "git fetch --tags --force && git reset --hard && git clean -fdxq -e /git -e /svn" || exit 1
+      git submodule foreach --recursive  "git fetch --tags --force && git reset --hard && git clean -ffdxq -e /git -e /svn" || exit 1
       cmake -S . -B build/ -DCMAKE_INSTALL_PREFIX=install/
       cmake --build build/ --target install || exit 1
       ./install/bin/OMSimulator --version || exit 1
@@ -367,51 +516,6 @@ def runRegressiontest(branch, name, extraFlags, omsHash, extrasimflags, testFlag
     git reset --hard && git checkout -f "${branch}" && (git rev-parse --verify "tags/${branch}"  || (git reset --hard "origin/${branch}" && git pull)) && git fetch --tags --force || exit 1
 """
 
-  // The build used to say -j9, the cores of the machine this file was written
-  // for in 2019, and -j16, the cores of the ryzen-5950x machines that replaced
-  // it - the commit that raised the others to 16 left the omc build at 9. Named
-  // buildJobs rather than jobs: that is this method's own parameter, how many
-  // models test.py tests at a time.
-  def buildJobs = numPhysicalCPU()
-  echo "Building omc with -j${buildJobs} on ${env.NODE_NAME}"
-
-  def buildOMC
-  if (cmakeFlags) {
-    // Run from OpenModelica/OMCompiler, one directory below the cmake source tree.
-    buildOMC = sccachePreamble() + """
-    cmake -S .. -B ../build_cmake -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_INSTALL_PREFIX="`pwd`/build" \
-      -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_Fortran_COMPILER=gfortran \
-      -DCMAKE_C_FLAGS=-march=native -DCMAKE_CXX_FLAGS=-march=native \
-      -DOM_USE_CCACHE=OFF -DOM_ENABLE_GUI_CLIENTS=OFF -DOM_ENABLE_OMSIMULATOR=OFF \
-      ${cmakeFlags} || exit 1
-    if ! time cmake --build ../build_cmake --parallel ${buildJobs} --target install > log 2>&1; then
-      cat log
-      exit 1
-    fi
-    build/bin/omc --version || exit 1
-    sccache --show-stats || true
-    """
-  } else {
-    buildOMC = """
-    autoreconf --install
-    ./configure --with-cppruntime --without-omc --disable-modelica3d CC=clang CXX=clang++ FC=gfortran CFLAGS='-O2 -march=native' --with-omniORB
-    time make -j${buildJobs} clean
-    if ! time make -j${buildJobs} omc > log 2>&1; then
-      cat log
-      exit 1
-    fi
-    if ! time make -j${buildJobs} runtimeCPPinstall > log 2>&1; then
-      cat log
-      if test "${name}" = "master"; then
-        exit 1
-      else
-        echo "Ignoring failed C++ runtime"
-      fi
-    fi
-    """
-  }
-
   sh '''
   FREE=`df -k --output=avail "$PWD" | tail -n1`   # df -k not df -h
   if test "$FREE" -lt 31457280; then               # 30G = 30*1024*1024k
@@ -422,67 +526,12 @@ def runRegressiontest(branch, name, extraFlags, omsHash, extrasimflags, testFlag
 
   sh 'killall omc || true'
 
-  def checkoutAndBuild = """
-  if test ! -d OpenModelica; then
-    git clone --recursive https://openmodelica.org/git-readonly/OpenModelica.git OpenModelica
-  fi
-  cd OpenModelica
-  git fetch
-  git reset --hard origin/master
-  git clean -fdx
-
-  cd OMCompiler
-
-  if ! test -f ~/saved_omc/${name}/.nogit; then
-    ${checkoutRef}
-    git submodule update --init --recursive --force || (rm -rf * && git reset --hard && git submodule update --init --recursive --force) || exit 1
-    git submodule foreach --recursive  "git fetch --tags --force && git reset --hard && git clean -fdxq -e /git -e /svn" || exit 1
-    git clean -fdxq || exit 1
-    git submodule status --recursive
-  fi
-
-  export OPENMODELICAHOME="`pwd`/build"
-
-  git rev-parse --verify HEAD > .newhash
-  echo New Hash:
-  cat .newhash
-  echo Old Hash:
-  cat ~/saved_omc/${name}/.githash || true
-  REBUILD=""
-  if cmp ~/saved_omc/${name}/.githash .newhash || test -f ~/saved_omc/${name}/.nogit; then
-    rsync -a --delete ~/saved_omc/${name}/ build/ || exit 1
-    echo "Restoring cached OMC version: ${name}, `cat ~/saved_omc/${name}/.githash`"
-    # The hash says the sources match, not that the binary runs here: a cache
-    # filled on the node before the jobs moved into a container, or before the
-    # image changed, holds an omc linked against libraries that are missing now.
-    # Without this check the run dies much later, when test.py asks the restored
-    # binary for its version and gets exit code 127.
-    if ! build/bin/omc --version; then
-      if test -f ~/saved_omc/${name}/.nogit; then
-        echo "The cached omc of ${name} does not run in this environment, and .nogit forbids rebuilding it."
-        exit 1
-      fi
-      echo "The cached omc of ${name} does not run in this environment; rebuilding it."
-      REBUILD=1
-    fi
-  else
-    REBUILD=1
-  fi
-  if test -n "\$REBUILD"; then
-    ${buildOMC}
-    rm -rf ~/saved_omc/${name}/
-    mkdir -p ~/saved_omc/${name}/
-    CMD="rsync -a --delete build/ \$HOME/saved_omc/${name}/"
-    echo \$CMD
-    \$CMD || exit 1
-    cp .newhash ~/saved_omc/${name}/.githash
-  fi
-  """
+  checkoutOMC(name, checkoutRef, runSh)
 
   if (cmakeFlags) {
-    withSccache { runSh(checkoutAndBuild) }
+    withSccache { buildOrRestoreOMC(name, cmakeFlags, runSh) }
   } else {
-    runSh(checkoutAndBuild)
+    buildOrRestoreOMC(name, cmakeFlags, runSh)
   }
 
   sh """
