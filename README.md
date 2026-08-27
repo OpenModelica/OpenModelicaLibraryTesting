@@ -42,6 +42,35 @@ OpenModelica
 [issue tracker](https://github.com/OpenModelica/OpenModelica/issues/new/choose)
 and ask us to do it for you.
 
+### The image the OSMC jobs run in
+
+Every job of [.CI/Jenkinsfile](.CI/Jenkinsfile) runs in one docker image, built
+from [.CI/testing/Dockerfile](.CI/testing/Dockerfile) at the start of the job
+and with `--pull`, so a rebuilt base is picked up on its own. What a node needs
+is then docker, git and an ssh key to publish the results with; the compilers,
+the python environment, the `omc` that generates the mos files, FMPy and the
+packages the tested libraries need are the image's, not the machine's, and a job
+moved to another machine tests what it tested before.
+
+The omc build, the OMSimulator build and `test.py` run inside the image; the
+steps that use the node's own `omc` - installing the libraries and preparing the
+reference files - stay outside it. The node's home directory is mounted, so the
+cached omc build in `~/saved_omc`, the installed libraries and the ssh key are
+the files they always were, and so is `/mnt/ReferenceFiles`, where the
+maintenance job installs the reference results: the container reads the same
+directory the node does, and writes the hash `test.py` keeps next to a reference
+file back into it. The container is capped at 85% of the node's memory, which a
+job running on the node itself was not.
+
+A dependency a library needs is therefore a line in the Dockerfile rather than
+an `apt-get install` repeated on every machine:
+
+```bash
+cp requirements.txt .CI/testing/          # the build context has to carry it
+docker build -t openmodelica-library-testing:testing .CI/testing
+docker run --rm -it openmodelica-library-testing:testing bash
+```
+
 ## Running the library testing infrastructure on your own server
 
 The scripts from this repository can be used to run regression tests for public,
