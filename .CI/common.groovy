@@ -201,7 +201,6 @@ def fmiSimulators(boolean omsimulator, boolean fmpy) {
   *                             a tag, or a ref of the remote such as `origin/master`. Not a local
   *                             branch name - `git fetch` does not update those, so resetting to one
   *                             keeps whatever commit the workspace was left at. Empty tests no FMUs.
-  * @param omcompiler:          Checkout old OMCompiler submodule. Should be `false` nowadays.
   * @param extrasimflags:       Additional simulation flags passed to test.py via flag `--extrasimflags`.
   * @param testFlags:           Additional flags passed to test.py verbatim, e.g. `--nobuildmodel`.
   * @param removePackageOrder:  Passed to `installLibraries`.
@@ -218,7 +217,7 @@ def fmiSimulators(boolean omsimulator, boolean fmpy) {
   *                             build and test.py happen inside it, and only the steps using the node's own
   *                             omc stay outside. Passing `''` runs the job on the node itself.
   */
-def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimflags, testFlags, boolean removePackageOrder, boolean conversionScript, int jobs=0, libsConfigFile = 'configs/conf.json', cmakeFlags = '', dockerfile = '.CI/testing', fmiSimulators = null) {
+def runRegressiontest(branch, name, extraFlags, omsHash, extrasimflags, testFlags, boolean removePackageOrder, boolean conversionScript, int jobs=0, libsConfigFile = 'configs/conf.json', cmakeFlags = '', dockerfile = '.CI/testing', fmiSimulators = null) {
   sh '''
   find /tmp  -name "*openmodelica.hudson*" -exec rm {} ";" || true
 
@@ -368,12 +367,6 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
     git reset --hard && git checkout -f "${branch}" && (git rev-parse --verify "tags/${branch}"  || (git reset --hard "origin/${branch}" && git pull)) && git fetch --tags --force || exit 1
 """
 
-  def OMCPATH = "${omcompiler ? '../' : './'}OMCompiler"
-
-  // The build runs in OMCompiler, one level below the cmake source tree.
-  if (cmakeFlags && omcompiler) {
-    error 'cmake builds need the OMCompiler directory of the OpenModelica repository (omcompiler=false)'
-  }
   // The build used to say -j9, the cores of the machine this file was written
   // for in 2019, and -j16, the cores of the ryzen-5950x machines that replaced
   // it - the commit that raised the others to 16 left the omc build at 9. Named
@@ -384,6 +377,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
 
   def buildOMC
   if (cmakeFlags) {
+    // Run from OpenModelica/OMCompiler, one directory below the cmake source tree.
     buildOMC = sccachePreamble() + """
     cmake -S .. -B ../build_cmake -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_INSTALL_PREFIX="`pwd`/build" \
@@ -401,7 +395,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
   } else {
     buildOMC = """
     autoreconf --install
-    ./configure --with-cppruntime --without-omc --disable-modelica3d CC=clang CXX=clang++ FC=gfortran CFLAGS='-O2 -march=native' --with-omlibrary=all --with-omniORB
+    ./configure --with-cppruntime --without-omc --disable-modelica3d CC=clang CXX=clang++ FC=gfortran CFLAGS='-O2 -march=native' --with-omniORB
     time make -j${buildJobs} clean
     if ! time make -j${buildJobs} omc > log 2>&1; then
       cat log
@@ -432,23 +426,12 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
   if test ! -d OpenModelica; then
     git clone --recursive https://openmodelica.org/git-readonly/OpenModelica.git OpenModelica
   fi
-  if test ! -d OMCompiler; then
-    git clone --recursive https://openmodelica.org/git-readonly/OMCompiler.git OMCompiler
-  fi
-  if test ! -d OMLibraries; then
-    git clone --recursive https://openmodelica.org/git-readonly/OMLibraries.git OMLibraries
-  fi
-  cd OMLibraries
+  cd OpenModelica
   git fetch
-  git reset --hard origin/library-coverage
-
-  cd ../OpenModelica
-  git fetch
-  rm -rf OMCompiler # Make sure the old submodule is not there
   git reset --hard origin/master
   git clean -fdx
 
-  cd ${OMCPATH}
+  cd OMCompiler
 
   if ! test -f ~/saved_omc/${name}/.nogit; then
     ${checkoutRef}
@@ -504,13 +487,6 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
 
   sh """
   cd OpenModelica
-  rm -rf "`pwd`/${OMCPATH}/build/lib/omlibrary/"
-  mkdir -p "`pwd`/${OMCPATH}/build/lib/omlibrary/"
-  # (cd ../OMLibraries && git rev-parse HEAD)
-  # if ! time make -j16 -C ../OMLibraries all BUILD_DIR="`pwd`/${OMCPATH}/build/lib/omlibrary/" > log 2>&1; then
-  #   cat log
-  #   exit 1
-  # fi
   if ! time make -j${numLogicalCPU()} -C testsuite/ReferenceFiles > log 2>&1; then
     cat log
     exit 1
@@ -535,7 +511,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
   mkdir -p "/var/www/libraries.openmodelica.org/branches/${name}/"
   """
 
-  def libraryPath = installLibraries(removePackageOrder, conversionScript, name, "${env.WORKSPACE}/OpenModelica/${OMCPATH}/build", runSh)
+  def libraryPath = installLibraries(removePackageOrder, conversionScript, name, "${env.WORKSPACE}/OpenModelica/OMCompiler/build", runSh)
 
   sh "test -d '${libraryPath}/.openmodelica/libraries/Modelica trunk'"
 
@@ -546,7 +522,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
   // workspace of a node, and the pipeline has agent none.
   withCredentials([file(credentialsId: 'omdb-pgpass', variable: 'PGPASSFILE')]) {
     runSh("""
-    export OPENMODELICAHOME="${env.WORKSPACE}/OpenModelica/${OMCPATH}/build"
+    export OPENMODELICAHOME="${env.WORKSPACE}/OpenModelica/OMCompiler/build"
     export MSLREFERENCE="${MSLREFERENCE}"
     export REFERENCEFILES="${REFERENCEFILES}"
     export GITREPOS="${GITREPOS}"

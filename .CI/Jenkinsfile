@@ -87,7 +87,7 @@ pipeline {
             expression { params.v1_26 }
           }
           steps {
-            script { common.runRegressiontest('maintenance/v1.26', 'v1.26', '', '', false, '', '', false, false) }
+            script { common.runRegressiontest('maintenance/v1.26', 'v1.26', '', '', '', '', false, false) }
           }
         }
 
@@ -104,7 +104,7 @@ pipeline {
             expression { params.v1_27 }
           }
           steps {
-            script { common.runRegressiontest('maintenance/v1.27', 'v1.27', '', '', false, '', '', false, false) }
+            script { common.runRegressiontest('maintenance/v1.27', 'v1.27', '', '', '', '', false, false) }
           }
         }
 
@@ -121,7 +121,7 @@ pipeline {
             expression { params.master }
           }
           steps {
-            script { common.runRegressiontest('master', 'master', '', '', false, '', '', false, false) }
+            script { common.runRegressiontest('master', 'master', '', '', '', '', false, false) }
           }
         }
 
@@ -138,7 +138,7 @@ pipeline {
             expression { params.conversion_script }
           }
           steps {
-            script { common.runRegressiontest('master', 'conversion', '', '', false, '', '', false, true) }
+            script { common.runRegressiontest('master', 'conversion', '', '', '', '', false, true) }
           }
         }
 
@@ -159,7 +159,7 @@ pipeline {
               common.checkPullRequestNumber()
               common.checkPullRequestExists()
               common.removeStalePullRequestBuilds()
-              common.runRegressiontest("pr/${common.pullRequest()}", "pr/${common.pullRequest()}", '', '', false, '', '', false, false, 0, params.pull_request_config ?: 'configs/conf.json')
+              common.runRegressiontest("pr/${common.pullRequest()}", "pr/${common.pullRequest()}", '', '', '', '', false, false, 0, params.pull_request_config ?: 'configs/conf.json')
             }
           }
         }
@@ -177,7 +177,7 @@ pipeline {
             expression { params.newInst_newBackend }
           }
           steps {
-            script { common.runRegressiontest('master', 'newInst-newBackend', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --newBackend")', '', false, '', '', false, false) }
+            script { common.runRegressiontest('master', 'newInst-newBackend', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --newBackend")', '', '', '', false, false) }
           }
         }
 
@@ -194,7 +194,7 @@ pipeline {
             expression { params.fmi_v1_26 || params.fmpy_fmi_v1_26 }
           }
           steps {
-            script { common.runRegressiontest('maintenance/v1.26', 'v1.26-fmi', '', omsimulatorRef, false, '', '', false, false, 0, 'configs/conf.json', '', '', common.fmiSimulators(params.fmi_v1_26, params.fmpy_fmi_v1_26)) }
+            script { common.runRegressiontest('maintenance/v1.26', 'v1.26-fmi', '', omsimulatorRef, '', '', false, false, 0, 'configs/conf.json', '', '', common.fmiSimulators(params.fmi_v1_26, params.fmpy_fmi_v1_26)) }
           }
         }
         stage('v1.27 FMI') {
@@ -210,7 +210,7 @@ pipeline {
             expression { params.fmi_v1_27 || params.fmpy_fmi_v1_27 }
           }
           steps {
-            script { common.runRegressiontest('maintenance/v1.27', 'v1.27-fmi', '', omsimulatorRef, false, '', '', false, false, 0, 'configs/conf.json', '', '', common.fmiSimulators(params.fmi_v1_27, params.fmpy_fmi_v1_27)) }
+            script { common.runRegressiontest('maintenance/v1.27', 'v1.27-fmi', '', omsimulatorRef, '', '', false, false, 0, 'configs/conf.json', '', '', common.fmiSimulators(params.fmi_v1_27, params.fmpy_fmi_v1_27)) }
           }
         }
         stage('master FMI') {
@@ -226,7 +226,7 @@ pipeline {
             expression { params.fmi_master || params.fmpy_fmi_master }
           }
           steps {
-            script { common.runRegressiontest('master', 'master-fmi', '', omsimulatorRef, false, '', '', false, false, 0, 'configs/conf.json', '', '', common.fmiSimulators(params.fmi_master, params.fmpy_fmi_master)) }
+            script { common.runRegressiontest('master', 'master-fmi', '', omsimulatorRef, '', '', false, false, 0, 'configs/conf.json', '', '', common.fmiSimulators(params.fmi_master, params.fmpy_fmi_master)) }
           }
         }
 
@@ -243,7 +243,7 @@ pipeline {
             expression { params.cs_fmu_cvode_v1_26 }
           }
           steps {
-            script { common.runRegressiontest('maintenance/v1.26', 'v1.26-cs-fmu-cvode', 'setCommandLineOptions("--fmiFlags=s:cvode --fmuRuntimeDepends=modelica")', omsimulatorRef, false, '', '', false, false) }
+            script { common.runRegressiontest('maintenance/v1.26', 'v1.26-cs-fmu-cvode', 'setCommandLineOptions("--fmiFlags=s:cvode --fmuRuntimeDepends=modelica")', omsimulatorRef, '', '', false, false) }
           }
         }
         stage('v1.27 CVODE CS-FMUs with OMSimulator') {
@@ -259,7 +259,7 @@ pipeline {
             expression { params.cs_fmu_cvode_v1_27 }
           }
           steps {
-            script { common.runRegressiontest('maintenance/v1.27', 'v1.27-cs-fmu-cvode', 'setCommandLineOptions("--fmiFlags=s:cvode --fmuRuntimeDepends=modelica")', omsimulatorRef, false, '', '', false, false) }
+            script { common.runRegressiontest('maintenance/v1.27', 'v1.27-cs-fmu-cvode', 'setCommandLineOptions("--fmiFlags=s:cvode --fmuRuntimeDepends=modelica")', omsimulatorRef, '', '', false, false) }
           }
         }
         stage('master CVODE CS-FMUs with OMSimulator') {
@@ -275,7 +275,7 @@ pipeline {
             expression { params.cs_fmu_cvode_master }
           }
           steps {
-            script { common.runRegressiontest('master', 'master-cs-fmu-cvode', 'setCommandLineOptions("--fmiFlags=s:cvode --fmuRuntimeDepends=modelica")', omsimulatorRef, false, '', '', false, false) }
+            script { common.runRegressiontest('master', 'master-cs-fmu-cvode', 'setCommandLineOptions("--fmiFlags=s:cvode --fmuRuntimeDepends=modelica")', omsimulatorRef, '', '', false, false) }
           }
         }
 
@@ -292,7 +292,7 @@ pipeline {
             expression { params.newInst_daeMode }
           }
           steps {
-            script { common.runRegressiontest('master', 'newInst-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --daeMode=true")', '', false, '', '', false, false) }
+            script { common.runRegressiontest('master', 'newInst-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --daeMode=true")', '', '', '', false, false) }
           }
         }
         stage('newBackend-daeMode') {
@@ -308,7 +308,7 @@ pipeline {
             expression { params.newBackend_daeMode }
           }
           steps {
-            script { common.runRegressiontest('master', 'newBackend-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --newBackend --daeMode=true")', '', false, '', '', false, false) }
+            script { common.runRegressiontest('master', 'newBackend-daeMode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck --newBackend --daeMode=true")', '', '', '', false, false) }
           }
         }
         stage('oldInst') {
@@ -324,7 +324,7 @@ pipeline {
             expression { params.oldInst }
           }
           steps {
-            script { common.runRegressiontest('master', 'oldInst', 'setCommandLineOptions("-d=nonewInst")', '', false, '', '', false, false) }
+            script { common.runRegressiontest('master', 'oldInst', 'setCommandLineOptions("-d=nonewInst")', '', '', '', false, false) }
           }
         }
         stage('cvode') {
@@ -340,7 +340,7 @@ pipeline {
             expression { params.cvode }
           }
           steps {
-            script { common.runRegressiontest('master', 'cvode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', false, '-s cvode', '', false, false) }
+            script { common.runRegressiontest('master', 'cvode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', '-s cvode', '', false, false) }
           }
         }
         stage('gbode') {
@@ -356,7 +356,7 @@ pipeline {
             expression { params.gbode }
           }
           steps {
-            script { common.runRegressiontest('master', 'gbode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', false, '-s gbode -gbm=radauIIA3', '', false, false) }
+            script { common.runRegressiontest('master', 'gbode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', '-s gbode -gbm=radauIIA3', '', false, false) }
           }
         }
         stage('ida') {
@@ -372,7 +372,7 @@ pipeline {
             expression { params.ida }
           }
           steps {
-            script { common.runRegressiontest('master', 'ida', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', false, '-s ida', '', false, false) }
+            script { common.runRegressiontest('master', 'ida', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', '-s ida', '', false, false) }
           }
         }
         stage('wasm-jit') {
@@ -389,7 +389,7 @@ pipeline {
           }
           steps {
             script {
-              common.runRegressiontest('master', 'wasm-jit', 'setCommandLineOptions("--simCodeTarget=wasm-jit")', '', false, '', '--wasmjitrunner=sim,me,cs', false, false, 0, 'configs/conf.json',
+              common.runRegressiontest('master', 'wasm-jit', 'setCommandLineOptions("--simCodeTarget=wasm-jit")', '', '', '--wasmjitrunner=sim,me,cs', false, false, 0, 'configs/conf.json',
                                        '-DOM_OMC_ENABLE_RUST=ON -DRUST_OMC_CI=ON -DRUST_OMC_THREADS=4 -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache')
             }
           }
@@ -407,7 +407,7 @@ pipeline {
             expression { params.generateSymbolicJacobian }
           }
           steps {
-            script { common.runRegressiontest('master', 'generateSymbolicJacobian', 'setCommandLineOptions("--generateSymbolicJacobian")', '', false, '', '', false, false) }
+            script { common.runRegressiontest('master', 'generateSymbolicJacobian', 'setCommandLineOptions("--generateSymbolicJacobian")', '', '', '', false, false) }
           }
         }
         stage('heavy_tests') {
@@ -423,7 +423,7 @@ pipeline {
             expression { params.heavy_tests }
           }
           steps {
-            script { common.runRegressiontest('master', 'heavy_tests', '', '', false, '', '', false, false, 1, 'configs/heavy_tests.json') }
+            script { common.runRegressiontest('master', 'heavy_tests', '', '', '', '', false, false, 1, 'configs/heavy_tests.json') }
           }
         }
 
@@ -440,7 +440,7 @@ pipeline {
             expression { params.cpp_v1_26 }
           }
           steps {
-            script { common.runRegressiontest('maintenance/v1.26', 'v1.26-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', false, '', '', false, false) }
+            script { common.runRegressiontest('maintenance/v1.26', 'v1.26-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', '', '', false, false) }
           }
         }
         stage('C++ v1.27') {
@@ -456,7 +456,7 @@ pipeline {
             expression { params.cpp_v1_27 }
           }
           steps {
-            script { common.runRegressiontest('maintenance/v1.27', 'v1.27-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', false, '', '', false, false) }
+            script { common.runRegressiontest('maintenance/v1.27', 'v1.27-cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', '', '', false, false) }
           }
         }
 
@@ -473,7 +473,7 @@ pipeline {
             expression { params.cpp }
           }
           steps {
-            script { common.runRegressiontest('master', 'cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', false, '', '', false, false) }
+            script { common.runRegressiontest('master', 'cpp', 'setCommandLineOptions("--simCodeTarget=Cpp")', '', '', '', false, false) }
           }
         }
       }
