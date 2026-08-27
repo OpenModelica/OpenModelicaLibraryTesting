@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import argparse, os, sys, signal, threading, psutil, subprocess, shutil
+import argparse, os, re, sys, signal, threading, psutil, subprocess, shutil
 from asyncio.subprocess import STDOUT
 import simplejson as json
 from monotonic import monotonic
@@ -471,6 +471,27 @@ if conf["simCodeTarget"] in ("C","wasm-jit") and sendExpressionOldOrNew('classAn
       with open(errFile, 'a+') as fp:
         fp.write("Ignoring simflag %s since the simulation runtime does not accept it\n" % flagVal)
 
+commandLineOptionsRe = re.compile(r'__OpenModelica_commandLineOptions\s*=\s*\\?"([^"\\]*)')
+
+def modelCommandLineOptions():
+  """The flags the model's __OpenModelica_commandLineOptions annotation sets.
+
+  omc applies them itself inside simulate()/buildModelFMU(); the testing needs to
+  know about them beforehand to pick how the model can be run at all.
+  """
+  if not sendExpressionOldOrNew('classAnnotationExists(%s, __OpenModelica_commandLineOptions)' % conf["modelName"]):
+    return ""
+  opts = []
+  for i in range(1, (sendExpressionOldOrNew('getAnnotationCount(%s)' % conf["modelName"]) or 0) + 1):
+    text = sendExpressionOldOrNew('getNthAnnotationString(%s, %d)' % (conf["modelName"], i)) or ""
+    opts += commandLineOptionsRe.findall(text)
+  return " ".join(opts)
+
+# A --daeMode model has no explicit ODE, so it has no FMI Model Exchange
+# interface: the export drops ME and the artifact serves Co-Simulation (and its
+# own simulation) only. Drop the runners that ask for what is not there.
+daeMode = useArtifact and "--daeMode" in (modelCommandLineOptions() + " " + " ".join(str(c) for c in conf["customCommands"]))
+
 def simulateCmd(resimulate):
   simflags = ("%s %s %s -lv LOG_STATS" % (annotationSimFlags,conf["simFlags"],emit_protected)).strip()
   return 'simulate(%s,startTime=%g,stopTime=%g,tolerance=%g,numberOfIntervals=%d,outputFormat="%s",variableFilter="%s",fileNamePrefix="%s",simflags="%s"%s)' % (conf["modelName"],startTime,stopTime,tolerance,numberOfIntervals,outputFormat,variableFilter,conf["fileName"],simflags,(',resimulateExecutable="%s"' % conf["fileName"]) if resimulate else "")
@@ -622,6 +643,13 @@ fmisimulators = shared.parseFmiSimulators(conf.get("fmisimulators")) if conf.get
 if conf.get("fmi") and not fmisimulators and fmisimulator:
   fmisimulators = shared.parseFmiSimulators([fmisimulator])
 wasmjitrunners = shared.parseWasmJitRunners(conf.get("wasmjitrunners")) if useArtifact else []
+if daeMode:
+  meRunners = [name for (name, flags) in wasmjitrunners if ":me:" in flags or flags.endswith(":me")]
+  if meRunners:
+    with open(errFile, 'a+') as fp:
+      fp.write("The model asks for --daeMode, which has no FMI Model Exchange interface: "
+               "not running %s\n" % ", ".join(meRunners))
+    wasmjitrunners = [r for r in wasmjitrunners if r[0] not in meRunners]
 # One build, several runs: an FMU simulated by several tools and a wasm artifact
 # run several ways fan out the same way, so they share the naming below.
 runners = fmisimulators or wasmjitrunners
