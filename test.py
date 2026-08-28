@@ -38,6 +38,7 @@ parser.add_argument('--nobuildmodel', action="store_true", help="Translate, buil
 parser.add_argument('--coldhot', action="store_true", help="Simulate each model twice in the same omc; the second run reuses the compiled module. Both times are printed, but only the hot one is stored. Only used by simCodeTarget=wasm-jit.", default=False)
 parser.add_argument('--fmisimulator', action='append', default=[], help="FMI simulator to run the FMUs with, as 'name=command' or just the command. Repeat it to simulate every FMU with several tools without building it more than once; the first one stores its results in --branch and each further one in <branch>-<name>, so --branch=master-fmi with OMSimulator and fmpy fills master-fmi and master-fmi-fmpy." )
 parser.add_argument('--wasmjitrunner', action='append', default=[], help="Export every model once as a wasm artifact (buildModelFMU with fmuType=me_cs, platforms={wasm,<this machine>}) and simulate that one artifact each of these ways: 'sim' runs the translated model the way simulate() does, 'me' and 'cs' the artifact's FMI 3.0 interfaces. Comma-separated or repeated; the first fills --branch and each further one <branch>-<name>, so --branch=master-wasm-jit with sim,me,cs fills master-wasm-jit, master-wasm-jit-me and master-wasm-jit-cs. See configs/wasm-jit-runners.json. Only for simCodeTarget=wasm-jit.")
+parser.add_argument('--solver', action='append', default=[], help="Build every model once and simulate it once per solver, so that testing another solver costs a simulation rather than a build. 'default' is the model's own solver and each further name is a -s the simulation is given; comma-separated or repeated. Every solver stores its results in the table its entry names, so --branch=master with default,cvode,gbode fills master, cvode and gbode. See configs/solvers.json.")
 parser.add_argument('--ulimitvmem', help="Virtual memory limit (in kB) (linux only)", type=int, default=8*1024*1024)
 parser.add_argument('--default', action='append', help="Add a default value for some configuration key, such as --default=ulimitExe=60. The equals sign is mandatory.", default=[])
 parser.add_argument('-j', '--jobs', default=0, help="Ignored and deprecated, use procOMC:0 or procOMC:1 in the config")
@@ -73,26 +74,25 @@ fmisimulators = shared.parseFmiSimulators(args.fmisimulator)
 # The first simulator is the one the single-simulator code paths use.
 fmisimulator = fmisimulators[0][1] if fmisimulators else None
 wasmjitrunners = shared.parseWasmJitRunners(args.wasmjitrunner)
-if fmisimulators and wasmjitrunners:
-  raise Exception("--fmisimulator and --wasmjitrunner both fan one build out into several result "
-                  "branches; a job runs one of them, not both.")
-# Everything one build is simulated by, whichever of the two it is.
-runnerNames = [n for (n, _) in fmisimulators or wasmjitrunners]
+solvers = shared.parseSolvers(args.solver)
+if len([x for x in (fmisimulators, wasmjitrunners, solvers) if x]) > 1:
+  raise Exception("--fmisimulator, --wasmjitrunner and --solver each fan one build out into several "
+                  "result branches; a job runs one of them, not several.")
+# Everything one build is simulated by, whichever of the three it is.
+runnerNames = [n for (n, _) in fmisimulators or wasmjitrunners or solvers]
 
 def branchForRunner(name):
-  return (shared.branchForSimulator(branch, name) if fmisimulators
-          else shared.branchForWasmJitRunner(branch, name))
+  if fmisimulators:
+    return shared.branchForSimulator(branch, name)
+  if wasmjitrunners:
+    return shared.branchForWasmJitRunner(branch, name)
+  return shared.branchForSolver(branch, name)
 
-# One branch per simulator. The first reports itself in the results of the
-# model and the others under their own name, but every one of them stores its
-# results where its own simulator belongs: a job given only FMPy on
-# --branch=v1.27-fmi fills v1.27-fmi-fmpy, not v1.27-fmi.
-resultBranches = [(branch, None)]
-if runnerNames:
-  resultBranches = [(branchForRunner(runnerNames[0]), None)]
-  for simulatorName in runnerNames[1:]:
-    resultBranches.append((branchForRunner(simulatorName), simulatorName))
-# What the run asks about when it looks for results it already has.
+# One branch per runner, where its own runner belongs: a job given only FMPy on
+# --branch=v1.27-fmi fills v1.27-fmi-fmpy, not v1.27-fmi. Which of them a library
+# is run for is decided per library, see runnersToRun.
+resultBranches = [(branchForRunner(name), name) for name in runnerNames] or [(branch, None)]
+# What the run asks about when it has no library to ask about.
 primaryBranch = resultBranches[0][0]
 
 jobOutput = result_location
@@ -603,6 +603,43 @@ def hashReferenceFiles(s):
   res = "".join([getmd5(f) for f in files])
   return res+"fixCorruptBuilds-2017-06-21"
 
+def haveResultsFor(resultBranch, libName, conf):
+  """The newest run of that library in that branch, or None when there is none."""
+  return cursor.execute("""SELECT date,libversion,libname,branch,omcversion FROM libversion NATURAL JOIN omcversion
+  WHERE libversion=? AND libname=? AND branch=? AND omcversion=? AND confighash=? ORDER BY date DESC LIMIT 1""",
+                        (conf["libraryLastChange"], libName, resultBranch, omc_version, conf["confighash"])).fetchone()
+
+def runnersToRun(libName, conf):
+  """The runners of the job that still owe this library its results.
+
+  The branches are not filled at the same rate - master is tested twice a day,
+  cvode and gbode once a week, ida now and then - so a library with anything
+  left to do is built again and simulated only by the runners missing it.
+  """
+  return [name for (resultBranch, name) in resultBranches
+          if execAllTests or haveResultsFor(resultBranch, libName, conf) is None]
+
+def restrictRunners(conf, names):
+  """Tell testmodel.py which runners of the job this library is to be run by."""
+  if fmisimulators:
+    chosen = [(n, c) for (n, c) in fmisimulators if n in names]
+    conf["fmisimulator"] = chosen[0][1]
+    conf["fmisimulators"] = ["%s=%s" % (n, c) for (n, c) in chosen]
+  elif wasmjitrunners:
+    conf["wasmjitrunners"] = names
+  elif solvers:
+    conf["solvers"] = names
+
+def ranRunner(libname, runner):
+  """Whether the run owed that library the results of that runner."""
+  return runner is None or runner in stats_by_libname[libname]["runners"]
+
+def simulatorKey(libname, runner):
+  """How that runner's results are stored in a model's data: the first runner of
+  a library reports itself in the keys of the model, the others under their name."""
+  runners = stats_by_libname[libname]["runners"]
+  return None if not runner or runner == runners[0] else runner
+
 stats_by_libname = {}
 skipped_libs = {}
 # A library that did not load cannot be told apart from one with no models left.
@@ -659,6 +696,8 @@ for (library,conf) in configs:
     conf["fmuType"] = fmuType
   if wasmjitrunners:
     conf["wasmjitrunners"] = [n for (n, _) in wasmjitrunners]
+  if solvers:
+    conf["solvers"] = [n for (n, _) in solvers]
   if (not canChangeOptLevel) and "optlevel" in conf:
     print("Deleting optlevel")
     del conf["optlevel"]
@@ -773,22 +812,26 @@ for (library,conf) in configs:
       prefix = conf["ignoreModelPrefix"]
       res=list(filter(lambda x: not x.startswith(prefix), res))
   libName=shared.libname(library, conf)
-  v = cursor.execute("""SELECT date,libversion,libname,branch,omcversion FROM libversion NATURAL JOIN omcversion
-  WHERE libversion=? AND libname=? AND branch=? AND omcversion=? AND confighash=? ORDER BY date DESC LIMIT 1""", (conf["libraryLastChange"],libName,primaryBranch,omc_version,confighash)).fetchone()
+  todo = runnersToRun(libName, conf)
   if libName in stats_by_libname or libName in skipped_libs:
     raise Exception("Duplicate libName found: %s" % libName)
-  if v is None or execAllTests:
+  if todo:
     # On the shared database another machine may already be running this exact
-    # job; claiming it is what keeps the two from testing the same thing.
-    if not db.claim(primaryBranch, libName, conf["libraryLastChange"], omc_version, confighash):
-      (host, since) = db.claimedBy(primaryBranch, libName, conf["libraryLastChange"], omc_version, confighash)
+    # job; claiming it is what keeps the two from testing the same thing. The
+    # library is built for the first runner missing it, so that is the branch.
+    claimBranch = branchForRunner(todo[0]) if todo[0] else branch
+    if not db.claim(claimBranch, libName, conf["libraryLastChange"], omc_version, confighash):
+      (host, since) = db.claimedBy(claimBranch, libName, conf["libraryLastChange"], omc_version, confighash)
       print("Skipping %s as %s has been testing it since %s" % (libName, host, since))
       skipped_libs[libName] = None
       continue
-    stats_by_libname[libName] = {"conf":conf, "stats":[]}
+    restrictRunners(conf, todo)
+    stats_by_libname[libName] = {"conf":conf, "stats":[], "runners":todo}
     tests = tests + [(r,library,libName,libName+"_"+r,conf) for r in res]
-    print("Running library %s (%d tests)" % (libName, len(res)))
+    print("Running library %s (%d tests)%s" % (libName, len(res),
+                                               (" with %s" % ", ".join(todo)) if todo[0] else ""))
   else:
+    v = haveResultsFor(primaryBranch, libName, conf)
     print("Skipping %s as we already have results for it: %s" % (libName,str(v)))
     skipped_libs[libName] = v[0]
 
@@ -1080,15 +1123,24 @@ testedModels = dict((libname, set()) for libname in stats_by_libname)
 for (name,model,libname,data) in stats.values():
   testedModels[libname].add(model)
 
-for (resultBranch, simulator) in resultBranches:
+for key in stats.keys():
+  (name,model,libname,data)=stats[key]
+  stats_by_libname[libname]["stats"].append(stats[key])
+
+# A branch is filled by the libraries the run owed it; the others kept the
+# results they had, and nothing of them is written or published again.
+for (resultBranch, runner) in resultBranches:
+  libnames = [l for l in stats_by_libname.keys() if ranRunner(l, runner)]
+  if not libnames:
+    continue
   db.createTables(resultBranch)
   for key in stats.keys():
     (name,model,libname,data)=stats[key]
-    if simulator is None:
-      stats_by_libname[libname]["stats"].append(stats[key])
+    if not ranRunner(libname, runner):
+      continue
     cursor.execute("INSERT INTO %s VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)%s" % (db.quote(resultBranch), db.insertIgnore()),
-                   resultValues(model, libname, data, simulator))
-  for libname in stats_by_libname.keys():
+                   resultValues(model, libname, data, simulatorKey(libname, runner)))
+  for libname in libnames:
     for model in removedModels(resultBranch, libname, testedModels[libname]):
       cursor.execute("INSERT INTO %s VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)%s"
                      % (db.quote(resultBranch), db.insertIgnore()),
@@ -1182,15 +1234,15 @@ def dataForSimulator(data, simulator):
   return merged
 
 def artifactSuffix(simulator):
-  """What tells the files of one simulator from those of another."""
-  return "_%s" % simulator if simulator and len(runnerNames) > 1 else ""
+  """What tells the files of one runner from those of another; the first runner
+  publishes the workspace itself, so only the others have one."""
+  return "_%s" % simulator if simulator else ""
 
-# Every simulator publishes its own results - .sim and diff files included - to
-# the directory of its own branch; the .err of the build is shared, so each of
-# them gets a copy of it.
-for (resultBranch, simulator) in resultBranches:
+# Every runner publishes its own results - .sim and diff files included - to the
+# directory of its own branch; the .err of the build is shared, so each of them
+# gets a copy of it.
+for (resultBranch, runner) in resultBranches:
   result_location = outputFor(resultBranch)
-  suffix = artifactSuffix(simulator)
   if result_location != "" and (isWin or noSync):
     # Unlike the rsync path, this one is given the directory the branches live
     # in and appends the branch itself.
@@ -1201,9 +1253,11 @@ for (resultBranch, simulator) in resultBranches:
 
   htmltpl=open("library.html.tpl").read()
   for libname in stats_by_libname.keys():
-    if libname in skipped_libs:
+    if libname in skipped_libs or not ranRunner(libname, runner):
       continue
     s = None # Make sure I don't use this
+    simulator = simulatorKey(libname, runner)
+    suffix = artifactSuffix(simulator)
     stageRoot = stageRootFor(simulator, suffix)
     filesList = open(os.path.join(stageRoot, libname + ".files"), "w")
     filesList.write("/\n")

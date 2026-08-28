@@ -18,23 +18,20 @@ are publicly available.
 The configuration file for the regular library nightly testsuite is
 [conf.json](configs/conf.json). Additional old and non-standard libraries are
 listed in [conf-old.json](configs/conf-old.json) and
-[conf-nonstandard.json](configs/conf-nonstandard.json), note that failures in
-those libraries may be due to the fact that they are not fully complying with
-the Modelica standard, rather than to OpenModelica issues. The setup of the
-configuration files is discussed in [conf-howto.md](conf-howto.md).
+[conf-nonstandard.json](configs/conf-nonstandard.json); failures in those may be
+due to the libraries not fully complying with the Modelica standard rather than
+to OpenModelica issues. The setup of the configuration files is discussed in
+[conf-howto.md](conf-howto.md).
 
-Test results reports are collected in the
-[https://libraries.openmodelica.org/branches/](libraries.openmodelica.org/branches)
-directory. The
-[overview.html](https://libraries.openmodelica.org/branches/overview.html)
-report gives the results of the regular testsuite with the default C runtime and
-solvers. Other reports contain the results using the C++ runtime, FMI, daeMode,
-and the old frontend. Combined reports also include results from the old and
-nonstandard libraries. The
-[https://libraries.openmodelica.org/branches/history/](libraries.openmodelica.org/branches/history)
-directory contains regression reports and plots using different versions
-(including master) and simulation runtime configurations (C++, daeMode, FMI, old
-frontend) of OpenModelica.
+The reports are collected in
+[libraries.openmodelica.org/branches](https://libraries.openmodelica.org/branches/).
+[overview.html](https://libraries.openmodelica.org/branches/overview.html) gives
+the results of the regular testsuite with the default C runtime and solvers;
+others cover the C++ runtime, FMI, daeMode and the old frontend, and the
+combined ones include the old and nonstandard libraries.
+[history](https://libraries.openmodelica.org/branches/history/) holds regression
+reports and plots across versions (master included) and runtime
+configurations.
 
 If you want to include your open-source library in the testsuite, please open a
 pull request on [conf.json](configs/conf.json), or open an issue on the
@@ -45,22 +42,19 @@ and ask us to do it for you.
 ### The image the OSMC jobs run in
 
 Every job of [.CI/Jenkinsfile](.CI/Jenkinsfile) runs in one docker image, built
-from [.CI/testing/Dockerfile](.CI/testing/Dockerfile) at the start of the job
-and with `--pull`, so a rebuilt base is picked up on its own. What a node needs
-is then docker, git and an ssh key to publish the results with; the compilers,
-the python environment, the `omc` that generates the mos files, FMPy and the
-packages the tested libraries need are the image's, not the machine's, and a job
-moved to another machine tests what it tested before.
+with `--pull` from [.CI/testing/Dockerfile](.CI/testing/Dockerfile) at the start
+of the job. A node needs docker, git and an ssh key to publish the results with;
+the compilers, the python environment, the `omc` that generates the mos files,
+FMPy and the packages the tested libraries need are the image's, so a job moved
+to another machine tests what it tested before.
 
 The omc build, the OMSimulator build and `test.py` run inside the image; the
-steps that use the node's own `omc` - installing the libraries and preparing the
-reference files - stay outside it. The node's home directory is mounted, so the
-cached omc build in `~/saved_omc`, the installed libraries and the ssh key are
-the files they always were, and so is `/mnt/ReferenceFiles`, where the
-maintenance job installs the reference results: the container reads the same
-directory the node does, and writes the hash `test.py` keeps next to a reference
-file back into it. The container is capped at 85% of the node's memory, which a
-job running on the node itself was not.
+steps using the node's own `omc` - installing the libraries and preparing the
+reference files - stay outside. The node's home directory and
+`/mnt/ReferenceFiles` are mounted, so the cached omc build in `~/saved_omc`, the
+installed libraries, the ssh key and the reference results are the node's own
+files, the hash `test.py` keeps next to a reference file included. The container
+is capped at 85% of the node's memory.
 
 A dependency a library needs is therefore a line in the Dockerfile rather than
 an `apt-get install` repeated on every machine:
@@ -197,6 +191,8 @@ Options:
                        that one artifact several ways, see [One wasm artifact,
                        three ways to simulate
                        it](#one-wasm-artifact-three-ways-to-simulate-it)
+- `--solver=[]`: Build every model once and simulate it once per solver, see
+                 [One build, several solvers](#one-build-several-solvers)
 - `--ulimitvmem=8388608`: Virtual memory limit (in kB)
 - `--default=[]`: Add a default value for some configuration key, such as
                   `--default=ulimitExe=60`. The equals sign is mandatory
@@ -207,14 +203,10 @@ Options:
 
 ### Testing FMI with several simulators
 
-Building an FMU costs far more than simulating it. Measured on the twelve
-models of ExternData: 178 seconds building the FMUs, 0.7 simulating them with
-OMSimulator and 2.6 with FMPy. Testing the same FMUs with a second tool
-therefore used to cost almost twice as much as testing them with one, because
-each job built its own copy of them.
-
-Give `--fmisimulator` once per tool and the FMUs are built once and simulated
-with each of them:
+Building an FMU costs far more than simulating it: on the twelve models of
+ExternData, 178 seconds building the FMUs against 0.7 simulating them with
+OMSimulator and 2.6 with FMPy. Give `--fmisimulator` once per tool and the FMUs
+are built once and simulated with each of them:
 
 ```bash
 ./test.py --branch=v1.27-fmi --fmi=true \
@@ -231,20 +223,20 @@ own derived from it, so the run above fills
 | OMSimulator | `v1.27-fmi` | `branches/v1.27-fmi` |
 | FMPy | `v1.27-fmi-fmpy` | `branches/v1.27-fmi-fmpy` |
 
-which is where those results have always been. OMSimulator keeps the plain
-`-fmi` branch; every other tool adds its name. The branch a tool fills depends
-on the tool and not on the order, so asking for FMPy alone still fills
-`v1.27-fmi-fmpy` and leaves `v1.27-fmi` alone.
+OMSimulator keeps the plain `-fmi` branch and every other tool adds its name.
+The branch depends on the tool and not on the order, so asking for FMPy alone
+still fills `v1.27-fmi-fmpy` and leaves `v1.27-fmi` alone. A library is only run
+for the tools missing it: asking for both when `v1.27-fmi` already has that
+library builds its FMUs and simulates them with FMPy alone.
 
-A branch directory looks the same as it always did, file names included. The
-`.err` of a model is written by the build, so every simulator of it publishes
-the same one; the `.sim` and the difference files are the ones that simulator
-produced.
+A branch directory looks the same as it always did, file names included: the
+`.err` is written by the build and shared, the `.sim` and the difference files
+are the ones that simulator produced.
 
-Only the simulator may differ between the results that share an FMU. Anything
-that changes the FMU itself - a different compiler, a different library, a
-different `--fmuType` or `--fmiFlags` - is a different job, which is why the
-Co-Simulation jobs with CVODE are not merged with the Model Exchange ones.
+Only the simulator may differ between results that share an FMU. Anything that
+changes the FMU itself - a different compiler, a different library, a different
+`--fmuType` or `--fmiFlags` - is a different job, which is why the Co-Simulation
+jobs with CVODE are not merged with the Model Exchange ones.
 
 In Jenkins the parameters keep their meaning: `fmi_v1_27` asks for OMSimulator
 and `fmpy_fmi_v1_27` for FMPy. Ticking both runs one job that builds every FMU
@@ -268,9 +260,9 @@ Adding one is an entry there and no change to any script:
   `result`, `requestedResult`, `tempDir`, `startTime`, `stopTime`, `tolerance`,
   `timeout`, `stepSize` and anything named in `optionalArguments`.
 - `optionalArguments` are the flags that have to disappear when there is nothing
-  to put in them. OMSimulator hangs on `--stepSize=0` rather than ignoring it,
-  so its step size flag lives here, while FMPy wants `--output-interval 0` all
-  the same and writes the value straight into its `arguments`.
+  to put in them: OMSimulator hangs on `--stepSize=0` rather than ignoring it,
+  while FMPy wants `--output-interval 0` all the same and writes it straight
+  into its `arguments`.
 - `command` is how the tool is invoked, `{simulator}` by default. FMPy needs a
   subcommand, `{simulator} simulate`.
 - `resultExtension` is what the tool writes, so that the comparison against the
@@ -284,18 +276,17 @@ Adding one is an entry there and no change to any script:
 Then run it with `--fmisimulator=fmusim=/path/to/fmusim`, or just
 `--fmisimulator=/path/to/fmusim` if the command contains the name.
 
-A tool that is a Python package rather than a command line needs a small driver
-script that takes the arguments its entry passes, simulates, writes the result
-file and exits non-zero when it fails; the entry then points `command` at it.
+A tool that is a Python package rather than a command line needs a driver script
+that takes the arguments its entry passes, writes the result file and exits
+non-zero when it fails; `command` then points at it.
 
 ### One wasm artifact, three ways to simulate it
 
 `--simCodeTarget=wasm-jit` can export a model as a single WebAssembly artifact
-that carries three things at once: the model's own simulation runtime, an FMI
-3.0 Model Exchange interface and an FMI 3.0 Co-Simulation interface. Exporting
-it costs one translation and one compilation; simulating it three ways then
-costs three simulations and nothing else, which is the same bargain the FMI
-simulators above strike.
+carrying three things at once: the model's own simulation runtime, an FMI 3.0
+Model Exchange interface and an FMI 3.0 Co-Simulation interface. Exporting it
+costs one translation and one compilation, and simulating it three ways then
+costs three simulations - the same bargain the FMI simulators above strike.
 
 ```bash
 ./test.py --branch=master-wasm-jit --wasmjitrunner=sim,me,cs \
@@ -318,17 +309,54 @@ neither packed nor loaded:
 | `me` | `master-wasm-jit-me` | FMI 3.0 Model Exchange, integrated by omc with DASKR |
 | `cs` | `master-wasm-jit-cs` | FMI 3.0 Co-Simulation, the artifact integrating itself with DASKR |
 
-Every run reports what loading and linking the artifact cost, so the `.sim`
-files say how much of a short simulation is the artifact and how much is the
-model.
+Every run reports what loading and linking the artifact cost, so a short
+simulation's `.sim` says how much of it was the artifact.
 
 The runners live in
 [configs/wasm-jit-runners.json](configs/wasm-jit-runners.json); adding one is an
 entry there (`simflags` is what is appended to the model's simulation flags,
 `branchSuffix` overrides the `-<name>` it adds to the branch).
 
-`--wasmjitrunner` and `--fmisimulator` both fan one build out into several
-result branches, so a job uses one of them, not both.
+`--wasmjitrunner`, `--fmisimulator` and `--solver` each fan one build out into
+several result branches, so a job uses one of them, not several.
+
+### One build, several solvers
+
+Which solver integrates a model is a simulation flag, so testing another one
+costs a simulation and not a build. `--solver` builds every model once and runs
+it once per solver:
+
+```bash
+./test.py --branch=master --solver=default,cvode,gbode,ida configs/myConf.json
+./report.py --branches="cvode master"
+# the overview.html it writes is published as overview-cvode.html
+```
+
+`default` is the model's own solver - DASSL unless the model says otherwise -
+and every other name is what the run is given as `-s`. A solver fills the table
+its entry names, which is the one each of them has always had:
+
+| solver | branch | simulated with |
+| --- | --- | --- |
+| `default` | `master` | the solver the model asks for |
+| `cvode` | `cvode` | `-s cvode` |
+| `gbode` | `gbode` | `-s gbode -gbm=radauIIA3` |
+| `ida` | `ida` | `-s ida` |
+
+The branches are not filled at the same rate - master is tested twice a day,
+cvode and gbode once a week, ida now and then - so a library is only run for the
+solvers missing it: a weekly `--solver=default,cvode` builds a library master
+already has and simulates it with CVODE alone, and one master has not been run
+for with both.
+
+The solvers live in [configs/solvers.json](configs/solvers.json); adding one is
+an entry there (`simflags` is what is appended to the model's simulation flags,
+`branch` is the table it fills, a template over `{branch}` and `{name}` that
+defaults to `{name}`).
+
+In Jenkins the parameters keep their meaning: `master` asks for the model's own
+solver, `cvode`, `gbode` and `ida` for theirs. Ticking several runs one job that
+builds every model once and simulates it with each.
 
 ### Testing a pull request
 
@@ -352,12 +380,11 @@ git checkout -f --detach FETCH_HEAD
 ./test.py --branch=pr/<N> configs/conf.json
 ```
 
-`pr/<N>` rather than `pr-<N>`: the results of a pull request are stored and
-published under `pr/`, so that `branches/` holds branches and the pull requests
-sit together in one directory of it. It is the one job name that keeps the
-directory part of its name - `maintenance/v1.27` is tested as `v1.27`.
+`pr/<N>` rather than `pr-<N>`: the pull requests sit together in one directory
+of `branches/`, which otherwise holds branches. It is the one job name that
+keeps the directory part of its name - `maintenance/v1.27` is tested as `v1.27`.
 
-and the report compares that run against the newest run of `master`:
+The report compares that run against the newest run of `master`:
 
 ```bash
 ./pr-report.py <N>                 # --baseline=master by default
@@ -368,22 +395,20 @@ kind of page as the nightly regression reports, next to `00_comment.md`, a
 summary to comment on the pull request with. Both are published with the other
 reports.
 
-`--comment` posts that summary on the pull request, and replaces it rather than
-adding to it when the same pull request is tested again. It posts as whoever the
-token belongs to: `GITHUB_TOKEN` or `GH_TOKEN` in the environment, or the account
-[`gh`](https://cli.github.com) is logged in as. In Jenkins it is the
-`pull_request_comment` parameter, which takes the token from an
-`OpenModelica-Hudson` credential; without one the report is still written and
-published, and the summary is in the build log.
+`--comment` posts that summary on the pull request, replacing the one an earlier
+run posted. It posts as whoever the token belongs to: `GITHUB_TOKEN` or
+`GH_TOKEN` in the environment, or the account [`gh`](https://cli.github.com) is
+logged in as. In Jenkins it is the `pull_request_comment` parameter, which takes
+the token from an `OpenModelica-Hudson` credential; without one the report is
+still written and published, and the summary is in the build log.
 
 Two things make a difference mean something other than "the pull request did
-this", and the report says so when they apply: **the machine**, since two runs
-produced on different hardware compare the hardware as much as the change, and
-**the libraries**, since two runs that tested different library versions, or
-verified against different reference files, differ for reasons of their own. The
-baseline is also the newest `master` run rather than the commit the pull request
-is based on, so a difference can come from anything merged since it was
-branched - a reason to rebase before believing a surprising result.
+this", and the report says so when they apply: **the machine**, since runs on
+different hardware compare the hardware as much as the change, and **the
+libraries**, since runs that tested different library versions or verified
+against different reference files differ for reasons of their own. The baseline
+is the newest `master` run rather than the commit the pull request is based on,
+so a difference can also come from anything merged since it was branched.
 
 A full run takes days, so testing every pull request this way is not the idea;
 point `--branch=pr/<N>` at a smaller configuration file when the question is

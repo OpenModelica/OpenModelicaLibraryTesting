@@ -1,0 +1,30 @@
+{
+  "_comment": [
+    "The solvers one built model can be simulated with. Adding one is an entry here and nothing else.",
+    "",
+    "A model is translated and compiled once and its executable is then run once per solver, so a job",
+    "asked for several of them costs one build and one simulation per solver.",
+    "",
+    "simflags       what is appended to the model's simulation flags; -s picks the solver.",
+    "description    what the solver is, for the .sim files and the reports.",
+    "branch         the table this solver fills, a template over {branch} (the branch of the job) and",
+    "               {name}. The default is {name}: a solver has always had a table of its own name."
+  ],
+  "default": {
+    "branch": "{branch}",
+    "simflags": "",
+    "description": "the solver the model asks for, DASSL unless it says otherwise"
+  },
+  "cvode": {
+    "simflags": "-s cvode",
+    "description": "SUNDIALS CVODE"
+  },
+  "gbode": {
+    "simflags": "-s gbode -gbm=radauIIA3",
+    "description": "the generic bi-rate ODE solver, with the radauIIA3 method"
+  },
+  "ida": {
+    "simflags": "-s ida",
+    "description": "SUNDIALS IDA"
+  }
+}

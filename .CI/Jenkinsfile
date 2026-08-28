@@ -5,7 +5,7 @@ pipeline {
 
     booleanParam(name: 'v1_26', defaultValue: false, description: 'maintenance/v1.26 branch (ryzen-5950x-1)')
     booleanParam(name: 'v1_27', defaultValue: false, description: 'maintenance/v1.27 branch (ryzen-5950x-1)')
-    booleanParam(name: 'master', defaultValue: false, description: 'master branch (ryzen-5950x-1)')
+    booleanParam(name: 'master', defaultValue: false, description: 'master branch, simulated with the solver each model asks for, filling master (ryzen-5950x-1). Ticking it together with cvode, gbode or ida runs one job that builds every model once and simulates it with each of them.')
 
     booleanParam(name: 'fmi_v1_26', defaultValue: false, description: 'maintenance/v1.26 branch with FMI, simulated by OMSimulator, filling v1.26-fmi (ryzen-5950x-2). Ticking it together with fmpy_fmi_v1_26 runs one job that builds every FMU once and simulates it with both.')
     booleanParam(name: 'fmi_v1_27', defaultValue: false, description: 'maintenance/v1.27 branch with FMI, simulated by OMSimulator, filling v1.27-fmi (ryzen-5950x-2). Ticking it together with fmpy_fmi_v1_27 runs one job that builds every FMU once and simulates it with both.')
@@ -31,9 +31,9 @@ pipeline {
     booleanParam(name: 'report_ryzen_5950x_2', defaultValue: false, description: 'Generate a report for ryzen-5950x-2 without running the tests')
 
     booleanParam(name: 'conversion_script', defaultValue: false, description: 'master branch with conversion script from MSL 3 to 4 (ryzen-5950x-1). This is an experimental job that does not run on a fixed schedule.')
-    booleanParam(name: 'cvode', defaultValue: false, description: 'master branch, with -d=newInst and -s cvode (ryzen-5950x-2). This is an experimental job that does not run on a fixed schedule.')
-    booleanParam(name: 'gbode', defaultValue: false, description: 'master branch, with -d=newInst and -s gbode (ryzen-5950x-2). This is an experimental job that does not run on a fixed schedule.')
-    booleanParam(name: 'ida', defaultValue: false, description: 'master branch, with -d=newInst and -s ida (ryzen-5950x-2). This is an experimental job that does not run on a fixed schedule.')
+    booleanParam(name: 'cvode', defaultValue: false, description: 'master branch, simulated with -s cvode, filling cvode (ryzen-5950x-1). Ticking it together with master, gbode or ida runs one job that builds every model once and simulates it with each of them. This is an experimental job that does not run on a fixed schedule.')
+    booleanParam(name: 'gbode', defaultValue: false, description: 'master branch, simulated with -s gbode -gbm=radauIIA3, filling gbode (ryzen-5950x-1). Ticking it together with master, cvode or ida runs one job that builds every model once and simulates it with each of them. This is an experimental job that does not run on a fixed schedule.')
+    booleanParam(name: 'ida', defaultValue: false, description: 'master branch, simulated with -s ida, filling ida (ryzen-5950x-1). Ticking it together with master, cvode or gbode runs one job that builds every model once and simulates it with each of them. This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'generateSymbolicJacobian', defaultValue: false, description: 'master branch, with --generateSymbolicJacobian (ryzen-5950x-1). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'wasm_jit', defaultValue: false, description: 'master branch, with --simCodeTarget=wasm-jit (ryzen-9950x). Every model is exported once as a wasm artifact and simulated three ways, filling wasm-jit (the runtime inside the artifact), wasm-jit-me (FMI 3.0 Model Exchange) and wasm-jit-cs (FMI 3.0 Co-Simulation). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'heavy_tests', defaultValue: false, description: 'master branch, runs one test at a time. That is, no parallel launching of tests. omc will use multiple threads for each test (-n=1 is not set unlike the other regression tests.), (ryzen-5950x-1). This is an experimental job that does not run on a fixed schedule.')
@@ -98,10 +98,11 @@ pipeline {
         options { skipDefaultCheckout() }
         when {
           beforeAgent true
-          expression { params.master }
+          expression { params.master || params.cvode || params.gbode || params.ida }
         }
         steps {
-          runRegressiontest('master', 'master', '', '', false, '', '', false, false)
+          runRegressiontest('master', 'master', '', '', false, '', '', false, false, 0, 'configs/conf.json', '', '.CI/testing', null,
+                            solvers(params.master, params.cvode, params.gbode, params.ida))
         }
       }
 
@@ -321,54 +322,6 @@ pipeline {
         }
         steps {
           runRegressiontest('master', 'oldInst', 'setCommandLineOptions("-d=nonewInst")', '', false, '', '', false, false)
-        }
-      }
-      stage('cvode') {
-        agent {
-          node {
-            label 'ryzen-5950x-2-1'
-            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
-          }
-        }
-        options { skipDefaultCheckout() }
-        when {
-          beforeAgent true
-          expression { params.cvode }
-        }
-        steps {
-          runRegressiontest('master', 'cvode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', false, '-s cvode', '', false, false)
-        }
-      }
-      stage('gbode') {
-        agent {
-          node {
-            label 'ryzen-5950x-2-1'
-            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
-          }
-        }
-        options { skipDefaultCheckout() }
-        when {
-          beforeAgent true
-          expression { params.gbode }
-        }
-        steps {
-          runRegressiontest('master', 'gbode', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', false, '-s gbode -gbm=radauIIA3', '', false, false)
-        }
-      }
-      stage('ida') {
-        agent {
-          node {
-            label 'ryzen-5950x-2-1'
-            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
-          }
-        }
-        options { skipDefaultCheckout() }
-        when {
-          beforeAgent true
-          expression { params.ida }
-        }
-        steps {
-          runRegressiontest('master', 'ida', 'setCommandLineOptions("-d=newInst,-frontEndUnitCheck")', '', false, '-s ida', '', false, false)
         }
       }
       stage('wasm-jit') {
@@ -827,7 +780,20 @@ def fmiSimulators(boolean omsimulator, boolean fmpy) {
   return simulators
 }
 
-def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimflags, testFlags, boolean removePackageOrder, boolean conversionScript, int jobs=0, libs_config_file = 'configs/conf.json', cmakeFlags = '', dockerfile = '.CI/testing', fmiSimulators = null) {
+/* The solvers a job runs, from the parameters that used to start one job each.
+ * Every model is built once and simulated with each of them, filling master,
+ * cvode, gbode and ida as the four jobs did; a library is only run for the
+ * solvers missing it, so one job serves master daily and cvode weekly. */
+def solvers(boolean dflt, boolean cvode, boolean gbode, boolean ida) {
+  def chosen = []
+  if (dflt) chosen << 'default'
+  if (cvode) chosen << 'cvode'
+  if (gbode) chosen << 'gbode'
+  if (ida) chosen << 'ida'
+  return chosen
+}
+
+def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimflags, testFlags, boolean removePackageOrder, boolean conversionScript, int jobs=0, libs_config_file = 'configs/conf.json', cmakeFlags = '', dockerfile = '.CI/testing', fmiSimulators = null, solvers = null) {
   sh '''
   find /tmp  -name "*openmodelica.hudson*" -exec rm {} ";" || true
 
@@ -892,6 +858,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
     simulators = name.contains('fmpy') ? ['fmpy'] : (omsHash ? ['OMSimulator'] : [])
   }
   FMI_TESTING_FLAG = ""
+  SOLVER_FLAG = (solvers ?: []).collect { " --solver=${it}" }.join('')
   if (simulators.contains('OMSimulator') && omsHash) {
     // In the image rather than on the node: test.py runs this binary from inside it, and one built
     // against the node's libraries need not load there.
@@ -1171,7 +1138,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
     ${cgroupReport}
     cd OpenModelicaLibraryTesting
     # Force /usr/bin/omc as being used for generating the mos-files. Ensures consistent behavior among all tested OMC versions
-    stdbuf -oL -eL time ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG} --extraflags='${extraFlags}' --extrasimflags='${extrasimflags}' ${testFlags} --branch="${name}" --output="libraries.openmodelica.org:/var/www/libraries.openmodelica.org/branches/${name}/" --libraries='${libraryPath}/.openmodelica/libraries/'  --jobs=${jobs} ${libs_config_file} ${params.OLDLIBS ? "configs/conf-old.json configs/conf-nonstandard.json" : ""} || (killall omc ; false) || exit 1
+    stdbuf -oL -eL time ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG}${SOLVER_FLAG} --extraflags='${extraFlags}' --extrasimflags='${extrasimflags}' ${testFlags} --branch="${name}" --output="libraries.openmodelica.org:/var/www/libraries.openmodelica.org/branches/${name}/" --libraries='${libraryPath}/.openmodelica/libraries/'  --jobs=${jobs} ${libs_config_file} ${params.OLDLIBS ? "configs/conf-old.json configs/conf-nonstandard.json" : ""} || (killall omc ; false) || exit 1
     """)
     sh 'date'
     // In the image: the script talks to the results database through psycopg2,

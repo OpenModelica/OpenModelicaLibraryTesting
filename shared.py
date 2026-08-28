@@ -254,6 +254,46 @@ def branchForWasmJitRunner(branch, name):
   """Where the results of one wasm-jit runner are stored: --branch, then -<name>."""
   return branch + wasmJitRunner(name).get("branchSuffix", "-%s" % name)
 
+# The solvers one built model can be run with, in configs/solvers.json. Like the
+# wasm-jit runners, a solver is not a tool but a set of simulation flags, so
+# cvode, gbode and ida share one translation and one compilation.
+SOLVERS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            "configs", "solvers.json")
+_solvers = None
+
+def solvers(path=None):
+  """Everything the testing knows about the solvers."""
+  global _solvers
+  if _solvers is None or path:
+    with open(path or SOLVERS_FILE) as fin:
+      _solvers = dict((k, v) for (k, v) in json.load(fin).items() if not k.startswith("_"))
+  return _solvers
+
+def solver(name):
+  known = solvers()
+  if name not in known:
+    raise Exception("Unknown solver %s; known are %s. Adding one is an entry in %s."
+                    % (name, ", ".join(sorted(known)), SOLVERS_FILE))
+  return known[name]
+
+def parseSolvers(names):
+  """The --solver values as an ordered list of (name, simflags)."""
+  res = []
+  for spec in names or []:
+    for name in spec.split(","):
+      name = name.strip()
+      if name:
+        res.append((name, solver(name).get("simflags") or ""))
+  seen = [n for (n, _) in res]
+  if len(set(seen)) != len(seen):
+    raise Exception("The same solver name is used twice: %s" % ", ".join(seen))
+  return res
+
+def branchForSolver(branch, name):
+  """Where the results of one solver are stored: the table its entry names, as a
+  template over the branch of the job and the name of the solver."""
+  return (solver(name).get("branch") or "{name}").format(branch=branch, name=name)
+
 def branchForSimulator(branch, name):
   """Where the results of one FMI simulator of a run are stored.
 
