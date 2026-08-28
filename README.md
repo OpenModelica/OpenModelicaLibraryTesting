@@ -372,9 +372,9 @@ reports.
 adding to it when the same pull request is tested again. It posts as whoever the
 token belongs to: `GITHUB_TOKEN` or `GH_TOKEN` in the environment, or the account
 [`gh`](https://cli.github.com) is logged in as. In Jenkins it is the
-`pull_request_comment` parameter, which takes the token from a `github-token`
-credential; without one the report is still written and published, and the
-summary is in the build log.
+`pull_request_comment` parameter, which takes the token from an
+`OpenModelica-Hudson` credential; without one the report is still written and
+published, and the summary is in the build log.
 
 Two things make a difference mean something other than "the pull request did
 this", and the report says so when they apply: **the machine**, since two runs
