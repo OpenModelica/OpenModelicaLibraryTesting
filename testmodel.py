@@ -240,8 +240,8 @@ execstat = {
   "simcold":None,
   "diff":None,
   "phase":0,
-  # One entry per FMI simulator beyond the first, which reports itself in the
-  # keys above; see configs/fmi-simulators.json.
+  # One entry per runner beyond the first, which reports itself in the keys
+  # above; see configs/fmi-simulators.json, wasm-jit-runners.json, solvers.json.
   "simulators":{}
 }
 simulators = execstat["simulators"]
@@ -643,6 +643,9 @@ fmisimulators = shared.parseFmiSimulators(conf.get("fmisimulators")) if conf.get
 if conf.get("fmi") and not fmisimulators and fmisimulator:
   fmisimulators = shared.parseFmiSimulators([fmisimulator])
 wasmjitrunners = shared.parseWasmJitRunners(conf.get("wasmjitrunners")) if useArtifact else []
+# The model is built once and its executable run once per solver; the solvers are
+# described in configs/solvers.json.
+solverRunners = shared.parseSolvers(conf.get("solvers")) if not conf.get("fmi") and not isWasmJit else []
 if daeMode:
   meRunners = [name for (name, flags) in wasmjitrunners if ":me:" in flags or flags.endswith(":me")]
   if meRunners:
@@ -650,36 +653,31 @@ if daeMode:
       fp.write("The model asks for --daeMode, which has no FMI Model Exchange interface: "
                "not running %s\n" % ", ".join(meRunners))
     wasmjitrunners = [r for r in wasmjitrunners if r[0] not in meRunners]
-# One build, several runs: an FMU simulated by several tools and a wasm artifact
-# run several ways fan out the same way, so they share the naming below.
-runners = fmisimulators or wasmjitrunners
+# One build, several runs: an FMU simulated by several tools, a wasm artifact run
+# several ways and a model run by several solvers fan out the same way.
+runners = fmisimulators or wasmjitrunners or solverRunners
+
+def runnerSuffix(name):
+  """What tells the files of one runner from those of another. The first one
+  publishes the workspace itself, so its files keep the plain names."""
+  return "_%s" % name if name and runners and name != runners[0][0] else ""
 
 def resultFile(name=None):
-  """Where a simulator writes its results.
-
-  Every tool writes what its entry says, and they only need to be told apart
-  when more than one of them runs on the same FMU.
-  """
-  if not name:
-    return "%s_res.%s" % (conf["fileName"], outputFormat)
-  # A wasm-jit runner is omc, which writes the format the model was translated for.
-  extension = shared.fmiSimulator(name)["resultExtension"] if fmisimulators else outputFormat
-  if len(runners) < 2:
-    return "%s_res.%s" % (conf["fileName"], extension)
-  return "%s_%s_res.%s" % (conf["fileName"], name, extension)
+  """Where a simulator writes its results."""
+  # Only an FMI tool decides the format; the others write what the model was
+  # translated for.
+  extension = shared.fmiSimulator(name)["resultExtension"] if (name and fmisimulators) else outputFormat
+  return "%s%s_res.%s" % (conf["fileName"], runnerSuffix(name), extension)
 
 def artifactPrefix(name=None):
   """The files a simulator's results are written to, under files/."""
-  if not name or len(runners) < 2:
-    return os.path.abspath("../files/%s" % conf["fileName"]).replace('\\','/')
-  return os.path.abspath("../files/%s_%s" % (conf["fileName"], name)).replace('\\','/')
+  return os.path.abspath("../files/%s%s" % (conf["fileName"], runnerSuffix(name))).replace('\\','/')
 
 resFile = resultFile(runners[0][0]) if runners else resultFile()
 
 def simulateFmu(name, command, resFile, simFile):
   """Run the FMU with one simulator, writing what it says to simFile."""
-  # Only tell the runs apart when more than one of them shares the directory.
-  suffix = "_%s" % name if len(fmisimulators) > 1 else ""
+  suffix = runnerSuffix(name)
   fmitmpdir = "temp_%s%s_fmu" % (conf["fileName"].replace(".","_"), suffix)
   with open("%s.tmpfiles" % conf["fileName"], "a+") as fp:
     fp.write("%s\n" % fmitmpdir)
@@ -730,6 +728,28 @@ def simulateArtifact(name, runnerFlags, resFile, simFile):
   with open(simFile, "a+") as fp:
     fp.write(res.get("messages") or "")
   return res
+
+def simulateExecutable(name, solverFlags, resFile, simFile):
+  """Run the built executable once, with the flags of one solver."""
+  exe = ".\\%s.bat" % conf["fileName"] if isWin else "./%s" % conf["fileName"]
+  # A run sharing the directory with other solvers needs a result file of its own.
+  resultArgument = "-r=%s" % resFile if runnerSuffix(name) and outputFormat != "empty" else ""
+  cmd = " ".join(x for x in (exe, annotationSimFlags, conf["simFlags"], emit_protected,
+                             "-lv LOG_STATS" if conf["simCodeTarget"]=="C" else "",
+                             resultArgument, solverFlags) if x.strip())
+  with open(simFile,"w") as fp:
+    fp.write("Environment - simulationEnvironment:\n")
+    for e in conf["environmentSimulation"]:
+      fp.write("%s = %s\n" % (e[0], e[1]))
+    fp.write("startTime=%g\nstopTime=%g\ntolerance=%g\nnumberOfIntervals=%d\nstepSize=%g\n" % (startTime,stopTime,tolerance,numberOfIntervals,stepSize))
+    if name:
+      fp.write("Regular simulation (%s: %s): %s\n" % (name, shared.solver(name).get("description") or "", cmd))
+    else:
+      fp.write("Regular simulation: %s\n" % cmd)
+  if isWin:
+    return checkOutputTimeout("%s >> %s" % (cmd,simFile), conf["ulimitExe"], conf)
+  pipe = "%s%s" % (conf["fileName"], runnerSuffix(name))
+  return checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s > %s.pipe 2>&1)" % (pipe,pipe,pipe,simFile,cmd,pipe), conf["ulimitExe"], conf)
 
 def simElapsed():
   # omc's own time: the wall clock here covers the wrong run for these flags
@@ -784,29 +804,14 @@ try:
         with open(errFile, 'a+') as fp:
           fp.write("The hot simulation failed; keeping the cold time\n")
   else:
-    if isWin:
-      cmd = (".\\%s.bat %s %s %s" % (conf["fileName"],annotationSimFlags,conf["simFlags"],emit_protected)).strip()
-    else:
-      cmd = ("./%s %s %s %s" % (conf["fileName"],annotationSimFlags,conf["simFlags"],emit_protected)).strip()
-
-    if conf["simCodeTarget"]=="C":
-      cmd = cmd + " -lv LOG_STATS"
     executable = os.path.normpath("%s.bat" % conf["fileName"] if isWin else conf["fileName"])
     if not os.path.exists(executable):
       with open(errFile, 'a+') as fp:
         fp.write("The simulation executable %s does not exist\n" % executable)
       execstat["sim"] = monotonic()-start
       writeResultAndExit(0, False, omc, omc_new)
-    with open(simFile,"w") as fp:
-      fp.write("Environment - simulationEnvironment:\n")
-      for e in conf["environmentSimulation"]:
-        fp.write("%s = %s\n" % (e[0], e[1]))
-      fp.write("startTime=%g\nstopTime=%g\ntolerance=%g\nnumberOfIntervals=%d\nstepSize=%g\n" % (startTime,stopTime,tolerance,numberOfIntervals,stepSize))
-      fp.write("Regular simulation: %s\n" % cmd)
-    if isWin:
-      res = checkOutputTimeout("%s >> %s" % (cmd,simFile), conf["ulimitExe"], conf)
-    else:
-      res = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s > %s.pipe 2>&1)" % (conf["fileName"],conf["fileName"],conf["fileName"],simFile,cmd,conf["fileName"]), conf["ulimitExe"], conf)
+    (name, solverFlags) = solverRunners[0] if solverRunners else (None, "")
+    res = simulateExecutable(name, solverFlags, resFile, simFile)
   execstat["sim"] = simElapsed()
   execstat["simwall"] = monotonic()-start
   execstat["phase"] = 6
@@ -816,7 +821,7 @@ except TimeoutError as e:
   # checkOutputTimeout raises TimeoutError for a command that fails as well as
   # for one that runs out of time, so this covers both.
   if len(runners) > 1:
-    # The FMU is built and the other simulators are about to run it. What the
+    # The build is done and the other runners are about to use it. What the
     # first one did says nothing about them, so record the failure and let them
     # have their turn. Ending the model here would write them all down as having
     # failed at this phase without ever being started, which is what the loop
@@ -943,8 +948,8 @@ def verifyAgainstReference(resFile, prefix, stat):
 if not firstSimulatorFailed:
   verifyAgainstReference(resFile, artifactPrefix(runners[0][0] if runners else None) + ".diff", execstat)
 
-# The FMU is built; every other simulator the job asked for is now only a
-# simulation and a comparison. A tool that times out or fails takes its own
+# The build is done; every other runner the job asked for is now only a
+# simulation and a comparison. One that times out or fails takes its own
 # results down with it and leaves the others alone - the first one included,
 # see the TimeoutError handler above.
 for (name, command) in runners[1:]:
@@ -962,7 +967,10 @@ for (name, command) in runners[1:]:
         writeResult()
         continue
     else:
-      simulateFmu(name, command, other, simFileOther)
+      if solverRunners:
+        simulateExecutable(name, command, other, simFileOther)
+      else:
+        simulateFmu(name, command, other, simFileOther)
       stat["sim"] = monotonic()-start
       stat["simwall"] = stat["sim"]
     stat["phase"] = 6
@@ -971,7 +979,7 @@ for (name, command) in runners[1:]:
     stat["sim"] = monotonic()-start
     stat["simwall"] = stat["sim"]
     with open(errFile, 'a+') as fp:
-      fp.write("%s timed out simulating the %s\n" % (name, "artifact" if useArtifact else "FMU"))
+      fp.write("%s timed out simulating the %s\n" % (name, "artifact" if useArtifact else ("model" if solverRunners else "FMU")))
   writeResult()
 
 # quit omc_new: every verification needed it
