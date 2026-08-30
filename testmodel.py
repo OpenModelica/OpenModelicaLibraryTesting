@@ -474,9 +474,8 @@ def modelCommandLineOptions():
     opts += commandLineOptionsRe.findall(text)
   return " ".join(opts)
 
-# A --daeMode model has no explicit ODE, so it has no FMI Model Exchange
-# interface: the export drops ME and the artifact serves Co-Simulation (and its
-# own simulation) only. Drop the runners that ask for what is not there.
+# A --daeMode model's Model Exchange interface is a DAE one (fmi-ls-dae): the
+# runners that care say how to drive it.
 daeMode = useArtifact and "--daeMode" in (modelCommandLineOptions() + " " + " ".join(str(c) for c in conf["customCommands"]))
 
 def simulateCmd(resimulate):
@@ -634,12 +633,7 @@ wasmjitrunners = shared.parseWasmJitRunners(conf.get("wasmjitrunners")) if useAr
 # described in configs/solvers.json.
 solverRunners = shared.parseSolvers(conf.get("solvers")) if not conf.get("fmi") and not isWasmJit else []
 if daeMode:
-  meRunners = [name for (name, flags) in wasmjitrunners if ":me:" in flags or flags.endswith(":me")]
-  if meRunners:
-    with open(errFile, 'a+') as fp:
-      fp.write("The model asks for --daeMode, which has no FMI Model Exchange interface: "
-               "not running %s\n" % ", ".join(meRunners))
-    wasmjitrunners = [r for r in wasmjitrunners if r[0] not in meRunners]
+  wasmjitrunners = [(name, shared.wasmJitRunner(name).get("daeModeSimflags") or flags) for (name, flags) in wasmjitrunners]
 # One build, several runs: an FMU simulated by several tools, a wasm artifact run
 # several ways and a model run by several solvers fan out the same way.
 runners = fmisimulators or wasmjitrunners or solverRunners

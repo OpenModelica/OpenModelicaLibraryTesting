@@ -9,6 +9,8 @@
     "model is translated and compiled once however many of them run.",
     "",
     "simflags       what is appended to the model's simulation flags; -s fmi3:… picks the interface.",
+    "daeModeSimflags  the same for a model that asks for --daeMode, whose Model Exchange interface is",
+    "               a DAE one (fmi-ls-dae); a runner without it runs such a model with simflags.",
     "description    what the runner is, for the reports.",
     "branchSuffix   appended to --branch to get the table of this runner; the default is -<name>, so",
     "               the artifact's own simulation runtime is the one that needs to say anything here."
@@ -20,7 +22,8 @@
   },
   "me": {
     "simflags": "-s fmi3:me:daskr",
-    "description": "FMI 3.0 Model Exchange, integrated by omc with DASKR"
+    "daeModeSimflags": "-s fmi3:me -daeMode",
+    "description": "FMI 3.0 Model Exchange, integrated by omc with DASKR (IDA over the fmi-ls-dae residuals for a --daeMode model)"
   },
   "cs": {
     "simflags": "-s fmi3:cs",
