@@ -125,7 +125,10 @@ different OpenModelica versions, according to the conditions of the
       "defaultTolerance": 1e-6, // tolerance for tests if not specified by the model, defaults to 1e-6
       "defaultNumberOfIntervals": 2500, // number of intervals for tests if not specified by the model, defaults to 2500
       "ulimitOmc":800, // specify a max timeout for a model build
-      "ulimitExe":300, // specify a max timeout for a model simulation
+      "ulimitExe":300, // specify a max timeout for a model simulation, defaults to 240
+      "ulimitExeModels":{ // the models of this library that are allowed longer, see Simulation timeouts
+        "MyModelicaLibrary.Examples.SomethingBig":600
+      },
       "ulimitMemory":62000000, // specify a max for the virtual memory of the running process when building a model
       "procOMC":0, // [if procOMC = 0 use max procs, use procOMC = 1 if not defined, else use the given value] how many CPU cores should be used to run omc (load Modelica libraries in parallel and generate the C code in parallel)
       "procCCompile":0, // [if procCCompile = 0 use max procs, use procCCompile = 1 if not defined, else use the given value] how many CPU cores should be used to compile the generated code
@@ -200,6 +203,38 @@ Options:
                  use `1` to run serial (for large tests) and see `procOMC` and
                  `procCCompile` above for more insight into individual test
                  parallelization.
+
+### Simulation timeouts
+
+A simulation is killed after `ulimitExe` seconds, 240 by default - 99.5% of the
+models that simulate at all are done inside 105 on master, which runs on the
+slower test machines. One number per library would have to cover its slowest
+model, giving every other model of the library the same licence to hang, so a
+library keeps the short timeout and names the forty-odd models that earned more:
+
+```json
+"ulimitExeModels":{
+  "Buildings.DHC.Examples.Combined.SeriesVariableFlow":810
+}
+```
+
+[update-ulimit-exe.py](./update-ulimit-exe.py) writes those lists from the
+results, so they stay measurements rather than guesses. The first line says what
+would change, the second changes it:
+
+```bash
+./update-ulimit-exe.py --db postgresql://om@openmodelica.org/omdb configs/conf.json
+./update-ulimit-exe.py --db postgresql://om@openmodelica.org/omdb --write configs/*.json
+```
+
+Both lines only read the database - `--write` writes the configuration files -
+so a read-only user is enough for either.
+
+Every model is allowed `--factor` times the longest it has taken over `--runs`
+runs of `--branch`. A model that only ever ran into the timeout, and a library
+the database has never heard of, are reported rather than guessed at. Run it
+after a machine is replaced, after a change that moves the timings, or when the
+reports start showing models killed by the timeout.
 
 ### Testing FMI with several simulators
 

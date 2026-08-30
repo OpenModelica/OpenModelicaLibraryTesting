@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 
-import re, os, string, subprocess
+import re, os, signal, string, subprocess
 import simplejson as json
+
+# Windows has no SIGKILL, and no process group to signal instead; os.kill there
+# is TerminateProcess whichever signal it is handed.
+SIGKILL = getattr(signal, "SIGKILL", signal.SIGTERM)
 
 # A job is named after the branch it tests, and takes the last part of the name:
 # maintenance/v1.27 is stored and published as v1.27. A pull request is the
@@ -12,6 +16,10 @@ prBranchRe = re.compile(r"^pr/[0-9]+$")
 def resultTable(branch):
   """The results of a job named after this branch: its table and its directory."""
   return branch if prBranchRe.match(branch) else branch.split("/")[-1]
+
+# How long a model may simulate when nothing asks for longer; update-ulimit-exe.py
+# derives it, and the exceptions, from the master results.
+DEFAULT_ULIMIT_EXE = 240
 
 simCodeTargetRe = re.compile('--simCodeTarget=([^"\'\\s,;)]+)')
 
@@ -47,7 +55,8 @@ def fixData(data,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCom
     # actually use, so the rest of the testing scripts need to see it
     data["simCodeTarget"] = simCodeTargetFromCommands(data["simCodeTarget"], data["customCommands"])
     data["ulimitOmc"] = int(data.get("ulimitOmc") or 660) # 11 minutes to generate the C-code
-    data["ulimitExe"] = int(data.get("ulimitExe") or 8*60) # 8 additional minutes to initialize and run the simulation
+    data["ulimitExe"] = int(data.get("ulimitExe") or DEFAULT_ULIMIT_EXE)
+    data["ulimitExeModels"] = dict((k,int(v)) for (k,v) in (data.get("ulimitExeModels") or {}).items())
     data["ulimitLoadModel"] = int(data.get("ulimitLoadModel") or 3*60) # 3 minutes to load the files (could take a while if the ssd is doing backup)
     simflags = []
     if data.get("extraSimFlags"):
@@ -68,12 +77,24 @@ def fixData(data,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCom
     data["libraryVersionExactMatch"] = data.get("libraryVersionExactMatch") or False
     data["alarmFlag"] = data.get("alarmFlag") or (alarmFlag if data["simCodeTarget"] in ("C","wasm-jit") else "")
     data["abortSlowSimulation"] = data.get("abortSlowSimulation") or (abortSimulationFlag if data["simCodeTarget"]=="C" else "")
+    data["simFlags"] = simulationFlags(data, data["ulimitExe"])
     if "changeHash" in data: # Force rebuilding the library due to change in the testing script
       data["changeHash"] = data["changeHash"]
     return (data["library"],data)
   except:
     print("Failed to fix data for: %s with extra args: %s" % (str(data),str((abortSimulationFlag,alarmFlag,defaultCustomCommands))))
     raise
+
+def modelUlimitExe(conf, modelName):
+  """How long that model may simulate: what its library allows, unless the model
+  is one of the few named in ulimitExeModels."""
+  return conf["ulimitExeModels"].get(modelName) or conf["ulimitExe"]
+
+def simulationFlags(conf, ulimitExe):
+  """The flags a simulation allowed that many seconds is run with."""
+  if conf["alarmFlag"] == "":
+    return "%s %s" % (conf["abortSlowSimulation"],conf["extraSimFlags"])
+  return "%s %s=%d %s" % (conf["abortSlowSimulation"],conf["alarmFlag"],ulimitExe,conf["extraSimFlags"])
 
 def readConfig(c,abortSimulationFlag="",alarmFlag="",overrideDefaults=[],defaultCustomCommands=[],extrasimflags="",environmentTranslation=[],environmentSimulation=[]):
   return [fixData(data,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCommands,extrasimflags,environmentTranslation,environmentSimulation) for data in json.load(open(c))]
