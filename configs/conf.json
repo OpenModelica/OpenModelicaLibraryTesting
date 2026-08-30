@@ -2,6 +2,9 @@
   {
     "library":"Modelica",
     "libraryVersion":"trunk",
+    "ulimitExeModels":{
+      "Modelica.Electrical.PowerConverters.Examples.ACAC.SoftStarter":510
+    },
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
@@ -12,6 +15,9 @@
     "library":"Modelica",
     "libraryVersion":"4.1.0",
     "libraryVersionExactMatch":true,
+    "ulimitExeModels":{
+      "Modelica.Electrical.PowerConverters.Examples.ACAC.SoftStarter":510
+    },
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
@@ -22,6 +28,9 @@
     "library":"Modelica",
     "libraryVersion":"4.0.0",
     "libraryVersionExactMatch":true,
+    "ulimitExeModels":{
+      "Modelica.Electrical.PowerConverters.Examples.ACAC.SoftStarter":510
+    },
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
@@ -174,7 +183,12 @@
     "libraryVersion":"maint.11.x",
     "libraryVersionNameForTests":"11",
     "ulimitOmc":300,
-    "ulimitExe":400,
+    "ulimitExeModels":{
+      "Buildings.Examples.DualFanDualDuct.ClosedLoop":360,
+      "Buildings.ThermalZones.EnergyPlus_9_6_0.Examples.SmallOffice.Guideline36Spring":420,
+      "Buildings.ThermalZones.EnergyPlus_9_6_0.Examples.SmallOffice.Guideline36Summer":420,
+      "Buildings.ThermalZones.EnergyPlus_9_6_0.Examples.SmallOffice.Guideline36Winter":510
+    },
     "runOnceBeforeTesting":[["$resourceLocation/src/ThermalZones/install.py", "--binaries-for-os-only"]],
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"_",
@@ -187,7 +201,12 @@
     "libraryVersion":"maint.12.x",
     "libraryVersionNameForTests":"12",
     "ulimitOmc":300,
-    "ulimitExe":400,
+    "ulimitExeModels":{
+      "Buildings.Examples.DualFanDualDuct.ClosedLoop":390,
+      "Buildings.Fluid.Geothermal.ZonedBorefields.Examples.SeriesConnectedZones":390,
+      "Buildings.ThermalZones.EnergyPlus_24_2_0.Examples.SmallOffice.Guideline36Spring":450,
+      "Buildings.ThermalZones.EnergyPlus_24_2_0.Examples.SmallOffice.Guideline36Summer":420
+    },
     "runOnceBeforeTesting":[["$resourceLocation/src/ThermalZones/install.py", "--binaries-for-os-only"]],
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"_",
@@ -200,7 +219,16 @@
     "libraryVersion":"master",
     "libraryVersionNameForTests":"latest",
     "ulimitOmc":300,
-    "ulimitExe":800,
+    "ulimitExeModels":{
+      "Buildings.DHC.Examples.Combined.SeriesConstantFlow":780,
+      "Buildings.DHC.Examples.Combined.SeriesVariableFlow":810,
+      "Buildings.Examples.DualFanDualDuct.ClosedLoop":390,
+      "Buildings.Examples.VAVReheat.Guideline36":330,
+      "Buildings.Fluid.Geothermal.ZonedBorefields.Examples.SeriesConnectedZones":360,
+      "Buildings.ThermalZones.EnergyPlus_24_2_0.Examples.SmallOffice.Guideline36Spring":450,
+      "Buildings.ThermalZones.EnergyPlus_24_2_0.Examples.SmallOffice.Guideline36Summer":420,
+      "Buildings.ThermalZones.EnergyPlus_24_2_0.Examples.SmallOffice.Guideline36Winter":600
+    },
     "runOnceBeforeTesting":[["$resourceLocation/src/ThermalZones/install.py", "--binaries-for-os-only"]],
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"_",
@@ -209,10 +237,18 @@
   {
     "library":"BuildingSystems",
     "libraryVersion":"master",
-    "libraryVersionNameForTests":""
+    "libraryVersionNameForTests":"",
+    "ulimitExeModels":{
+      "BuildingSystems.Applications.AirConditioningSystems.PhotovoltaicCoolingSystem":450,
+      "BuildingSystems.Applications.HeatingSystems.SolarHeatingSystem":600,
+      "BuildingSystems.Buildings.Geometries.Viewfactors.Examples.RectangularCuboidSurfaces":510
+    }
   },
   {
     "library":"BuildSysPro",
+    "ulimitExeModels":{
+      "BuildSysPro.Systems.HVAC.Emission.Examples.MozartJoulePIControlled":330
+    },
     "_comment":"IncludeDirectory says modelica://BuildSysPro/Resources/C-Sources, which does not exist; the IBPSA C sources are in IBPSA/Resources/C-Sources (Resources/IBPSA/C-Sources in 3.5.0 and older). Some of them call str*/malloc/ModelicaError without including the header",
     "extraCustomCommands":["setCFlags(getCFlags() + \" -include string.h -include stdlib.h -include ModelicaUtilities.h \\\"-I$libraryLocation/IBPSA/Resources/C-Sources\\\" \\\"-I$libraryLocation/Resources/IBPSA/C-Sources\\\"\")"]
   },
@@ -238,7 +274,6 @@
   {
     "library":"ClaRa",
     "ulimitOmc":800,
-    "ulimitExe":800,
     "referenceFileExtension":"mat",
     "referenceFileNameDelimiter":".",
     "referenceFiles":{
@@ -251,7 +286,6 @@
   {
     "library":"ClaRa",
     "ulimitOmc":800,
-    "ulimitExe":800,
     "libraryVersion":"main",
     "libraryVersionNameForTests":"dev",
     "referenceFileExtension":"mat",
@@ -275,6 +309,9 @@
   },
   {
     "library":"Dynawo",
+    "ulimitExeModels":{
+      "Dynawo.Examples.RVS.TestCases.TestB.TestBNoSvcNoLoadReset":330
+    },
     "extraCustomCommands":["setCommandLineOptions(\"--allowNonStandardModelica=implicitParameterStartAttribute,illegalConditionalContext\");"]
   },
   {
@@ -425,7 +462,11 @@
     "library":"PhotoVoltaics"
   },
   {
-    "library":"PhotoVoltaics_TGM"
+    "library":"PhotoVoltaics_TGM",
+    "ulimitExeModels":{
+      "PhotoVoltaics_TGM.TGM_Comax_Analytical_2016":480,
+      "PhotoVoltaics_TGM.TGM_Trina_Analytical_2016":510
+    }
   },
   {
     "library":"PNlib",
@@ -468,7 +509,9 @@
     "libraryVersion":"master",
     "libraryVersionNameForTests":"",
     "ulimitOmc":300,
-    "ulimitExe":300,
+    "ulimitExeModels":{
+      "ScalableTestSuite.Thermal.DistrictHeating.ScaledExperiments.HeatingSystem_N_80":390
+    },
     "ulimitMemory":12582912,
     "optlevel":"-Os -march=native",
     "referenceFileExtension":"mat",
@@ -484,7 +527,9 @@
     "libraryVersion":"master",
     "libraryVersionNameForTests":"noopt",
     "ulimitOmc":300,
-    "ulimitExe":300,
+    "ulimitExeModels":{
+      "ScalableTestSuite.Thermal.Advection.ScaledExperiments.SteamPipe_N_1280":330
+    },
     "ulimitMemory":12582912,
     "optlevel":"-O0",
     "referenceFileExtension":"mat",
@@ -528,7 +573,11 @@
     "library":"ThermofluidStream",
     "libraryVersion":"main",
     "libraryVersionNameForTests":"dev",
-    "ulimitExe":1200,
+    "ulimitExeModels":{
+      "ThermofluidStream.Boundaries.Tests.VolumesDirectCoupling":1350,
+      "ThermofluidStream.Examples.ReverseHeatPump":390,
+      "ThermofluidStream.Undirected.Boundaries.Tests.VolumesDirectCoupling":420
+    },
     "referenceFileExtension":"mat",
     "referenceFileNameDelimiter":".",
     "referenceFinalDot":"_ref.",
@@ -537,7 +586,11 @@
   },
   {
     "library":"ThermofluidStream",
-    "ulimitExe":1200,
+    "ulimitExeModels":{
+      "ThermofluidStream.Boundaries.Tests.VolumesDirectCoupling":1320,
+      "ThermofluidStream.Examples.ReverseHeatPump":690,
+      "ThermofluidStream.Undirected.Boundaries.Tests.VolumesDirectCoupling":420
+    },
     "referenceFileExtension":"mat",
     "referenceFileNameDelimiter":".",
     "referenceFinalDot":"_ref.",
@@ -567,17 +620,29 @@
   },
   {
     "library":"ThermoPower",
+    "ulimitExeModels":{
+      "ThermoPower.Test.DistributedParameterComponents.TestFlow1D2phChen_hf":390,
+      "ThermoPower.Test.DistributedParameterComponents.TestWaterFlow1DFEM_F":390
+    },
     "optlevel":"-Os -march=native"
   },
   {
     "library":"ThermoPower",
     "libraryVersion":"4.0.0-dev",
+    "ulimitExeModels":{
+      "ThermoPower.Test.DistributedParameterComponents.TestWaterFlow1DFEM_F":390,
+      "ThermoPower.Test.DistributedParameterComponents.TestWaterFlow1DFEMnm_F":570
+    },
     "optlevel":"-Os -march=native"
   },
   {
     "library":"ThermoSysPro",
     "libraryVersion":"master",
-    "libraryVersionNameForTests":""
+    "libraryVersionNameForTests":"",
+    "ulimitExeModels":{
+      "ThermoSysPro.Examples.SimpleExamples.TestCentrifugalPump7":570,
+      "ThermoSysPro.Fluid.Examples.SimpleExamples.TestDynamicWaterHeating":540
+    }
   },
   {
     "library":"TransiEnt",

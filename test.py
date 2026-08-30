@@ -16,7 +16,7 @@ from subprocess import call
 from monotonic import monotonic
 from omcommon import friendlyStr, multiple_replace
 from natsort import natsorted
-from shared import readConfig, getReferenceFileName, simulationAcceptsFlag, isFMPy
+from shared import readConfig, getReferenceFileName, simulationAcceptsFlag, isFMPy, modelUlimitExe, simulationFlags
 from platform import processor
 import shared, resultsdb
 
@@ -203,6 +203,19 @@ if isWin or noSync:
   print("Created files directory")
   sys.stdout.flush()
 
+def killTree(pid, sig):
+  """Signal a process and everything it started; on Windows the shell the command
+  runs in is a process of its own, and killing it leaves the command running."""
+  try:
+    procs = [psutil.Process(pid)] + psutil.Process(pid).children(recursive=True)
+  except psutil.Error:
+    return
+  for process in procs:
+    try:
+      os.kill(process.pid, sig)
+    except (OSError, psutil.Error):
+      pass
+
 def runCommand(cmd, prefix, timeout):
   process = [None]
   def target():
@@ -220,7 +233,7 @@ def runCommand(cmd, prefix, timeout):
         process[0].wait(1)
 
 
-  thread = threading.Thread(target=target)
+  thread = threading.Thread(target=target, daemon=True)
   thread.start()
   thread.join(timeout)
 
@@ -229,16 +242,16 @@ def runCommand(cmd, prefix, timeout):
   if thread.is_alive():
     gotTimeout = True
     if isWin:
-      os.kill(process[0].pid, signal.SIGTERM)
+      killTree(process[0].pid, signal.SIGTERM)
     else:
       os.kill(-process[0].pid, signal.SIGTERM)
     thread.join(min(10, timeout))
     if thread.is_alive():
       if isWin:
-        os.kill(process[0].pid, signal.SIGKILL)
+        killTree(process[0].pid, shared.SIGKILL)
       else:
-        os.kill(-process[0].pid, signal.SIGKILL)
-    thread.join()
+        os.kill(-process[0].pid, shared.SIGKILL)
+    thread.join(10)
 
   if clean:
     try:
@@ -849,10 +862,9 @@ sys.stdout.flush()
 
 errorOccurred=False
 for (modelName,library,libName,name,conf) in tests:
-  if conf["alarmFlag"]!="":
-    conf["simFlags"]="%s %s=%d %s" % (conf["abortSlowSimulation"],conf["alarmFlag"],conf["ulimitExe"],conf["extraSimFlags"])
-  else:
-    conf["simFlags"]="%s %s" % (conf["abortSlowSimulation"],conf["extraSimFlags"])
+  # conf is shared by every test of the library, so these stay local.
+  ulimitExe = modelUlimitExe(conf, modelName)
+  simFlags = simulationFlags(conf, ulimitExe)
   replacements = (
     (u"#logFile#", "/tmp/OpenModelicaLibraryTesting.log"),
     (u"#library#", library),
@@ -866,7 +878,7 @@ for (modelName,library,libName,name,conf) in tests:
     (u"#reference_reltol#", str(conf["reference_reltol"])),
     (u"#reference_reltolDiffMinMax#", str(conf["reference_reltolDiffMinMax"])),
     (u"#reference_rangeDelta#", str(conf["reference_rangeDelta"])),
-    (u"#simFlags#", conf["simFlags"]),
+    (u"#simFlags#", simFlags),
     (u"#referenceFiles#", str(conf.get("referenceFilesURL") or conf.get("referenceFiles") or "")),
     (u"#referenceFileNameDelimiter#", conf["referenceFileNameDelimiter"]),
     (u"#referenceFileExtension#", conf["referenceFileExtension"]),
@@ -884,6 +896,8 @@ for (modelName,library,libName,name,conf) in tests:
     newconf["library"] = library
     newconf["modelName"] = modelName
     newconf["fileName"] = name
+    newconf["ulimitExe"] = ulimitExe
+    newconf["simFlags"] = simFlags
     try:
       newconf["referenceFile"] = getReferenceFileName(newconf).replace("\\","/")
     except Exception as e:
@@ -994,7 +1008,7 @@ else:
 if customTimeout > 0.0:
   cmd_res=Parallel(n_jobs=n_jobs, verbose=verbose)(delayed(runScript)(name, customTimeout, data["ulimitMemory"], runverbose) for (model,lib,libName,name,data) in tests)
 else:
-  cmd_res=Parallel(n_jobs=n_jobs, verbose=verbose)(delayed(runScript)(name, 2*data["ulimitOmc"]+data["ulimitExe"]+25, data["ulimitMemory"], runverbose) for (model,lib,libName,name,data) in tests)
+  cmd_res=Parallel(n_jobs=n_jobs, verbose=verbose)(delayed(runScript)(name, 2*data["ulimitOmc"]+modelUlimitExe(data, model)+25, data["ulimitMemory"], runverbose) for (model,lib,libName,name,data) in tests)
 stop=monotonic()
 print("Execution time: %s" % friendlyStr(stop-start))
 assert(stop-start >= 0.0)
@@ -1386,6 +1400,8 @@ for (resultBranch, runner) in resultBranches:
       (u"#metadata#", html.escape(conf["metadata"])),
       (u"#ulimitOmc#", html.escape(str(conf["ulimitOmc"]))),
       (u"#ulimitExe#", html.escape(str(conf["ulimitExe"]))),
+      (u"#ulimitExeModels#", "".join("Simulation time limit for %s: %ds<br>\n" % (html.escape(m), t)
+                                     for (m,t) in sorted(conf["ulimitExeModels"].items()))),
       (u"#defaultTolerance#", html.escape(str(conf["defaultTolerance"]))),
       (u"#defaultNumberOfIntervals#", html.escape(str(conf["defaultNumberOfIntervals"]))),
       (u"#simFlags#", html.escape(conf.get("simFlags") or "")),

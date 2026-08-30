@@ -42,7 +42,7 @@ OpenModelicaLibraryTesting Changes<br>
 #metadata#</pre></p>
 <p>
 BuildModel time limit: #ulimitOmc#s<br>
-Simulation time limit: #ulimitExe#s<br>
+Simulation time limit: #ulimitExe#s<br>#ulimitExeModels#
 Default tolerance: #defaultTolerance#<br>
 Default number of intervals: #defaultNumberOfIntervals#<br>
 Optimization level: #optlevel#</p>

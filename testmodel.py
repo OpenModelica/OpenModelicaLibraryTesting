@@ -112,6 +112,16 @@ def writeResultAndExit(exitStatus, useOsExit=False, omc=None, omc_new=None):
   else:
     sys.exit(exitStatus)
 
+def killChildren(sig, name):
+  """Signal everything this process started, one process at a time: Windows has no
+  process group to signal instead."""
+  for process in psutil.Process().children(recursive=True):
+    try:
+      os.kill(process.pid, sig)
+    except (OSError, psutil.Error):
+      with open(errFile, 'a+') as fp:
+        fp.write("Could not %s process: %s.\n" % (name, process.pid))
+
 def sendExpressionTimeout(omc, cmd, timeout):
   with open(errFile, 'a+') as fp:
     fp.write("%s [Timeout %s]\n" % (cmd, timeout))
@@ -128,11 +138,12 @@ def sendExpressionTimeout(omc, cmd, timeout):
       res[1] = cmd + " " + str(e)
 
   res=[None,None]
-  thread = threading.Thread(target=target, args=(res,))
+  # A daemon thread, so that one stuck in a ZMQ receive cannot keep the process
+  # alive past the exit below
+  thread = threading.Thread(target=target, args=(res,), daemon=True)
   thread.start()
   # Poll instead of a single join: if omc dies (crash, ulimit, ...) the thread is
-  # stuck in a ZMQ receive that never returns, so waiting out the timeout and then
-  # exiting normally would hang forever on that non-daemon thread
+  # stuck in that receive, and waiting out the whole timeout first buys nothing
   deadline = monotonic() + timeout
   while thread.is_alive() and monotonic() < deadline:
     thread.join(1)
@@ -157,22 +168,10 @@ def sendExpressionTimeout(omc, cmd, timeout):
           for line in omcLog:
             fp.write(line)
         print("OMC died, but the thread is still running? This will end badly.\n")
-    for process in psutil.Process().children(recursive=True):
-      try:
-        os.kill(process.pid, signal.SIGINT)
-      except OSError:
-        with open(errFile, 'a+') as fp:
-          fp.write("Could not SIGINT process: %s.\n" % process.pid)
-        pass
+    killChildren(signal.SIGINT, "SIGINT")
     thread.join(2)
     if thread.is_alive():
-      for process in psutil.Process().children(recursive=True):
-        try:
-          os.kill(process.pid, signal.SIGKILL)
-        except OSError:
-          with open(errFile, 'a+') as fp:
-            fp.write("Could not SIGKILL process: %s.\n" % process.pid)
-          pass
+      killChildren(shared.SIGKILL, "SIGKILL")
       with open(errFile, 'a+') as fp:
         fp.write("Aborted the command.\n")
       writeResultAndExit(0, True, omc, omc_new)
@@ -200,28 +199,16 @@ def checkOutputTimeout(cmd, timeout, conf=None):
       res[1] = cmd + " " + str(e)
 
   res=[None,None]
-  thread = threading.Thread(target=target, args=(res,))
+  thread = threading.Thread(target=target, args=(res,), daemon=True)
   thread.start()
   thread.join(timeout)
 
   if thread.is_alive():
-    for process in psutil.Process().children(recursive=True):
-      try:
-        os.killpg(process.pid, signal.SIGINT)
-      except OSError:
-        with open(errFile, 'a+') as fp:
-          fp.write("Could not SIGINT process: %s.\n" % process.pid)
-        pass
+    killChildren(signal.SIGINT, "SIGINT")
     thread.join(2)
     if thread.is_alive():
-      for process in psutil.Process().children(recursive=True):
-        try:
-          os.kill(process.pid, signal.SIGKILL)
-        except OSError:
-          with open(errFile, 'a+') as fp:
-            fp.write("Could not SIGKILL process: %s.\n" % process.pid)
-          pass
-      thread.join()
+      killChildren(shared.SIGKILL, "SIGKILL")
+      thread.join(2)
     if res[1] is None:
       res[1] = ""
   if res[1] is not None:

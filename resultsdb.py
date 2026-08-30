@@ -365,9 +365,7 @@ class _Postgres(_Db):
     self.host = hostname()
     self.claims = []
     self.heartbeatThread = None
-    self.execute(JOB_CLAIM)
-    self._migrateJobClaim()
-    self.commit()
+    self.jobClaimReady = False
 
   def _connect(self):
     """Open the connection, asking the kernel to keep it alive.
@@ -418,6 +416,19 @@ class _Postgres(_Db):
       self.recover()
       self.conn.commit()
     self.pending = []
+
+  def _prepareJobClaim(self):
+    """Create and migrate job_claim, the first time a job is claimed.
+
+    Only a test run claims anything, so doing it on connect would make the
+    report scripts ask for write rights they never use.
+    """
+    if self.jobClaimReady:
+      return
+    self.execute(JOB_CLAIM)
+    self._migrateJobClaim()
+    self.commit()
+    self.jobClaimReady = True
 
   def _migrateJobClaim(self):
     """Narrow an older job_claim to (branch, libname).
@@ -539,6 +550,7 @@ class _Postgres(_Db):
     A machine that dies stops sending its heartbeat, and after
     STALE_CLAIM_MINUTES its jobs are up for grabs again.
     """
+    self._prepareJobClaim()
     key = (branch, libname)
     got = self.execute("""INSERT INTO job_claim
         (branch, libname, libversion, omcversion, confighash, host, state)
