@@ -47,7 +47,8 @@ POSTGRES_TYPES = {"bigint": "bigint", "int": "integer", "real": "double precisio
 # reports, so it can be rebuilt from here when the published one is missing,
 # unreadable or out of date - and a run that cannot read it back from the web
 # server no longer has to choose between skipping the branch and publishing a
-# history with only today's report in it.
+# history with only today's report in it.  A row says the report is published,
+# so publish-reports.py writes it after the upload.
 HISTORY_COLUMNS = [
     ("branch", "text"), ("date1", "bigint"), ("date2", "bigint"), ("fname", "text"),
     ("improved", "int"), ("regressions", "int"),
@@ -192,6 +193,20 @@ class _Db:
                      for (c, t) in HISTORY_COLUMNS)
     self.execute("CREATE TABLE IF NOT EXISTS history (%s, PRIMARY KEY (%s))"
                  % (cols, ", ".join(HISTORY_KEY)))
+    self.commit()
+
+  def insertHistory(self, branch, entries):
+    """Record reports that are on the web server.
+
+    A report the table knows about is never generated again, so do not call
+    this until the files are up.
+    """
+    cursor = self.cursor()
+    for entry in entries:
+      cursor.execute("INSERT INTO history (%s) VALUES (%s)%s"
+                     % (",".join(c for (c, _) in HISTORY_COLUMNS),
+                        ",".join(["?"] * len(HISTORY_COLUMNS)), self.insertIgnore()),
+                     (branch,) + tuple(entry))
     self.commit()
 
   def createDateIndex(self, branch):
