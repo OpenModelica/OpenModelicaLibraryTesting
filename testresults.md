@@ -26,6 +26,11 @@
     runtime inside it, `wasm-jit-me` its FMI 3.0 Model Exchange interface and
     `wasm-jit-cs` its FMI 3.0 Co-Simulation one — so the three differ only in
     how the same compiled model is driven
+  - [C+Rust](https://libraries.openmodelica.org/branches/overview-c-plus-rust.html):
+    simulation with the Rust runtime under the C code generator (compiler flag
+    `--simCodeTarget=C+Rust`). The generated sources are the ones the C target
+    emits; the executable links `libSimulationRuntimeRust` instead of
+    `libSimulationRuntimeC`, so the difference against master is the runtime alone
 
 - **Regression reports and history plots**:
   Regression reports are periodically generated, using the latest development
