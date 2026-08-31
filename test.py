@@ -16,7 +16,7 @@ from subprocess import call
 from monotonic import monotonic
 from omcommon import friendlyStr, multiple_replace
 from natsort import natsorted
-from shared import readConfig, getReferenceFileName, simulationAcceptsFlag, isFMPy, modelUlimitExe, simulationFlags
+from shared import readConfig, getReferenceFileName, simulationAcceptsFlag, isFMPy, modelUlimitExe, simulationFlags, alarmGrace
 from platform import processor
 import shared, resultsdb
 
@@ -1008,7 +1008,9 @@ else:
 if customTimeout > 0.0:
   cmd_res=Parallel(n_jobs=n_jobs, verbose=verbose)(delayed(runScript)(name, customTimeout, data["ulimitMemory"], runverbose) for (model,lib,libName,name,data) in tests)
 else:
-  cmd_res=Parallel(n_jobs=n_jobs, verbose=verbose)(delayed(runScript)(name, 2*data["ulimitOmc"]+modelUlimitExe(data, model)+25, data["ulimitMemory"], runverbose) for (model,lib,libName,name,data) in tests)
+  # Each command that runs out of time keeps running for a grace before it gives
+  # up; killing testmodel.py during it throws away the phase times.
+  cmd_res=Parallel(n_jobs=n_jobs, verbose=verbose)(delayed(runScript)(name, 2*(data["ulimitOmc"]+alarmGrace(data["ulimitOmc"]))+modelUlimitExe(data, model)+alarmGrace(modelUlimitExe(data, model))+25, data["ulimitMemory"], runverbose) for (model,lib,libName,name,data) in tests)
 stop=monotonic()
 print("Execution time: %s" % friendlyStr(stop-start))
 assert(stop-start >= 0.0)

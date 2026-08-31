@@ -51,17 +51,18 @@ class TimeoutError(Exception):
   pass
 
 runningPhase = None
-"""What is running now, as (key of execstat, when it started).
+"""What is running now, as (results dict, key in it, when it started).
 
 A command the watchdog has to kill never returns to its caller -
 sendExpressionTimeout ends the process itself - so the caller's own timeout
 handler does not run and the phase reports no time at all. Recording it here
-instead covers every way out, because they all write the results first.
+instead covers every way out, because they all write the results first. The
+dict is None for the model's own results, one runner's when it is its turn.
 """
 
-def phaseStarts(key):
+def phaseStarts(key, stat=None):
   global runningPhase
-  runningPhase = (key, monotonic())
+  runningPhase = (stat, key, monotonic())
 
 def phaseEnded():
   global runningPhase
@@ -69,10 +70,11 @@ def phaseEnded():
 
 def writeResult():
   if runningPhase is not None:
-    (key, started) = runningPhase
+    (stat, key, started) = runningPhase
+    target = execstat if stat is None else stat
     # Only if the phase did not get to report its own time.
-    if not execstat.get(key):
-      execstat[key] = monotonic() - started
+    if not target.get(key):
+      target[key] = monotonic() - started
   with open(statFile, 'w') as fp:
     json.dump(execstat, fp)
     fp.flush()
@@ -143,8 +145,9 @@ def sendExpressionTimeout(omc, cmd, timeout):
   thread = threading.Thread(target=target, args=(res,), daemon=True)
   thread.start()
   # Poll instead of a single join: if omc dies (crash, ulimit, ...) the thread is
-  # stuck in that receive, and waiting out the whole timeout first buys nothing
-  deadline = monotonic() + timeout
+  # stuck in that receive, and waiting out the whole timeout first buys nothing.
+  # The deadline outwaits omc's own, which aborts the command and answers.
+  deadline = monotonic() + timeout + shared.alarmGrace(timeout) + 5
   while thread.is_alive() and monotonic() < deadline:
     thread.join(1)
     status = omc._omc_process.poll()
@@ -553,30 +556,29 @@ if not isWasmJit or (useSimulate and not useColdHot):
   omc = quit_omc(omc)
 
 print(execTimeTranslateModel,frontend,backend)
-if backend != -1:
-  execstat["frontend"]=frontend-backend
-  if templates != -1:
-    execstat["backend"]=backend-simcode
-    if simcode != -1:
-      execstat["simcode"]=simcode-templates
-      if templates != -1:
-        execstat["templates"]=templates-max(buildmodel, 0.0)
-        if res:
-          execstat["phase"]=4
-        else:
-          execstat["phase"]=3
-      else:
-        execstat["phase"]=3
-        execstat["templates"]=templates
-    else:
-      execstat["phase"]=2
-      execstat["simcode"]=simcode
-  else:
-    execstat["phase"]=1
-    execstat["backend"]=backend
-else:
+# The clocks nest, frontend > backend > simcode > templates > buildmodel, each
+# reading the time since its own phase started, so a phase's own time is the
+# difference to the next one in. -1 is a phase this translation never started.
+if backend == -1:
   execstat["phase"]=0
-  execstat["frontend"]=frontend
+  if frontend != -1:
+    execstat["frontend"]=frontend
+elif simcode == -1:
+  execstat["phase"]=1
+  execstat["frontend"]=frontend-backend
+  execstat["backend"]=backend
+elif templates == -1:
+  execstat["phase"]=2
+  execstat["frontend"]=frontend-backend
+  execstat["backend"]=backend-simcode
+  execstat["simcode"]=simcode
+else:
+  execstat["frontend"]=frontend-backend
+  execstat["backend"]=backend-simcode
+  execstat["simcode"]=simcode-templates
+  # -1: the translation never got to the build, so there is none to take out.
+  execstat["templates"]=templates-max(buildmodel, 0.0)
+  execstat["phase"]=4 if res else 3
 
 with open(errFile, 'a+') as fp:
   fp.write(err)
@@ -733,15 +735,19 @@ def simulateExecutable(name, solverFlags, resFile, simFile):
   return checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s > %s.pipe 2>&1)" % (pipe,pipe,pipe,simFile,cmd,pipe), conf["ulimitExe"], conf)
 
 def simElapsed():
-  # omc's own time: the wall clock here covers the wrong run for these flags
+  # omc's own time: the wall clock here covers the wrong run for these flags.
+  # A run omc aborted reports none, and then the wall clock is all there is.
   if useSimulate or useColdHot or useArtifact:
-    return (simres or {}).get("timeSimulation") or 0.0
+    return (simres or {}).get("timeSimulation") or (monotonic()-start)
   return monotonic()-start
 
 start=monotonic()
 # Set when the first FMI simulator fails and there are others waiting for the
 # same FMU, so that its result file is not compared against the reference.
 firstSimulatorFailed = False
+# omc dying on its own alarm ends the run from inside sendExpressionTimeout, so
+# the handler below never runs; naming the phase covers that way out too.
+phaseStarts("sim")
 try:
   # TODO: Timeout more reliably...
   if conf.get("fmi"):
@@ -796,9 +802,11 @@ try:
   execstat["sim"] = simElapsed()
   execstat["simwall"] = monotonic()-start
   execstat["phase"] = 6
+  phaseEnded()
 except TimeoutError as e:
   execstat["sim"] = monotonic()-start
   execstat["simwall"] = execstat["sim"]
+  phaseEnded()
   # checkOutputTimeout raises TimeoutError for a command that fails as well as
   # for one that runs out of time, so this covers both.
   if len(runners) > 1:
@@ -939,6 +947,7 @@ for (name, command) in runners[1:]:
   simFileOther = os.path.abspath("../files/%s_%s.sim" % (conf["fileName"], name)).replace('\\','/')
   other = resultFile(name)
   start = monotonic()
+  phaseStarts("sim", stat)
   try:
     if useArtifact:
       res = simulateArtifact(name, command, other, simFileOther)
@@ -961,6 +970,7 @@ for (name, command) in runners[1:]:
     stat["simwall"] = stat["sim"]
     with open(errFile, 'a+') as fp:
       fp.write("%s timed out simulating the %s\n" % (name, "artifact" if useArtifact else ("model" if solverRunners else "FMU")))
+  phaseEnded()
   writeResult()
 
 # quit omc_new: every verification needed it
