@@ -779,6 +779,18 @@ def sccachePreamble() {
 }
 
 /**
+  * Whether omc is built with cmake for `branch`, rather than with Autoconf and Makefiles.
+  *
+  * The Autoconf+Make build is being removed from OpenModelica (OpenModelica/OpenModelica#14387),
+  * so master - and the pull requests that would be merged into it - is built with cmake. The
+  * maintenance branches are still released from the Autoconf build and keep it until they are
+  * dropped.
+  */
+def buildsWithCMake(branch) {
+  return !branch.startsWith('maintenance/')
+}
+
+/**
   * Launches the test.py script with the given options.
   *
   * @param branch:              OpenModelica branch to test. Will checkout the branch and build omc from it.
@@ -796,8 +808,9 @@ def sccachePreamble() {
   *                             physical cpus on the machine'.
   * @param libs_config_file:    The config file to be used for testing.
   *                             This file specifies which libraries to test and what options to use for them.
-  * @param cmakeFlags:          Target-specific cmake flags, e.g. `-DOM_OMC_ENABLE_RUST=ON`. If non-empty, omc is
-  *                             built with cmake instead of autotools; the shared release flags are added here.
+  * @param cmakeFlags:          Target-specific cmake flags, e.g. `-DOM_OMC_ENABLE_RUST=ON`, added to the
+  *                             shared release flags. Only for the branches built with cmake, see
+  *                             buildsWithCMake().
   * @param dockerfile:          Directory with a Dockerfile, relative to the testing repository. Defaults to
   *                             `.CI/testing`, the image every job runs in: the omc build, the OMSimulator
   *                             build and test.py happen inside it, and only the steps using the node's own
@@ -979,10 +992,18 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
 
   OMCPATH = "${omcompiler ? '../' : './'}OMCompiler"
 
+  def useCMake = buildsWithCMake(branch)
   // The build runs in OMCompiler, one level below the cmake source tree.
-  if (cmakeFlags && omcompiler) {
+  if (useCMake && omcompiler) {
     error 'cmake builds need the OMCompiler directory of the OpenModelica repository (omcompiler=false)'
   }
+  if (cmakeFlags && !useCMake) {
+    error "${branch} is built with Autoconf and has no use for the cmake flags ${cmakeFlags}"
+  }
+  // Only the target sharing the compile cache of the OpenModelica job has something to look up in
+  // it; starting a server for the other cmake builds would just cost them the credentials and the
+  // startup.
+  def useSccache = cmakeFlags.contains('sccache')
   // The build used to say -j9, the cores of the machine this file was written
   // for in 2019, and -j16, the cores of the ryzen-5950x machines that replaced
   // it - the commit that raised the others to 16 left the omc build at 9. Named
@@ -992,22 +1013,29 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
   echo "Building omc with -j${buildJobs} on ${env.NODE_NAME}"
 
   def buildOMC
-  if (cmakeFlags) {
-    buildOMC = sccachePreamble() + """
+  if (useCMake) {
+    buildOMC = (useSccache ? sccachePreamble() : '') + """
     cmake -S .. -B ../build_cmake -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_INSTALL_PREFIX="`pwd`/build" \
-      -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_Fortran_COMPILER=gfortran \
-      -DCMAKE_C_FLAGS=-march=native -DCMAKE_CXX_FLAGS=-march=native \
-      -DOM_USE_CCACHE=OFF -DOM_ENABLE_GUI_CLIENTS=OFF -DOM_ENABLE_OMSIMULATOR=OFF \
+      -DCMAKE_C_COMPILER=clang \
+      -DCMAKE_CXX_COMPILER=clang++ \
+      -DCMAKE_Fortran_COMPILER=gfortran \
+      -DCMAKE_C_FLAGS=-march=native \
+      -DCMAKE_CXX_FLAGS=-march=native \
+      -DOM_USE_CCACHE=OFF \
+      -DOM_ENABLE_GUI_CLIENTS=OFF \
+      -DOM_ENABLE_OMSIMULATOR=OFF \
+      -DOM_OMC_ENABLE_CPP_RUNTIME=ON \
       ${cmakeFlags} || exit 1
     if ! time cmake --build ../build_cmake --parallel ${buildJobs} --target install > log 2>&1; then
       cat log
       exit 1
     fi
     build/bin/omc --version || exit 1
-    sccache --show-stats || true
-    """
+    """ + (useSccache ? 'sccache --show-stats || true\n' : '')
   } else {
+    // The maintenance branches only, see buildsWithCMake(); the `master` case below is what this
+    // build did for it before the switch.
     buildOMC = """
     autoreconf --install
     ./configure --with-cppruntime --without-omc --disable-modelica3d CC=clang CXX=clang++ FC=gfortran CFLAGS='-O2 -march=native' --with-omlibrary=all --with-omniORB
@@ -1070,6 +1098,9 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
   export OPENMODELICAHOME="`pwd`/build"
 
   git rev-parse --verify HEAD > .newhash
+  # Part of the stamp rather than the commit alone: a build/ cached from the other build system is
+  # not what this job would produce for the same commit.
+  echo "${useCMake ? 'cmake' : 'autotools'}" >> .newhash
   echo New Hash:
   cat .newhash
   echo Old Hash:
@@ -1105,7 +1136,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
   fi
   """
 
-  if (cmakeFlags) {
+  if (useSccache) {
     withSccache { runSh(checkoutAndBuild) }
   } else {
     runSh(checkoutAndBuild)

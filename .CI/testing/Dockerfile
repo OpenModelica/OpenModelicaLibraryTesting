@@ -13,9 +13,9 @@ FROM docker.openmodelica.org/build-deps:ubuntu-26.04-rust
 # rsync/ssh publish the results; time and killall are used around test.py.
 # libcomedi-dev libx11-dev is used by Modelica_DeviceDrivers
 # Python 3.8 and 3.12 are used by Buildings
-# autoconf/automake/libtool and omniORB build the targets that do not ask for a cmake omc: those
-# still go through `autoreconf && ./configure --with-omniORB`. The base image carries what the
-# cmake build needs, which is not quite the same set.
+# autoconf/automake/libtool and omniORB build the maintenance branches: master builds with cmake,
+# while v1.26 and v1.27 still go through `autoreconf && ./configure --with-omniORB`. The base image
+# carries what the cmake build needs, which is not quite the same set.
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update \
   && apt-get install -qy software-properties-common \
