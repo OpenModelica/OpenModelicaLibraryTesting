@@ -36,6 +36,7 @@ pipeline {
     booleanParam(name: 'ida', defaultValue: false, description: 'master branch, simulated with -s ida, filling ida (ryzen-5950x-1). Ticking it together with master, cvode or gbode runs one job that builds every model once and simulates it with each of them. This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'generateSymbolicJacobian', defaultValue: false, description: 'master branch, with --generateSymbolicJacobian (ryzen-5950x-1). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'wasm_jit', defaultValue: false, description: 'master branch, with --simCodeTarget=wasm-jit (ryzen-9950x). Every model is exported once as a wasm artifact and simulated three ways, filling wasm-jit (the runtime inside the artifact), wasm-jit-me (FMI 3.0 Model Exchange) and wasm-jit-cs (FMI 3.0 Co-Simulation). This is an experimental job that does not run on a fixed schedule.')
+    booleanParam(name: 'c_plus_rust', defaultValue: false, description: 'master branch, with --simCodeTarget=C+Rust, filling c-plus-rust (ryzen-5950x-1). The C code generator emits what it always did; the executable links libSimulationRuntimeRust instead of libSimulationRuntimeC, so the difference against master is the simulation runtime alone. This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'heavy_tests', defaultValue: false, description: 'master branch, runs one test at a time. That is, no parallel launching of tests. omc will use multiple threads for each test (-n=1 is not set unlike the other regression tests.), (ryzen-5950x-1). This is an experimental job that does not run on a fixed schedule.')
 
     string(name: 'pull_request', defaultValue: '', description: 'Test an OpenModelica pull request rather than a branch: its number, e.g. 16354. omc is built from refs/pull/<N>/merge - the pull request as it would land - the results fill a pr-<N> table, and the report compares them against the newest run of pull_request_baseline. Left empty, nothing of this runs.')
@@ -341,6 +342,26 @@ pipeline {
                             '-DOM_OMC_ENABLE_RUST=ON -DRUST_OMC_CI=ON -DRUST_OMC_THREADS=4 -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache')
         }
       }
+      stage('C+Rust') {
+        agent {
+          node {
+            label 'ryzen-5950x-1'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.c_plus_rust }
+        }
+        steps {
+          // A cmake build rather than the autotools one every other C target uses:
+          // libSimulationRuntimeRust is a cmake target (SimulationRuntime/rust), and
+          // without it the generated makefile has nothing to link.
+          runRegressiontest('master', 'c-plus-rust', 'setCommandLineOptions("--simCodeTarget=C+Rust")', '', false, '', '', false, false, 0, 'configs/conf.json',
+                            '-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache')
+        }
+      }
       stage('generateSymbolicJacobian') {
         agent {
           node {
@@ -435,7 +456,7 @@ pipeline {
       }
       when {
         beforeAgent true
-        expression { params.v1_25 || params.v1_26 || params.v1_27 || params.master || params.conversion_script || params.report_ryzen_5950x_1 || params.report_ryzen_5950x_2 || params.newInst_newBackend || params.generateSymbolicJacobian || params.heavy_tests || params.fmi_v1_25 || params.fmi_v1_26 || params.fmi_v1_27 || params.fmi_master || params.fmpy_fmi_v1_25 || params.fmpy_fmi_v1_26 || params.fmpy_fmi_v1_27 || params.fmpy_fmi_master || params.newInst_daeMode || params.newBackend_daeMode || params.oldInst || params.cpp || params.cvode || params.gbode || params.ida || params.wasm_jit}
+        expression { params.v1_25 || params.v1_26 || params.v1_27 || params.master || params.conversion_script || params.report_ryzen_5950x_1 || params.report_ryzen_5950x_2 || params.newInst_newBackend || params.generateSymbolicJacobian || params.heavy_tests || params.fmi_v1_25 || params.fmi_v1_26 || params.fmi_v1_27 || params.fmi_master || params.fmpy_fmi_v1_25 || params.fmpy_fmi_v1_26 || params.fmpy_fmi_v1_27 || params.fmpy_fmi_master || params.newInst_daeMode || params.newBackend_daeMode || params.oldInst || params.cpp || params.cvode || params.gbode || params.ida || params.wasm_jit || params.c_plus_rust}
       }
       environment {
         GITBRANCHES = 'maintenance/v1.20 maintenance/v1.21 maintenance/v1.22 maintenance/v1.23 maintenance/v1.24 maintenance/v1.25 maintenance/v1.26 maintenance/v1.27 master newInst-newBackend'
@@ -445,7 +466,8 @@ pipeline {
         GITBRANCHES_NEWBACKEND_DAE = 'newBackend-daeMode'
         GITBRANCHES_CPP = 'v1.19-cpp v1.20-cpp v1.21-cpp v1.22-cpp v1.23-cpp v1.24-cpp v1.25-cpp cpp v1.26-cpp v1.27-cpp'
         GITBRANCHES_WASM_JIT = 'wasm-jit wasm-jit-me wasm-jit-cs'
-        GITBRANCHES_SPECIAL = 'master wasm-jit newInst-newBackend'
+        GITBRANCHES_C_PLUS_RUST = 'c-plus-rust'
+        GITBRANCHES_SPECIAL = 'master wasm-jit c-plus-rust newInst-newBackend'
         PYTHONIOENCODING = 'utf-8'
         IDA_EMAIL = credentials('IDA email')
         // A secret file holding one pgpass line; libpq reads the password from
@@ -465,8 +487,8 @@ pipeline {
         '''
         sh './clean-empty-omcversion-dates.py'
 
-        sh "./all-reports.py --email --omcgitdir=OpenModelica ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT} conversion heavy_tests generateSymbolicJacobian gbode cvode ida"
-        sh "./all-plots.py ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT} conversion heavy_tests generateSymbolicJacobian gbode cvode ida"
+        sh "./all-reports.py --email --omcgitdir=OpenModelica ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT} ${env.GITBRANCHES_C_PLUS_RUST} conversion heavy_tests generateSymbolicJacobian gbode cvode ida"
+        sh "./all-plots.py ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT} ${env.GITBRANCHES_C_PLUS_RUST} conversion heavy_tests generateSymbolicJacobian gbode cvode ida"
 
         sh "./report.py --branches='${env.GITBRANCHES} ${env.GITBRANCHES_WASM_JIT}' configs/conf.json configs/conf-old.json configs/conf-nonstandard.json"
         sh 'mv overview.html overview-combined.html'
@@ -532,6 +554,11 @@ pipeline {
         // an export, so only the simulation and the verification tell them apart.
         sh "./report.py --branches='${env.GITBRANCHES_WASM_JIT} master' configs/conf.json"
         sh "mv overview.html overview-wasm-jit.html"
+
+        // Against master, which the job shares a machine and a compiler with: the
+        // simulation runtime is the only thing that differs.
+        sh "./report.py --branches='${env.GITBRANCHES_C_PLUS_RUST} master' configs/conf.json"
+        sh "mv overview.html overview-c-plus-rust.html"
 
         sh "./report.py --branches='${env.GITBRANCHES_CPP}' configs/conf.json"
         sh "mv overview.html overview-c++.html"

@@ -355,6 +355,23 @@ entry there (`simflags` is what is appended to the model's simulation flags,
 `--wasmjitrunner`, `--fmisimulator` and `--solver` each fan one build out into
 several result branches, so a job uses one of them, not several.
 
+### The Rust simulation runtime under the C code generator
+
+`--simCodeTarget=C+Rust` emits the sources `--simCodeTarget=C` emits and links
+`libSimulationRuntimeRust` instead of `libSimulationRuntimeC`, so a run against
+master differs in the simulation runtime and nothing else.
+
+```bash
+./test.py --branch=c-plus-rust --extraflags='--simCodeTarget=C+Rust' configs/myConf.json
+./report.py --branches="c-plus-rust master"
+# the overview.html it writes is published as overview-c-plus-rust.html
+```
+
+The runtime is a cmake target of the OpenModelica build
+(`SimulationRuntime/rust`, `OM_ENABLE_RUST_SIM_RUNTIME`, on by default where
+cargo is installed) and has no autotools equivalent, so omc has to be built with
+cmake or the generated makefile finds nothing to link.
+
 ### One build, several solvers
 
 Which solver integrates a model is a simulation flag, so testing another one
