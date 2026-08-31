@@ -467,7 +467,7 @@ pipeline {
         GITBRANCHES_CPP = 'v1.19-cpp v1.20-cpp v1.21-cpp v1.22-cpp v1.23-cpp v1.24-cpp v1.25-cpp cpp v1.26-cpp v1.27-cpp'
         GITBRANCHES_WASM_JIT = 'wasm-jit wasm-jit-me wasm-jit-cs'
         GITBRANCHES_C_PLUS_RUST = '' // 'c-plus-rust'
-        GITBRANCHES_SPECIAL = 'master wasm-jit c-plus-rust newInst-newBackend'
+        GITBRANCHES_SPECIAL = 'master newInst-newBackend'
         PYTHONIOENCODING = 'utf-8'
         IDA_EMAIL = credentials('IDA email')
         // A secret file holding one pgpass line; libpq reads the password from
