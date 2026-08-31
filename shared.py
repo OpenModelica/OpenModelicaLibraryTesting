@@ -85,6 +85,14 @@ def fixData(data,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCom
     print("Failed to fix data for: %s with extra args: %s" % (str(data),str((abortSimulationFlag,alarmFlag,defaultCustomCommands))))
     raise
 
+def alarmGrace(timeout):
+  """How long omc keeps running past its own alarm before it kills itself.
+
+  Mirrors SystemImpl__alarm. Waiting it out is what lets a timed-out command
+  report the phases it did complete.
+  """
+  return min(60, max(5, timeout // 10))
+
 def modelUlimitExe(conf, modelName):
   """How long that model may simulate: what its library allows, unless the model
   is one of the few named in ulimitExeModels."""
