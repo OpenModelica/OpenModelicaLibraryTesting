@@ -477,7 +477,7 @@ pipeline {
         PGPASSFILE = credentials('omdb-pgpass')
       }
       steps {
-        sh 'rm -rf *.html history'
+        sh 'rm -rf *.html history pending-reports.json'
         sh '''
         if ! test -d OpenModelica; then
           git clone https://openmodelica.org/git-readonly/OpenModelica.git
@@ -489,6 +489,12 @@ pipeline {
 
         sh "./all-reports.py --email --omcgitdir=OpenModelica ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT} ${env.GITBRANCHES_C_PLUS_RUST} conversion heavy_tests generateSymbolicJacobian gbode cvode ida"
         sh "./all-plots.py ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT} ${env.GITBRANCHES_C_PLUS_RUST} conversion heavy_tests generateSymbolicJacobian gbode cvode ida"
+
+        // Recorded and announced only once they are up: a report the database
+        // knows about is never generated again, so one that a later failure in
+        // this stage stops from being uploaded would be lost for good.
+        sshPublisher(publishers: [sshPublisherDesc(configName: 'LibraryTestingReports', transfers: [sshTransfer(sourceFiles: 'history/**')])])
+        sh './publish-reports.py'
 
         sh "./report.py --branches='${env.GITBRANCHES} ${env.GITBRANCHES_WASM_JIT}' configs/conf.json configs/conf-old.json configs/conf-nonstandard.json"
         sh 'mv overview.html overview-combined.html'
@@ -569,7 +575,7 @@ pipeline {
         sh 'find overview*.html history -type f | wc -l'
         sh 'find overview*.html history'
 
-        sshPublisher(publishers: [sshPublisherDesc(configName: 'LibraryTestingReports', transfers: [sshTransfer(sourceFiles: 'overview*.html,history/**')])])
+        sshPublisher(publishers: [sshPublisherDesc(configName: 'LibraryTestingReports', transfers: [sshTransfer(sourceFiles: 'overview*.html')])])
       }
     }
 
