@@ -991,13 +991,15 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
   def buildJobs = numPhysicalCPU()
   echo "Building omc with -j${buildJobs} on ${env.NODE_NAME}"
 
+  // Not -march=native: the nodes differ in microarchitecture and the shared sccache
+  // cannot tell two `-march=native` command lines apart (AVX-512 object -> SIGILL).
   def buildOMC
   if (cmakeFlags) {
     buildOMC = sccachePreamble() + """
     cmake -S .. -B ../build_cmake -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_INSTALL_PREFIX="`pwd`/build" \
       -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_Fortran_COMPILER=gfortran \
-      -DCMAKE_C_FLAGS=-march=native -DCMAKE_CXX_FLAGS=-march=native \
+      -DCMAKE_C_FLAGS=-march=x86-64-v3 -DCMAKE_CXX_FLAGS=-march=x86-64-v3 \
       -DOM_USE_CCACHE=OFF -DOM_ENABLE_GUI_CLIENTS=OFF -DOM_ENABLE_OMSIMULATOR=OFF \
       ${cmakeFlags} || exit 1
     if ! time cmake --build ../build_cmake --parallel ${buildJobs} --target install > log 2>&1; then
@@ -1010,7 +1012,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
   } else {
     buildOMC = """
     autoreconf --install
-    ./configure --with-cppruntime --without-omc --disable-modelica3d CC=clang CXX=clang++ FC=gfortran CFLAGS='-O2 -march=native' --with-omlibrary=all --with-omniORB
+    ./configure --with-cppruntime --without-omc --disable-modelica3d CC=clang CXX=clang++ FC=gfortran CFLAGS='-O2 -march=x86-64-v3' --with-omlibrary=all --with-omniORB
     time make -j${buildJobs} clean
     if ! time make -j${buildJobs} omc > log 2>&1; then
       cat log
