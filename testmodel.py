@@ -855,8 +855,9 @@ def verifyAgainstReference(resFile, prefix, stat):
       fp.write("Filtered simulation results in time: %.2f\n" % (monotonic()-start))
   start=monotonic()
   try:
-    (referenceOK,diffVars) = sendExpressionTimeout(omc_new, 'diffSimulationResults("%s","%s","%s",relTol=%g,relTolDiffMinMax=%g,rangeDelta=%g)' %
-                               (resFile, referenceFile, prefix, conf["reference_reltol"],conf["reference_reltolDiffMinMax"], conf["reference_rangeDelta"]), conf["ulimitOmc"])
+    # An empty diffPrefix: no per-variable CSV, the two filtered files below are the report.
+    (referenceOK,diffVars) = sendExpressionTimeout(omc_new, 'diffSimulationResults("%s","%s","",relTol=%g,relTolDiffMinMax=%g,rangeDelta=%g)' %
+                               (resFile, referenceFile, conf["reference_reltol"],conf["reference_reltolDiffMinMax"], conf["reference_rangeDelta"]), conf["ulimitOmc"])
   except TimeoutError as e:
     with open(errFile, 'a+') as fp:
       fp.write("Timeout error for diffSimulationResults")
@@ -875,63 +876,23 @@ def verifyAgainstReference(resFile, prefix, stat):
       resVars=omc_new.sendExpression('readSimulationResultVars("%s", readParameters=true, openmodelicaStyle=true)' % resFile)
       fp.write("\nVariables in the result:" )
       fp.write(",".join(resVars)+"\n")
-    diffFiles = [prefix + "." + var for var in diffVars]
     stat["diff"]["vars"]=diffVars
+    # Both files reduced to the differing variables: what the report's OMPlot
+    # link compares, instead of a CSV and an HTML page per variable.
+    filterDiffVars(resFile, prefix + ".mat", diffVars)
+    filterDiffVars(referenceFile, prefix + ".ref.mat", diffVars)
 
-    # Create a file containing only the calibrated variables, for easy display
-    lstfiles = "\n".join(['<li>%s <a href="%s.html">(javascript)</a> <a href="%s.csv">(csv)</a></li>' % (str.split(str(f),".diff.",1)[1],str(os.path.basename(f)),str(os.path.basename(f))) for f in diffFiles])
-    with open(prefix+".html", 'w') as fp:
-      fp.write('<html lang="en"><body><h1>%s differences from the reference file</h1><p>startTime: %g</p><p>stopTime: %g</p><p>Simulated using tolerance: %g</p><ul>%s</ul></body></html>' % (conf["modelName"], startTime, stopTime, tolerance, lstfiles))
-    for var in diffVars:
-      if "/" in var:
-        continue # Quoted identifier, or possibly an error message... Either way, avoid crapping out below
-      with open(prefix+"."+var+".html", 'w') as fp:
-        fp.write("""<html lang="en">
-  <head>
-  <script type="text/javascript" src="dygraph-combined.js"></script>
-      <style type="text/css">
-      #graphdiv {
-        position: absolute;
-        left: 10px;
-        right: 10px;
-        top: 40px;
-        bottom: 10px;
-      }
-      </style>
-  </head>
-  <body>
-  <div id="graphdiv"></div>
-  <p><input type=checkbox id="0" checked onClick="change(this)">
-  <label for="0">reference</label>
-  <input type=checkbox id="1" checked onClick="change(this)">
-  <label for="1">actual</label>
-  <input type=checkbox id="2" checked onClick="change(this)">
-  <label for="2">high</label>
-  <input type=checkbox id="3" checked onClick="change(this)">
-  <label for="3">low</label>
-  <input type=checkbox id="4" checked onClick="change(this)">
-  <label for="4">error</label>
-  <input type=checkbox id="5" onClick="change(this)">
-  <label for="5">actual (original)</label>
-  Parameters used for the comparison: Relative tolerance %g (local), %g (relative to max-min). Range delta %g.</p>
-  <script type="text/javascript">
-  g = new Dygraph(document.getElementById("graphdiv"),
-                   "%s",{title: '"%s"',
-    legend: 'always',
-    connectSeparatedPoints: true,
-    xlabel: ['time'],
-    y2label: ['error'],
-    series : { 'error': { axis: 'y2' } },
-    colors: ['blue','red','teal','lightblue','orange','black'],
-    visibility: [true,true,true,true,true,false]
-  });
-  function change(el) {
-    g.setVisibility(parseInt(el.id), el.checked);
-  }
-  </script>
-  </body>
-  </html>""" % (tolerance, conf["reference_reltolDiffMinMax"], conf["reference_rangeDelta"], os.path.basename(prefix + "." + var + ".csv"), var))
-
+def filterDiffVars(inFile, outFile, diffVars):
+  vars = ", ".join('"%s"' % v.replace('\\', '\\\\').replace('"', '\\"') for v in diffVars)
+  try:
+    ok = sendExpressionTimeout(omc_new, 'filterSimulationResults("%s", "%s", vars={%s}, removeDescription=false)' % (inFile, outFile, vars), conf["ulimitOmc"])
+  except TimeoutError as e:
+    ok = False
+  if not ok:
+    with open(errFile, 'a+') as fp:
+      fp.write("Failed to write the differing variables of %s to %s:\n%s" % (inFile, outFile, omc_new.sendExpression('OpenModelica.Scripting.getErrorString()', parsed = False)))
+    if os.path.exists(outFile):
+      os.remove(outFile)
 
 # The first simulator's results are the ones every non-FMI code path expects.
 # There is nothing to compare when it never produced any.
