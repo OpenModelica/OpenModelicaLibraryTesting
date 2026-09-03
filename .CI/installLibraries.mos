@@ -68,7 +68,7 @@ for l in {
   {"LEPSE", "main"},
   {"LibRAS", "master"},
   {"MagLev", ""},
-  {"MessagePack", "master"},
+  {"MessagePack", ""},
   {"MEV", "master"},
   {"Modelica_DeviceDrivers", "master"},
   {"Modelica_LinearSystems2", "dev"},
