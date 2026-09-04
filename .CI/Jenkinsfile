@@ -345,7 +345,7 @@ pipeline {
       stage('C+Rust') {
         agent {
           node {
-            label 'ryzen-5950x-1'
+            label 'ryzen-9950x'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
