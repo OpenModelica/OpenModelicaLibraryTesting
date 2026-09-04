@@ -5,6 +5,7 @@ import sys, argparse, subprocess, os
 import simplejson as json
 import shared, resultsdb
 import re, time, math
+import collections, multiprocessing
 from omcommon import friendlyStr
 
 import matplotlib as mpl
@@ -15,22 +16,13 @@ import matplotlib.cbook as cbook
 from matplotlib.ticker import MaxNLocator
 from matplotlib.font_manager import FontProperties
 
-parser = argparse.ArgumentParser(description='OpenModelica model testing report generation tool')
-parser.add_argument('branches', nargs='*')
-parser.add_argument('--historypath', default="history")
-resultsdb.addArgument(parser)
-args = parser.parse_args()
-
-branches = [shared.resultTable(branch) for branch in args.branches]
-fnameprefix = args.historypath
-
-libs = {}
-
 import time, datetime
 from omcommon import friendlyStr, multiple_replace
 
-db = resultsdb.connect(args.db)
-cursor = db.cursor()
+def defaultJobs():
+  # The cpus this process may use, not the ones the machine has.
+  count = getattr(os, "process_cpu_count", os.cpu_count)()
+  return max(1, count or 1)
 
 def dateStr(dint):
   return str(datetime.datetime.fromtimestamp(dint).strftime('%Y-%m-%d %H:%M:%S'))
@@ -45,7 +37,7 @@ def getTagOrVersion(v):
 def libraryLink(branch, libname):
   return '<a href="%s/%s/%s/%s.html">%s</a>' % (baseurl,branch,libname,libname,libname)
 
-def plotLibrary(branch, libname, xs, total, frontend,backend,simcode,template,compile,simulate,verify):
+def plotLibrary(fnameprefix, branch, libname, xs, total, frontend,backend,simcode,template,compile,simulate,verify):
   f, ax = plt.subplots(1)
   lw = 0.5
   plt.plot(xs, total, label='total (%d)' % total[-1], linewidth=lw)
@@ -82,10 +74,7 @@ def plotLibrary(branch, libname, xs, total, frontend,backend,simcode,template,co
   # Put a legend to the right of the current axis
   ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
-  try:
-    os.makedirs("%s/%s" % (fnameprefix,branch))
-  except FileExistsError:
-    pass
+  os.makedirs("%s/%s" % (fnameprefix,branch), exist_ok=True)
 
   plt.savefig("%s/%s/%s.svg" % (fnameprefix,branch,libname), format="svg")
 
@@ -97,41 +86,82 @@ def plotLibrary(branch, libname, xs, total, frontend,backend,simcode,template,co
 
   plt.close()
 
-for branch in branches:
-  try:
-    one = (branch,) if db.tableExists(branch) else None
-    if one == None:
+def plotJob(job):
+  plotLibrary(*job)
+
+def plotJobs(db, cursor, branches, fnameprefix):
+  """One job per library; a generator, so a branch is queried while the plots
+  of the previous one are still being rendered."""
+  for branch in branches:
+    try:
+      one = (branch,) if db.tableExists(branch) else None
+      if one == None:
+        print("No such table '%s'; specify it using --branch=XXX when running test.py" % branch)
+        # ignore this table and continue
+        continue
+      else:
+        v = one[0]
+    except:
+      # raise Exception("No such table '%s'; specify it using --branch=XXX" % branch)
       print("No such table '%s'; specify it using --branch=XXX when running test.py" % branch)
       # ignore this table and continue
       continue
-    else:
-      v = one[0]
-  except:
-    # raise Exception("No such table '%s'; specify it using --branch=XXX" % branch)
-    print("No such table '%s'; specify it using --branch=XXX when running test.py" % branch)
-    # ignore this table and continue
-    continue
-  
-  db.createDateIndex(branch)
-  libs = {}
-  for (date,libname,total,frontend,backend,simcode,template,compile,simulate,verify) in cursor.execute("""SELECT date,libname,%s
-    FROM %s
-    GROUP BY date,libname
-    ORDER BY libname,date ASC
+
+    db.createDateIndex(branch)
+    start = time.time()
+    libs = {}
+    for (date,libname,total,frontend,backend,simcode,template,compile,simulate,verify) in cursor.execute("""SELECT date,libname,%s
+      FROM %s
+      GROUP BY date,libname
+      ORDER BY libname,date ASC
 """ % (",".join(db.countIf("finalphase>=%d" % i) for i in range(0,8)), db.quote(branch))):
-    if libname not in libs:
-      libs[libname] = ([],[],[],[],[],[],[],[],[])
-    libs[libname][0].append(datetime.datetime.fromtimestamp(date))
-    libs[libname][1].append(total)
-    libs[libname][2].append(frontend)
-    libs[libname][3].append(backend)
-    libs[libname][4].append(simcode)
-    libs[libname][5].append(template)
-    libs[libname][6].append(compile)
-    libs[libname][7].append(simulate)
-    libs[libname][8].append(verify)
-  for libname in libs.keys():
-    plotLibrary(branch, libname, libs[libname][0], libs[libname][1], libs[libname][2], libs[libname][3], libs[libname][4], libs[libname][5], libs[libname][6], libs[libname][7], libs[libname][8])
+      if libname not in libs:
+        libs[libname] = ([],[],[],[],[],[],[],[],[])
+      libs[libname][0].append(datetime.datetime.fromtimestamp(date))
+      libs[libname][1].append(total)
+      libs[libname][2].append(frontend)
+      libs[libname][3].append(backend)
+      libs[libname][4].append(simcode)
+      libs[libname][5].append(template)
+      libs[libname][6].append(compile)
+      libs[libname][7].append(simulate)
+      libs[libname][8].append(verify)
+    print("%s: %d libraries queried in %.1fs" % (branch, len(libs), time.time()-start), flush=True)
+    for libname in libs.keys():
+      yield (fnameprefix, branch, libname) + libs[libname]
+
+def main():
+  parser = argparse.ArgumentParser(description='OpenModelica model testing report generation tool')
+  parser.add_argument('branches', nargs='*')
+  parser.add_argument('--historypath', default="history")
+  parser.add_argument('-j', '--jobs', type=int, default=defaultJobs(),
+                      help="How many plots to render at the same time (default: %d)" % defaultJobs())
+  resultsdb.addArgument(parser)
+  args = parser.parse_args()
+
+  branches = [shared.resultTable(branch) for branch in args.branches]
+
+  db = resultsdb.connect(args.db)
+  cursor = db.cursor()
+  jobs = plotJobs(db, cursor, branches, args.historypath)
+
+  if args.jobs > 1:
+    # The queries stay in this process; only the rendering is handed out. A job
+    # carries the whole history of a library, so keep the queue short.
+    pending = collections.deque()
+    with multiprocessing.Pool(args.jobs) as pool:
+      for job in jobs:
+        pending.append(pool.apply_async(plotJob, (job,)))
+        while len(pending) > 4*args.jobs:
+          pending.popleft().get()
+      for result in pending:
+        result.get()
+  else:
+    for job in jobs:
+      plotJob(job)
+
+if __name__ == '__main__':
+  main()
 
 """
 for branch in branches:
