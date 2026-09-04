@@ -1254,6 +1254,79 @@ def artifactSuffix(simulator):
   publishes the workspace itself, so only the others have one."""
   return "_%s" % simulator if simulator else ""
 
+try:
+  githuburltesting = "https://github.com/OpenModelica/OpenModelicaLibraryTesting/commit/"
+  gitloglibrarytesting = check_output_log(["git", "log", '--pretty=<table><tr><th>Commit</th><th>Date</th><th>Author</th><th>Summary</th></tr><tr><td><a href="%s/%%h">%%h</a></td><td>%%ai</td><td>%%an</td><td>%%s</td></tr></table>' % (githuburltesting), "-1"], cwd="./").decode("utf-8")
+except subprocess.CalledProcessError as e:
+  print(str(e))
+  gitloglibrarytesting = "<table><tr><td>could not get the git log for OpenModelicaLibraryTesting</td></tr></table>"
+
+def readReferenceFilesVersion(c):
+  # adrpo: attempt to get the revision of the reference files if possible
+  if DEBUG:
+    print("referenceFiles git ... attempting to retrieve info from directory: %s" % c)
+    sys.stdout.flush()
+  gitReferenceFiles = c
+  # see if we have a commit file
+  f = os.path.join(c, "commit")
+  if os.path.exists(f):
+    with open(f) as fin:
+      print("referenceFiles git ... read from file %s" % f)
+      sys.stdout.flush()
+      return fin.read()
+  try:
+    if isinstance(c, (str, bytes)):
+      if DEBUG:
+        print("referenceFiles git ... see if directory has an evironment variable")
+        sys.stdout.flush()
+      m = re.search("^[$][A-Z_]+", c)
+      if m:
+        k = m.group(0)[1:]
+        if k not in os.environ:
+          if DEBUG:
+            print("referenceFiles git ... environment variable used in the directory cannot be found in the environment: %s" % k)
+            sys.stdout.flush()
+          raise Exception("Environment variable %s not defined, but used in JSON config for reference files" % k)
+        gitReferenceFiles = c.replace(m.group(0), os.environ[k])
+        if DEBUG:
+          print("referenceFiles git ... directory after replacing the environment variable: %s" % gitReferenceFiles)
+          sys.stdout.flush()
+      sys.stdout.flush()
+    try:
+      gitReferenceFilesURL = check_output_log(["git", "config", "--get", "remote.origin.url"], cwd=gitReferenceFiles).decode("utf-8")
+    except subprocess.CalledProcessError as e:
+      print(e)
+      gitReferenceFilesURL = gitReferenceFiles
+    gitReferenceFilesVersion = check_output_log(["git", "log", '--pretty=<table><tr><th>Commit</th><th>Date</th><th>Author</th><th>Summary</th></tr><tr><td><a href="%s/%%h">%%h</a></td><td>%%ai</td><td>%%an</td><td>%%s</td></tr></table>' % (gitReferenceFilesURL), "-1"], cwd=gitReferenceFiles).decode("utf-8")
+    print("referenceFiles git ... got version information: %s" % gitReferenceFilesVersion)
+    sys.stdout.flush()
+    return gitReferenceFilesVersion
+  except subprocess.CalledProcessError as e:
+    print("referenceFiles git ... something went wrong with getting the git info for directory: %s" % c)
+    print(str(e))
+    sys.stdout.flush()
+    return ""
+
+referenceFilesVersions = {}
+
+def referenceFilesVersion(c):
+  """The git log of a directory of reference files.
+
+  Nearly every library shares the directory with another, and the git log of it
+  is the same for all of them, so it is asked for once per directory instead of
+  once per library.
+  """
+  if not c:
+    return ""
+  if c not in referenceFilesVersions:
+    referenceFilesVersions[c] = readReferenceFilesVersion(c)
+  return referenceFilesVersions[c]
+
+# Publishing one library is rsync waiting for the far side to enumerate a
+# directory of tens of thousands of files, so the libraries are published a few
+# at a time. Not many more: each one is an ssh connection of its own.
+PUBLISH_JOBS = 4
+
 # Every runner publishes its own results - .sim and diff files included - to the
 # directory of its own branch; the .err of the build is shared, so each of them
 # gets a copy of it.
@@ -1268,9 +1341,9 @@ for (resultBranch, runner) in resultBranches:
     os.makedirs(resRootPath)
 
   htmltpl=open("library.html.tpl").read()
-  for libname in stats_by_libname.keys():
+  def publishLibrary(libname):
     if libname in skipped_libs or not ranRunner(libname, runner):
-      continue
+      return
     s = None # Make sure I don't use this
     simulator = simulatorKey(libname, runner)
     suffix = artifactSuffix(simulator)
@@ -1332,61 +1405,7 @@ for (resultBranch, runner) in resultBranches:
       for s in natsorted(stats, key=lambda s: s[1])])
     numSucceeded = [len(stats)] + [sum(1 if s[3]["phase"]>=i else 0 for s in stats) for i in range(1,8)]
 
-    try:
-      githuburltesting = "https://github.com/OpenModelica/OpenModelicaLibraryTesting/commit/"
-      gitloglibrarytesting = check_output_log(["git", "log", '--pretty=<table><tr><th>Commit</th><th>Date</th><th>Author</th><th>Summary</th></tr><tr><td><a href="%s/%%h">%%h</a></td><td>%%ai</td><td>%%an</td><td>%%s</td></tr></table>' % (githuburltesting), "-1"], cwd="./").decode("utf-8")
-    except subprocess.CalledProcessError as e:
-      print(str(e))
-      gitloglibrarytesting = "<table><tr><td>could not get the git log for OpenModelicaLibraryTesting</td></tr></table>"
-
-    # adrpo: attempt to get the revision of the reference files if possible
-    if conf.get("referenceFiles"):
-      c = conf.get("referenceFiles")
-      if DEBUG:
-        print("referenceFiles git ... attempting to retrieve info from directory: %s" % c)
-        sys.stdout.flush()
-      gitReferenceFiles = c
-      # see if we have a commit file
-      f = os.path.join(c, "commit")
-      if os.path.exists(f):
-        with open(f) as fin:
-          gitReferenceFilesVersion = fin.read()
-          print("referenceFiles git ... read from file %s" % f)
-          sys.stdout.flush()
-      else:
-        try:
-          if isinstance(c, (str, bytes)):
-            if DEBUG:
-              print("referenceFiles git ... see if directory has an evironment variable")
-              sys.stdout.flush()
-            m = re.search("^[$][A-Z_]+", c)
-            if m:
-              k = m.group(0)[1:]
-              if k not in os.environ:
-                if DEBUG:
-                  print("referenceFiles git ... environment variable used in the directory cannot be found in the environment: %s" % k)
-                  sys.stdout.flush()
-                raise Exception("Environment variable %s not defined, but used in JSON config for reference files" % k)
-              gitReferenceFiles = c.replace(m.group(0), os.environ[k])
-              if DEBUG:
-                print("referenceFiles git ... directory after replacing the environment variable: %s" % gitReferenceFiles)
-                sys.stdout.flush()
-            sys.stdout.flush()
-          try:
-            gitReferenceFilesURL = check_output_log(["git", "config", "--get", "remote.origin.url"], cwd=gitReferenceFiles).decode("utf-8")
-          except subprocess.CalledProcessError as e:
-            print(e)
-            gitReferenceFilesURL = gitReferenceFiles
-          gitReferenceFilesVersion = check_output_log(["git", "log", '--pretty=<table><tr><th>Commit</th><th>Date</th><th>Author</th><th>Summary</th></tr><tr><td><a href="%s/%%h">%%h</a></td><td>%%ai</td><td>%%an</td><td>%%s</td></tr></table>' % (gitReferenceFilesURL), "-1"], cwd=gitReferenceFiles).decode("utf-8")
-          print("referenceFiles git ... got version information: %s" % gitReferenceFilesVersion)
-          sys.stdout.flush()
-        except subprocess.CalledProcessError as e:
-          print("referenceFiles git ... something went wrong with getting the git info for directory: %s" % c)
-          print(str(e))
-          sys.stdout.flush()
-          gitReferenceFilesVersion = ""
-    else:
-      gitReferenceFilesVersion = ""
+    gitReferenceFilesVersion = referenceFilesVersion(conf.get("referenceFiles"))
 
     replacements = (
       (u"#sysInfo#", html.escape(sysInfo)),
@@ -1433,19 +1452,16 @@ for (resultBranch, runner) in resultBranches:
     # move results by sync operations (not available under win)
     if result_location != "" and not isWin and not noSync:
       result_location_libname = "%s/%s" % (result_location, libname)
-      try:
-        os.mkdir(os.path.join(stageRoot, "emptydir"))
-      except:
-        pass
-      check_output_log(["rsync", "-aR", "emptydir/", result_location], cwd=stageRoot)
-      check_output_log(["rsync", "-aR", "emptydir/", result_location_libname], cwd=stageRoot)
-      check_output_log(["rsync", "-aR", "emptydir/", result_location_libname+"/files"], cwd=stageRoot)
+      def makeRemoteDirs():
+        # The /./ tells rsync -R where the relative part starts, so the branch,
+        # the library and its files directory are created in one connection.
+        os.makedirs(os.path.join(stageRoot, "emptydir", libname, "files"), exist_ok=True)
+        check_output_log(["rsync", "-aR", "emptydir/./%s/files" % libname, result_location], cwd=stageRoot)
+      makeRemoteDirs()
       try:
         check_output_log(["rsync", "-aR", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", result_location_libname], cwd=stageRoot)
       except:
-        check_output_log(["rsync", "-aR", "emptydir/", result_location], cwd=stageRoot)
-        check_output_log(["rsync", "-aR", "emptydir/", result_location_libname], cwd=stageRoot)
-        check_output_log(["rsync", "-aR", "emptydir/", result_location_libname+"/files"], cwd=stageRoot)
+        makeRemoteDirs()
         check_output_log(["rsync", "-aR", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", result_location_libname], cwd=stageRoot)
       if (conf.get("referenceFiles") or "") != "" and dygraphs:
         check_output_log(["rsync", "-a", dygraphs, result_location_libname+"/files"])
@@ -1481,6 +1497,8 @@ for (resultBranch, runner) in resultBranches:
         except:
           print("-- problem during file copy... maybe the file is still hooked by a process... :" + file)
           pass
+
+  Parallel(n_jobs=PUBLISH_JOBS, backend="threading")(delayed(publishLibrary)(libname) for libname in stats_by_libname.keys())
 
 if clean:
   for g in ["*.o","*.so","*.h","*.c","*.cpp","*.simsuccess","*.conf.json","*.tmpfiles","*.log","*.libs","OMCpp*","*.fmu*","temp_*", "*.exe", "HelloWorld.bat", "*.makefile", "*.mat","*.xml", "*.bin", "*.json"]:
