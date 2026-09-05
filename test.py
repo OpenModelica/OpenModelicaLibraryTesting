@@ -1361,19 +1361,14 @@ for (resultBranch, runner) in resultBranches:
       filename_prefix = "files/%s_%s" % (s[2],s[1])
       stagePublished(stageRoot, workspace_prefix, filename_prefix, suffix)
       stageShared(stageRoot, "files/%s_%s" % (s[2],s[1]), suffix)
-      filesList.write("/%s*diff*csv\n" % filename_prefix)
-      filesList.write("/%s*diff*html\n" % filename_prefix)
       if is_non_zero_file(workspace_prefix+".sim"):
         filesList.write("/%s.sim\n" % filename_prefix)
       errPrefix = "files/%s_%s" % (s[2],s[1])
       if is_non_zero_file(errPrefix+".err"):
         filesList.write("/%s.err\n" % errPrefix)
-      variables = (s[3].get("diff") or {}).get("vars") or []
-      if len(variables)>0:
-        filesList.write("/%s.diff.html\n" % filename_prefix)
-      for v in variables:
-        filesList.write("/%s.diff.%s.csv\n" % (filename_prefix, v))
-        filesList.write("/%s.diff.%s.html\n" % (filename_prefix, v))
+      if (s[3].get("diff") or {}).get("vars"):
+        filesList.write("/%s.diff.mat\n" % filename_prefix)
+        filesList.write("/%s.diff.ref.mat\n" % filename_prefix)
     filesList.close()
     testsHTML = "\n".join(['<tr><td>%s%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td>%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td>%s</td></tr>\n' %
       (lambda filename_prefix, errPrefix, diff:
@@ -1384,7 +1379,7 @@ for (resultBranch, runner) in resultBranches:
         # Nothing was compared, whatever phase the model reports.
         "&nbsp;" if diff is None else
         (("%s (%d verified)" % (timeSeconds(diff.get("time")), diff.get("numCompared"))) if s[3]["phase"]>=7 else
-        ('%s (<a href="%s.diff.html">%d/%d failed</a>)' % (timeSeconds(diff.get("time")), filename_prefix, len(diff.get("vars")), diff.get("numCompared")))),
+        ('%s (<a href="%s.diff.mat" data-omplot="%s.diff">%d/%d failed</a>)' % (timeSeconds(diff.get("time")), filename_prefix, filename_prefix, len(diff.get("vars")), diff.get("numCompared")))),
         checkPhase(s[3]["phase"], 6),
         timeSeconds(s[3].get("sim") or 0),
         checkPhase(s[3]["phase"], 5),
