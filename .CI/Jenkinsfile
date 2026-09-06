@@ -356,10 +356,11 @@ pipeline {
         }
         steps {
           // A cmake build rather than the autotools one every other C target uses:
-          // libSimulationRuntimeRust is a cmake target (SimulationRuntime/rust), and
-          // without it the generated makefile has nothing to link.
+          // libSimulationRuntimeRust is a cmake target (SimulationRuntime/rust), opt-in
+          // through OM_ENABLE_RUST_SIM_RUNTIME, and without it the generated makefile
+          // has nothing to link.
           runRegressiontest('master', 'c-plus-rust', 'setCommandLineOptions("--simCodeTarget=C+Rust")', '', false, '', '', false, false, 0, 'configs/conf.json',
-                            '-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache')
+                            '-DOM_ENABLE_RUST_SIM_RUNTIME=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache')
         }
       }
       stage('generateSymbolicJacobian') {
