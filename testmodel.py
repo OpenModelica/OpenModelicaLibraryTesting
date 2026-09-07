@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import argparse, os, re, sys, signal, threading, psutil, subprocess, shutil
+import argparse, os, re, sys, signal, threading, psutil, subprocess, shutil, time
 from asyncio.subprocess import STDOUT
+try:
+  import resource
+except ImportError:
+  resource = None
 import simplejson as json
 from monotonic import monotonic
 from OMPython import FindBestOMCSession, OMCSession, OMCSessionZMQ
@@ -68,7 +72,78 @@ def phaseEnded():
   global runningPhase
   runningPhase = None
 
+pageSize = os.sysconf("SC_PAGE_SIZE") if hasattr(os, "sysconf") else 4096
+
+def descendants():
+  """Every process below this one. /proc/<pid>/task/*/children only touches
+  this tree, where psutil would scan all of /proc at every sample."""
+  if isWin:
+    return [p.pid for p in psutil.Process().children(recursive=True)]
+  pids = []
+  stack = [os.getpid()]
+  while stack:
+    pid = stack.pop()
+    try:
+      for tid in os.listdir("/proc/%d/task" % pid):
+        with open("/proc/%d/task/%s/children" % (pid, tid)) as fp:
+          kids = [int(c) for c in fp.read().split()]
+        pids += kids
+        stack += kids
+    except (OSError, ValueError):
+      pass
+  return pids
+
+def currentRss(pid):
+  try:
+    if isWin:
+      return psutil.Process(pid).memory_info().rss
+    with open("/proc/%d/statm" % pid) as fp:
+      return int(fp.read().split()[1]) * pageSize
+  except (OSError, ValueError, IndexError, psutil.Error):
+    return 0
+
+def peakRss(pid):
+  """The most memory a running process has had resident, in bytes."""
+  try:
+    if isWin:
+      return psutil.Process(pid).memory_info().peak_wset
+    with open("/proc/%d/status" % pid) as fp:
+      for line in fp:
+        if line.startswith("VmHWM:"):
+          return int(line.split()[1]) * 1024
+  except (OSError, ValueError, IndexError, psutil.Error):
+    pass
+  return 0
+
+# Sampled sum over the tree at one instant, and the kernel's exact peak of the
+# largest single process, which covers a spike between two samples.
+treePeak = 0
+processPeak = 0
+
+def sampleTree():
+  global treePeak
+  while True:
+    treePeak = max(treePeak, sum(currentRss(pid) for pid in descendants()))
+    time.sleep(0.2)
+
+def noteRss(rss):
+  global processPeak
+  processPeak = max(processPeak, rss)
+
+def noteChildrenRss():
+  """What is still running (omc lives on in a wasm-jit session) and what has
+  been waited for (make and its compilers, the simulation executable)."""
+  for pid in descendants():
+    noteRss(peakRss(pid))
+  if resource is not None:
+    maxrss = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
+    noteRss(maxrss if sys.platform == "darwin" else maxrss * 1024)
+
+threading.Thread(target=sampleTree, daemon=True).start()
+
 def writeResult():
+  noteChildrenRss()
+  execstat["maxrss"] = max(treePeak, processPeak)
   if runningPhase is not None:
     (stat, key, started) = runningPhase
     target = execstat if stat is None else stat
@@ -85,6 +160,9 @@ startJob=monotonic()
 def quit_omc(omc):
   if omc is None:
     return omc
+  process = getattr(omc, "_omc_process", None)
+  if process is not None:
+    noteRss(peakRss(process.pid))
   try:
     omc.sendExpression("quit()")
   except:
@@ -118,6 +196,7 @@ def killChildren(sig, name):
   """Signal everything this process started, one process at a time: Windows has no
   process group to signal instead."""
   for process in psutil.Process().children(recursive=True):
+    noteRss(peakRss(process.pid))
     try:
       os.kill(process.pid, sig)
     except (OSError, psutil.Error):
@@ -230,6 +309,7 @@ execstat = {
   "simcold":None,
   "diff":None,
   "phase":0,
+  "maxrss":0, # bytes resident at once across omc, compilers and executable
   # One entry per runner beyond the first, which reports itself in the keys
   # above; see configs/fmi-simulators.json, wasm-jit-runners.json, solvers.json.
   "simulators":{}

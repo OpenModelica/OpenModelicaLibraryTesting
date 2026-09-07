@@ -38,6 +38,7 @@ BRANCH_COLUMNS = [
     ("frontend", "real"), ("backend", "real"), ("simcode", "real"), ("templates", "real"),
     ("compile", "real"), ("simulate", "real"), ("verify", "real"),
     ("verifyfail", "int"), ("verifytotal", "int"), ("finalphase", "int"), ("parsing", "real"),
+    ("maxrss", "bigint"),
 ]
 SQLITE_TYPES = {"bigint": "integer", "int": "integer", "real": "real", "text": "text"}
 POSTGRES_TYPES = {"bigint": "bigint", "int": "integer", "real": "double precision", "text": "text"}
@@ -310,8 +311,10 @@ class _Sqlite(_Db):
       self.addLibversionHost(cursor)
     elif user_version == 3:
       self.addLibversionHost(cursor)
-    elif user_version != 4:
+    elif user_version not in (4, 5):
       raise SystemExit("Unknown schema user_version=%d" % user_version)
+    if 0 < user_version < 5:
+      self.addMaxrss(cursor)
 
     cols = ", ".join("%s %s NOT NULL" % (c, SQLITE_TYPES[t]) for c, t in BRANCH_COLUMNS)
     cursor.execute("CREATE TABLE if not exists %s (%s)" % (self.quote(branch), cols))
@@ -319,7 +322,14 @@ class _Sqlite(_Db):
     cursor.execute("DROP INDEX IF EXISTS [idx_%s_date]" % branch)
     cursor.execute("DROP INDEX IF EXISTS idx_omcversion_date")
     cursor.execute("DROP INDEX IF EXISTS idx_libversion_date")
-    self.setUserVersion(4)
+    self.setUserVersion(5)
+
+  def addMaxrss(self, cursor):
+    """Add maxrss to every result table that predates it; older rows read 0."""
+    for tbl in self.tables():
+      have = self.columns(tbl)
+      if "finalphase" in have and "maxrss" not in have:
+        cursor.execute("ALTER TABLE %s ADD COLUMN maxrss integer NOT NULL DEFAULT(0)" % self.quote(tbl))
 
   def addLibversionHost(self, cursor):
     """Add the host columns to an existing [libversion].
@@ -508,6 +518,7 @@ class _Postgres(_Db):
     cols = ", ".join("%s %s%s" % (c, POSTGRES_TYPES[t], " NOT NULL" if c in BRANCH_KEY else "")
                      for c, t in BRANCH_COLUMNS)
     cursor.execute("CREATE TABLE IF NOT EXISTS %s (%s)" % (self.quote(branch), cols))
+    cursor.execute("ALTER TABLE %s ADD COLUMN IF NOT EXISTS maxrss bigint" % self.quote(branch))
     for tbl in ["omcversion", "libversion", branch]:
       key = KEYS.get(tbl, BRANCH_KEY)
       cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS %s ON %s (%s)"

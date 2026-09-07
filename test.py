@@ -1095,7 +1095,8 @@ def resultValues(model, libname, data, simulator=None):
     len(diff.get("vars") or []),
     diff.get("numCompared") or 0,
     simulated.get("phase") or 0,
-    data.get("parsing") or 0.0
+    data.get("parsing") or 0.0,
+    data.get("maxrss") or 0
   )
 
 def removedModels(resultBranch, libname, tested):
@@ -1113,7 +1114,9 @@ def removedModels(resultBranch, libname, tested):
 def removedValues(model, libname):
   """One row of a branch table saying the library no longer has that model."""
   return (testRunStartTimeAsEpoch, libname, model,
-          0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, shared.DELETED_PHASE, 0.0)
+          0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, shared.DELETED_PHASE, 0.0, 0)
+
+resultPlaceholders = ",".join("?" * len(resultsdb.BRANCH_COLUMNS))
 
 def cpu_name():
   if isWin:
@@ -1154,12 +1157,12 @@ for (resultBranch, runner) in resultBranches:
     (name,model,libname,data)=stats[key]
     if not ranRunner(libname, runner):
       continue
-    cursor.execute("INSERT INTO %s VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)%s" % (db.quote(resultBranch), db.insertIgnore()),
+    cursor.execute("INSERT INTO %s VALUES (%s)%s" % (db.quote(resultBranch), resultPlaceholders, db.insertIgnore()),
                    resultValues(model, libname, data, simulatorKey(libname, runner)))
   for libname in libnames:
     for model in removedModels(resultBranch, libname, testedModels[libname]):
-      cursor.execute("INSERT INTO %s VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)%s"
-                     % (db.quote(resultBranch), db.insertIgnore()),
+      cursor.execute("INSERT INTO %s VALUES (%s)%s"
+                     % (db.quote(resultBranch), resultPlaceholders, db.insertIgnore()),
                      removedValues(model, libname))
     confighash = stats_by_libname[libname]["conf"]["confighash"]
     cursor.execute("INSERT INTO libversion VALUES (?,?,?,?,?,?,?)%s" % db.insertIgnore(), (testRunStartTimeAsEpoch, resultBranch, libname, stats_by_libname[libname]["conf"]["libraryLastChange"], confighash, hostname, sysInfo))
