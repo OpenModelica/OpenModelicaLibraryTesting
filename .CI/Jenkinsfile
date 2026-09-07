@@ -466,8 +466,8 @@ pipeline {
         GITBRANCHES_DAE = 'newInst-daeMode'
         GITBRANCHES_NEWBACKEND_DAE = 'newBackend-daeMode'
         GITBRANCHES_CPP = 'v1.19-cpp v1.20-cpp v1.21-cpp v1.22-cpp v1.23-cpp v1.24-cpp v1.25-cpp cpp v1.26-cpp v1.27-cpp'
-        GITBRANCHES_WASM_JIT = 'wasm-jit wasm-jit-me wasm-jit-cs'
-        GITBRANCHES_C_PLUS_RUST = '' // 'c-plus-rust'
+        GITBRANCHES_WASM_JIT = 'wasm-jit-me wasm-jit-cs wasm-jit'
+        GITBRANCHES_C_PLUS_RUST = 'c-plus-rust'
         GITBRANCHES_SPECIAL = 'master newInst-newBackend'
         PYTHONIOENCODING = 'utf-8'
         IDA_EMAIL = credentials('IDA email')
@@ -559,7 +559,7 @@ pipeline {
 
         // The three ways one wasm artifact is simulated, against master: they share
         // an export, so only the simulation and the verification tell them apart.
-        sh "./report.py --branches='${env.GITBRANCHES_WASM_JIT} master' configs/conf.json"
+        sh "./report.py --branches='master ${env.GITBRANCHES_C_PLUS_RUST} ${env.GITBRANCHES_WASM_JIT}' configs/conf.json"
         sh "mv overview.html overview-wasm-jit.html"
 
         // Against master, which the job shares a machine and a compiler with: the
