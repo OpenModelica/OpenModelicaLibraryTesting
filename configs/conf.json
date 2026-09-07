@@ -382,7 +382,8 @@
     "library":"IndustrialControlSystems"
   },
   {
-    "library":"KeyWordIO"
+    "library":"KeyWordIO",
+    "extraCustomCommands":["setCFlags(getCFlags() + \" -Wno-error=int-conversion\")"]
   },
   {
     "library":"IDEAS"
