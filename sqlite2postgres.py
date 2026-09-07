@@ -64,6 +64,7 @@ BRANCH_COLUMNS = [
     ("verifytotal", "integer"),
     ("finalphase", "integer"),
     ("parsing", "double precision"),
+    ("maxrss", "bigint"),
 ]
 
 LOOKUP_COLUMNS = {
@@ -208,6 +209,9 @@ def create_table(pg, tbl, columns):
   cols = ",\n  ".join("%s %s%s" % (ident(c), t, " NOT NULL" if c in key else "")
                       for c, t in columns)
   pg.script("CREATE TABLE IF NOT EXISTS %s (\n  %s\n);" % (ident(tbl), cols))
+  # A table migrated before a column existed gets it here, as resultsdb.py does.
+  pg.script("".join("ALTER TABLE %s ADD COLUMN IF NOT EXISTS %s %s;\n" % (ident(tbl), ident(c), t)
+                    for c, t in columns if c not in key))
 
 
 def read_progress(pg, source, tbl):

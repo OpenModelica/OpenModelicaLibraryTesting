@@ -71,6 +71,10 @@ run. For each tested model, the results of the following steps are reported:
 - _verification_: if reference results file are available, they are compared
   with the simulation results
 
+The database also records _maxrss_: the most resident memory, in bytes, that
+the processes testing the model held at any one time - omc, the compilers
+running beside it and the simulation executable added together.
+
 Clicking on the model name shows the log of phases from parsing to compilation.
 Clicking on the (sim) link shows the log of the runtime simulation.
 
