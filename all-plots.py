@@ -1,41 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys, argparse, subprocess, os
-import simplejson as json
+import argparse, os
 import shared, resultsdb
-import re, time, math
+import time, datetime
 import collections, multiprocessing
-from omcommon import friendlyStr
 
 import matplotlib as mpl
 mpl.use('svg') # Disables the Tk dependency / DISPLAY dependency
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import matplotlib.cbook as cbook
-from matplotlib.ticker import MaxNLocator
-from matplotlib.font_manager import FontProperties
-
-import time, datetime
-from omcommon import friendlyStr, multiple_replace
 
 def defaultJobs():
   # The cpus this process may use, not the ones the machine has.
   count = getattr(os, "process_cpu_count", os.cpu_count)()
   return max(1, count or 1)
-
-def dateStr(dint):
-  return str(datetime.datetime.fromtimestamp(dint).strftime('%Y-%m-%d %H:%M:%S'))
-
-def getTagOrVersion(v):
-  v = v.replace("OpenModelica ","").replace("OMCompiler ","")
-  m = re.search("[+]g([0-9a-f]{7})$", v)
-  if m:
-    return m.group(1)
-  return v
-
-def libraryLink(branch, libname):
-  return '<a href="%s/%s/%s/%s.html">%s</a>' % (baseurl,branch,libname,libname,libname)
 
 def plotLibrary(fnameprefix, branch, libname, xs, total, frontend,backend,simcode,template,compile,simulate,verify):
   f, ax = plt.subplots(1)
@@ -49,16 +27,6 @@ def plotLibrary(fnameprefix, branch, libname, xs, total, frontend,backend,simcod
   plt.plot(xs, simulate, label='simulate (%d)' % simulate[-1], linewidth=lw)
   if not (min(verify)==0 and max(verify)==0):
     plt.plot(xs, verify, label='verify (%d)' % verify[-1], linewidth=lw)
-  if False:
-    ticksize = 5
-    if len(total)<=10:
-      ticksize = 1
-    if len(total)>=200:
-      ticksize = 25
-    elif len(total)>=100:
-      ticksize = 10
-    #yint = range(0, ticksize, math.ceil(max(total))+10-(math.ceil(max(total))%10))
-    #plt.yticks(yint)
 
   ax.set_ylim(ymin=0)
   ax.set_xlim(xmin=xs[0], xmax=xs[-1])
@@ -93,18 +61,8 @@ def plotJobs(db, cursor, branches, fnameprefix):
   """One job per library; a generator, so a branch is queried while the plots
   of the previous one are still being rendered."""
   for branch in branches:
-    try:
-      one = (branch,) if db.tableExists(branch) else None
-      if one == None:
-        print("No such table '%s'; specify it using --branch=XXX when running test.py" % branch)
-        # ignore this table and continue
-        continue
-      else:
-        v = one[0]
-    except:
-      # raise Exception("No such table '%s'; specify it using --branch=XXX" % branch)
+    if not db.tableExists(branch):
       print("No such table '%s'; specify it using --branch=XXX when running test.py" % branch)
-      # ignore this table and continue
       continue
 
     db.createDateIndex(branch)
@@ -162,38 +120,3 @@ def main():
 
 if __name__ == '__main__':
   main()
-
-"""
-for branch in branches:
-  cursor.execute('''CREATE TABLE if not exists [datelookup_%s]
-             (date integer NOT NULL, runDate integer NOT NULL, libname text NOT NULL, branch text NOT NULL)''' % branch)
-
-  cursor.execute('''CREATE INDEX IF NOT EXISTS idx_%s_date ON %s(date)''' % (branch,branch))
-  cursor.execute('''CREATE INDEX IF NOT EXISTS idx_omcversion_date ON omcversion(date)''')
-  cursor.execute('''CREATE INDEX IF NOT EXISTS idx_libversion_date ON libversion(date)''')
-
-  cursor.execute('''SELECT DISTINCT V.date as date,L.libname as libname
-    FROM [omcversion] as V
-    CROSS JOIN (SELECT DISTINCT libname FROM [%s]) AS L
-    LEFT JOIN [datelookup_%s] as D ON D.date=V.date AND D.branch=? AND D.libname=L.libname
-    WHERE D.runDate IS NULL
-    ORDER BY V.date ASC
-''' % (branch,branch), (branch,))
-  entries = cursor.fetchall()
-  print(len(entries))
-  progress = 0
-  start = time.time()
-  cursor.execute('''DROP INDEX IF EXISTS idx_datelookup_%s_date''' % branch)
-  for (date,libname) in entries:
-    cursor.execute("SELECT date FROM [%s] WHERE libname=? AND date <= ? ORDER BY date DESC LIMIT 1" % branch, (libname,date))
-    (runDate,) = cursor.fetchone() or (0,)
-    cursor.execute("INSERT INTO [datelookup_%s] VALUES (?,?,?,?)" % branch, (date,runDate,libname,branch))
-    progress += 1
-    if progress % 100 == 0:
-      end = time.time()
-      print("%d total insertions, %0.2g" % (progress,end-start))
-      start = end
-  cursor.execute('''CREATE INDEX IF NOT EXISTS idx_datelookup_%s_date ON datelookup_%s(date)''' % (branch,branch))
-  conn.commit()
-conn.commit()
-"""

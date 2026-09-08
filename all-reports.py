@@ -3,7 +3,7 @@
 
 import urllib.request, urllib.error, urllib.parse
 import codecs
-import sys, argparse, subprocess, os, time
+import argparse, subprocess, os, time, datetime
 import simplejson as json
 import shared, resultsdb
 import re
@@ -19,6 +19,10 @@ parser.add_argument('--omcgitdir', default="../OpenModelica/OpenModelica")
 parser.add_argument('--email', default=False, action='store_true')
 parser.add_argument('--pending', default="pending-reports.json",
                     help="Where to leave this run's reports for publish-reports.py")
+parser.add_argument('--new-branch', default=[], action='append', metavar='BRANCH',
+                    help="Start a history for this branch from the runs there are, for a job "
+                         "that ran before it was added to the report stage. Give it once per "
+                         "branch, and drop it once the branch has a history.")
 resultsdb.addArgument(parser)
 args = parser.parse_args()
 
@@ -33,23 +37,14 @@ githuburltesting = args.githuburltesting
 omcgitdir = args.omcgitdir
 doemail = args.email
 pendingfile = args.pending
+newbranches = set(shared.resultTable(branch) for branch in args.new_branch)
 
 if not os.path.exists(omcgitdir):
   raise Exception("Could not find OpenModelica.git directory, set it with --omcgitdir. Tried: %s" % omcgitdir)
 
-dates = {}
-dates_str = {}
-fields = ["exectime", "frontend", "backend", "simcode", "templates", "compile", "simulate", "verify"]
-entryhead = "<tr><th>Branch</th><th>Total</th><th>Frontend</th><th>Backend</th><th>SimCode</th><th>Templates</th><th>Compilation</th><th>Simulation</th><th>Verification</th>\n"
-
 timeMinPhase = 4 # Need to have completed code generation to report performance regressions
 timeRel = 1.7 # Minimum 1.7x time is registered as a performance regression
 timeAbs = 10 # Ignore performance regressions for times <10s...
-
-libs = {}
-
-import time, datetime
-from omcommon import friendlyStr, multiple_replace
 
 db = resultsdb.connect(args.db)
 db.createHistoryTable()
@@ -60,7 +55,10 @@ def dateStr(dint):
 
 def getTagOrVersion(v):
   v = v.replace("OpenModelica ","").replace("OMCompiler ","")
-  v = re.sub(r"-rust$", "", v)
+  # A cmake build appends "-cmake" to the describe string it reports (the Rust
+  # omc "-rust"); git resolves neither, and the report then has no commit table
+  # and nobody is mailed about it.
+  v = re.sub(r"-(cmake|rust)$", "", v)
   m = re.search("[+]g([0-9a-f]{7}[0-9a-f]*)$", v)
   if m:
     return m.group(1)
@@ -96,6 +94,10 @@ def modelLink(libname, modelname, extension, text):
 #    file rather than a broken deployment or something else answering;
 #  - the database holds at most FIRSTREPORT runs of the branch, so the report
 #    about to be generated is its first and none can have been lost.
+#
+# A job added to the report stage after the test stage fails the run count and
+# cannot recover: nothing is written, so nothing is published, so the index stays
+# missing while the count grows. --new-branch lifts that condition, and only it.
 FIRSTREPORT = 2
 
 entryRe = re.compile(r'^<p><a href="[^"]*/(?P<fname>[^/"]+)">[^<]*</a> '
@@ -196,6 +198,8 @@ def historyOf(branch, nruns):
   else:
     published = readPublishedIndex(branch)
   stored = storedEntries(branch)
+  if branch in newbranches and (published is not None or stored):
+    print("--new-branch=%s can be dropped; the branch has a history now" % branch)
   if published is None:
     if stored:
       print("Rebuilding the index of %s from the %d reports in the database"
@@ -204,12 +208,13 @@ def historyOf(branch, nruns):
     if not historyRootIsServed():
       print("Neither the database nor the history root knows about %s; leaving it alone" % branch)
       return None
-    if nruns > FIRSTREPORT:
+    if nruns > FIRSTREPORT and branch not in newbranches:
       print("%s has no index and no reports in the database although it has %d runs; "
             "leaving it alone rather than publishing a history with only the newest "
-            "report in it" % (branch, nruns))
+            "report in it. Pass --new-branch=%s to report on it from its %d runs"
+            % (branch, nruns, branch, nruns))
       return None
-    print("Starting a new history for %s" % branch)
+    print("Starting a new history for %s from its %d runs" % (branch, nruns))
     return ([], [], None)
   (entries, preamble) = parseIndex(published)
   known = set((e[0], e[1]) for e in stored)
@@ -228,19 +233,8 @@ def historyOf(branch, nruns):
 missing_branches = []
 emails_to_send = {}
 for branch in branches:
-  try:
-    one = (branch,) if db.tableExists(branch) else None
-    if one == None:
-      print("No such table '%s'; specify it using --branch=XXX when running test.py" % branch)
-      # ignore this table and continue
-      missing_branches.append(branch)
-      continue
-    else:
-      v = one[0]
-  except:
-    #raise Exception("No such table '%s'; specify it using --branch=XXX" % branch)
+  if not db.tableExists(branch):
     print("No such table '%s'; specify it using --branch=XXX when running test.py" % branch)
-    # ignore this table and continue
     missing_branches.append(branch)
     continue
 
