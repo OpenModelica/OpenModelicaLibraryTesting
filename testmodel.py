@@ -120,10 +120,30 @@ def peakRss(pid):
 treePeak = 0
 processPeak = 0
 
+preferredVictims = set()
+
+def preferOomKill(pid):
+  """Offer a child to the OOM killer ahead of this process, so that omc dies and
+  python lives to report the phase it had reached.
+
+  Raising a child is allowed unprivileged; lowering this process is not.
+  """
+  if isWin or pid in preferredVictims:
+    return
+  preferredVictims.add(pid)
+  try:
+    with open("/proc/%d/oom_score_adj" % pid, "w") as fp:
+      fp.write("1000")
+  except OSError:
+    pass
+
 def sampleTree():
   global treePeak
   while True:
-    treePeak = max(treePeak, sum(currentRss(pid) for pid in descendants()))
+    pids = descendants()
+    for pid in pids:
+      preferOomKill(pid)
+    treePeak = max(treePeak, sum(currentRss(pid) for pid in pids))
     time.sleep(0.2)
 
 def noteRss(rss):
@@ -339,6 +359,18 @@ try:
   os.unlink(simFile)
 except OSError:
   pass
+
+def terminateHandler(signum, frame):
+  """The outer timeout sends SIGTERM before it SIGKILLs the process group. omc is
+  not in that group, so unless it is taken down here it outlives the run, and
+  without the result file the model has no row at all."""
+  with open(errFile, 'a+') as fp:
+    fp.write("[Killed by signal %d after %s]\n" % (signum, monotonic()-startJob))
+  writeResult()
+  killChildren(shared.SIGKILL, "SIGKILL")
+  os._exit(1)
+
+signal.signal(signal.SIGTERM, terminateHandler)
 
 with open(errFile, 'a+') as fp:
   fp.write("Running: %s\n" % " ".join(sys.argv))
