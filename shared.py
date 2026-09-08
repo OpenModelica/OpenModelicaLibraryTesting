@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import re, os, signal, string, subprocess
+import collections, re, os, signal, string, subprocess, threading, traceback
 import simplejson as json
 
 # Windows has no SIGKILL, and no process group to signal instead; os.kill there
@@ -57,6 +57,7 @@ def fixData(data,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCom
     data["ulimitOmc"] = int(data.get("ulimitOmc") or 660) # 11 minutes to generate the C-code
     data["ulimitExe"] = int(data.get("ulimitExe") or DEFAULT_ULIMIT_EXE)
     data["ulimitExeModels"] = dict((k,int(v)) for (k,v) in (data.get("ulimitExeModels") or {}).items())
+    data["heavyModels"] = dict((k,float(v)) for (k,v) in (data.get("heavyModels") or {}).items())
     data["ulimitLoadModel"] = int(data.get("ulimitLoadModel") or 3*60) # 3 minutes to load the files (could take a while if the ssd is doing backup)
     simflags = []
     if data.get("extraSimFlags"):
@@ -97,6 +98,65 @@ def modelUlimitExe(conf, modelName):
   """How long that model may simulate: what its library allows, unless the model
   is one of the few named in ulimitExeModels."""
   return conf["ulimitExeModels"].get(modelName) or conf["ulimitExe"]
+
+def runCapped(jobs, isHeavy, run, workers, heavyWorkers, progress=None):
+  """Run the jobs over that many worker threads, at most heavyWorkers of the
+  heavy ones at a time.
+
+  Two queues, so that the cap costs memory and not machine time: a worker that
+  may not start a heavy job takes the next light one rather than wait for a slot,
+  and waits only when heavy jobs are all that is left.
+  """
+  heavy = collections.deque(job for job in jobs if isHeavy(job))
+  light = collections.deque(job for job in jobs if not isHeavy(job))
+  total = len(heavy) + len(light)
+  cond = threading.Condition()
+  state = {"heavyRunning": 0, "done": 0}
+
+  def take(preferHeavy):
+    with cond:
+      while True:
+        if heavy and state["heavyRunning"] < heavyWorkers and (preferHeavy or not light):
+          state["heavyRunning"] += 1
+          return (heavy.popleft(), True)
+        if light:
+          return (light.popleft(), False)
+        if not heavy:
+          return (None, False)
+        cond.wait()
+
+  def worker(preferHeavy):
+    while True:
+      (job, wasHeavy) = take(preferHeavy)
+      if job is None:
+        return
+      try:
+        run(job)
+      except Exception:
+        # Losing the worker would leave its share of the queue untested.
+        traceback.print_exc()
+      finally:
+        with cond:
+          if wasHeavy:
+            state["heavyRunning"] -= 1
+          state["done"] += 1
+          done = state["done"]
+          cond.notify_all()
+        if progress is not None:
+          progress(done, total)
+
+  threads = [threading.Thread(target=worker, args=(i < heavyWorkers,), daemon=True)
+             for i in range(workers)]
+  for thread in threads:
+    thread.start()
+  for thread in threads:
+    thread.join()
+  return total
+
+def isHeavyModel(conf, modelName):
+  """Whether that model is one of the few needing gigabytes, of which only so
+  many run at a time."""
+  return modelName in conf["heavyModels"]
 
 def simulationFlags(conf, ulimitExe):
   """The flags a simulation allowed that many seconds is run with."""

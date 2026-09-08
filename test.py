@@ -16,7 +16,7 @@ from subprocess import call
 from monotonic import monotonic
 from omcommon import friendlyStr, multiple_replace
 from natsort import natsorted
-from shared import readConfig, getReferenceFileName, simulationAcceptsFlag, isFMPy, modelUlimitExe, simulationFlags, alarmGrace
+from shared import readConfig, getReferenceFileName, simulationAcceptsFlag, isFMPy, isHeavyModel, modelUlimitExe, simulationFlags, alarmGrace
 from platform import processor
 import shared, resultsdb
 
@@ -40,6 +40,8 @@ parser.add_argument('--fmisimulator', action='append', default=[], help="FMI sim
 parser.add_argument('--wasmjitrunner', action='append', default=[], help="Export every model once as a wasm artifact (buildModelFMU with fmuType=me_cs, platforms={wasm,<this machine>}) and simulate that one artifact each of these ways: 'sim' runs the translated model the way simulate() does, 'me' and 'cs' the artifact's FMI 3.0 interfaces. Comma-separated or repeated; the first fills --branch and each further one <branch>-<name>, so --branch=master-wasm-jit with sim,me,cs fills master-wasm-jit, master-wasm-jit-me and master-wasm-jit-cs. See configs/wasm-jit-runners.json. Only for simCodeTarget=wasm-jit.")
 parser.add_argument('--solver', action='append', default=[], help="Build every model once and simulate it once per solver, so that testing another solver costs a simulation rather than a build. 'default' is the model's own solver and each further name is a -s the simulation is given; comma-separated or repeated. Every solver stores its results in the table its entry names, so --branch=master with default,cvode,gbode fills master, cvode and gbode. See configs/solvers.json.")
 parser.add_argument('--ulimitvmem', help="Virtual memory limit (in kB) (linux only)", type=int, default=8*1024*1024)
+parser.add_argument('--heavyjobs', help="How many of the models listed in --heavymodels may run at the same time. They are the handful that need gigabytes each, and running sixteen of them together is what takes the machine out of memory.", type=int, default=4)
+parser.add_argument('--heavymodels', help="JSON file naming the models that need gigabytes, as {library: {model: GiB}}. Hand-curated; heavy-models.py proposes what to put in it.", default="configs/heavy-models.json")
 parser.add_argument('--default', action='append', help="Add a default value for some configuration key, such as --default=ulimitExe=60. The equals sign is mandatory.", default=[])
 parser.add_argument('-j', '--jobs', default=0, help="Ignored and deprecated, use procOMC:0 or procOMC:1 in the config")
 parser.add_argument('-v', '--verbose', action="store_true", help="Verbose mode.", default=False)
@@ -123,6 +125,14 @@ def outputFor(resultBranch):
 allTestsFmi = args.fmi
 fmuType = args.fmuType
 ulimitMemory = args.ulimitvmem
+heavyJobs = args.heavyjobs
+# {libname: {model: GiB}}, kept in one hand-curated file rather than spread over
+# the library entries: the same model is heavy in every configuration listing it.
+try:
+  heavyModelsByLibrary = json.load(open(args.heavymodels))
+except IOError:
+  heavyModelsByLibrary = {}
+  print("No %s; every test is scheduled as a light one" % args.heavymodels)
 docker = args.docker
 addmsl = args.addmsl
 
@@ -216,6 +226,25 @@ def killTree(pid, sig):
     except (OSError, psutil.Error):
       pass
 
+def descendantPids(pid):
+  """Everything below that process, right now.
+
+  OMPython starts omc in a session of its own, so signalling the process group
+  does not reach it, and once testmodel.py is dead nothing names it any more:
+  ask before killing the parent, kill after.
+  """
+  try:
+    return [p.pid for p in psutil.Process(pid).children(recursive=True)]
+  except psutil.Error:
+    return []
+
+def killPids(pids, sig):
+  for pid in pids:
+    try:
+      os.kill(pid, sig)
+    except OSError:
+      pass
+
 def runCommand(cmd, prefix, timeout):
   process = [None]
   def target():
@@ -241,6 +270,7 @@ def runCommand(cmd, prefix, timeout):
 
   if thread.is_alive():
     gotTimeout = True
+    strays = [] if isWin else descendantPids(process[0].pid)
     if isWin:
       killTree(process[0].pid, signal.SIGTERM)
     else:
@@ -252,6 +282,8 @@ def runCommand(cmd, prefix, timeout):
       else:
         os.kill(-process[0].pid, shared.SIGKILL)
     thread.join(10)
+    # For when testmodel.py did not get far enough into its SIGTERM to do this.
+    killPids(strays, shared.SIGKILL)
 
   if clean:
     try:
@@ -825,6 +857,7 @@ for (library,conf) in configs:
       prefix = conf["ignoreModelPrefix"]
       res=list(filter(lambda x: not x.startswith(prefix), res))
   libName=shared.libname(library, conf)
+  conf["heavyModels"].update(heavyModelsByLibrary.get(libName) or {})
   todo = runnersToRun(libName, conf)
   if libName in stats_by_libname or libName in skipped_libs:
     raise Exception("Duplicate libName found: %s" % libName)
@@ -996,21 +1029,27 @@ if numberOfTests==0 and not stats_by_libname:
 
 print("Starting execution of %d tests. Estimated execution time %s (wrong if there are new or few tests).\n" % (numberOfTests, friendlyStr(sum(expectedExec(c) for c in tests)/(1.0*n_jobs))))
 sys.stdout.flush()
-cmd_res=[0]
 start=monotonic()
 start_as_time=time.localtime()
 testRunStartTimeAsEpoch = int(time.time())
-# Need translateModel + make + exe...
-if n_jobs == 1:
-  verbose = 10
-else:
-  verbose = 5
-if customTimeout > 0.0:
-  cmd_res=Parallel(n_jobs=n_jobs, verbose=verbose)(delayed(runScript)(name, customTimeout, data["ulimitMemory"], runverbose) for (model,lib,libName,name,data) in tests)
-else:
-  # Each command that runs out of time keeps running for a grace before it gives
-  # up; killing testmodel.py during it throws away the phase times.
-  cmd_res=Parallel(n_jobs=n_jobs, verbose=verbose)(delayed(runScript)(name, 2*(data["ulimitOmc"]+alarmGrace(data["ulimitOmc"]))+modelUlimitExe(data, model)+alarmGrace(modelUlimitExe(data, model))+25, data["ulimitMemory"], runverbose) for (model,lib,libName,name,data) in tests)
+
+def testTimeout(model, data):
+  """Need translateModel + make + exe... Each command that runs out of time keeps
+  running for a grace before it gives up; killing testmodel.py during it throws
+  away the phase times."""
+  if customTimeout > 0.0:
+    return customTimeout
+  return 2*(data["ulimitOmc"]+alarmGrace(data["ulimitOmc"]))+modelUlimitExe(data, model)+alarmGrace(modelUlimitExe(data, model))+25
+
+def progress(done, total):
+  if runverbose or n_jobs == 1 or done % 100 == 0:
+    print("[%d/%d done, %s]" % (done, total, friendlyStr(monotonic()-start)))
+    sys.stdout.flush()
+
+shared.runCapped(tests,
+                 lambda test: isHeavyModel(test[4], test[0]),
+                 lambda test: runScript(test[3], testTimeout(test[0], test[4]), test[4]["ulimitMemory"], runverbose),
+                 n_jobs, heavyJobs, progress)
 stop=monotonic()
 print("Execution time: %s" % friendlyStr(stop-start))
 assert(stop-start >= 0.0)
