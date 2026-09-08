@@ -469,6 +469,11 @@ pipeline {
         GITBRANCHES_WASM_JIT = 'wasm-jit-me wasm-jit-cs wasm-jit'
         GITBRANCHES_C_PLUS_RUST = 'c-plus-rust'
         GITBRANCHES_SPECIAL = 'master newInst-newBackend'
+        // The C+Rust job ran a few times before it was added to this stage, so
+        // it is past the run count all-reports.py takes for a first report and
+        // gets no history without being named here. Drop it once the branch has
+        // one; the run says so in its log.
+        NEWBRANCHES = '--new-branch=c-plus-rust'
         PYTHONIOENCODING = 'utf-8'
         IDA_EMAIL = credentials('IDA email')
         // A secret file holding one pgpass line; libpq reads the password from
@@ -488,7 +493,7 @@ pipeline {
         '''
         sh './clean-empty-omcversion-dates.py'
 
-        sh "./all-reports.py --email --omcgitdir=OpenModelica ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT} ${env.GITBRANCHES_C_PLUS_RUST} conversion heavy_tests generateSymbolicJacobian gbode cvode ida"
+        sh "./all-reports.py --email ${env.NEWBRANCHES} --omcgitdir=OpenModelica ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT} ${env.GITBRANCHES_C_PLUS_RUST} conversion heavy_tests generateSymbolicJacobian gbode cvode ida"
         sh "./all-plots.py ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT} ${env.GITBRANCHES_C_PLUS_RUST} conversion heavy_tests generateSymbolicJacobian gbode cvode ida"
 
         // Recorded and announced only once they are up: a report the database
