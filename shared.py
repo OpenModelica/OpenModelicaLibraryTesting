@@ -137,6 +137,50 @@ def getReferenceFileName(conf):
         referenceFile=""
   return referenceFile
 
+# A subscript of a result variable: the [1] of a[1], the [3,7] of a[3,7].
+arraySubscriptRe = re.compile(r"\[[0-9]+(?:,[0-9]+)*\]")
+# Stands in for a subscript while the rest of the name is escaped. No Modelica
+# name contains it.
+subscriptPlaceholder = "\x00"
+
+# How many alternations we are willing to hand the runtime. Its regcomp builds a
+# state machine that grows with the square of the number of branches - 1000
+# branches cost it 30 MB, 2000 cost 120 MB and 10000 cost 2.5 GB - so a filter
+# with more than this is dropped rather than compiled.
+MAX_VARIABLE_FILTER_BRANCHES = 2000
+
+def variableFilterOf(variables):
+  """The variableFilter that keeps these result variables.
+
+  The names go in as the reference file writes them - a[1,2], der(x) - and come
+  out as one regex branch each, except that all the elements of an array share a
+  single branch: a reference file lists every element separately, so a model with
+  a 280x280 parameter array would otherwise give a filter of 78400 branches.
+  That branch also matches the elements the reference file leaves out, which
+  costs a few columns in the result file and nothing else.
+
+  A model with more distinct variables than regcomp can afford gets ".*": a
+  result file with everything in it, rather than an expensive regex.
+  """
+  branches = []
+  seen = set()
+  for v in variables:
+    # The subscript is put aside first, so that the escaping below cannot eat the
+    # brackets it is recognized by.
+    branch = arraySubscriptRe.sub(subscriptPlaceholder, v)
+    # (), [] and " are regex metacharacters. Matching them with . rather than
+    # escaping them is what this filter has always done; either way it matches
+    # the names they appear in.
+    for c in '[]()"':
+      branch = branch.replace(c, ".")
+    branch = branch.replace(subscriptPlaceholder, ".[0-9,]+.")
+    if branch not in seen:
+      seen.add(branch)
+      branches.append(branch)
+  if len(branches) > MAX_VARIABLE_FILTER_BRANCHES:
+    return ".*"
+  return "|".join(branches)
+
 def simulationAcceptsFlag(f, checkOutput=True, cwd=None, isWin=False):
   try:
     os.unlink("HelloWorld_res.mat")
@@ -331,5 +375,3 @@ def branchForSimulator(branch, name):
   together or on their own.
   """
   return branch + fmiSimulator(name).get("branchSuffix", "-%s" % name)
-
-

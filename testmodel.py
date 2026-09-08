@@ -420,7 +420,7 @@ if referenceFile != "":
       print(referenceVars)
     else:
       referenceVars=omc_new.sendExpression('readSimulationResultVars("%s", readParameters=true, openmodelicaStyle=true)' % referenceFile)
-    variableFilter="|".join([v.replace("[",".").replace("]",".").replace("(",".").replace(")",".").replace('"',".") for v in referenceVars])
+    variableFilter=shared.variableFilterOf(referenceVars)
     # get the number of intervals from the file
     numberOfIntervalsInReference = omc_new.sendExpression('readSimulationResultSize("%s")' % referenceFile)
     emit_protected="-emit_protected"
