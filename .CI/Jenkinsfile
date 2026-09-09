@@ -885,10 +885,11 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
                    " -v /mnt/ReferenceFiles:/mnt/ReferenceFiles" +
                    " --mount type=volume,source=rust-cargo-registry,target=/opt/rust/cargo/registry"
   // Only in a container is the cgroup this job's own; a breach kills the greediest omc, which need
-  // not be the model that caused it.
+  // not be the model that caused it. memory.stat says what kind of memory it was (anon, file,
+  // shmem, slab), and the process list what test.py left behind.
   def cgroupReport = image ? """
     cat /sys/fs/cgroup/memory.max || true
-    trap 'cat /sys/fs/cgroup/memory.peak /sys/fs/cgroup/memory.events || true' EXIT
+    trap 'cat /sys/fs/cgroup/memory.peak /sys/fs/cgroup/memory.events /sys/fs/cgroup/memory.stat; ps -eo pid,ppid,sid,etimes,rss,args --sort=-rss | head -40' EXIT
   """ : ''
   // Jenkins exports the node's environment into the container, hiding the image's.
   def dockerEnv = ['PATH+VENV=/opt/libtest-venv/bin',
