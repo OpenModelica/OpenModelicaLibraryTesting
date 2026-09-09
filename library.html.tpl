@@ -55,5 +55,15 @@ Config: <pre>#config#</pre>
 <tr><th>Model</th><th>Verified</th><th>Simulate</th><th>Total buildModel</th><th>Parsing</th><th>Frontend</th><th>Backend</th><th>SimCode</th><th>Templates</th><th>Compile</th><th>Total Execution</th></tr>
 #testsHTML#
 </table>
+<script>
+// A failed verification links its two .mat files (the differing variables of
+// the result and of the reference) to the OMPlot page, which plots the tube
+// comparison of each variable. The page needs absolute URLs.
+const omplot = 'https://playground.openmodelica.org/latest/omplot/';
+for (const a of document.querySelectorAll('a[data-omplot]')) {
+  const abs = (f) => encodeURIComponent(new URL(f, location.href).href);
+  a.href = omplot + '?result=' + abs(a.dataset.omplot + '.mat') + '&reference=' + abs(a.dataset.omplot + '.ref.mat');
+}
+</script>
 </body>
 </html>

@@ -40,14 +40,12 @@ RUN python3 -m venv /opt/libtest-venv \
   && rm /tmp/requirements.txt
 ENV PATH=/opt/libtest-venv/bin:$PATH
 
-# The omc for --ompython_omhome (the tested one is built in the workspace). The
-# base image points apt at the nightly component; use stable instead.
-# OMC_VERSION pins a version, empty takes the newest stable one.
+# The omc for --ompython_omhome (the tested one is built in the workspace).
 ARG OMC_VERSION=
 RUN export DEBIAN_FRONTEND=noninteractive \
   && . /etc/os-release \
   && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/openmodelica-keyring.gpg]" \
-          "https://build.openmodelica.org/apt ${VERSION_CODENAME} stable" \
+          "https://build.openmodelica.org/apt ${VERSION_CODENAME} nightly" \
      > /etc/apt/sources.list.d/openmodelica.list \
   && apt-get update \
   && apt-get install -qy omc${OMC_VERSION:+=${OMC_VERSION}} \
