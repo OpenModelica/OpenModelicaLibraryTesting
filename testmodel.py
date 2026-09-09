@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import argparse, os, re, sys, signal, threading, psutil, subprocess, shutil, time
+import argparse, os, re, sys, signal, threading, psutil, subprocess, shutil, time, traceback
 from asyncio.subprocess import STDOUT
 try:
   import resource
 except ImportError:
   resource = None
 import simplejson as json
+import zmq
 from monotonic import monotonic
+import OMPython
 from OMPython import FindBestOMCSession, OMCSession, OMCSessionZMQ
 import shared, glob
 
@@ -177,24 +179,88 @@ def writeResult():
 
 startJob=monotonic()
 
-def quit_omc(omc):
-  if omc is None:
-    return omc
-  process = getattr(omc, "_omc_process", None)
-  if process is not None:
-    noteRss(peakRss(process.pid))
+def isAlive(pid):
   try:
-    omc.sendExpression("quit()")
-  except:
-    pass
-  try:
-    del omc
-  except:
-    pass
-  omc = None
-  return omc
+    return psutil.Process(pid).status() != psutil.STATUS_ZOMBIE
+  except psutil.Error:
+    return False
 
-def writeResultAndExit(exitStatus, useOsExit=False, omc=None, omc_new=None):
+def cmdline(pid):
+  try:
+    return " ".join(psutil.Process(pid).cmdline())[:200]
+  except psutil.Error:
+    return "?"
+
+def waitGone(pids, seconds):
+  """The pids of those still alive after that long."""
+  deadline = monotonic() + seconds
+  while True:
+    pids = [pid for pid in pids if isAlive(pid)]
+    if not pids or monotonic() >= deadline:
+      return pids
+    time.sleep(0.05)
+
+def sessionProcesses(session):
+  """OMPython starts omc through a shell: that shell and everything below it."""
+  process = getattr(session, "_omc_process", None)
+  if process is None:
+    return []
+  try:
+    root = psutil.Process(process.pid)
+    return [root.pid] + [p.pid for p in root.children(recursive=True)]
+  except psutil.Error:
+    return []
+
+def quit_omc(session):
+  """quit() the session and do not return until its processes are gone.
+
+  OMPython's __del__ would do this at exit, but Python 3.14 runs no __del__ at
+  sys.exit while a daemon thread is alive, and the sampler above always is."""
+  if session is None:
+    return None
+  pids = sessionProcesses(session)
+  for pid in pids:
+    noteRss(peakRss(pid))
+  try:
+    session.sendExpression("quit()")
+  except Exception:
+    pass
+  process = getattr(session, "_omc_process", None)
+  left = waitGone(pids, 2)
+  if left:
+    with open(errFile, 'a+') as fp:
+      fp.write("omc did not exit on quit(); killing %s\n" % ", ".join("%d %s" % (pid, cmdline(pid)) for pid in left))
+    for pid in left:
+      try:
+        os.kill(pid, shared.SIGKILL)
+      except OSError:
+        pass
+    left = waitGone(left, 5)
+    if left:
+      with open(errFile, 'a+') as fp:
+        fp.write("Still alive after SIGKILL: %s\n" % left)
+  try:
+    process.poll()
+  except Exception:
+    pass
+  return None
+
+def killStrays():
+  """Whatever is still below this process once both sessions are gone."""
+  strays = descendants()
+  if not strays:
+    return
+  with open(errFile, 'a+') as fp:
+    fp.write("Processes left after quitting omc, killing: %s\n" % ", ".join("%d %s" % (pid, cmdline(pid)) for pid in strays))
+  for pid in strays:
+    try:
+      os.kill(pid, shared.SIGKILL)
+    except OSError:
+      pass
+  waitGone(strays, 5)
+
+def writeResultAndExit(exitStatus, useOsExit=False):
+  global omc, omc_new
   writeResult()
   print("Calling exit ...")
   with open(errFile, 'a+') as fp:
@@ -207,10 +273,43 @@ def writeResultAndExit(exitStatus, useOsExit=False, omc=None, omc_new=None):
   sys.stdout.flush()
   omc = quit_omc(omc)
   omc_new = quit_omc(omc_new)
+  killStrays()
   if useOsExit:
     os._exit(exitStatus)
   else:
     sys.exit(exitStatus)
+
+class OmcExited(Exception):
+  pass
+
+def guardSession(session, timeout):
+  """Give the session a sendExpression that cannot block forever.
+
+  OMPython's receives with no timeout: an omc killed mid-command left the main
+  thread in a C-level recv, where not even the SIGTERM handler runs. This one
+  notices omc dying within a second and gives up on a silent omc after `timeout`."""
+  if not isinstance(session, OMCSessionZMQ):
+    return
+  socket = session._omc
+  process = session._omc_process
+  socket.setsockopt(zmq.SNDTIMEO, 5000)
+  def sendExpression(command, parsed=True):
+    if process.poll() is not None:
+      raise OmcExited("OMC exited with status %s before: %s" % (process.returncode, command))
+    socket.send_string(str(command))
+    if command == "quit()":
+      socket.close()
+      session._omc = None
+      return None
+    deadline = monotonic() + timeout
+    while not socket.poll(1000):
+      if process.poll() is not None:
+        raise OmcExited("OMC exited with status %s while running: %s" % (process.returncode, command))
+      if monotonic() > deadline:
+        raise TimeoutError("%s: no answer from omc in %s seconds" % (command, timeout))
+    result = socket.recv_string()
+    return OMPython.OMTypedParser.parseString(result) if parsed else result
+  session.sendExpression = sendExpression
 
 def killChildren(sig, name):
   """Signal everything this process started, one process at a time: Windows has no
@@ -243,23 +342,25 @@ def sendExpressionTimeout(omc, cmd, timeout):
   # alive past the exit below
   thread = threading.Thread(target=target, args=(res,), daemon=True)
   thread.start()
-  # Poll instead of a single join: if omc dies (crash, ulimit, ...) the thread is
-  # stuck in that receive, and waiting out the whole timeout first buys nothing.
+  # Poll instead of a single join: if omc dies (crash, ulimit, ...) waiting out
+  # the whole timeout first buys nothing.
   # The deadline outwaits omc's own, which aborts the command and answers.
   deadline = monotonic() + timeout + shared.alarmGrace(timeout) + 5
   while thread.is_alive() and monotonic() < deadline:
     thread.join(1)
-    status = omc._omc_process.poll()
-    if thread.is_alive() and status is not None:
-      with open(errFile, 'a+') as fp:
-        fp.write("OMC exited with status %s while running: %s\n" % (status, cmd))
-        try:
-          with open(os.path.normpath(omc._omc_log_file.name)) as omcLog:
-            for line in omcLog:
-              fp.write(line)
-        except IOError:
-          pass
-      writeResultAndExit(0, True, omc, omc_new)
+    if omc._omc_process.poll() is not None:
+      break
+  status = omc._omc_process.poll()
+  if status is not None:
+    with open(errFile, 'a+') as fp:
+      fp.write("OMC exited with status %s while running: %s\n" % (status, cmd))
+      try:
+        with open(os.path.normpath(omc._omc_log_file.name)) as omcLog:
+          for line in omcLog:
+            fp.write(line)
+      except IOError:
+        pass
+    writeResultAndExit(0, True)
 
   if thread.is_alive():
     with open(errFile, 'a+') as fp:
@@ -276,7 +377,7 @@ def sendExpressionTimeout(omc, cmd, timeout):
       killChildren(shared.SIGKILL, "SIGKILL")
       with open(errFile, 'a+') as fp:
         fp.write("Aborted the command.\n")
-      writeResultAndExit(0, True, omc, omc_new)
+      writeResultAndExit(0, True)
     if res[1] is None:
       res[1] = ""
   if res[1] is not None:
@@ -372,6 +473,14 @@ def terminateHandler(signum, frame):
 
 signal.signal(signal.SIGTERM, terminateHandler)
 
+def uncaughtException(exctype, value, tb):
+  traceback.print_exception(exctype, value, tb)
+  with open(errFile, 'a+') as fp:
+    fp.write("Uncaught exception: %s\n" % value)
+  writeResultAndExit(1, True)
+
+sys.excepthook = uncaughtException
+
 with open(errFile, 'a+') as fp:
   fp.write("Running: %s\n" % " ".join(sys.argv))
 
@@ -423,6 +532,10 @@ def createOmcSessionNew():
     return createOmcSession()
 omc = createOmcSession()
 omc_new = createOmcSessionNew()
+# A backstop only: sendExpressionTimeout enforces the phase deadlines by killing
+# omc, which this notices within a second.
+for session in (omc, omc_new):
+  guardSession(session, 2*(conf["ulimitOmc"]+conf["ulimitExe"]))
 
 cmd = 'setCommandLineOptions("%s")' % conf["omc_thread_cmd"]
 if not omc.sendExpression(cmd):
@@ -495,7 +608,7 @@ if conf.get("ulimitMemory"):
 def loadModels(omc, conf):
   for f in conf["loadFiles"]:
     if not sendExpressionTimeout(omc, 'loadFile("%s", uses=false)' % f, conf["ulimitLoadModel"]):
-      writeResultAndExit(0, False, omc, omc_new)
+      writeResultAndExit(0)
   loadedFiles = sorted(omc.sendExpression("{getSourceFile(cl) for cl in getClassNames()}"))
   if sorted(conf["loadFiles"]) != loadedFiles:
     print("Loaded the wrong files. Expected:\n%s\nActual:\n%s" % ("\n".join(sorted(conf["loadFiles"])), "\n".join(loadedFiles)))
@@ -517,7 +630,7 @@ except TimeoutError as e:
   execstat["parsing"]=monotonic()-start
   with open(errFile, 'a+') as fp:
     fp.write("Timeout error for cmd: %s\n%s"%(cmd,str(e)))
-  writeResultAndExit(0, True, omc, omc_new)
+  writeResultAndExit(0, True)
 execstat["parsing"]=monotonic()-start
 
 try:
@@ -635,14 +748,12 @@ except TimeoutError as e:
   with open(errFile, 'a+') as fp:
     fp.write("Timeout error for cmd: %s\n%s"%(cmd,str(e)))
     try:
-      name = os.path.normpath(omc._omc_log_file.name)
-      del omc
-      with open(name,"r") as fp2:
-        fp.write("\n\nOMC output: %s" % fp2.read().decode().strip())
-    except:
+      with open(os.path.normpath(omc._omc_log_file.name), "r") as fp2:
+        fp.write("\n\nOMC output: %s" % fp2.read().strip())
+    except (OSError, AttributeError):
       pass
 
-  writeResultAndExit(0, omc, omc_new)
+  writeResultAndExit(0)
 
 # See which translateModel phases completed
 
@@ -697,7 +808,7 @@ with open(errFile, 'a+') as fp:
   fp.write(err)
 
 if execstat["phase"] < 4:
-  writeResultAndExit(0, False, omc, omc_new)
+  writeResultAndExit(0)
 
 start=monotonic()
 try:
@@ -708,7 +819,7 @@ try:
       if not os.path.exists(os.path.normpath(fmuExpectedLocation)):
         err += "\n%s was not generated in the expected location: %s" % ("The wasm artifact" if useArtifact else "FMU", fmuExpectedLocation)
         execstat["phase"]=4
-        writeResultAndExit(0, False, omc, omc_new)
+        writeResultAndExit(0)
       execstat["phase"] = 5
   elif isWasmJit:
     # Nothing to build; simulate() reports the JIT compile as timeCompile, while
@@ -718,7 +829,7 @@ try:
     if buildFailed:
       with open(errFile, 'a+') as fp:
         fp.write(simres.get("messages") or "")
-      writeResultAndExit(0, False, omc, omc_new)
+      writeResultAndExit(0)
   else:
     if isWin:
       res = checkOutputTimeout("\"%s\\share\\omc\\scripts\\Compile.bat\" %s gcc %s parallel dynamic 24 0" % (conf["omhome"], conf["fileName"], msysEnvironment), conf["ulimitOmc"], conf)
@@ -731,7 +842,7 @@ except TimeoutError as e:
   execstat["build"] = monotonic()-start
   with open(errFile, 'a+') as fp:
     fp.write(str(e))
-  writeResultAndExit(0, True, omc, omc_new)
+  writeResultAndExit(0, True)
 
 writeResult()
 # Do the simulation
@@ -867,7 +978,7 @@ try:
     if not fmisimulators:
       with open(simFile,"w") as fp:
         fp.write("No FMI simulator available\n")
-      writeResultAndExit(0, False, omc, omc_new)
+      writeResultAndExit(0)
     (name, command) = fmisimulators[0]
     res = simulateFmu(name, command, resFile, simFile)
   elif useArtifact:
@@ -889,7 +1000,7 @@ try:
       fp.write(simres.get("messages") or "")
     if not simres.get("resultFile"):
       execstat["sim"] = simElapsed()
-      writeResultAndExit(0, False, omc, omc_new)
+      writeResultAndExit(0)
     if useColdHot:
       execstat["simcold"] = simElapsed()
       cmd = simulateCmd(resimulate=True)
@@ -909,7 +1020,7 @@ try:
       with open(errFile, 'a+') as fp:
         fp.write("The simulation executable %s does not exist\n" % executable)
       execstat["sim"] = monotonic()-start
-      writeResultAndExit(0, False, omc, omc_new)
+      writeResultAndExit(0)
     (name, solverFlags) = solverRunners[0] if solverRunners else (None, "")
     res = simulateExecutable(name, solverFlags, resFile, simFile)
   execstat["sim"] = simElapsed()
@@ -933,7 +1044,7 @@ except TimeoutError as e:
       fp.write("%s failed or timed out simulating it; the others still get to run it\n"
                % runners[0][0])
   else:
-    writeResultAndExit(0, True, omc, omc_new)
+    writeResultAndExit(0, True)
 
 def verifyAgainstReference(resFile, prefix, stat):
   """Compare one simulation result against the reference file.

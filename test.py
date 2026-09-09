@@ -245,6 +245,56 @@ def killPids(pids, sig):
     except OSError:
       pass
 
+def jobProcesses(name):
+  """Every process started for that test, whoever its parent is by now.
+
+  testmodel.py runs with OMLT_JOB=<name> in its environment and everything it
+  starts inherits it, so this finds an omc that was reparented to init as well.
+  About 3 ms per scan."""
+  if isWin:
+    return []
+  marker = ("OMLT_JOB=%s" % name).encode() + b"\0"
+  found = []
+  for entry in os.listdir("/proc"):
+    if not entry.isdigit():
+      continue
+    try:
+      with open("/proc/%s/environ" % entry, "rb") as fp:
+        if marker in fp.read():
+          found.append(int(entry))
+    except OSError:
+      pass
+  return found
+
+def processLine(pid):
+  try:
+    p = psutil.Process(pid)
+    return "%d (%s, %.0f MB) %s" % (pid, p.status(), p.memory_info().rss/1e6, " ".join(p.cmdline())[:200])
+  except psutil.Error:
+    return str(pid)
+
+def isAlive(pid):
+  try:
+    return psutil.Process(pid).status() != psutil.STATUS_ZOMBIE
+  except psutil.Error:
+    return False
+
+leakedJobs = []
+
+def killLeftovers(name):
+  """Kill what a finished test left running and note it in its .err file."""
+  pids = jobProcesses(name)
+  if not pids:
+    return
+  lines = [processLine(pid) for pid in pids]
+  killPids(pids, shared.SIGKILL)
+  deadline = monotonic() + 5
+  while monotonic() < deadline and any(isAlive(pid) for pid in pids):
+    time.sleep(0.1)
+  leakedJobs.append(name)
+  with open(os.path.normpath("files/%s.err" % name), "a+") as errfile:
+    errfile.write("Processes still running after the test, killed:\n  %s\n" % "\n  ".join(lines))
+
 def runCommand(cmd, prefix, timeout):
   process = [None]
   def target():
@@ -959,7 +1009,8 @@ def runScript(c, timeout, memoryLimit, runverbose):
   if isWin:
     res_cmd = runCommand("%s testmodel.py --win %s --msysEnvironment=%s --libraries=\"%s\" %s --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (pythonExecutablePopenWin, '--addmsl' if addmsl else "", msysEnvironment, librariespath, ("--docker %s --dockerExtraArgs '%s'" % (docker, " ".join(dockerExtraArgs))) if docker else "", ompython_omhome, c, c), prefix=c, timeout=timeout)
   else:
-    res_cmd = runCommand("ulimit -v %d; ./testmodel.py %s --libraries=%s %s --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (memoryLimit, '--addmsl' if addmsl else "", librariespath, ("--docker %s --dockerExtraArgs '%s'" % (docker, " ".join(dockerExtraArgs))) if docker else "", ompython_omhome, c, c), prefix=c, timeout=timeout)
+    res_cmd = runCommand("ulimit -v %d; OMLT_JOB=%s ./testmodel.py %s --libraries=%s %s --ompython_omhome=%s %s.conf.json > files/%s.cmdout 2>&1" % (memoryLimit, c, '--addmsl' if addmsl else "", librariespath, ("--docker %s --dockerExtraArgs '%s'" % (docker, " ".join(dockerExtraArgs))) if docker else "", ompython_omhome, c, c), prefix=c, timeout=timeout)
+    killLeftovers(c)
 
   if res_cmd != 0:
     print("files/%s.err" % c)
@@ -1052,6 +1103,8 @@ shared.runCapped(tests,
                  n_jobs, heavyJobs, progress)
 stop=monotonic()
 print("Execution time: %s" % friendlyStr(stop-start))
+if leakedJobs:
+  print("%d tests left processes running, see their .err files: %s" % (len(leakedJobs), " ".join(leakedJobs[:20])))
 assert(stop-start >= 0.0)
 
 #if max(cmd_res) > 0:
