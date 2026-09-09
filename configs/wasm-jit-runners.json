@@ -21,9 +21,9 @@
     "description": "the artifact's own simulation: the translated model run by omc's simulation runtime, as simulate() runs it"
   },
   "me": {
-    "simflags": "-s fmi3:me:daskr",
+    "simflags": "-s fmi3:me",
     "daeModeSimflags": "-s fmi3:me -daeMode",
-    "description": "FMI 3.0 Model Exchange, integrated by omc with DASKR (IDA over the fmi-ls-dae residuals for a --daeMode model)"
+    "description": "FMI 3.0 Model Exchange, integrated by omc with the model's own solver (DASKR unless its annotation says otherwise; IDA over the fmi-ls-dae residuals for a --daeMode model)"
   },
   "cs": {
     "simflags": "-s fmi3:cs",
