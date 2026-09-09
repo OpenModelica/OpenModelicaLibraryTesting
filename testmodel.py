@@ -911,10 +911,13 @@ def artifactCmd(runnerFlags, resFile):
   # An empty output format is a run with nothing to compare against, so it is
   # asked for no result file at all rather than one nobody reads.
   resultArgument = "-noemit" if outputFormat == "empty" else "-r=%s" % resFile
+  # The export baked in no filter, and the variableFilter argument below only
+  # reaches a model through the build this run skips.
+  filterArgument = "" if variableFilter in ("", ".*") else "-variableFilter=%s" % variableFilter
   simflags = " ".join(x for x in (annotationSimFlags, conf["simFlags"], emit_protected,
                                   "-lv LOG_STATS",
                                   "-startTime=%g -stopTime=%g -tolerance=%g -stepSize=%g" % (startTime,stopTime,tolerance,stepSize),
-                                  resultArgument, runnerFlags) if x.strip())
+                                  filterArgument, resultArgument, runnerFlags) if x.strip())
   return 'simulate(%s,startTime=%g,stopTime=%g,tolerance=%g,numberOfIntervals=%d,outputFormat="%s",variableFilter="%s",fileNamePrefix="%s",simflags="%s",resimulateExecutable="%s.fmu")' % (
       conf["modelName"],startTime,stopTime,tolerance,numberOfIntervals,outputFormat,variableFilter,conf["fileName"],simflags,conf["fileName"].replace(".","_"))
 
