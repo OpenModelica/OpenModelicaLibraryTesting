@@ -641,7 +641,9 @@
     "libraryVersion":"master",
     "libraryVersionNameForTests":"",
     "ulimitExeModels":{
+      "ThermoSysPro.Examples.Book.PowerPlants.CombinedCyclePowerPlant.LoadVariation":360,
       "ThermoSysPro.Examples.SimpleExamples.TestCentrifugalPump7":570,
+      "ThermoSysPro.Fluid.Examples.Book.PowerPlants.CombinedCyclePowerPlant.LoadVariation":360,
       "ThermoSysPro.Fluid.Examples.SimpleExamples.TestDynamicWaterHeating":540
     }
   },
