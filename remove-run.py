@@ -2,18 +2,20 @@
 """
 Remove one test run from the database, all of its result tables together.
 
-  ./remove-run.py --db postgresql://om@localhost/omdb wasm-jit
-  ./remove-run.py --db postgresql://om@localhost/omdb wasm-jit --write
+  ./remove-run.py --db postgresql://om@localhost/omdb master-fmi
+  ./remove-run.py --db postgresql://om@localhost/omdb master-fmi --write
 
 The first says what it would delete, the second deletes it.  Without --date or
 --omcversion it takes the newest run of that branch.
 
-A run of test.py --wasmjitrunner or --fmisimulator fills several tables from one
-job - wasm-jit, wasm-jit-me and wasm-jit-cs share a date - and removing only the
-first would leave the others describing a run that no longer exists.  So every
-table whose name is the branch or begins with it, and that has rows of that
-date, goes at once; --also names any further table, for the --solver runners,
-whose tables are named after the solver rather than the branch.
+A run of test.py --fmisimulator or --wasmfmu fills several tables from one job -
+master-fmi and master-fmi-fmpy share a date - and removing only the first would
+leave the others describing a run that no longer exists.  So every table whose
+name is the branch or begins with it, and that has rows of that date, goes at
+once; --also names any further table, for the runners whose tables are not named
+after the branch: the --solver ones, named after the solver, and the wasm FMU
+job's, whose branch is wasm-jit and whose tables are wasm-jit-me and wasm-jit-cs
+(`remove-run.py wasm-jit-me --also wasm-jit-cs`).
 
 The rows of a run are in the result table, in omcversion and in libversion.  Its
 job_claim rows are left alone: they say who tested a library last, the next run
@@ -80,8 +82,10 @@ def main():
   parser.add_argument("--date", type=int, help="The run to remove, as the epoch second in its date column")
   parser.add_argument("--omcversion", help="The run to remove, as the omc version that produced it")
   parser.add_argument("--also", action="append", default=[],
-                      help="A further table the same job wrote, for --solver runners, whose tables "
-                           "are named after the solver. Repeatable.")
+                      help="A further table the same job wrote, for the runners whose tables are "
+                           "not named after the branch: --solver, named after the solver, and "
+                           "--wasmfmu, whose branch is wasm-jit and whose tables are wasm-jit-me "
+                           "and wasm-jit-cs. Repeatable.")
   parser.add_argument("--write", action="store_true", help="Delete, instead of only saying what would be deleted")
   resultsdb.addArgument(parser)
   args = parser.parse_args()

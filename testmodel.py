@@ -432,7 +432,7 @@ execstat = {
   "phase":0,
   "maxrss":0, # bytes resident at once across omc, compilers and executable
   # One entry per runner beyond the first, which reports itself in the keys
-  # above; see configs/fmi-simulators.json, wasm-jit-runners.json, solvers.json.
+  # above; see configs/fmi-simulators.json, wasm-fmu-runners.json, solvers.json.
   "simulators":{}
 }
 simulators = execstat["simulators"]
@@ -493,14 +493,14 @@ if conf["simCodeTarget"] not in ["Cpp","C","C+Rust","wasm-jit"]:
 isWasmJit = conf["simCodeTarget"]=="wasm-jit"
 # --nobuildmodel: one simulate() instead of translateModel()+resimulate, so omc
 # reports the build/simulation split itself
-# --wasmjitrunner: export the model once as a wasm artifact and simulate that one
-# artifact several ways (its own simulation runtime, FMI 3.0 ME, FMI 3.0 CS), so
-# the model is translated and compiled once however many runs there are
-useArtifact = isWasmJit and bool(conf.get("wasmjitrunners")) and not conf.get("fmi")
-useSimulate = isWasmJit and conf.get("noBuildModel") and not conf.get("fmi") and not useArtifact
+# --wasmfmu: export the model once as a wasm FMU and simulate that one FMU
+# several ways (FMI 3.0 ME, FMI 3.0 CS, its own simulation runtime), so the
+# model is translated and compiled once however many runs there are
+useWasmFmu = isWasmJit and bool(conf.get("wasmfmurunners")) and not conf.get("fmi")
+useSimulate = isWasmJit and conf.get("noBuildModel") and not conf.get("fmi") and not useWasmFmu
 # --coldhot: simulate again in the same session, where the module is already
 # compiled, and report that run instead
-useColdHot = isWasmJit and conf.get("coldHot") and not conf.get("fmi") and not useArtifact
+useColdHot = isWasmJit and conf.get("coldHot") and not conf.get("fmi") and not useWasmFmu
 if isWasmJit and conf.get("fmi"):
   with open(errFile, 'a+') as fp:
     fp.write("FMI export is not supported for simCodeTarget=wasm-jit")
@@ -705,7 +705,7 @@ def modelCommandLineOptions():
 
 # A --daeMode model's Model Exchange interface is a DAE one (fmi-ls-dae): the
 # runners that care say how to drive it.
-daeMode = useArtifact and "--daeMode" in (modelCommandLineOptions() + " " + " ".join(str(c) for c in conf["customCommands"]))
+daeMode = useWasmFmu and "--daeMode" in (modelCommandLineOptions() + " " + " ".join(str(c) for c in conf["customCommands"]))
 
 def simulateCmd(resimulate):
   simflags = ("%s %s %s -lv LOG_STATS" % (annotationSimFlags,conf["simFlags"],emit_protected)).strip()
@@ -722,8 +722,8 @@ timeout = conf["ulimitOmc"]
 if conf.get("fmi"):
   cmd='"" <> buildModelFMU(%s,fileNamePrefix="%s",fmuType="%s",version="%s",platforms={"static"})' % (conf["modelName"],conf["fileName"].replace(".","_"),conf["fmuType"],conf["fmi"])
   timedPhase = "build"
-elif useArtifact:
-  # One artifact for every runner, written unzipped: the model kernel alone,
+elif useWasmFmu:
+  # One FMU for every runner, written unzipped: the model kernel alone,
   # which omc links against an adapter it compiled once into its cache. Nothing
   # here is packed, extracted or compiled but the model.
   sendExpressionOldOrNew('setCommandLineOptions("--fmuDirectory=true")')
@@ -812,12 +812,12 @@ if execstat["phase"] < 4:
 
 start=monotonic()
 try:
-  if conf.get("fmi") or useArtifact:
+  if conf.get("fmi") or useWasmFmu:
     if res:
       fmuExpectedLocation = "%s.fmu" % conf["fileName"].replace(".","_")
       execstat["build"] = max(0.0, buildmodel) # Older versions didn't separate translate and build times
       if not os.path.exists(os.path.normpath(fmuExpectedLocation)):
-        err += "\n%s was not generated in the expected location: %s" % ("The wasm artifact" if useArtifact else "FMU", fmuExpectedLocation)
+        err += "\n%s was not generated in the expected location: %s" % ("The wasm FMU" if useWasmFmu else "FMU", fmuExpectedLocation)
         execstat["phase"]=4
         writeResultAndExit(0)
       execstat["phase"] = 5
@@ -854,15 +854,15 @@ fmisimulator = conf.get("fmisimulator")
 fmisimulators = shared.parseFmiSimulators(conf.get("fmisimulators")) if conf.get("fmi") else []
 if conf.get("fmi") and not fmisimulators and fmisimulator:
   fmisimulators = shared.parseFmiSimulators([fmisimulator])
-wasmjitrunners = shared.parseWasmJitRunners(conf.get("wasmjitrunners")) if useArtifact else []
+wasmfmurunners = shared.parseWasmFmuRunners(conf.get("wasmfmurunners")) if useWasmFmu else []
 # The model is built once and its executable run once per solver; the solvers are
 # described in configs/solvers.json.
 solverRunners = shared.parseSolvers(conf.get("solvers")) if not conf.get("fmi") and not isWasmJit else []
 if daeMode:
-  wasmjitrunners = [(name, shared.wasmJitRunner(name).get("daeModeSimflags") or flags) for (name, flags) in wasmjitrunners]
-# One build, several runs: an FMU simulated by several tools, a wasm artifact run
+  wasmfmurunners = [(name, shared.wasmFmuRunner(name).get("daeModeSimflags") or flags) for (name, flags) in wasmfmurunners]
+# One build, several runs: an FMU simulated by several tools, a wasm FMU run
 # several ways and a model run by several solvers fan out the same way.
-runners = fmisimulators or wasmjitrunners or solverRunners
+runners = fmisimulators or wasmfmurunners or solverRunners
 
 def runnerSuffix(name):
   """What tells the files of one runner from those of another. The first one
@@ -901,10 +901,10 @@ def simulateFmu(name, command, resFile, simFile):
   return checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s > %s.pipe 2>&1)"
                             % (pipe,pipe,pipe,simFile,cmd,pipe), 1.05*conf["ulimitExe"], conf)
 
-def artifactCmd(runnerFlags, resFile):
-  """The simulate() that runs the exported artifact one way.
+def wasmFmuCmd(runnerFlags, resFile):
+  """The simulate() that runs the exported FMU one way.
 
-  Nothing is translated: `resimulateExecutable` points at the artifact, `-s
+  Nothing is translated: `resimulateExecutable` points at the FMU, `-s
   fmi3:...` picks which of its interfaces runs, and the experiment comes from
   the flags rather than from what the export baked in.
   """
@@ -921,19 +921,19 @@ def artifactCmd(runnerFlags, resFile):
   return 'simulate(%s,startTime=%g,stopTime=%g,tolerance=%g,numberOfIntervals=%d,outputFormat="%s",variableFilter="%s",fileNamePrefix="%s",simflags="%s",resimulateExecutable="%s.fmu")' % (
       conf["modelName"],startTime,stopTime,tolerance,numberOfIntervals,outputFormat,variableFilter,conf["fileName"],simflags,conf["fileName"].replace(".","_"))
 
-def simulateArtifact(name, runnerFlags, resFile, simFile):
-  """Run the artifact one way, writing what omc says to simFile.
+def simulateWasmFmu(name, runnerFlags, resFile, simFile):
+  """Run the FMU one way, writing what omc says to simFile.
 
   Returns what simulate() answered; an empty resultFile is a failed run.
   """
-  cmd = artifactCmd(runnerFlags, resFile)
+  cmd = wasmFmuCmd(runnerFlags, resFile)
   # The export is a directory, and a zipped one unpacks itself beside the .fmu on
   # the first run; the cleanup removes what this file names.
   with open("%s.tmpfiles" % conf["fileName"], "a+") as fp:
     fp.write("%s.fmu\n%s_artifact\n" % (conf["fileName"].replace(".","_"), conf["fileName"].replace(".","_")))
   with open(simFile, "w") as fp:
     fp.write("startTime=%g\nstopTime=%g\ntolerance=%g\nnumberOfIntervals=%d\nstepSize=%g\n" % (startTime,stopTime,tolerance,numberOfIntervals,stepSize))
-    fp.write("wasm artifact (%s: %s): %s\n" % (name, shared.wasmJitRunner(name).get("description") or "", cmd))
+    fp.write("wasm FMU (%s: %s): %s\n" % (name, shared.wasmFmuRunner(name).get("description") or "", cmd))
   res = sendExpressionTimeout(omc, cmd, conf["ulimitExe"]) or {}
   with open(simFile, "a+") as fp:
     fp.write(res.get("messages") or "")
@@ -964,7 +964,7 @@ def simulateExecutable(name, solverFlags, resFile, simFile):
 def simElapsed():
   # omc's own time: the wall clock here covers the wrong run for these flags.
   # A run omc aborted reports none, and then the wall clock is all there is.
-  if useSimulate or useColdHot or useArtifact:
+  if useSimulate or useColdHot or useWasmFmu:
     return (simres or {}).get("timeSimulation") or (monotonic()-start)
   return monotonic()-start
 
@@ -984,13 +984,13 @@ try:
       writeResultAndExit(0)
     (name, command) = fmisimulators[0]
     res = simulateFmu(name, command, resFile, simFile)
-  elif useArtifact:
-    (name, runnerFlags) = wasmjitrunners[0]
-    simres = simulateArtifact(name, runnerFlags, resFile, simFile)
+  elif useWasmFmu:
+    (name, runnerFlags) = wasmfmurunners[0]
+    simres = simulateWasmFmu(name, runnerFlags, resFile, simFile)
     if not simres.get("resultFile"):
       # The same shape a failing FMI simulator takes: the handler below decides
-      # whether the other runners of this artifact still get their turn.
-      raise TimeoutError("%s failed to simulate the wasm artifact" % name)
+      # whether the other runners of this FMU still get their turn.
+      raise TimeoutError("%s failed to simulate the wasm FMU" % name)
   elif isWasmJit:
     if not useSimulate:
       cmd = simulateCmd(resimulate=True)
@@ -1137,8 +1137,8 @@ for (name, command) in runners[1:]:
   start = monotonic()
   phaseStarts("sim", stat)
   try:
-    if useArtifact:
-      res = simulateArtifact(name, command, other, simFileOther)
+    if useWasmFmu:
+      res = simulateWasmFmu(name, command, other, simFileOther)
       stat["sim"] = res.get("timeSimulation") or (monotonic()-start)
       stat["simwall"] = monotonic()-start
       if not res.get("resultFile"):
@@ -1157,7 +1157,7 @@ for (name, command) in runners[1:]:
     stat["sim"] = monotonic()-start
     stat["simwall"] = stat["sim"]
     with open(errFile, 'a+') as fp:
-      fp.write("%s timed out simulating the %s\n" % (name, "artifact" if useArtifact else ("model" if solverRunners else "FMU")))
+      fp.write("%s timed out simulating the %s\n" % (name, "model" if solverRunners else "FMU"))
   phaseEnded()
   writeResult()
 

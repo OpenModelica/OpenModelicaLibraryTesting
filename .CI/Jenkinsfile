@@ -35,7 +35,8 @@ pipeline {
     booleanParam(name: 'gbode', defaultValue: false, description: 'master branch, simulated with -s gbode -gbm=radauIIA3, filling gbode (ryzen-5950x-1). Ticking it together with master, cvode or ida runs one job that builds every model once and simulates it with each of them. This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'ida', defaultValue: false, description: 'master branch, simulated with -s ida, filling ida (ryzen-5950x-1). Ticking it together with master, cvode or gbode runs one job that builds every model once and simulates it with each of them. This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'generateSymbolicJacobian', defaultValue: false, description: 'master branch, with --generateSymbolicJacobian (ryzen-5950x-1). This is an experimental job that does not run on a fixed schedule.')
-    booleanParam(name: 'wasm_jit', defaultValue: false, description: 'master branch, with --simCodeTarget=wasm-jit (ryzen-9950x). Every model is exported once as a wasm artifact and simulated three ways, filling wasm-jit (the runtime inside the artifact), wasm-jit-me (FMI 3.0 Model Exchange) and wasm-jit-cs (FMI 3.0 Co-Simulation). This is an experimental job that does not run on a fixed schedule.')
+    booleanParam(name: 'wasm_jit', defaultValue: false, description: 'master branch, with --simCodeTarget=wasm-jit (ryzen-9950x). Every model is translated and simulated the way simulate() does, filling wasm-jit. This is an experimental job that does not run on a fixed schedule.')
+    booleanParam(name: 'wasm_fmu', defaultValue: false, description: 'master branch, with --simCodeTarget=wasm-jit (ryzen-9950x). Every model is exported once as an unzipped wasm FMU and simulated through both of its FMI 3.0 interfaces, filling wasm-jit-me (Model Exchange) and wasm-jit-cs (Co-Simulation). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'c_plus_rust', defaultValue: false, description: 'master branch, with --simCodeTarget=C+Rust, filling c-plus-rust (ryzen-5950x-1). The C code generator emits what it always did; the executable links libSimulationRuntimeRust instead of libSimulationRuntimeC, so the difference against master is the simulation runtime alone. This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'heavy_tests', defaultValue: false, description: 'master branch, runs one test at a time. That is, no parallel launching of tests. omc will use multiple threads for each test (-n=1 is not set unlike the other regression tests.), (ryzen-5950x-1). This is an experimental job that does not run on a fixed schedule.')
 
@@ -338,8 +339,30 @@ pipeline {
           expression { params.wasm_jit }
         }
         steps {
-          runRegressiontest('master', 'wasm-jit', 'setCommandLineOptions("--simCodeTarget=wasm-jit")', '', false, '', '--wasmjitrunner=sim,me,cs', false, false, 0, 'configs/conf.json',
-                            '-DOM_OMC_ENABLE_RUST=ON -DRUST_OMC_CI=ON -DRUST_OMC_THREADS=4 -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache')
+          // --nobuildmodel: the model is translated, compiled and simulated by one simulate(),
+          // so omc reports the JIT compile as the build time rather than leaving it in the
+          // simulation the way a resimulate does.
+          runRegressiontest('master', 'wasm-jit', 'setCommandLineOptions("--simCodeTarget=wasm-jit")', '', false, '', '--nobuildmodel', false, false, 0, 'configs/conf.json',
+                            wasmCmakeFlags())
+        }
+      }
+      stage('wasm-fmu') {
+        agent {
+          node {
+            label 'ryzen-9950x'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.wasm_fmu }
+        }
+        steps {
+          // --branch=wasm-jit and no runner of its own fills that table: the two runners write
+          // wasm-jit-me and wasm-jit-cs, beside the wasm-jit the stage above fills.
+          runRegressiontest('master', 'wasm-jit', 'setCommandLineOptions("--simCodeTarget=wasm-jit")', '', false, '', '--wasmfmu=me,cs', false, false, 0, 'configs/conf.json',
+                            wasmCmakeFlags())
         }
       }
       stage('C+Rust') {
@@ -457,7 +480,7 @@ pipeline {
       }
       when {
         beforeAgent true
-        expression { params.v1_25 || params.v1_26 || params.v1_27 || params.master || params.conversion_script || params.report_ryzen_5950x_1 || params.report_ryzen_5950x_2 || params.newInst_newBackend || params.generateSymbolicJacobian || params.heavy_tests || params.fmi_v1_25 || params.fmi_v1_26 || params.fmi_v1_27 || params.fmi_master || params.fmpy_fmi_v1_25 || params.fmpy_fmi_v1_26 || params.fmpy_fmi_v1_27 || params.fmpy_fmi_master || params.newInst_daeMode || params.newBackend_daeMode || params.oldInst || params.cpp || params.cvode || params.gbode || params.ida || params.wasm_jit || params.c_plus_rust}
+        expression { params.v1_25 || params.v1_26 || params.v1_27 || params.master || params.conversion_script || params.report_ryzen_5950x_1 || params.report_ryzen_5950x_2 || params.newInst_newBackend || params.generateSymbolicJacobian || params.heavy_tests || params.fmi_v1_25 || params.fmi_v1_26 || params.fmi_v1_27 || params.fmi_master || params.fmpy_fmi_v1_25 || params.fmpy_fmi_v1_26 || params.fmpy_fmi_v1_27 || params.fmpy_fmi_master || params.newInst_daeMode || params.newBackend_daeMode || params.oldInst || params.cpp || params.cvode || params.gbode || params.ida || params.wasm_jit || params.wasm_fmu || params.c_plus_rust}
       }
       environment {
         GITBRANCHES = 'maintenance/v1.20 maintenance/v1.21 maintenance/v1.22 maintenance/v1.23 maintenance/v1.24 maintenance/v1.25 maintenance/v1.26 maintenance/v1.27 master newInst-newBackend'
@@ -562,8 +585,9 @@ pipeline {
         sh "./report.py --branches='ida master' configs/conf.json"
         sh "mv overview.html overview-ida.html"
 
-        // The three ways one wasm artifact is simulated, against master: they share
-        // an export, so only the simulation and the verification tell them apart.
+        // The three ways a wasm-jit model is simulated, against master: the plain
+        // simulation path, and the two FMI 3.0 interfaces of one exported wasm FMU,
+        // which share an export and differ only in simulation and verification.
         sh "./report.py --branches='master ${env.GITBRANCHES_C_PLUS_RUST} ${env.GITBRANCHES_WASM_JIT}' configs/conf.json"
         sh "mv overview.html overview-wasm-jit.html"
 
@@ -843,6 +867,13 @@ def solvers(boolean dflt, boolean cvode, boolean gbode, boolean ida) {
   if (gbode) chosen << 'gbode'
   if (ida) chosen << 'ida'
   return chosen
+}
+
+/* The cmake flags of an omc that can translate to wasm-jit. The wasm-jit and
+ * wasm-fmu jobs share the build cached in ~/saved_omc/wasm-jit, so they have to
+ * ask for the same one. */
+def wasmCmakeFlags() {
+  return '-DOM_OMC_ENABLE_RUST=ON -DRUST_OMC_CI=ON -DRUST_OMC_THREADS=4 -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache'
 }
 
 def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimflags, testFlags, boolean removePackageOrder, boolean conversionScript, int jobs=0, libs_config_file = 'configs/conf.json', cmakeFlags = '', dockerfile = '.CI/testing', fmiSimulators = null, solvers = null) {

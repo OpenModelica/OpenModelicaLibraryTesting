@@ -21,11 +21,11 @@
   - [FMI C++](https://libraries.openmodelica.org/branches/overview-c++.html):
     simulation with FMI and C++ runtime
   - [wasm-jit](https://libraries.openmodelica.org/branches/overview-wasm-jit.html):
-    simulation with the WebAssembly runtime. Each model is exported once as a
-    wasm artifact and simulated three ways — `wasm-jit` runs the simulation
-    runtime inside it, `wasm-jit-me` its FMI 3.0 Model Exchange interface and
-    `wasm-jit-cs` its FMI 3.0 Co-Simulation one — so the three differ only in
-    how the same compiled model is driven
+    simulation with the WebAssembly runtime. `wasm-jit` is the plain simulation
+    path, the model translated and run the way `simulate()` runs it;
+    `wasm-jit-me` and `wasm-jit-cs` come from a second job that exports each
+    model once as a wasm FMU and drives that one FMU through its FMI 3.0 Model
+    Exchange and Co-Simulation interfaces
   - [C+Rust](https://libraries.openmodelica.org/branches/overview-c-plus-rust.html):
     simulation with the Rust runtime under the C code generator (compiler flag
     `--simCodeTarget=C+Rust`). The generated sources are the ones the C target

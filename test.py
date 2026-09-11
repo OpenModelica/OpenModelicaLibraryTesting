@@ -37,7 +37,7 @@ parser.add_argument('--noclean', action="store_true", default=False)
 parser.add_argument('--nobuildmodel', action="store_true", help="Translate, build and simulate in a single simulate() call instead of translateModel() followed by simulate(resimulateExecutable=...), so the JIT compile is reported as build time rather than simulation time. Only used by simCodeTarget=wasm-jit.", default=False)
 parser.add_argument('--coldhot', action="store_true", help="Simulate each model twice in the same omc; the second run reuses the compiled module. Both times are printed, but only the hot one is stored. Only used by simCodeTarget=wasm-jit.", default=False)
 parser.add_argument('--fmisimulator', action='append', default=[], help="FMI simulator to run the FMUs with, as 'name=command' or just the command. Repeat it to simulate every FMU with several tools without building it more than once; the first one stores its results in --branch and each further one in <branch>-<name>, so --branch=master-fmi with OMSimulator and fmpy fills master-fmi and master-fmi-fmpy." )
-parser.add_argument('--wasmjitrunner', action='append', default=[], help="Export every model once as a wasm artifact (buildModelFMU with fmuType=me_cs, platforms={wasm,<this machine>}) and simulate that one artifact each of these ways: 'sim' runs the translated model the way simulate() does, 'me' and 'cs' the artifact's FMI 3.0 interfaces. Comma-separated or repeated; the first fills --branch and each further one <branch>-<name>, so --branch=master-wasm-jit with sim,me,cs fills master-wasm-jit, master-wasm-jit-me and master-wasm-jit-cs. See configs/wasm-jit-runners.json. Only for simCodeTarget=wasm-jit.")
+parser.add_argument('--wasmfmu', '--wasmjitrunner', action='append', dest='wasmfmu', default=[], help="Export every model once as a wasm FMU (buildModelFMU with fmuType=me_cs, platforms={wasm,<this machine>}, written unzipped) and simulate that one FMU each of these ways: 'me' and 'cs' are its FMI 3.0 interfaces, 'sim' runs the translated model the way simulate() does. Comma-separated or repeated; each one fills <branch>-<name>, so --branch=wasm-jit with me,cs fills wasm-jit-me and wasm-jit-cs, beside the wasm-jit a job without this option fills. See configs/wasm-fmu-runners.json. Only for simCodeTarget=wasm-jit.")
 parser.add_argument('--solver', action='append', default=[], help="Build every model once and simulate it once per solver, so that testing another solver costs a simulation rather than a build. 'default' is the model's own solver and each further name is a -s the simulation is given; comma-separated or repeated. Every solver stores its results in the table its entry names, so --branch=master with default,cvode,gbode fills master, cvode and gbode. See configs/solvers.json.")
 parser.add_argument('--ulimitvmem', help="Virtual memory limit (in kB) (linux only)", type=int, default=8*1024*1024)
 parser.add_argument('--heavyjobs', help="How many of the models listed in --heavymodels may run at the same time. They are the handful that need gigabytes each, and running sixteen of them together is what takes the machine out of memory.", type=int, default=4)
@@ -75,19 +75,19 @@ ompython_omhome = args.ompython_omhome
 fmisimulators = shared.parseFmiSimulators(args.fmisimulator)
 # The first simulator is the one the single-simulator code paths use.
 fmisimulator = fmisimulators[0][1] if fmisimulators else None
-wasmjitrunners = shared.parseWasmJitRunners(args.wasmjitrunner)
+wasmfmurunners = shared.parseWasmFmuRunners(args.wasmfmu)
 solvers = shared.parseSolvers(args.solver)
-if len([x for x in (fmisimulators, wasmjitrunners, solvers) if x]) > 1:
-  raise Exception("--fmisimulator, --wasmjitrunner and --solver each fan one build out into several "
+if len([x for x in (fmisimulators, wasmfmurunners, solvers) if x]) > 1:
+  raise Exception("--fmisimulator, --wasmfmu and --solver each fan one build out into several "
                   "result branches; a job runs one of them, not several.")
 # Everything one build is simulated by, whichever of the three it is.
-runnerNames = [n for (n, _) in fmisimulators or wasmjitrunners or solvers]
+runnerNames = [n for (n, _) in fmisimulators or wasmfmurunners or solvers]
 
 def branchForRunner(name):
   if fmisimulators:
     return shared.branchForSimulator(branch, name)
-  if wasmjitrunners:
-    return shared.branchForWasmJitRunner(branch, name)
+  if wasmfmurunners:
+    return shared.branchForWasmFmuRunner(branch, name)
   return shared.branchForSolver(branch, name)
 
 # One branch per runner, where its own runner belongs: a job given only FMPy on
@@ -720,8 +720,8 @@ def restrictRunners(conf, names):
     chosen = [(n, c) for (n, c) in fmisimulators if n in names]
     conf["fmisimulator"] = chosen[0][1]
     conf["fmisimulators"] = ["%s=%s" % (n, c) for (n, c) in chosen]
-  elif wasmjitrunners:
-    conf["wasmjitrunners"] = names
+  elif wasmfmurunners:
+    conf["wasmfmurunners"] = names
   elif solvers:
     conf["solvers"] = names
 
@@ -789,8 +789,8 @@ for (library,conf) in configs:
     conf["fmisimulator"] = fmisimulator
     conf["fmisimulators"] = ["%s=%s" % (n, c) for (n, c) in fmisimulators]
     conf["fmuType"] = fmuType
-  if wasmjitrunners:
-    conf["wasmjitrunners"] = [n for (n, _) in wasmjitrunners]
+  if wasmfmurunners:
+    conf["wasmfmurunners"] = [n for (n, _) in wasmfmurunners]
   if solvers:
     conf["solvers"] = [n for (n, _) in solvers]
   if (not canChangeOptLevel) and "optlevel" in conf:

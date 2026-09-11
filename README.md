@@ -190,10 +190,9 @@ Options:
                        simulate every FMU with several tools without building it
                        more than once, see [Testing FMI with several
                        simulators](#testing-fmi-with-several-simulators)
-- `--wasmjitrunner=[]`: Export every model once as a wasm artifact and simulate
-                       that one artifact several ways, see [One wasm artifact,
-                       three ways to simulate
-                       it](#one-wasm-artifact-three-ways-to-simulate-it)
+- `--wasmfmu=[]`: Export every model once as a wasm FMU and simulate that one
+                  FMU several ways, see [One wasm FMU, several ways to simulate
+                  it](#one-wasm-fmu-several-ways-to-simulate-it)
 - `--solver=[]`: Build every model once and simulate it once per solver, see
                  [One build, several solvers](#one-build-several-solvers)
 - `--ulimitvmem=8388608`: Virtual memory limit (in kB)
@@ -315,20 +314,30 @@ A tool that is a Python package rather than a command line needs a driver script
 that takes the arguments its entry passes, writes the result file and exits
 non-zero when it fails; `command` then points at it.
 
-### One wasm artifact, three ways to simulate it
+### One wasm FMU, several ways to simulate it
 
-`--simCodeTarget=wasm-jit` can export a model as a single WebAssembly artifact
-carrying three things at once: the model's own simulation runtime, an FMI 3.0
-Model Exchange interface and an FMI 3.0 Co-Simulation interface. Exporting it
-costs one translation and one compilation, and simulating it three ways then
-costs three simulations - the same bargain the FMI simulators above strike.
+`--simCodeTarget=wasm-jit` translates a model to WebAssembly and JIT-compiles it
+inside the omc that translated it. Two jobs test it, and between them they fill
+the three `wasm-jit` tables the reports show:
 
 ```bash
-./test.py --branch=master-wasm-jit --wasmjitrunner=sim,me,cs \
+# wasm-jit: the plain simulation path, what simulate() does
+./test.py --branch=wasm-jit --nobuildmodel \
           --extraflags='--simCodeTarget=wasm-jit' configs/myConf.json
-./report.py --branches="master-wasm-jit master-wasm-jit-me master-wasm-jit-cs"
+
+# wasm-jit-me and wasm-jit-cs: one exported FMU, driven through both interfaces
+./test.py --branch=wasm-jit --wasmfmu=me,cs \
+          --extraflags='--simCodeTarget=wasm-jit' configs/myConf.json
+
+./report.py --branches="wasm-jit wasm-jit-me wasm-jit-cs"
 # the overview.html it writes is published as overview-wasm-jit.html
 ```
+
+`--wasmfmu` exports the model as a single WebAssembly FMU carrying three things
+at once: the model's own simulation runtime, an FMI 3.0 Model Exchange interface
+and an FMI 3.0 Co-Simulation interface. Exporting it costs one translation and
+one compilation, and driving it both ways then costs two simulations - the same
+bargain the FMI simulators above strike.
 
 The build phase is `buildModelFMU(..., fmuType="me_cs", version="3.0",
 platforms={"wasm"})` with `--fmuDirectory=true`, which writes `<model>.fmu` as a
@@ -338,21 +347,27 @@ linking that kernel against an FMI 3.0 adapter it compiled once into
 `~/.openmodelica/cache` — so a model is translated once, compiled once, and
 neither packed nor loaded:
 
-| runner | branch | what runs |
-| --- | --- | --- |
-| `sim` | `master-wasm-jit` | the translated model, run by omc's simulation runtime as `simulate()` runs it |
-| `me` | `master-wasm-jit-me` | FMI 3.0 Model Exchange, integrated by omc with DASKR |
-| `cs` | `master-wasm-jit-cs` | FMI 3.0 Co-Simulation, the artifact integrating itself with DASKR |
+| runner | branch        | what runs |
+| ---    | ---           | --- |
+| `me`   | `wasm-jit-me` | FMI 3.0 Model Exchange, integrated by omc with DASKR |
+| `cs`   | `wasm-jit-cs` | FMI 3.0 Co-Simulation, the FMU integrating itself with DASKR |
+| `sim`  | `wasm-jit`    | the translated model, run by omc's simulation runtime as `simulate()` runs it |
 
-Every run reports what loading and linking the artifact cost, so a short
-simulation's `.sim` says how much of it was the artifact.
+Every run reports what loading and linking the FMU cost, so a short simulation's
+`.sim` says how much of it was the FMU.
+
+`sim` is the export driven the way the plain job drives the translated model, so
+naming it beside `me` and `cs` writes the FMU's results into the `wasm-jit`
+table the plain job fills. It is what the older job that tested all three from
+one export used, and `--wasmjitrunner` is still accepted as the name that job
+spelled `--wasmfmu`.
 
 The runners live in
-[configs/wasm-jit-runners.json](configs/wasm-jit-runners.json); adding one is an
+[configs/wasm-fmu-runners.json](configs/wasm-fmu-runners.json); adding one is an
 entry there (`simflags` is what is appended to the model's simulation flags,
 `branchSuffix` overrides the `-<name>` it adds to the branch).
 
-`--wasmjitrunner`, `--fmisimulator` and `--solver` each fan one build out into
+`--wasmfmu`, `--fmisimulator` and `--solver` each fan one build out into
 several result branches, so a job uses one of them, not several.
 
 ### The Rust simulation runtime under the C code generator
