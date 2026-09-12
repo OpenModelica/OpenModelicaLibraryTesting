@@ -869,6 +869,31 @@ def runnerSuffix(name):
   publishes the workspace itself, so its files keep the plain names."""
   return "_%s" % name if name and runners and name != runners[0][0] else ""
 
+def runnerDir(name):
+  """A working directory of this runner's own, or None when there is only one.
+
+  A file the model writes on its first run and reads back on the next --
+  Buildings' ground temperature-response matrix under `tmp/`, an EnergyPlus
+  scratch directory -- is otherwise computed by whichever runner goes first and
+  found already cached by the rest, which reads as the later ones being faster.
+  The build stays in the directory above and every runner reaches it as `..`, so
+  the result files stay where the report expects them.
+  """
+  if len(runners) < 2 or not name:
+    return None
+  d = "run_%s" % name
+  if not os.path.isdir(d):
+    os.mkdir(d)
+  return d
+
+def fromRunnerDir(runDir, path):
+  """`path`, which names something in the build directory, as a runner sees it."""
+  return path if not runDir or os.path.isabs(path) else "../%s" % path
+
+def inRunnerDir(runDir, cmd):
+  """`cmd` run in the runner's directory. The pipe and the log stay outside it."""
+  return "(cd %s && %s)" % (runDir, cmd) if runDir else cmd
+
 def resultFile(name=None):
   """Where a simulator writes its results."""
   # Only an FMI tool decides the format; the others write what the model was
@@ -885,23 +910,25 @@ resFile = resultFile(runners[0][0]) if runners else resultFile()
 def simulateFmu(name, command, resFile, simFile):
   """Run the FMU with one simulator, writing what it says to simFile."""
   suffix = runnerSuffix(name)
+  runDir = runnerDir(name)
   fmitmpdir = "temp_%s%s_fmu" % (conf["fileName"].replace(".","_"), suffix)
   with open("%s.tmpfiles" % conf["fileName"], "a+") as fp:
-    fp.write("%s\n" % fmitmpdir)
+    fp.write("%s\n" % (os.path.join(runDir, fmitmpdir) if runDir else fmitmpdir))
   cmd = shared.fmiSimulatorCommand(name, command,
-                                   fmu="%s.fmu" % conf["fileName"].replace(".","_"),
-                                   result=resFile,
-                                   requestedResult=resFile if outputFormat != "empty" else "",
+                                   fmu=fromRunnerDir(runDir, "%s.fmu" % conf["fileName"].replace(".","_")),
+                                   result=fromRunnerDir(runDir, resFile),
+                                   requestedResult=fromRunnerDir(runDir, resFile) if outputFormat != "empty" else "",
                                    tempDir=fmitmpdir, startTime=startTime, stopTime=stopTime,
                                    tolerance=tolerance, timeout=conf["ulimitExe"],
                                    stepSize=stepSize)
+  cmd = inRunnerDir(runDir, cmd)
   with open(simFile,"w") as fp:
     fp.write("%s\n" % cmd)
   pipe = "%s%s" % (conf["fileName"], suffix)
   return checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s > %s.pipe 2>&1)"
                             % (pipe,pipe,pipe,simFile,cmd,pipe), 1.05*conf["ulimitExe"], conf)
 
-def wasmFmuCmd(runnerFlags, resFile):
+def wasmFmuCmd(runnerFlags, resFile, runDir):
   """The simulate() that runs the exported FMU one way.
 
   Nothing is translated: `resimulateExecutable` points at the FMU, `-s
@@ -910,7 +937,7 @@ def wasmFmuCmd(runnerFlags, resFile):
   """
   # An empty output format is a run with nothing to compare against, so it is
   # asked for no result file at all rather than one nobody reads.
-  resultArgument = "-noemit" if outputFormat == "empty" else "-r=%s" % resFile
+  resultArgument = "-noemit" if outputFormat == "empty" else "-r=%s" % fromRunnerDir(runDir, resFile)
   # The export baked in no filter, and the variableFilter argument below only
   # reaches a model through the build this run skips.
   filterArgument = "" if variableFilter in ("", ".*") else "-variableFilter=%s" % variableFilter
@@ -918,15 +945,16 @@ def wasmFmuCmd(runnerFlags, resFile):
                                   "-lv LOG_STATS",
                                   "-startTime=%g -stopTime=%g -tolerance=%g -stepSize=%g" % (startTime,stopTime,tolerance,stepSize),
                                   filterArgument, resultArgument, runnerFlags) if x.strip())
-  return 'simulate(%s,startTime=%g,stopTime=%g,tolerance=%g,numberOfIntervals=%d,outputFormat="%s",variableFilter="%s",fileNamePrefix="%s",simflags="%s",resimulateExecutable="%s.fmu")' % (
-      conf["modelName"],startTime,stopTime,tolerance,numberOfIntervals,outputFormat,variableFilter,conf["fileName"],simflags,conf["fileName"].replace(".","_"))
+  return 'simulate(%s,startTime=%g,stopTime=%g,tolerance=%g,numberOfIntervals=%d,outputFormat="%s",variableFilter="%s",fileNamePrefix="%s",simflags="%s",resimulateExecutable="%s")' % (
+      conf["modelName"],startTime,stopTime,tolerance,numberOfIntervals,outputFormat,variableFilter,conf["fileName"],simflags,fromRunnerDir(runDir, "%s.fmu" % conf["fileName"].replace(".","_")))
 
 def simulateWasmFmu(name, runnerFlags, resFile, simFile):
   """Run the FMU one way, writing what omc says to simFile.
 
   Returns what simulate() answered; an empty resultFile is a failed run.
   """
-  cmd = wasmFmuCmd(runnerFlags, resFile)
+  runDir = runnerDir(name)
+  cmd = wasmFmuCmd(runnerFlags, resFile, runDir)
   # The export is a directory, and a zipped one unpacks itself beside the .fmu on
   # the first run; the cleanup removes what this file names.
   with open("%s.tmpfiles" % conf["fileName"], "a+") as fp:
@@ -934,19 +962,35 @@ def simulateWasmFmu(name, runnerFlags, resFile, simFile):
   with open(simFile, "w") as fp:
     fp.write("startTime=%g\nstopTime=%g\ntolerance=%g\nnumberOfIntervals=%d\nstepSize=%g\n" % (startTime,stopTime,tolerance,numberOfIntervals,stepSize))
     fp.write("wasm FMU (%s: %s): %s\n" % (name, shared.wasmFmuRunner(name).get("description") or "", cmd))
-  res = sendExpressionTimeout(omc, cmd, conf["ulimitExe"]) or {}
+  try:
+    if runDir:
+      sendExpressionTimeout(omc, 'cd("%s")' % runDir, conf["ulimitOmc"])
+    res = sendExpressionTimeout(omc, cmd, conf["ulimitExe"]) or {}
+  finally:
+    # A run that timed out took omc with it; there is then nothing to change back.
+    if runDir:
+      try:
+        sendExpressionTimeout(omc, 'cd("..")', conf["ulimitOmc"])
+      except Exception:
+        pass
   with open(simFile, "a+") as fp:
     fp.write(res.get("messages") or "")
   return res
 
 def simulateExecutable(name, solverFlags, resFile, simFile):
   """Run the built executable once, with the flags of one solver."""
-  exe = ".\\%s.bat" % conf["fileName"] if isWin else "./%s" % conf["fileName"]
+  runDir = runnerDir(name)
+  exeName = "%s.bat" % conf["fileName"] if isWin else conf["fileName"]
+  exe = fromRunnerDir(runDir, exeName) if runDir else (".\\%s" % exeName if isWin else "./%s" % exeName)
   # A run sharing the directory with other solvers needs a result file of its own.
-  resultArgument = "-r=%s" % resFile if runnerSuffix(name) and outputFormat != "empty" else ""
-  cmd = " ".join(x for x in (exe, annotationSimFlags, conf["simFlags"], emit_protected,
+  # A run in a directory of its own needs one named explicitly either way: the
+  # default lands beside the executable, which is no longer the working directory.
+  resultArgument = "-r=%s" % fromRunnerDir(runDir, resFile) if (runDir or runnerSuffix(name)) and outputFormat != "empty" else ""
+  # `-f` because the setup XML the executable reads by default is beside it too.
+  setupArgument = "-f=%s" % fromRunnerDir(runDir, "%s_init.xml" % conf["fileName"]) if runDir else ""
+  cmd = inRunnerDir(runDir, " ".join(x for x in (exe, annotationSimFlags, conf["simFlags"], emit_protected,
                              "-lv LOG_STATS" if conf["simCodeTarget"] in ("C","C+Rust") else "",
-                             resultArgument, solverFlags) if x.strip())
+                             setupArgument, resultArgument, solverFlags) if x.strip()))
   with open(simFile,"w") as fp:
     fp.write("Environment - simulationEnvironment:\n")
     for e in conf["environmentSimulation"]:
