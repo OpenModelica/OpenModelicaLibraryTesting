@@ -55,14 +55,13 @@ def dateStr(dint):
 
 def getTagOrVersion(v):
   v = v.replace("OpenModelica ","").replace("OMCompiler ","")
-  # A cmake build appends "-cmake" to the describe string it reports (the Rust
-  # omc "-rust"); git resolves neither, and the report then has no commit table
-  # and nobody is mailed about it.
-  v = re.sub(r"-(cmake|rust)$", "", v)
-  m = re.search("[+]g([0-9a-f]{7}[0-9a-f]*)$", v)
-  if m:
-    return m.group(1)
-  return v
+  # "v1.28.0-dev.718+ga7f6598f8e.cmake", or the raw describe before #16671.
+  (version, plus, build) = v.partition("+")
+  if plus:
+    for ident in build.split("."):
+      if re.fullmatch(r"g([0-9a-f]{7}[0-9a-f]*)", ident):
+        return ident[1:]
+  return re.sub(r"-(cmake|rust)$", "", v)
 
 def libraryLink(branch, libname):
   return '<a href="%s/%s/%s/%s.html">%s</a>' % (baseurl,branch,libname,libname,libname)
