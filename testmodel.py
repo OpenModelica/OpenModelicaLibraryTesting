@@ -986,8 +986,9 @@ def simulateExecutable(name, solverFlags, resFile, simFile):
   # A run in a directory of its own needs one named explicitly either way: the
   # default lands beside the executable, which is no longer the working directory.
   resultArgument = "-r=%s" % fromRunnerDir(runDir, resFile) if (runDir or runnerSuffix(name)) and outputFormat != "empty" else ""
-  # `-f` because the setup XML the executable reads by default is beside it too.
-  setupArgument = "-f=%s" % fromRunnerDir(runDir, "%s_init.xml" % conf["fileName"]) if runDir else ""
+  # `-inputPath` because the setup XML, the info JSON and the serialized
+  # sparsity patterns are all read from the build directory, not from here.
+  setupArgument = "-inputPath=.." if runDir else ""
   cmd = inRunnerDir(runDir, " ".join(x for x in (exe, annotationSimFlags, conf["simFlags"], emit_protected,
                              "-lv LOG_STATS" if conf["simCodeTarget"] in ("C","C+Rust") else "",
                              setupArgument, resultArgument, solverFlags) if x.strip()))
