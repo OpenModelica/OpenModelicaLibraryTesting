@@ -8,7 +8,7 @@ import sys
 if (sys.version_info < (3, 0)):
   raise Exception("Python2 is no longer supported")
 
-import html, shutil, os, re, glob, time, argparse, datetime, math, platform
+import html, shutil, os, re, glob, time, argparse, datetime, math, platform, traceback
 from joblib import Parallel, delayed
 import simplejson as json
 import psutil, subprocess, threading, hashlib
@@ -1259,6 +1259,10 @@ for (resultBranch, runner) in resultBranches:
     confighash = stats_by_libname[libname]["conf"]["confighash"]
     cursor.execute("INSERT INTO libversion VALUES (?,?,?,?,?,?,?)%s" % db.insertIgnore(), (testRunStartTimeAsEpoch, resultBranch, libname, stats_by_libname[libname]["conf"]["libraryLastChange"], confighash, hostname, sysInfo))
   cursor.execute("INSERT INTO omcversion VALUES (?,?,?)%s" % db.insertIgnore(), (testRunStartTimeAsEpoch, resultBranch, omc_version))
+
+db.commit()
+db.release()
+
 """
 # Not really a good thing to do; was just done to make generation of the report simpler
 for libname in skipped_libs.keys():
@@ -1425,6 +1429,7 @@ PUBLISH_JOBS = 4
 # Every runner publishes its own results - .sim and diff files included - to the
 # directory of its own branch; the .err of the build is shared, so each of them
 # gets a copy of it.
+publishFailures = []
 for (resultBranch, runner) in resultBranches:
   result_location = outputFor(resultBranch)
   if result_location != "" and (isWin or noSync):
@@ -1434,6 +1439,20 @@ for (resultBranch, runner) in resultBranches:
     if os.path.exists(resRootPath):
       rmtree(resRootPath)
     os.makedirs(resRootPath)
+
+  def makeRemoteDirs(libnames):
+    """Create the branch directory and every library's files/ in one connection."""
+    byStage = {}
+    for libname in libnames:
+      simulator = simulatorKey(libname, runner)
+      stageRoot = stageRootFor(simulator, artifactSuffix(simulator))
+      os.makedirs(os.path.join(stageRoot, "emptydir", libname, "files"), exist_ok=True)
+      byStage.setdefault(stageRoot, []).append(libname)
+    for (stageRoot, libs) in byStage.items():
+      # The /./ tells rsync -R where the relative part starts.
+      check_output_log(["rsync", "-aR", "--mkpath"]
+                       + ["emptydir/./%s/files" % l for l in libs]
+                       + [result_location], cwd=stageRoot)
 
   htmltpl=open("library.html.tpl").read()
   def publishLibrary(libname):
@@ -1542,16 +1561,10 @@ for (resultBranch, runner) in resultBranches:
     # move results by sync operations (not available under win)
     if result_location != "" and not isWin and not noSync:
       result_location_libname = "%s/%s" % (result_location, libname)
-      def makeRemoteDirs():
-        # The /./ tells rsync -R where the relative part starts, so the branch,
-        # the library and its files directory are created in one connection.
-        os.makedirs(os.path.join(stageRoot, "emptydir", libname, "files"), exist_ok=True)
-        check_output_log(["rsync", "-aR", "emptydir/./%s/files" % libname, result_location], cwd=stageRoot)
-      makeRemoteDirs()
       try:
         check_output_log(["rsync", "-aR", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", result_location_libname], cwd=stageRoot)
       except:
-        makeRemoteDirs()
+        makeRemoteDirs([libname])
         check_output_log(["rsync", "-aR", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", result_location_libname], cwd=stageRoot)
       if (conf.get("referenceFiles") or "") != "" and dygraphs:
         check_output_log(["rsync", "-a", dygraphs, result_location_libname+"/files"])
@@ -1588,7 +1601,21 @@ for (resultBranch, runner) in resultBranches:
           print("-- problem during file copy... maybe the file is still hooked by a process... :" + file)
           pass
 
-  Parallel(n_jobs=PUBLISH_JOBS, backend="threading")(delayed(publishLibrary)(libname) for libname in stats_by_libname.keys())
+  publishable = [l for l in stats_by_libname.keys() if l not in skipped_libs and ranRunner(l, runner)]
+  if result_location != "" and not isWin and not noSync:
+    makeRemoteDirs(publishable)
+
+  def publishLibraryReportingFailure(libname):
+    try:
+      publishLibrary(libname)
+    except Exception:
+      print("Failed to publish %s of %s:" % (libname, resultBranch))
+      traceback.print_exc()
+      sys.stdout.flush()
+      return "%s/%s" % (resultBranch, libname)
+
+  publishFailures += [f for f in Parallel(n_jobs=PUBLISH_JOBS, backend="threading")
+                      (delayed(publishLibraryReportingFailure)(libname) for libname in publishable) if f]
 
 if clean:
   for g in ["*.o","*.so","*.h","*.c","*.cpp","*.simsuccess","*.conf.json","*.tmpfiles","*.log","*.libs","OMCpp*","*.fmu*","temp_*", "*.exe", "HelloWorld.bat", "*.makefile", "*.mat","*.xml", "*.bin", "*.json"]:
@@ -1608,9 +1635,10 @@ if clean and (result_location == "" or (not isWin and not noSync)):
   except:
     print("-- problem during removing of ./files dir")
 
-# Do not commit until we have generated and uploaded the reports
-db.commit()
-db.release()
 db.close()
+
+if publishFailures:
+  print("Failed to publish: %s" % ", ".join(publishFailures))
+  sys.exit(1)
 
 print("all tests done ...")
