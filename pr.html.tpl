@@ -42,6 +42,15 @@ the pull request was branched.</p>
 <tr><td>Models only in the baseline run</td><td>#NUMONLYBASELINE#</td></tr>
 </table>
 
+<h2>Time</h2>
+
+<p>#TOTALNOTE#</p>
+
+<table>
+<tr><th>Phase</th><th>#BASELINE#</th><th>#BRANCH#</th><th>Change</th><th>Change, same phase</th></tr>
+#TOTALS#
+</table>
+
 <h2>Library Changes</h2>
 <table>
 <tr><th>Library</th><th>Change</th></tr>
