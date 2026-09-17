@@ -469,6 +469,11 @@ logged in as. In Jenkins it is the `pull_request_comment` parameter, which takes
 the token from an `OpenModelica-Hudson` credential; without one the report is
 still written and published, and the summary is in the build log.
 
+`--comment-only` posts the summary a run already wrote, without generating the
+report again or touching the database. Jenkins uses it to comment after the
+upload rather than before it, so that the link in the comment is a report that
+is already there.
+
 Two things make a difference mean something other than "the pull request did
 this", and the report says so when they apply: **the machine**, since runs on
 different hardware compare the hardware as much as the change, and **the

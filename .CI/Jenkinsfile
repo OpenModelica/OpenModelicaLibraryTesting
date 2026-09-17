@@ -656,21 +656,22 @@ pipeline {
           }
         }
         sh 'rm -rf history'
+        sh "./pr-report.py '${pullRequest()}' --baseline='${(params.pull_request_baseline ?: 'master').trim()}'"
+        // Uploaded before it is announced, as the branch reports are: the
+        // comment links to the report, and nothing after this may be what stops
+        // it from being published.
+        sshPublisher(publishers: [sshPublisherDesc(configName: 'LibraryTestingReports', transfers: [sshTransfer(sourceFiles: 'history/**')])])
+        // The summary is in the build log as well, so a run without a token
+        // still leaves it somewhere to copy from.
+        sh "cat 'history/pr/${pullRequest()}/00_comment.md'"
         script {
-          def report = "./pr-report.py '${pullRequest()}' --baseline='${(params.pull_request_baseline ?: 'master').trim()}'"
           if (params.pull_request_comment) {
             // Whoever the token belongs to is who the comment comes from.
             withCredentials([string(credentialsId: 'OpenModelica-Hudson', variable: 'GITHUB_TOKEN')]) {
-              sh "${report} --comment"
+              sh "./pr-report.py '${pullRequest()}' --comment-only"
             }
-          } else {
-            sh report
           }
         }
-        // The summary is in the build log as well, so a run without a token
-        // still leaves it somewhere to copy from.
-        sh 'cat history/pr-*/00_comment.md'
-        sshPublisher(publishers: [sshPublisherDesc(configName: 'LibraryTestingReports', transfers: [sshTransfer(sourceFiles: 'history/**')])])
       }
     }
   }
