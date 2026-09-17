@@ -462,6 +462,11 @@ kind of page as the nightly regression reports, next to `00_comment.md`, a
 summary to comment on the pull request with. Both are published with the other
 reports.
 
+Both also total what the two runs spent per phase on the models they have in
+common, next to the same totals over only the models that reached the same
+phase in both: a model that fails earlier stops paying for the phases it no
+longer reaches, which makes those phases look cheaper than they are.
+
 `--comment` posts that summary on the pull request, replacing the one an earlier
 run posted. It posts as whoever the token belongs to: `GITHUB_TOKEN` or
 `GH_TOKEN` in the environment, or the account [`gh`](https://cli.github.com) is

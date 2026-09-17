@@ -40,6 +40,8 @@ timeRel = 1.7    # Minimum 1.7x time is registered as a performance regression
 timeAbs = 10     # Ignore performance regressions for times <10s...
 
 PHASES = [(1,"frontend"),(2,"backend"),(3,"simcode"),(4,"templates"),(5,"compile"),(6,"simulate")]
+# The columns the totals are summed over; exectime is the whole run of a model.
+TIMES = ["frontend","backend","simcode","templates","compile","simulate","verify","exectime"]
 
 m = re.match(r"^(?:pr[-/])?([0-9]+)$", args.pullrequest.strip())
 if not m:
@@ -197,6 +199,25 @@ def changedModels(table1, date1, table2, date2, libnames):
   return cursor.fetchall()
 
 
+def phaseTotals(table1, date1, table2, date2, libnames):
+  """What the two runs spent, per phase, on the models they both have.
+
+  Twice: over every compared model, and over those that reached the same phase
+  in both runs. A model that now fails earlier stops paying for the phases it
+  no longer reaches, which makes those phases look cheaper than they are.
+  """
+  inlibs = ",".join("'%s'" % libname for libname in sorted(libnames))
+  cols = ["sum(a.%s),sum(b.%s)" % (t, t) for t in TIMES]
+  cols += ["sum(CASE WHEN a.finalphase=b.finalphase THEN a.%s ELSE 0 END),"
+           "sum(CASE WHEN a.finalphase=b.finalphase THEN b.%s ELSE 0 END)" % (t, t)
+           for t in TIMES]
+  cols += [db.countIf("a.finalphase=b.finalphase")]
+  query = """SELECT %s FROM %s AS a JOIN %s AS b ON a.libname=b.libname AND a.model=b.model
+    WHERE a.date=? AND b.date=? AND a.libname IN (%s) AND a.finalphase>=0 AND b.finalphase>=0
+  """ % (",".join(cols), db.quote(table1), db.quote(table2), inlibs)
+  return [v or 0 for v in cursor.execute(query, (date1, date2)).fetchone()]
+
+
 prdate = newestRun(branch, args.date)
 if not prdate:
   raise SystemExit("No results for %s%s" % (branch, " at or before %d" % args.date if args.date else ""))
@@ -223,8 +244,10 @@ for libname in libnames:
   groups.setdefault((d1, d2), []).append(libname)
 
 changes = []
+totals = [0] * (4*len(TIMES) + 1)
 for ((d1, d2), libs) in sorted(groups.items()):
   changes += changedModels(baseline, d1, branch, d2, libs)
+  totals = [t + v for (t, v) in zip(totals, phaseTotals(baseline, d1, branch, d2, libs))]
 changes = sorted(changes, key=lambda x: (x[1], x[0]))
 
 # Models one of the runs has and the other does not: a library that grew a model,
@@ -328,6 +351,24 @@ note = ("The baseline is the newest run of %s, not the commit the pull request i
         "difference can also come from something merged into %s since the pull request was "
         "branched." % (baseline, baseline))
 
+def relative(before, after):
+  return "%+.1f%%" % (100.0*(after-before)/before) if before else ""
+
+numSamePhase = totals[-1]
+totalrows = []
+markdowntotals = []
+for (i, name) in enumerate(TIMES):
+  (t1, t2) = totals[2*i:2*i+2]
+  (s1, s2) = totals[2*len(TIMES)+2*i:2*len(TIMES)+2*i+2]
+  cells = ["total" if name == "exectime" else name,
+           friendlyStr(t1), friendlyStr(t2), relative(t1, t2), relative(s1, s2)]
+  totalrows.append("<tr>%s</tr>" % "".join("<td>%s</td>" % c for c in cells))
+  markdowntotals.append("| %s |" % " | ".join(cells))
+totalnote = ("Time spent on the %d models both runs have. The last column counts only the %d "
+             "that reached the same phase in both: a model that fails earlier stops paying "
+             "for the phases it no longer reaches."
+             % (numCompared, numSamePhase))
+
 reportname = "%s..%s.html" % (dateStr(basedate), dateStr(prdate))
 historydir = os.path.join(args.historypath, branch)
 os.makedirs(historydir, exist_ok=True)
@@ -347,6 +388,8 @@ tpl = multiple_replace(tpl,
   ("#HOST1#", html.escape(", ".join(sorted(basehosts)))),
   ("#HOST2#", html.escape(", ".join(sorted(prhosts)))),
   ("#NUMCOMPARED#", str(numCompared)),
+  ("#TOTALS#", "\n".join(totalrows)),
+  ("#TOTALNOTE#", totalnote),
   ("#NUMIMPROVE#", str(counts["improved"])),
   ("#NUMREGRESSION#", str(counts["regression"])),
   ("#NUMPERFIMPROVE#", str(counts["performance improved"])),
@@ -389,6 +432,10 @@ markdown = ["## Library testing for [#%s](%s) against `%s`" % (pr, prurl, baseli
             "%d models compared, **%d improved, %d regressions**, performance %d improved, %d regressions."
             % (numCompared, counts["improved"], counts["regression"],
                counts["performance improved"], counts["performance regression"]),
+            "",
+            "| Phase | `%s` | `%s` | Change | Change, same phase |" % (baseline, branch),
+            "| --- | --- | --- | --- | --- |"] + markdowntotals + [
+            "", totalnote,
             "", "[Full report](%s)" % reporturl, ""]
 if markdownrows:
   markdown += ["<details><summary>%d models affected</summary>" % len(markdownrows), "",
