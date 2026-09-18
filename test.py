@@ -1097,6 +1097,21 @@ def progress(done, total):
     print("[%d/%d done, %s]" % (done, total, friendlyStr(monotonic()-start)))
     sys.stdout.flush()
 
+# The wasm-jit runtime module and the external "C" side libraries are fixed and
+# model-independent, but compiling them costs gigabytes of Cranelift each. Fill
+# the per-user cache once here rather than in every one of thousands of omc
+# processes, and outside runScript, whose ulimit -v the compile does not fit in.
+if any(data.get("simCodeTarget") == "wasm-jit" for (_, _, _, _, data) in tests):
+  print("Precompiling the wasm-jit artifacts")
+  sys.stdout.flush()
+  try:
+    out = check_output_log(omc_cmd, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
+                           timeout=900, env=dict(os.environ, OMC_WASM_PRECOMPILE_CACHE=""))
+    print(out.decode(errors="replace").strip())
+  except Exception as e:
+    print("Warning: could not precompile them, so every model compiles them itself: %s" % e)
+  sys.stdout.flush()
+
 shared.runCapped(tests,
                  lambda test: isHeavyModel(test[4], test[0]),
                  lambda test: runScript(test[3], testTimeout(test[0], test[4]), test[4]["ulimitMemory"], runverbose),
