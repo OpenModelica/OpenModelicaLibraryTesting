@@ -433,6 +433,9 @@
     }
   },
   {
+    "library":"OpenHPL"
+  },
+  {
     "library":"OpenHydraulics",
     "libraryVersion":"main",
     "libraryVersionNameForTests":""
@@ -540,6 +543,9 @@
       "giturl":"https://github.com/casella/ScalableTestSuite-ref",
       "destination":"ReferenceFiles/ScalableTestSuite"
     }
+  },
+  {
+    "library":"SDF"
   },
   {
     "library":"SolarTherm"
