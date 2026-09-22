@@ -169,8 +169,14 @@
     "libraryVersionNameForTests":""
   },
   {
+    "library":"BikeTrailer"
+  },
+  {
     "library":"BLDC",
     "libraryVersionNameForTests":""
+  },
+  {
+    "library":"Bodylight"
   },
   {
     "library":"BoundaryInitBlocks",
@@ -264,6 +270,9 @@
     "library":"BioChem"
   },
   {
+    "library":"ChaoticCircuits"
+  },
+  {
     "library":"Chemical"
   },
   {
@@ -346,6 +355,9 @@
   },
   {
     "library":"ElectricalEnergyStorage"
+  },
+  {
+    "library":"ElectricBraking"
   },
   {
     "library":"ExtendedPetriNets"
@@ -471,6 +483,9 @@
       "PhotoVoltaics_TGM.TGM_Comax_Analytical_2016":480,
       "PhotoVoltaics_TGM.TGM_Trina_Analytical_2016":510
     }
+  },
+  {
+    "library":"PLL"
   },
   {
     "library":"PNlib",
