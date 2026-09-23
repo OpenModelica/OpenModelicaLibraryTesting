@@ -77,7 +77,7 @@ def fixData(data,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCom
     data["libraryVersionLatestInPackageManager"] = data.get("libraryVersionLatestInPackageManager") or False
     data["libraryVersionExactMatch"] = data.get("libraryVersionExactMatch") or False
     data["alarmFlag"] = data.get("alarmFlag") or (alarmFlag if data["simCodeTarget"] in ("C","C+Rust","wasm-jit") else "")
-    data["abortSlowSimulation"] = data.get("abortSlowSimulation") or (abortSimulationFlag if data["simCodeTarget"] in ("C","C+Rust") else "")
+    data["abortSlowSimulation"] = data.get("abortSlowSimulation") or (abortSimulationFlag if data["simCodeTarget"] in ("C","C+Rust","wasm-jit") else "")
     data["simFlags"] = simulationFlags(data, data["ulimitExe"])
     if "changeHash" in data: # Force rebuilding the library due to change in the testing script
       data["changeHash"] = data["changeHash"]
