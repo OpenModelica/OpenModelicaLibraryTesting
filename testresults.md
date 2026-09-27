@@ -10,7 +10,10 @@
   improvements in green.
 
   - [Default settings](https://libraries.openmodelica.org/branches/overview.html):
-    simulation with C runtime and default settings
+    simulation with the C code generator and default settings. Its `c-old`
+    column is master with `--simCodeTarget=C.old`: the same generated C sources
+    linked against the old `libSimulationRuntimeC` instead of the Rust
+    simulation runtime
   - [daeMode](https://libraries.openmodelica.org/branches/overview-dae.html):
     simulation with daeMode (compiler flag
     [--daeMode](https://openmodelica.org/doc/OpenModelicaUsersGuide/latest/omchelptext.html#omcflag-daemode))
@@ -26,11 +29,6 @@
     `wasm-jit-me` and `wasm-jit-cs` come from a second job that exports each
     model once as a wasm FMU and drives that one FMU through its FMI 3.0 Model
     Exchange and Co-Simulation interfaces
-  - [C+Rust](https://libraries.openmodelica.org/branches/overview-c-plus-rust.html):
-    simulation with the Rust runtime under the C code generator (compiler flag
-    `--simCodeTarget=C+Rust`). The generated sources are the ones the C target
-    emits; the executable links `libSimulationRuntimeRust` instead of
-    `libSimulationRuntimeC`, so the difference against master is the runtime alone
 
 - **Regression reports and history plots**:
   Regression reports are periodically generated, using the latest development
