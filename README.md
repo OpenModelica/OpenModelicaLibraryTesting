@@ -370,22 +370,18 @@ entry there (`simflags` is what is appended to the model's simulation flags,
 `--wasmfmu`, `--fmisimulator` and `--solver` each fan one build out into
 several result branches, so a job uses one of them, not several.
 
-### The Rust simulation runtime under the C code generator
+### The old C simulation runtime
 
-`--simCodeTarget=C+Rust` emits the sources `--simCodeTarget=C` emits and links
-`libSimulationRuntimeRust` instead of `libSimulationRuntimeC`, so a run against
-master differs in the simulation runtime and nothing else.
+`--simCodeTarget=C` links `libSimulationRuntimeRust`; `--simCodeTarget=C.old`
+emits the same sources and links the old `libSimulationRuntimeC`, so a run
+against master differs in the simulation runtime and nothing else.
 
 ```bash
-./test.py --branch=c-plus-rust --extraflags='--simCodeTarget=C+Rust' configs/myConf.json
-./report.py --branches="c-plus-rust master"
-# the overview.html it writes is published as overview-c-plus-rust.html
+./test.py --branch=c-old --extraflags='--simCodeTarget=C.old' configs/myConf.json
+./report.py --branches="master c-old"
 ```
 
-The runtime is a cmake target of the OpenModelica build
-(`SimulationRuntime/rust`, `OM_ENABLE_RUST_SIM_RUNTIME`, on by default where
-cargo is installed) and has no autotools equivalent, so omc has to be built with
-cmake or the generated makefile finds nothing to link.
+The Jenkins job lists it as a column of the default overview.html.
 
 ### One build, several solvers
 

@@ -484,7 +484,7 @@ sys.excepthook = uncaughtException
 with open(errFile, 'a+') as fp:
   fp.write("Running: %s\n" % " ".join(sys.argv))
 
-if conf["simCodeTarget"] not in ["Cpp","C","C+Rust","wasm-jit"]:
+if conf["simCodeTarget"] not in ["Cpp","C","C.old","wasm-jit"]:
   with open(errFile, 'a+') as fp:
     fp.write("Unknown simCodeTarget in %s" % conf["simCodeTarget"])
   writeResultAndExit(1)
@@ -674,7 +674,7 @@ try:
 except:
   # omc answers nothing when the call fails, and nothing else reads the buffer.
   raise Exception("%s failed:\n%s" % (cmd, omc.sendExpression("getErrorString()", parsed = False)))
-if conf["simCodeTarget"] in ("C","C+Rust","wasm-jit") and sendExpressionOldOrNew('classAnnotationExists(%s, __OpenModelica_simulationFlags)' % conf["modelName"]):
+if conf["simCodeTarget"] in ("C","C.old","wasm-jit") and sendExpressionOldOrNew('classAnnotationExists(%s, __OpenModelica_simulationFlags)' % conf["modelName"]):
   for flag in sendExpressionOldOrNew('getAnnotationNamedModifiers(%s,"__OpenModelica_simulationFlags")' % conf["modelName"]):
     if flag=="The searched annotation name not found":
       # Old, stupid API
@@ -990,7 +990,7 @@ def simulateExecutable(name, solverFlags, resFile, simFile):
   # sparsity patterns are all read from the build directory, not from here.
   setupArgument = "-inputPath=.." if runDir else ""
   cmd = inRunnerDir(runDir, " ".join(x for x in (exe, annotationSimFlags, conf["simFlags"], emit_protected,
-                             "-lv LOG_STATS" if conf["simCodeTarget"] in ("C","C+Rust") else "",
+                             "-lv LOG_STATS" if conf["simCodeTarget"] in ("C","C.old") else "",
                              setupArgument, resultArgument, solverFlags) if x.strip()))
   with open(simFile,"w") as fp:
     fp.write("Environment - simulationEnvironment:\n")
