@@ -31,9 +31,7 @@ pipeline {
     booleanParam(name: 'report_ryzen_5950x_2', defaultValue: false, description: 'Generate a report for ryzen-5950x-2 without running the tests')
 
     booleanParam(name: 'conversion_script', defaultValue: false, description: 'master branch with conversion script from MSL 3 to 4 (ryzen-5950x-1). This is an experimental job that does not run on a fixed schedule.')
-    booleanParam(name: 'cvode', defaultValue: false, description: 'master branch, simulated with -s cvode, filling cvode (ryzen-5950x-1). Ticking it together with master, gbode or ida runs one job that builds every model once and simulates it with each of them. This is an experimental job that does not run on a fixed schedule.')
-    booleanParam(name: 'gbode', defaultValue: false, description: 'master branch, simulated with -s gbode -gbm=radauIIA3, filling gbode (ryzen-5950x-1). Ticking it together with master, cvode or ida runs one job that builds every model once and simulates it with each of them. This is an experimental job that does not run on a fixed schedule.')
-    booleanParam(name: 'ida', defaultValue: false, description: 'master branch, simulated with -s ida, filling ida (ryzen-5950x-1). Ticking it together with master, cvode or gbode runs one job that builds every model once and simulates it with each of them. This is an experimental job that does not run on a fixed schedule.')
+    booleanParam(name: 'solvers', defaultValue: false, description: 'master branch, simulated with -s cvode, -s gbode and -s ida (ryzen-9950x). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'generateSymbolicJacobian', defaultValue: false, description: 'master branch, with --generateSymbolicJacobian (ryzen-5950x-1). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'wasm_jit', defaultValue: false, description: 'master branch, with --simCodeTarget=wasm-jit (ryzen-9950x). Every model is translated and simulated the way simulate() does, filling wasm-jit. This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'wasm_web', defaultValue: false, description: 'master branch, with --simCodeTarget=wasm-jit (ryzen-9950x), simulated the way the web omc does: the driver and the linear and nonlinear solvers in wasm, the in-wasm libm, and external "C" only from prebuilt wasm libraries. Fills wasm-web. This is an experimental job that does not run on a fixed schedule.')
@@ -101,11 +99,28 @@ pipeline {
         options { skipDefaultCheckout() }
         when {
           beforeAgent true
-          expression { params.master || params.cvode || params.gbode || params.ida }
+          expression { params.master }
+        }
+        steps {
+          runRegressiontest('master', 'master', '', '', false, '', '', false, false, 0, 'configs/conf.json', '', '.CI/testing', null, null)
+        }
+      }
+
+      stage('solvers') {
+        agent {
+          node {
+            label 'ryzen-9950x'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.solvers }
         }
         steps {
           runRegressiontest('master', 'master', '', '', false, '', '', false, false, 0, 'configs/conf.json', '', '.CI/testing', null,
-                            solvers(params.master, params.cvode, params.gbode, params.ida))
+                            solvers())
         }
       }
 
@@ -588,14 +603,8 @@ pipeline {
         sh "./report.py --branches='${env.GITBRANCHES_NEWBACKEND_DAE}' configs/conf-nonstandard.json"
         sh "mv overview.html overview-nonstandard-libs-newbackend-dae.html"
 
-        sh "./report.py --branches='cvode master' configs/conf.json"
-        sh "mv overview.html overview-cvode.html"
-
-        sh "./report.py --branches='gbode master' configs/conf.json"
-        sh "mv overview.html overview-gbode.html"
-
-        sh "./report.py --branches='ida master' configs/conf.json"
-        sh "mv overview.html overview-ida.html"
+        sh "./report.py --branches='cvode gbode ida master' configs/conf.json"
+        sh "mv overview.html overview-solvers.html"
 
         // The ways a wasm-jit model is simulated, against master: the plain
         // simulation path, the two FMI 3.0 interfaces of one exported wasm FMU,
@@ -869,12 +878,11 @@ def fmiSimulators(boolean omsimulator, boolean fmpy) {
  * Every model is built once and simulated with each of them, filling master,
  * cvode, gbode and ida as the four jobs did; a library is only run for the
  * solvers missing it, so one job serves master daily and cvode weekly. */
-def solvers(boolean dflt, boolean cvode, boolean gbode, boolean ida) {
+def solvers(boolean cvode, boolean gbode, boolean ida) {
   def chosen = []
-  if (dflt) chosen << 'default'
-  if (cvode) chosen << 'cvode'
-  if (gbode) chosen << 'gbode'
-  if (ida) chosen << 'ida'
+  chosen << 'cvode'
+  chosen << 'gbode'
+  chosen << 'ida'
   return chosen
 }
 
