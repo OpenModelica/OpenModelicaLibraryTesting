@@ -5,7 +5,7 @@ pipeline {
 
     booleanParam(name: 'v1_26', defaultValue: false, description: 'maintenance/v1.26 branch (ryzen-5950x-1)')
     booleanParam(name: 'v1_27', defaultValue: false, description: 'maintenance/v1.27 branch (ryzen-5950x-1)')
-    booleanParam(name: 'master', defaultValue: false, description: 'master branch, simulated with the solver each model asks for, filling master (ryzen-5950x-1). Ticking it together with cvode, gbode or ida runs one job that builds every model once and simulates it with each of them.')
+    booleanParam(name: 'master', defaultValue: false, description: 'master branch, simulated with the solver each model asks for, filling master (ryzen-5950x-1).')
 
     booleanParam(name: 'fmi_v1_26', defaultValue: false, description: 'maintenance/v1.26 branch with FMI, simulated by OMSimulator, filling v1.26-fmi (ryzen-5950x-2). Ticking it together with fmpy_fmi_v1_26 runs one job that builds every FMU once and simulates it with both.')
     booleanParam(name: 'fmi_v1_27', defaultValue: false, description: 'maintenance/v1.27 branch with FMI, simulated by OMSimulator, filling v1.27-fmi (ryzen-5950x-2). Ticking it together with fmpy_fmi_v1_27 runs one job that builds every FMU once and simulates it with both.')
@@ -120,7 +120,7 @@ pipeline {
         }
         steps {
           runRegressiontest('master', 'master', '', '', false, '', '', false, false, 0, 'configs/conf.json', '', '.CI/testing', null,
-                            solvers())
+                            ['cvode', 'gbode', 'ida'])
         }
       }
 
@@ -512,7 +512,7 @@ pipeline {
       }
       when {
         beforeAgent true
-        expression { params.v1_25 || params.v1_26 || params.v1_27 || params.master || params.conversion_script || params.report_ryzen_5950x_1 || params.report_ryzen_5950x_2 || params.newInst_newBackend || params.generateSymbolicJacobian || params.heavy_tests || params.fmi_v1_25 || params.fmi_v1_26 || params.fmi_v1_27 || params.fmi_master || params.fmpy_fmi_v1_25 || params.fmpy_fmi_v1_26 || params.fmpy_fmi_v1_27 || params.fmpy_fmi_master || params.newInst_daeMode || params.newBackend_daeMode || params.oldInst || params.cpp || params.cvode || params.gbode || params.ida || params.wasm_jit || params.wasm_fmu || params.wasm_web || params.c_old}
+        expression { params.v1_25 || params.v1_26 || params.v1_27 || params.master || params.conversion_script || params.report_ryzen_5950x_1 || params.report_ryzen_5950x_2 || params.newInst_newBackend || params.generateSymbolicJacobian || params.heavy_tests || params.fmi_v1_25 || params.fmi_v1_26 || params.fmi_v1_27 || params.fmi_master || params.fmpy_fmi_v1_25 || params.fmpy_fmi_v1_26 || params.fmpy_fmi_v1_27 || params.fmpy_fmi_master || params.newInst_daeMode || params.newBackend_daeMode || params.oldInst || params.cpp || params.solvers || params.wasm_jit || params.wasm_fmu || params.wasm_web || params.c_old}
       }
       environment {
         GITBRANCHES = 'maintenance/v1.20 maintenance/v1.21 maintenance/v1.22 maintenance/v1.23 maintenance/v1.24 maintenance/v1.25 maintenance/v1.26 maintenance/v1.27 master newInst-newBackend'
@@ -872,18 +872,6 @@ def fmiSimulators(boolean omsimulator, boolean fmpy) {
   if (omsimulator) simulators << 'OMSimulator'
   if (fmpy) simulators << 'fmpy'
   return simulators
-}
-
-/* The solvers a job runs, from the parameters that used to start one job each.
- * Every model is built once and simulated with each of them, filling master,
- * cvode, gbode and ida as the four jobs did; a library is only run for the
- * solvers missing it, so one job serves master daily and cvode weekly. */
-def solvers(boolean cvode, boolean gbode, boolean ida) {
-  def chosen = []
-  chosen << 'cvode'
-  chosen << 'gbode'
-  chosen << 'ida'
-  return chosen
 }
 
 /* The cmake flags of an omc that can translate to wasm-jit. The wasm-jit and
