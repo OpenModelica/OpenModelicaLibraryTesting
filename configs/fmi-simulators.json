@@ -21,10 +21,10 @@
   "OMSimulator": {
     "branchSuffix": "",
     "resultExtension": "mat",
-    "versionArgument": "-v",
-    "arguments": "{resultArgument} --tempDir={tempDir} --startTime={startTime:g} --stopTime={stopTime:g}{stepSizeArgument} --timeout={timeout:g} --tolerance={tolerance:g} {fmu}",
+    "versionArgument": "--version",
+    "arguments": "{resultArgument} --stripRoot --tempDir={tempDir} --startTime={startTime:g} --stopTime={stopTime:g}{stepSizeArgument} --timeout={timeout:.0f} --tolerance={tolerance:g} {fmu}",
     "optionalArguments": {
-      "resultArgument": "-r={requestedResult}",
+      "resultArgument": "--resultFile={requestedResult}",
       "stepSizeArgument": " --stepSize={stepSize:g}"
     }
   },

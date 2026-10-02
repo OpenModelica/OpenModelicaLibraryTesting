@@ -39,6 +39,8 @@ RUN python3 -m venv /opt/libtest-venv \
   # The simulator of the -fmi-fmpy targets, which test.py runs as `python3 -m fmpy`. Its version
   # is the image's: a job cannot pip install one over it that outlives the container.
   && /opt/libtest-venv/bin/pip install --no-cache-dir FMPy \
+  # OMSimulator's CLI is Python, run by the python3 on PATH.
+  && /opt/libtest-venv/bin/pip install --no-cache-dir lxml \
   && rm /tmp/requirements.txt
 ENV PATH=/opt/libtest-venv/bin:$PATH
 

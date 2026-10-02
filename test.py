@@ -446,11 +446,12 @@ check_output_log(omc_cmd + ["-n=1", "--version"], stderr=subprocess.STDOUT).stri
 
 sys.stdout.flush()
 
-def fmiSimulatorVersion(command):
+def fmiSimulatorVersion(name, command):
+  versionArgument = shared.fmiSimulator(name)["versionArgument"]
   try:
     if not isFMPy(command):
-      return check_output_log([command, "-v"], stderr=subprocess.STDOUT).strip()
-    return subprocess.getoutput(command + " --version").strip().encode('ascii')
+      return check_output_log([command, versionArgument], stderr=subprocess.STDOUT).strip()
+    return subprocess.getoutput(command + " " + versionArgument).strip().encode('ascii')
   except subprocess.CalledProcessError as e:
     print("Failure to run %s:\n%s" % (command, e.output))
     raise e
@@ -459,7 +460,7 @@ fmisimulatorversions = {}
 fmisimulatorversion = None
 if fmisimulator:
   for (name, command) in fmisimulators:
-    fmisimulatorversions[name] = fmiSimulatorVersion(command)
+    fmisimulatorversions[name] = fmiSimulatorVersion(name, command)
     print("%s: %s" % (name, fmisimulatorversions[name]))
   # The version of the first one goes into the library version of every branch,
   # as it did when a job ran a single simulator.
