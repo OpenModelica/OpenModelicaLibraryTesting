@@ -38,6 +38,7 @@ pipeline {
     booleanParam(name: 'wasm_fmu', defaultValue: false, description: 'master branch, with --simCodeTarget=wasm-jit (ryzen-9950x). Every model is exported once as an unzipped wasm FMU and simulated through both of its FMI 3.0 interfaces, filling wasm-jit-me (Model Exchange) and wasm-jit-cs (Co-Simulation). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'c_old', defaultValue: false, description: 'master branch, with --simCodeTarget=C.old, filling c-old (ryzen-9950x). The C code generator emits what it does for --simCodeTarget=C; the executable links the old libSimulationRuntimeC instead of libSimulationRuntimeRust, so the difference against master is the simulation runtime alone. This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'heavy_tests', defaultValue: false, description: 'master branch, runs one test at a time. That is, no parallel launching of tests. omc will use multiple threads for each test (-n=1 is not set unlike the other regression tests.), (ryzen-5950x-1). This is an experimental job that does not run on a fixed schedule.')
+    booleanParam(name: 'heavy_tests_wasm', defaultValue: false, description: 'heavy_tests with --simCodeTarget=wasm-jit, filling heavy_tests_wasm (ryzen-5950x-1). Its results are in the heavy_tests report. This is an experimental job that does not run on a fixed schedule.')
 
     string(name: 'pull_request', defaultValue: '', description: 'Test an OpenModelica pull request rather than a branch: its number, e.g. 16354. omc is built from refs/pull/<N>/merge - the pull request as it would land - the results fill a pr-<N> table, and the report compares them against the newest run of pull_request_baseline. Left empty, nothing of this runs.')
     string(name: 'pull_request_baseline', defaultValue: 'master', description: 'The branch a pull request is compared against. Its newest run has to come from pull_request_node, or the report compares the machines as much as the pull request.')
@@ -450,6 +451,23 @@ pipeline {
             runRegressiontest('master', 'heavy_tests', '', '', false, '', '', false, false, 1, 'configs/heavy_tests.json')
         }
       }
+      stage('heavy_tests_wasm') {
+        agent {
+          node {
+            label 'ryzen-5950x-1'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.heavy_tests_wasm }
+        }
+        steps {
+            runRegressiontest('master', 'heavy_tests_wasm', 'setCommandLineOptions("--simCodeTarget=wasm-jit")', '', false, '', '--nobuildmodel', false, false, 1, 'configs/heavy_tests.json',
+                              wasmCmakeFlags())
+        }
+      }
 
       stage('C++ v1.26') {
         agent {
@@ -512,7 +530,7 @@ pipeline {
       }
       when {
         beforeAgent true
-        expression { params.v1_25 || params.v1_26 || params.v1_27 || params.master || params.conversion_script || params.report_ryzen_5950x_1 || params.report_ryzen_5950x_2 || params.newInst_newBackend || params.generateSymbolicJacobian || params.heavy_tests || params.fmi_v1_25 || params.fmi_v1_26 || params.fmi_v1_27 || params.fmi_master || params.fmpy_fmi_v1_25 || params.fmpy_fmi_v1_26 || params.fmpy_fmi_v1_27 || params.fmpy_fmi_master || params.newInst_daeMode || params.newBackend_daeMode || params.oldInst || params.cpp || params.solvers || params.wasm_jit || params.wasm_fmu || params.wasm_web || params.c_old}
+        expression { params.v1_25 || params.v1_26 || params.v1_27 || params.master || params.conversion_script || params.report_ryzen_5950x_1 || params.report_ryzen_5950x_2 || params.newInst_newBackend || params.generateSymbolicJacobian || params.heavy_tests || params.heavy_tests_wasm || params.fmi_v1_25 || params.fmi_v1_26 || params.fmi_v1_27 || params.fmi_master || params.fmpy_fmi_v1_25 || params.fmpy_fmi_v1_26 || params.fmpy_fmi_v1_27 || params.fmpy_fmi_master || params.newInst_daeMode || params.newBackend_daeMode || params.oldInst || params.cpp || params.solvers || params.wasm_jit || params.wasm_fmu || params.wasm_web || params.c_old}
       }
       environment {
         GITBRANCHES = 'maintenance/v1.20 maintenance/v1.21 maintenance/v1.22 maintenance/v1.23 maintenance/v1.24 maintenance/v1.25 maintenance/v1.26 maintenance/v1.27 master newInst-newBackend'
@@ -543,8 +561,8 @@ pipeline {
         '''
         sh './clean-empty-omcversion-dates.py'
 
-        sh "./all-reports.py --email --omcgitdir=OpenModelica ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT} ${env.GITBRANCHES_C_OLD} conversion heavy_tests generateSymbolicJacobian gbode cvode ida"
-        sh "./all-plots.py ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT} ${env.GITBRANCHES_C_OLD} conversion heavy_tests generateSymbolicJacobian gbode cvode ida"
+        sh "./all-reports.py --email --omcgitdir=OpenModelica ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT} ${env.GITBRANCHES_C_OLD} conversion heavy_tests heavy_tests_wasm generateSymbolicJacobian gbode cvode ida"
+        sh "./all-plots.py ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT} ${env.GITBRANCHES_C_OLD} conversion heavy_tests heavy_tests_wasm generateSymbolicJacobian gbode cvode ida"
 
         // Recorded and announced only once they are up: a report the database
         // knows about is never generated again, so one that a later failure in
@@ -564,7 +582,7 @@ pipeline {
         sh "./report.py --branches='generateSymbolicJacobian' configs/conf.json"
         sh "mv overview.html overview-generateSymbolicJacobian.html"
 
-        sh "./report.py --branches='heavy_tests' configs/heavy_tests.json"
+        sh "./report.py --branches='heavy_tests heavy_tests_wasm' configs/heavy_tests.json"
         sh "mv overview.html overview-heavy_tests.html"
 
         sh "./report.py --branches='${env.GITBRANCHES_NEWINST}' configs/conf.json"
