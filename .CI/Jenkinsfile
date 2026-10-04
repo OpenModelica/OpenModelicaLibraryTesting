@@ -754,14 +754,13 @@ def omsimulatorHash() {
   return 'master'
 }
 /**
-  * Installs the libraries a run tests, with the node's own omc, and returns the home directory
-  * holding them. `runSh` is how the conversion script is run: that one uses the omc that was just
-  * built, which is a binary of the image when the job has one.
+  * Installs the libraries a run tests, with the image's /usr/bin/omc, and returns the home
+  * directory holding them. The conversion script uses the omc that was just built instead.
   */
 def installLibraries(boolean removePackageOrder, boolean conversionScript, name, String omhomeTestedOMC, Closure runSh) {
   sh "rm -rf '${env.HOME}/saved_omc/libraries/.openmodelica/libraries'"
   sh "mkdir -p '${env.HOME}/saved_omc/libraries/'"
-  sh "HOME='${env.HOME}/saved_omc/libraries/' /usr/bin/omc OpenModelicaLibraryTesting/.CI/installLibraries.mos"
+  runSh("HOME='${env.HOME}/saved_omc/libraries/' /usr/bin/omc OpenModelicaLibraryTesting/.CI/installLibraries.mos")
   if (removePackageOrder) {
     sh "find '${env.HOME}/saved_omc/libraries/' -name package.order -exec rm '{}' ';'"
   }
@@ -1210,7 +1209,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
     runSh(checkoutAndBuild)
   }
 
-  sh """
+  runSh("""
   cd OpenModelica
   rm -rf "`pwd`/${OMCPATH}/build/lib/omlibrary/"
   mkdir -p "`pwd`/${OMCPATH}/build/lib/omlibrary/"
@@ -1227,7 +1226,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
   cd ../
   rm -rf Reference-modelica.org
   ln -s /mnt/ReferenceFiles/modelica.org Reference-modelica.org
-  """
+  """)
   // sh 'rsync -av modelica-ro:/files/RegressionTesting/ReferenceResults Reference-modelica.org || true # exit 1'
 
   MSLREFERENCE="${WORKSPACE}/Reference-modelica.org/ReferenceResults"
