@@ -37,8 +37,8 @@ pipeline {
     booleanParam(name: 'wasm_web', defaultValue: false, description: 'master branch, with --simCodeTarget=wasm-jit (ryzen-9950x), simulated the way the web omc does: the driver and the linear and nonlinear solvers in wasm, the in-wasm libm, and external "C" only from prebuilt wasm libraries. Fills wasm-web. This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'wasm_fmu', defaultValue: false, description: 'master branch, with --simCodeTarget=wasm-jit (ryzen-9950x). Every model is exported once as an unzipped wasm FMU and simulated through both of its FMI 3.0 interfaces, filling wasm-jit-me (Model Exchange) and wasm-jit-cs (Co-Simulation). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'c_old', defaultValue: false, description: 'master branch, with --simCodeTarget=C.old, filling c-old (ryzen-9950x). The C code generator emits what it does for --simCodeTarget=C; the executable links the old libSimulationRuntimeC instead of libSimulationRuntimeRust, so the difference against master is the simulation runtime alone. This is an experimental job that does not run on a fixed schedule.')
-    booleanParam(name: 'heavy_tests', defaultValue: false, description: 'master branch, runs one test at a time. That is, no parallel launching of tests. omc will use multiple threads for each test (-n=1 is not set unlike the other regression tests.), (ryzen-5950x-1). This is an experimental job that does not run on a fixed schedule.')
-    booleanParam(name: 'heavy_tests_wasm', defaultValue: false, description: 'heavy_tests with --simCodeTarget=wasm-jit, filling heavy_tests_wasm (ryzen-5950x-1). Its results are in the heavy_tests report. This is an experimental job that does not run on a fixed schedule.')
+    booleanParam(name: 'heavy_tests', defaultValue: false, description: 'master branch, runs one test at a time. That is, no parallel launching of tests. omc will use multiple threads for each test (-n=1 is not set unlike the other regression tests.), (r7945). This is an experimental job that does not run on a fixed schedule.')
+    booleanParam(name: 'heavy_tests_wasm', defaultValue: false, description: 'heavy_tests with --simCodeTarget=wasm-jit, filling heavy_tests_wasm (r7945). Its results are in the heavy_tests report. This is an experimental job that does not run on a fixed schedule.')
 
     string(name: 'pull_request', defaultValue: '', description: 'Test an OpenModelica pull request rather than a branch: its number, e.g. 16354. omc is built from refs/pull/<N>/merge - the pull request as it would land - the results fill a pr-<N> table, and the report compares them against the newest run of pull_request_baseline. Left empty, nothing of this runs.')
     string(name: 'pull_request_baseline', defaultValue: 'master', description: 'The branch a pull request is compared against. Its newest run has to come from pull_request_node, or the report compares the machines as much as the pull request.')
@@ -438,7 +438,7 @@ pipeline {
       stage('heavy_tests') {
         agent {
           node {
-            label 'ryzen-5950x-1'
+            label 'r7945-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -454,7 +454,7 @@ pipeline {
       stage('heavy_tests_wasm') {
         agent {
           node {
-            label 'ryzen-5950x-1'
+            label 'r7945-1'
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
