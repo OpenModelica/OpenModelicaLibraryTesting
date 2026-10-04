@@ -1447,6 +1447,7 @@ PUBLISH_JOBS = 4
 # gets a copy of it.
 publishFailures = []
 for (resultBranch, runner) in resultBranches:
+  syncTimes = {}
   result_location = outputFor(resultBranch)
   if result_location != "" and (isWin or noSync):
     # Unlike the rsync path, this one is given the directory the branches live
@@ -1577,6 +1578,7 @@ for (resultBranch, runner) in resultBranches:
     # move results by sync operations (not available under win)
     if result_location != "" and not isWin and not noSync:
       result_location_libname = "%s/%s" % (result_location, libname)
+      syncStart = monotonic()
       try:
         check_output_log(["rsync", "-aR", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", result_location_libname], cwd=stageRoot)
       except:
@@ -1584,6 +1586,7 @@ for (resultBranch, runner) in resultBranches:
         check_output_log(["rsync", "-aR", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", result_location_libname], cwd=stageRoot)
       if (conf.get("referenceFiles") or "") != "" and dygraphs:
         check_output_log(["rsync", "-a", dygraphs, result_location_libname+"/files"])
+      syncTimes[libname] = monotonic() - syncStart
     else:
       print("No Sync: result_location [%s] != "" and not isWin [%s] and not noSync [%s] : library: %s" % (result_location, isWin, noSync, libname))
 
@@ -1618,6 +1621,7 @@ for (resultBranch, runner) in resultBranches:
           pass
 
   publishable = [l for l in stats_by_libname.keys() if l not in skipped_libs and ranRunner(l, runner)]
+  publishStart = monotonic()
   if result_location != "" and not isWin and not noSync:
     makeRemoteDirs(publishable)
 
@@ -1632,6 +1636,10 @@ for (resultBranch, runner) in resultBranches:
 
   publishFailures += [f for f in Parallel(n_jobs=PUBLISH_JOBS, backend="threading")
                       (delayed(publishLibraryReportingFailure)(libname) for libname in publishable) if f]
+  print("Publishing %d libraries of %s: %s" % (len(publishable), resultBranch, friendlyStr(monotonic()-publishStart)))
+  for (libname, t) in sorted(syncTimes.items(), key=lambda x: -x[1])[:5]:
+    print("  rsync %s: %s" % (libname, friendlyStr(t)))
+  sys.stdout.flush()
 
 if clean:
   for g in ["*.o","*.so","*.h","*.c","*.cpp","*.simsuccess","*.conf.json","*.tmpfiles","*.log","*.libs","OMCpp*","*.fmu*","temp_*", "*.exe", "HelloWorld.bat", "*.makefile", "*.mat","*.xml", "*.bin", "*.json"]:
