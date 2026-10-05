@@ -1,0 +1,28 @@
+{
+ "AixLib": {
+  "AixLib.Controls.HVACAgentBasedControl.Examples.BookTrading.BookTrading": "UDP 10001-10003, 30001-30003",
+  "AixLib.Controls.HVACAgentBasedControl.Examples.BookTrading.NetworkCommunication1": "UDP 10003",
+  "AixLib.Controls.HVACAgentBasedControl.Examples.BookTrading.NetworkCommunication2": "UDP 10002",
+  "AixLib.Controls.HVACAgentBasedControl.Examples.BuildingHeatingSystems.BuildingHeating": "UDP 10002, 10003, 30001, 30002",
+  "AixLib.Controls.HVACAgentBasedControl.Examples.BuildingHeatingSystems.BuildingHeating_usePoke": "UDP 10002, 10003, 30001, 30002",
+  "AixLib.Controls.HVACAgentBasedControl.Examples.BuildingHeatingSystems.BuildingWithPV": "UDP 10002, 20001, 30001, 30002",
+  "AixLib.Controls.HVACAgentBasedControl.Examples.HVACAgentsCommunications.SimpleCommunication": "UDP 20001, 30001, 30002, 40001-40003"
+ },
+ "Modelica_DeviceDrivers": {
+  "Modelica_DeviceDrivers.Blocks.Examples.TestSerialPackagerBitPack_UDP": "UDP 10002",
+  "Modelica_DeviceDrivers.Blocks.Examples.TestSerialPackager_LCM": "UDP multicast 10002",
+  "Modelica_DeviceDrivers.Blocks.Examples.TestSerialPackager_SharedMemory": "shared memory sharedMemory",
+  "Modelica_DeviceDrivers.Blocks.Examples.TestSerialPackager_SharedMemoryExternalTrigger": "shared memory sharedMemory",
+  "Modelica_DeviceDrivers.Blocks.Examples.TestSerialPackager_TCPIPServer": "TCP 10002",
+  "Modelica_DeviceDrivers.Blocks.Examples.TestSerialPackager_TCPIPServerMultipleClients": "TCP 10002",
+  "Modelica_DeviceDrivers.Blocks.Examples.TestSerialPackager_UDP": "UDP 10002",
+  "Modelica_DeviceDrivers.Blocks.Examples.TestSerialPackager_UDPAutoBufferSize": "UDP 10002",
+  "Modelica_DeviceDrivers.Blocks.Examples.TestSerialPackager_UDPExternalTrigger": "UDP 10002",
+  "Modelica_DeviceDrivers.Blocks.Examples.TestSerialPackager_UDPWithoutReceiveThread": "UDP 10002",
+  "Modelica_DeviceDrivers.ClockedBlocks.Examples.TestSerialPackagerBitPack_UDP": "UDP 10002",
+  "Modelica_DeviceDrivers.ClockedBlocks.Examples.TestSerialPackager_SharedMemory": "shared memory sharedMemory",
+  "Modelica_DeviceDrivers.ClockedBlocks.Examples.TestSerialPackager_UDP": "UDP 10002",
+  "Modelica_DeviceDrivers.ClockedBlocks.Examples.TestSerialPackager_UDPWithoutReceiveThread": "UDP 10002",
+  "Modelica_DeviceDrivers.Incubate.Examples.TestSerialPackager_UDPMinimalForOMCTest": "UDP 10002"
+ }
+}

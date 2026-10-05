@@ -12,6 +12,7 @@ FROM docker.openmodelica.org/build-deps:ubuntu-26.04-rust
 
 # rsync/ssh publish the results; time and killall are used around test.py.
 # libcomedi-dev libx11-dev is used by Modelica_DeviceDrivers
+# mosquitto is the MQTT broker test.py starts for Modelica_DeviceDrivers
 # libnetcdf-dev is used by NcDataReader2 (AixLib, BuildingSystems): the library ships
 # libncDataReader2.a, whose netCDF calls are only resolvable with the -dev package.
 # Python 3.8 and 3.12 are used by Buildings
@@ -23,7 +24,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get install -qy software-properties-common \
   && add-apt-repository -y ppa:deadsnakes/ppa \
   && apt-get install -qy --no-install-recommends openssh-client psmisc rsync time \
-  && apt-get install -qy --no-install-recommends libcomedi-dev libx11-dev libnetcdf-dev \
+  && apt-get install -qy --no-install-recommends libcomedi-dev libx11-dev libnetcdf-dev mosquitto \
   && apt-get install -qy --no-install-recommends autoconf automake libtool omniidl libomniorb4-dev \
   && apt-get install -qy python3.8 python3.12 libpython3.8-dev libpython3.12-dev \
   && apt-get clean \

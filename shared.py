@@ -58,6 +58,7 @@ def fixData(data,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCom
     data["ulimitExe"] = int(data.get("ulimitExe") or DEFAULT_ULIMIT_EXE)
     data["ulimitExeModels"] = dict((k,int(v)) for (k,v) in (data.get("ulimitExeModels") or {}).items())
     data["heavyModels"] = dict((k,float(v)) for (k,v) in (data.get("heavyModels") or {}).items())
+    data["exclusiveModels"] = dict(data.get("exclusiveModels") or {})
     data["ulimitLoadModel"] = int(data.get("ulimitLoadModel") or 3*60) # 3 minutes to load the files (could take a while if the ssd is doing backup)
     simflags = []
     if data.get("extraSimFlags"):
@@ -99,35 +100,41 @@ def modelUlimitExe(conf, modelName):
   is one of the few named in ulimitExeModels."""
   return conf["ulimitExeModels"].get(modelName) or conf["ulimitExe"]
 
-def runCapped(jobs, isHeavy, run, workers, heavyWorkers, progress=None):
-  """Run the jobs over that many worker threads, at most heavyWorkers of the
-  heavy ones at a time.
+def runCapped(jobs, jobClass, run, workers, caps, progress=None):
+  """Run the jobs over that many worker threads, at most caps[c] of the jobs
+  jobClass puts in class c at a time. A job of class None is not capped.
 
-  Two queues, so that the cap costs memory and not machine time: a worker that
-  may not start a heavy job takes the next light one rather than wait for a slot,
-  and waits only when heavy jobs are all that is left.
+  One queue per class, so that a cap costs only what it limits and not machine
+  time: a worker that may not start a capped job takes the next uncapped one
+  rather than wait for a slot, and waits only when capped jobs are all that is
+  left. The first caps[c] workers start the class c jobs as soon as there is a
+  slot, so that they are not all left for the end.
   """
-  heavy = collections.deque(job for job in jobs if isHeavy(job))
-  light = collections.deque(job for job in jobs if not isHeavy(job))
-  total = len(heavy) + len(light)
+  queues = dict((c, collections.deque()) for c in caps)
+  queues[None] = collections.deque()
+  for job in jobs:
+    queues[jobClass(job)].append(job)
+  total = sum(len(q) for q in queues.values())
   cond = threading.Condition()
-  state = {"heavyRunning": 0, "done": 0}
+  running = dict.fromkeys(caps, 0)
+  state = {"done": 0}
 
-  def take(preferHeavy):
+  def take(preferred):
     with cond:
       while True:
-        if heavy and state["heavyRunning"] < heavyWorkers and (preferHeavy or not light):
-          state["heavyRunning"] += 1
-          return (heavy.popleft(), True)
-        if light:
-          return (light.popleft(), False)
-        if not heavy:
-          return (None, False)
+        for c in sorted(caps, key=lambda c: c != preferred):
+          if queues[c] and running[c] < caps[c] and (c == preferred or not queues[None]):
+            running[c] += 1
+            return (queues[c].popleft(), c)
+        if queues[None]:
+          return (queues[None].popleft(), None)
+        if not any(queues[c] for c in caps):
+          return (None, None)
         cond.wait()
 
-  def worker(preferHeavy):
+  def worker(preferred):
     while True:
-      (job, wasHeavy) = take(preferHeavy)
+      (job, c) = take(preferred)
       if job is None:
         return
       try:
@@ -137,15 +144,16 @@ def runCapped(jobs, isHeavy, run, workers, heavyWorkers, progress=None):
         traceback.print_exc()
       finally:
         with cond:
-          if wasHeavy:
-            state["heavyRunning"] -= 1
+          if c is not None:
+            running[c] -= 1
           state["done"] += 1
           done = state["done"]
           cond.notify_all()
         if progress is not None:
           progress(done, total)
 
-  threads = [threading.Thread(target=worker, args=(i < heavyWorkers,), daemon=True)
+  preferences = [c for c in caps for _ in range(caps[c])]
+  threads = [threading.Thread(target=worker, args=(preferences[i] if i < len(preferences) else None,), daemon=True)
              for i in range(workers)]
   for thread in threads:
     thread.start()
@@ -157,6 +165,11 @@ def isHeavyModel(conf, modelName):
   """Whether that model is one of the few needing gigabytes, of which only so
   many run at a time."""
   return modelName in conf["heavyModels"]
+
+def isExclusiveModel(conf, modelName):
+  """Whether that model uses a fixed port or other named resource that another
+  model may use too, so that it has to run on its own."""
+  return modelName in conf["exclusiveModels"]
 
 def simulationFlags(conf, ulimitExe):
   """The flags a simulation allowed that many seconds is run with."""

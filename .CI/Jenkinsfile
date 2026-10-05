@@ -952,9 +952,11 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
   // --init reaps the omc processes test.py orphans. ssh refuses to run for a uid it cannot look
   // up, so the node's passwd entry is needed to publish the results. The home holds the cached omc
   // build, the libraries (HOME during the test) and the ssh key; test.py writes a hash next to
-  // every reference file. rust-cargo-registry is the volume the OpenModelica job uses.
+  // every reference file. rust-cargo-registry is the volume the OpenModelica job uses. The MQTT
+  // example of Modelica_DeviceDrivers gets the broker test.py starts instead of the public one.
   def dockerArgs = "--init" +
                    (image ? " ${memoryLimitArgs()}" : '') +
+                   " --add-host test.mosquitto.org:127.0.0.1" +
                    " -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro" +
                    " -v ${env.HOME}:${env.HOME}" +
                    " -v /mnt/ReferenceFiles:/mnt/ReferenceFiles" +

@@ -16,9 +16,9 @@ from subprocess import call
 from monotonic import monotonic
 from omcommon import friendlyStr, multiple_replace
 from natsort import natsorted
-from shared import readConfig, getReferenceFileName, simulationAcceptsFlag, isFMPy, isHeavyModel, modelUlimitExe, simulationFlags, alarmGrace
+from shared import readConfig, getReferenceFileName, simulationAcceptsFlag, isFMPy, isHeavyModel, isExclusiveModel, modelUlimitExe, simulationFlags, alarmGrace
 from platform import processor
-import shared, resultsdb
+import shared, resultsdb, testservices
 
 import signal
 
@@ -42,6 +42,7 @@ parser.add_argument('--solver', action='append', default=[], help="Build every m
 parser.add_argument('--ulimitvmem', help="Virtual memory limit (in kB) (linux only)", type=int, default=8*1024*1024)
 parser.add_argument('--heavyjobs', help="How many of the models listed in --heavymodels may run at the same time. They are the handful that need gigabytes each, and running sixteen of them together is what takes the machine out of memory.", type=int, default=4)
 parser.add_argument('--heavymodels', help="JSON file naming the models that need gigabytes, as {library: {model: GiB}}. Hand-curated; heavy-models.py proposes what to put in it.", default="configs/heavy-models.json")
+parser.add_argument('--exclusivemodels', help="JSON file naming the models that use a fixed port or other named resource, as {library: {model: resource}}. They run one at a time, whatever their library.", default="configs/exclusive-models.json")
 parser.add_argument('--default', action='append', help="Add a default value for some configuration key, such as --default=ulimitExe=60. The equals sign is mandatory.", default=[])
 parser.add_argument('-j', '--jobs', default=0, help="Ignored and deprecated, use procOMC:0 or procOMC:1 in the config")
 parser.add_argument('-v', '--verbose', action="store_true", help="Verbose mode.", default=False)
@@ -133,6 +134,11 @@ try:
 except IOError:
   heavyModelsByLibrary = {}
   print("No %s; every test is scheduled as a light one" % args.heavymodels)
+try:
+  exclusiveModelsByLibrary = json.load(open(args.exclusivemodels))
+except IOError:
+  exclusiveModelsByLibrary = {}
+  print("No %s; tests sharing a port may run at the same time" % args.exclusivemodels)
 docker = args.docker
 addmsl = args.addmsl
 
@@ -909,6 +915,7 @@ for (library,conf) in configs:
       res=list(filter(lambda x: not x.startswith(prefix), res))
   libName=shared.libname(library, conf)
   conf["heavyModels"].update(heavyModelsByLibrary.get(libName) or {})
+  conf["exclusiveModels"].update(exclusiveModelsByLibrary.get(libName) or {})
   todo = runnersToRun(libName, conf)
   if libName in stats_by_libname or libName in skipped_libs:
     raise Exception("Duplicate libName found: %s" % libName)
@@ -1113,10 +1120,19 @@ if any(data.get("simCodeTarget") == "wasm-jit" for (_, _, _, _, data) in tests):
     print("Warning: could not precompile them, so every model compiles them itself: %s" % e)
   sys.stdout.flush()
 
+def jobClass(test):
+  if isExclusiveModel(test[4], test[0]):
+    return "exclusive"
+  if isHeavyModel(test[4], test[0]):
+    return "heavy"
+  return None
+
+services = testservices.start()
 shared.runCapped(tests,
-                 lambda test: isHeavyModel(test[4], test[0]),
+                 jobClass,
                  lambda test: runScript(test[3], testTimeout(test[0], test[4]), test[4]["ulimitMemory"], runverbose),
-                 n_jobs, heavyJobs, progress)
+                 n_jobs, {"heavy": heavyJobs, "exclusive": 1}, progress)
+testservices.stop(services)
 stop=monotonic()
 print("Execution time: %s" % friendlyStr(stop-start))
 if leakedJobs:
