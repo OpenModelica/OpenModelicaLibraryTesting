@@ -5,7 +5,7 @@ pipeline {
 
     booleanParam(name: 'v1_26', defaultValue: false, description: 'maintenance/v1.26 branch (ryzen-5950x-1)')
     booleanParam(name: 'v1_27', defaultValue: false, description: 'maintenance/v1.27 branch (ryzen-5950x-1)')
-    booleanParam(name: 'master', defaultValue: false, description: 'master branch, simulated with the solver each model asks for, filling master (ryzen-5950x-1).')
+    booleanParam(name: 'master', defaultValue: false, description: 'master branch, simulated with the solver each model asks for, filling master (ryzen-9950x).')
 
     booleanParam(name: 'fmi_v1_26', defaultValue: false, description: 'maintenance/v1.26 branch with FMI, simulated by OMSimulator, filling v1.26-fmi (ryzen-5950x-2). Ticking it together with fmpy_fmi_v1_26 runs one job that builds every FMU once and simulates it with both.')
     booleanParam(name: 'fmi_v1_27', defaultValue: false, description: 'maintenance/v1.27 branch with FMI, simulated by OMSimulator, filling v1.27-fmi (ryzen-5950x-2). Ticking it together with fmpy_fmi_v1_27 runs one job that builds every FMU once and simulates it with both.')
@@ -41,9 +41,10 @@ pipeline {
     booleanParam(name: 'heavy_tests_wasm', defaultValue: false, description: 'heavy_tests with --simCodeTarget=wasm-jit, filling heavy_tests_wasm (r7945). Its results are in the heavy_tests report. This is an experimental job that does not run on a fixed schedule.')
 
     string(name: 'pull_request', defaultValue: '', description: 'Test an OpenModelica pull request rather than a branch: its number, e.g. 16354. omc is built from refs/pull/<N>/merge - the pull request as it would land - the results fill a pr-<N> table, and the report compares them against the newest run of pull_request_baseline. Left empty, nothing of this runs.')
-    string(name: 'pull_request_baseline', defaultValue: 'master', description: 'The branch a pull request is compared against. Its newest run has to come from pull_request_node, or the report compares the machines as much as the pull request.')
+    choice(name: 'pull_request_target', choices: ['wasm-jit', 'C'], description: 'The --simCodeTarget a pull request is simulated with. wasm-jit is the cheaper run and is compared against the wasm-jit job; C against master.')
+    string(name: 'pull_request_baseline', defaultValue: '', description: 'The branch a pull request is compared against. Left empty, the one pull_request_target is tested by: wasm-jit for wasm-jit, master for C. Its newest run has to come from pull_request_node, or the report compares the machines as much as the pull request.')
     string(name: 'pull_request_config', defaultValue: 'configs/conf.json', description: 'What a pull request run tests. A full run takes days, so a smaller configuration file is often the better question to ask.')
-    choice(name: 'pull_request_node', choices: ['ryzen-5950x-1', 'ryzen-5950x-2-1', 'ryzen-9950x'], description: 'The machine a pull request runs on. The default is the one that produces the master runs it is compared against.')
+    choice(name: 'pull_request_node', choices: ['ryzen-9950x', 'ryzen-5950x-1', 'ryzen-5950x-2-1'], description: 'The machine a pull request runs on. The default is the one that produces the master and wasm-jit runs it is compared against.')
     booleanParam(name: 'pull_request_comment', defaultValue: false, description: 'Post the summary of a pull request run as a comment on the pull request, replacing the one an earlier run posted. Needs an OpenModelica-Hudson credential; without it the report is still written and published, only not commented.')
     booleanParam(name: 'drop_stale_pull_request_tables', defaultValue: false, description: 'Drop the pr-<N> tables of pull requests that have been merged or closed, and of those tested more than 60 days ago. The reports published for them are not touched.')
   }
@@ -145,7 +146,7 @@ pipeline {
       stage('pull request') {
         agent {
           node {
-            label "${params.pull_request_node ?: 'ryzen-5950x-1'}"
+            label "${params.pull_request_node ?: 'ryzen-9950x'}"
             customWorkspace 'ws/OpenModelicaLibraryTestingWork'
           }
         }
@@ -176,7 +177,15 @@ pipeline {
           find "$HOME/saved_omc/pr" -mindepth 1 -maxdepth 1 -type d -mtime +14 -exec rm -rf {} ";" 2> /dev/null || true
           find "$HOME/saved_omc" -mindepth 1 -maxdepth 1 -name "pr-*" -type d -mtime +14 -exec rm -rf {} ";" || true
           '''
-          runRegressiontest("pr/${pullRequest()}", "pr/${pullRequest()}", '', '', false, '', '', false, false, 0, params.pull_request_config ?: 'configs/conf.json')
+          script {
+            def config = params.pull_request_config ?: 'configs/conf.json'
+            if (pullRequestTarget() == 'C') {
+              runRegressiontest("pr/${pullRequest()}", "pr/${pullRequest()}", '', '', false, '', '', false, false, 0, config)
+            } else {
+              runRegressiontest("pr/${pullRequest()}", "pr/${pullRequest()}", 'setCommandLineOptions("--simCodeTarget=wasm-jit")', '', false, '', '--nobuildmodel', false, false, 0, config,
+                                wasmCmakeFlags())
+            }
+          }
         }
       }
 
@@ -691,7 +700,7 @@ pipeline {
           }
         }
         sh 'rm -rf history'
-        sh "./pr-report.py '${pullRequest()}' --baseline='${(params.pull_request_baseline ?: 'master').trim()}'"
+        sh "./pr-report.py '${pullRequest()}' --baseline='${pullRequestBaseline()}'"
         // Uploaded before it is announced, as the branch reports are: the
         // comment links to the report, and nothing after this may be what stops
         // it from being published.
@@ -723,6 +732,14 @@ pipeline {
   */
 def pullRequest() {
   return (params.pull_request ?: '').trim()
+}
+
+def pullRequestTarget() {
+  return params.pull_request_target ?: 'wasm-jit'
+}
+
+def pullRequestBaseline() {
+  return (params.pull_request_baseline ?: '').trim() ?: (pullRequestTarget() == 'C' ? 'master' : 'wasm-jit')
 }
 
 /**
@@ -1162,9 +1179,10 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
   export OPENMODELICAHOME="`pwd`/build"
 
   git rev-parse --verify HEAD > .newhash
-  # Part of the stamp rather than the commit alone: a build/ cached from the other build system is
-  # not what this job would produce for the same commit.
+  # Part of the stamp rather than the commit alone: a build/ cached from the other build system, or
+  # with other cmake flags, is not what this job would produce for the same commit.
   echo "${useCMake ? 'cmake' : 'autotools'}" >> .newhash
+  ${cmakeFlags ? "echo '${cmakeFlags}' >> .newhash" : ''}
   echo New Hash:
   cat .newhash
   echo Old Hash:

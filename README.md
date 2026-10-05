@@ -425,11 +425,14 @@ builds every model once and simulates it with each.
 
 A branch is tested against its own previous run, which says what broke *after* a
 change was merged. A pull request can be tested before that, against the newest
-run of `master`.
+run of `wasm-jit`, or of `master` when it is simulated with the C target.
 
 In Jenkins, set the **`pull_request`** parameter to the pull request number and
-start the job; `pull_request_baseline`, `pull_request_config` and
-`pull_request_node` say what it is compared against, what it tests and where.
+start the job; `pull_request_target` says which `--simCodeTarget` it is
+simulated with (`wasm-jit` by default, which is the cheaper run), and
+`pull_request_baseline`, `pull_request_config` and `pull_request_node` what it
+is compared against, what it tests and where. The baseline defaults to the job
+testing that target.
 None of the branch jobs run unless their own parameter is ticked as well.
 
 By hand it is two steps. The compiler is built from the merge ref - the pull
@@ -439,18 +442,19 @@ request as it would land, not the branch on its own - and the run fills a
 ```bash
 git fetch --force https://github.com/OpenModelica/OpenModelica.git refs/pull/<N>/merge
 git checkout -f --detach FETCH_HEAD
-# build omc, then
-./test.py --branch=pr/<N> configs/conf.json
+# build omc with -DOM_OMC_ENABLE_RUST=ON, then
+./test.py --branch=pr/<N> --nobuildmodel \
+          --extraflags='--simCodeTarget=wasm-jit' configs/conf.json
 ```
 
 `pr/<N>` rather than `pr-<N>`: the pull requests sit together in one directory
 of `branches/`, which otherwise holds branches. It is the one job name that
 keeps the directory part of its name - `maintenance/v1.27` is tested as `v1.27`.
 
-The report compares that run against the newest run of `master`:
+The report compares that run against the newest run of `wasm-jit`:
 
 ```bash
-./pr-report.py <N>                 # --baseline=master by default
+./pr-report.py <N>                 # --baseline=wasm-jit by default; master for C
 ```
 
 It writes `history/pr/<N>/<baseline run>..<pull request run>.html`, the same
