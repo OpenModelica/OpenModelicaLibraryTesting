@@ -6,7 +6,7 @@
 all-reports.py reports a branch against its own previous run, which is what a
 pull request must not do: pr-<N> has no previous run, and the question is not
 "what changed since yesterday" but "what does this pull request change against
-master". The comparison itself is the same one - the phase a model reached and
+wasm-jit (or master)". The comparison itself is the same one - the phase a model reached and
 what each phase cost - only the two runs it is given come from two branches.
 """
 
@@ -17,7 +17,7 @@ from omcommon import friendlyStr, multiple_replace
 
 parser = argparse.ArgumentParser(description='OpenModelica library testing pull request report')
 parser.add_argument('pullrequest', help='the pull request number, or its branch name pr/<N>')
-parser.add_argument('--baseline', default="master", help='the branch the pull request is compared against')
+parser.add_argument('--baseline', default="wasm-jit", help='the branch the pull request is compared against; master for a run with the C target')
 parser.add_argument('--date', type=int, default=0, help='the pull request run to report on (default: its newest)')
 parser.add_argument('--baselinedate', type=int, default=0, help='the baseline run to compare against (default: its newest)')
 parser.add_argument('--baseurl', default="http://libraries.openmodelica.org/branches")
