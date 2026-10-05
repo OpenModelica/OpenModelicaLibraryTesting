@@ -47,7 +47,7 @@
       "giturl":"https://github.com/casella/ScalableTestSuite-ref",
       "destination":"ReferenceFiles/ScalableTestSuite"
     },
-    "extraCustomCommands":["setCommandLineOptions(\"--newBackend -d=arrayConnect\")"]
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend --resizableArrays --simCodeScalarize=false -d=arrayConnect\")"]
   },
   {
     "library":"LargeTestSuite",
@@ -78,7 +78,7 @@
     "procOMC":0,
     "procCCompile":0,
     "optlevel":"-O0 -march=native",
-    "extraCustomCommands":["setCommandLineOptions(\"--newBackend -d=arrayConnect\")"]
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend --resizableArrays --simCodeScalarize=false -d=arrayConnect\")"]
   },
   {
     "library":"ScalableTestGrids",
@@ -90,19 +90,7 @@
     "procOMC":0,
     "procCCompile":0,
     "optlevel":"-O0 -march=native",
-    "extraCustomCommands":["setCommandLineOptions(\"--newBackend -d=mergeComponents --generateDynamicJacobian=symbolic --maxSizeNonlinearTearing=400\")"]
-  },
-  {
-    "library":"LargeTestSuite",
-    "libraryVersion":"master",
-    "libraryVersionNameForTests":"NB_simvec",
-    "ulimitOmc":400,
-    "ulimitExe":400,
-    "ulimitMemory":62914560,
-    "procOMC":0,
-    "procCCompile":0,
-    "optlevel":"-O0 -march=native",
-    "extraCustomCommands":["setCommandLineOptions(\"--newBackend -d=arrayConnect --simCodeScalarize=false\")"]
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend --resizableArrays --simCodeScalarize=false -d=mergeComponents --generateDynamicJacobian=symbolic --maxSizeNonlinearTearing=400\")"]
   },
   {
     "library":"BL",
@@ -123,7 +111,7 @@
     "procOMC":0,
     "procCCompile":0,
     "optlevel":"-O0 -march=native",
-    "extraCustomCommands":["setCommandLineOptions(\"--newBackend\")"]
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend --resizableArrays --simCodeScalarize=false\")"]
   },
   {
     "library":"Battery",
@@ -144,7 +132,7 @@
     "procOMC":0,
     "procCCompile":0,
     "optlevel":"-O0 -march=native",
-    "extraCustomCommands":["setCommandLineOptions(\"--newBackend\")"]
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend --resizableArrays --simCodeScalarize=false\")"]
   },
   {
     "library":"BenchmarksForResizeableArrays",
@@ -165,7 +153,7 @@
     "procOMC":0,
     "procCCompile":0,
     "optlevel":"-O0 -march=native",
-    "extraCustomCommands":["setCommandLineOptions(\"--newBackend\")"]
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend --resizableArrays --simCodeScalarize=false\")"]
   },
   {
     "library":"IDADistricts",
@@ -186,7 +174,7 @@
     "procOMC":0,
     "procCCompile":0,
     "optlevel":"-O0 -march=native",
-    "extraCustomCommands":["setCommandLineOptions(\"--newBackend\")"]
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend --resizableArrays --simCodeScalarize=false\")"]
   },
   {
     "library":"LSGreenH2Production",
@@ -207,7 +195,7 @@
     "procOMC":0,
     "procCCompile":0,
     "optlevel":"-O0 -march=native",
-    "extraCustomCommands":["setCommandLineOptions(\"--newBackend\")"]
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend --resizableArrays --simCodeScalarize=false\")"]
   },
   {
     "library":"LargeInterfaces",
@@ -228,6 +216,6 @@
     "procOMC":0,
     "procCCompile":0,
     "optlevel":"-O0 -march=native",
-    "extraCustomCommands":["setCommandLineOptions(\"--newBackend\")"]
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend --resizableArrays --simCodeScalarize=false\")"]
   }
 ]
