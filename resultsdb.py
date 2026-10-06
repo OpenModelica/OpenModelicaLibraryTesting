@@ -503,8 +503,12 @@ class _Postgres(_Db):
 
     Unlike sqlite there is no schema migration and the indexes stay: other
     machines are reading the table while this one writes its few thousand rows.
+
+    ALTER TABLE and CREATE INDEX lock the table even when there is nothing to
+    do, waiting behind every transaction reading it, so only run them if needed.
     """
     cursor = self.cursor()
+    cursor.execute("SET LOCAL lock_timeout = '5min'")
     cursor.execute("""CREATE TABLE IF NOT EXISTS omcversion (
         date bigint NOT NULL, branch text NOT NULL, omcversion text)""")
     cursor.execute("""CREATE TABLE IF NOT EXISTS libversion (
@@ -513,19 +517,24 @@ class _Postgres(_Db):
         host text, sysinfo text)""")
     # The shared database predates the host columns; add them without touching
     # the rows already in there, which keep their results and read back NULL.
+    libversionColumns = self.columns("libversion")
     for col in ["host", "sysinfo"]:
-      cursor.execute("ALTER TABLE libversion ADD COLUMN IF NOT EXISTS %s text" % col)
+      if col not in libversionColumns:
+        cursor.execute("ALTER TABLE libversion ADD COLUMN IF NOT EXISTS %s text" % col)
     cols = ", ".join("%s %s%s" % (c, POSTGRES_TYPES[t], " NOT NULL" if c in BRANCH_KEY else "")
                      for c, t in BRANCH_COLUMNS)
     cursor.execute("CREATE TABLE IF NOT EXISTS %s (%s)" % (self.quote(branch), cols))
-    cursor.execute("ALTER TABLE %s ADD COLUMN IF NOT EXISTS maxrss bigint" % self.quote(branch))
-    for tbl in ["omcversion", "libversion", branch]:
-      key = KEYS.get(tbl, BRANCH_KEY)
-      cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS %s ON %s (%s)"
-                     % (self.quote(("uq_%s_%s" % (tbl, "_".join(key)))[:63]),
-                        self.quote(tbl), ",".join(key)))
-    cursor.execute("CREATE INDEX IF NOT EXISTS %s ON %s (libname, date)"
-                   % (self.quote(("idx_%s_libname_date" % branch)[:63]), self.quote(branch)))
+    if "maxrss" not in self.columns(branch):
+      cursor.execute("ALTER TABLE %s ADD COLUMN IF NOT EXISTS maxrss bigint" % self.quote(branch))
+    indexes = [("UNIQUE INDEX", "uq_%s_%s" % (tbl, "_".join(KEYS.get(tbl, BRANCH_KEY))), tbl,
+                KEYS.get(tbl, BRANCH_KEY)) for tbl in ["omcversion", "libversion", branch]]
+    indexes.append(("INDEX", "idx_%s_libname_date" % branch, branch, ["libname", "date"]))
+    for (kind, name, tbl, key) in indexes:
+      name = name[:63]
+      if not self.execute("SELECT 1 FROM pg_indexes WHERE schemaname=current_schema() AND indexname=?",
+                          (name,)).fetchone():
+        cursor.execute("CREATE %s IF NOT EXISTS %s ON %s (%s)"
+                       % (kind, self.quote(name), self.quote(tbl), ",".join(key)))
     self.commit()
 
   def tables(self):
