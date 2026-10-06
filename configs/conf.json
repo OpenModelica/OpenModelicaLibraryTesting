@@ -441,7 +441,8 @@
     "referenceFileNameDelimiter":".",
     "referenceFiles":{
       "giturl":"https://github.com/AMIT-HSBI/NeuralNetwork",
-      "destination":"ReferenceFiles/NeuralNetwork"
+      "destination":"ReferenceFiles/NeuralNetwork",
+      "git-ref": "main"
     }
   },
   {
@@ -696,7 +697,8 @@
     "referenceFileNameExtraName":"$ClassName",
     "referenceFiles":{
       "giturl":"https://github.com/DLR-RM/urdfmodelica-referenceresults",
-      "destination":"ReferenceFiles/URDFModelica"
+      "destination":"ReferenceFiles/URDFModelica",
+      "git-ref": "main"
     }
   },
   {

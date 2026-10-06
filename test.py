@@ -800,6 +800,8 @@ for (library,conf) in configs:
     conf["wasmfmurunners"] = [n for (n, _) in wasmfmurunners]
   if solvers:
     conf["solvers"] = [n for (n, _) in solvers]
+  print("Loading %s" % library)
+  sys.stdout.flush()
   if (not canChangeOptLevel) and "optlevel" in conf:
     print("Deleting optlevel")
     del conf["optlevel"]
@@ -948,6 +950,8 @@ if failedToLoad:
   db.release()
   raise SystemExit("Failed to load: %s" % ", ".join(failedToLoad))
 
+# Do not keep the tables locked while testing; see createTables.
+db.commit()
 print("Checked which libraries to run")
 sys.stdout.flush()
 
@@ -1061,6 +1065,7 @@ def expectedExec(c):
 
 start=monotonic()
 tests=sorted(tests, key=lambda c: expectedExec(c), reverse=True)
+db.commit()
 stop=monotonic()
 print("Querying expected execution time: %s" % friendlyStr(stop-start))
 sys.stdout.flush()
