@@ -204,8 +204,8 @@
   {
     "library":"Buildings",
     "ignoreModelPrefix":["Buildings.Utilities.IO.BCVTB.Examples", "Buildings.Obsolete"],
-    "libraryVersion":"maint.12.x",
-    "libraryVersionNameForTests":"12",
+    "libraryVersion":"maint.13.x",
+    "libraryVersionNameForTests":"13",
     "ulimitOmc":300,
     "ulimitExeModels":{
       "Buildings.Examples.DualFanDualDuct.ClosedLoop":390,
