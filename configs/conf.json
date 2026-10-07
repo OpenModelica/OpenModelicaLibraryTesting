@@ -186,19 +186,19 @@
   {
     "library":"Buildings",
     "ignoreModelPrefix":["Buildings.Utilities.IO.BCVTB.Examples", "Buildings.Obsolete"],
-    "libraryVersion":"maint.11.x",
-    "libraryVersionNameForTests":"11",
+    "libraryVersion":"maint.12.x",
+    "libraryVersionNameForTests":"12",
     "ulimitOmc":300,
     "ulimitExeModels":{
-      "Buildings.Examples.DualFanDualDuct.ClosedLoop":360,
-      "Buildings.ThermalZones.EnergyPlus_9_6_0.Examples.SmallOffice.Guideline36Spring":420,
-      "Buildings.ThermalZones.EnergyPlus_9_6_0.Examples.SmallOffice.Guideline36Summer":420,
-      "Buildings.ThermalZones.EnergyPlus_9_6_0.Examples.SmallOffice.Guideline36Winter":510
+      "Buildings.Examples.DualFanDualDuct.ClosedLoop":390,
+      "Buildings.Fluid.Geothermal.ZonedBorefields.Examples.SeriesConnectedZones":390,
+      "Buildings.ThermalZones.EnergyPlus_24_2_0.Examples.SmallOffice.Guideline36Spring":450,
+      "Buildings.ThermalZones.EnergyPlus_24_2_0.Examples.SmallOffice.Guideline36Summer":420
     },
     "runOnceBeforeTesting":[["$resourceLocation/src/ThermalZones/install.py", "--binaries-for-os-only"]],
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"_",
-    "referenceFiles":"/mnt/ReferenceFiles/Buildings/csv/maint_11.x",
+    "referenceFiles":"/mnt/ReferenceFiles/Buildings/csv/maint_12.x",
 	"extraCustomCommands":["setCFlags(getCFlags() + \" -Wno-error=implicit-function-declaration\")"]
   },
   {
@@ -216,7 +216,7 @@
     "runOnceBeforeTesting":[["$resourceLocation/src/ThermalZones/install.py", "--binaries-for-os-only"]],
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"_",
-    "referenceFiles":"/mnt/ReferenceFiles/Buildings/csv/maint_12.x",
+    "referenceFiles":"/mnt/ReferenceFiles/Buildings/csv/maint_13.x",
 	"extraCustomCommands":["setCFlags(getCFlags() + \" -Wno-error=implicit-function-declaration\")"]
   },
   {
