@@ -1282,20 +1282,26 @@ for (resultBranch, runner) in resultBranches:
   if not libnames:
     continue
   db.createTables(resultBranch)
+  rows = 0
   for key in stats.keys():
     (name,model,libname,data)=stats[key]
     if not ranRunner(libname, runner):
       continue
     cursor.execute("INSERT INTO %s VALUES (%s)%s" % (db.quote(resultBranch), resultPlaceholders, db.insertIgnore()),
                    resultValues(model, libname, data, simulatorKey(libname, runner)))
+    rows += 1
   for libname in libnames:
     for model in removedModels(resultBranch, libname, testedModels[libname]):
       cursor.execute("INSERT INTO %s VALUES (%s)%s"
                      % (db.quote(resultBranch), resultPlaceholders, db.insertIgnore()),
                      removedValues(model, libname))
+      rows += 1
     confighash = stats_by_libname[libname]["conf"]["confighash"]
     cursor.execute("INSERT INTO libversion VALUES (?,?,?,?,?,?,?)%s" % db.insertIgnore(), (testRunStartTimeAsEpoch, resultBranch, libname, stats_by_libname[libname]["conf"]["libraryLastChange"], confighash, hostname, sysInfo))
-  cursor.execute("INSERT INTO omcversion VALUES (?,?,?)%s" % db.insertIgnore(), (testRunStartTimeAsEpoch, resultBranch, omc_version))
+  # An omcversion row without results is what clean-empty-omcversion-dates.py
+  # has to scan the database for.
+  if rows:
+    cursor.execute("INSERT INTO omcversion VALUES (?,?,?)%s" % db.insertIgnore(), (testRunStartTimeAsEpoch, resultBranch, omc_version))
 
 db.commit()
 db.release()

@@ -239,7 +239,8 @@ separate files - whichever file is copied back last wins.
   over every table that holds results, then `VACUUM`. Removes a range of bad
   runs. `history` and `job_claim` are skipped; they have no `date` column.
 - `clean-empty-omcversion-dates.py`: drops `omcversion` rows whose date has no
-  result rows in the corresponding branch table.
+  result rows in the corresponding branch table. Runs before the daily reports;
+  `test.py` does not write such a row in the first place.
 
 ## PostgreSQL layout
 
@@ -462,7 +463,7 @@ It reads the database from the start and keeps the runs the shared database
 does not have, which takes two to three minutes per machine. Not "everything
 past the rowid the migration stopped at", tempting as that is: `VACUUM`
 renumbers the rowids of these tables and `clean-empty-omcversion-dates.py` runs
-one after every test, so that number does not survive a test run. Picking the
+one before every report, so that number does not survive a test run. Picking the
 runs by date is also what makes it correct for `master`, `newInst`,
 `heavy_tests` and `v1.17`, where both machines write into the same table.
 

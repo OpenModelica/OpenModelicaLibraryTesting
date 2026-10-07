@@ -1289,9 +1289,6 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
     PYTHONUNBUFFERED=1 stdbuf -oL -eL time ./test.py --ompython_omhome=/usr ${FMI_TESTING_FLAG}${SOLVER_FLAG} --extraflags='${extraFlags}' --extrasimflags='${extrasimflags}' ${testFlags} --branch="${name}" --output="libraries.openmodelica.org:/var/www/libraries.openmodelica.org/branches/${name}/" --libraries='${libraryPath}/.openmodelica/libraries/'  --jobs=${jobs} ${libs_config_file} ${params.OLDLIBS ? "configs/conf-old.json configs/conf-nonstandard.json" : ""} || (killall omc ; false) || exit 1
     """)
     sh 'date'
-    // In the image: the script talks to the results database through psycopg2,
-    // which is in the image's python environment and not on the node.
-    runSh("cd OpenModelicaLibraryTesting/ && ./clean-empty-omcversion-dates.py")
   }
 
 }

@@ -257,7 +257,7 @@ def migrate_table(pg, sconn, source, tbl, columns, batch, quiet, skip_existing=F
     # Read the table from the start and keep the runs the database has never
     # seen.  Not "everything past the rowid we stopped at": VACUUM renumbers
     # the rowids of these tables, and clean-empty-omcversion-dates.py runs one
-    # after every test, so that number cannot be trusted between two runs.
+    # before every report, so that number cannot be trusted between two runs.
     stored = set(int(d) for d in pg.query("SELECT DISTINCT date FROM %s" % ident(tbl)).split("\n") if d)
     last_rowid, rows_read = 0, 0
     skip_existing = True
