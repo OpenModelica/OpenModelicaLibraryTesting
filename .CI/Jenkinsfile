@@ -42,7 +42,9 @@ pipeline {
 
     string(name: 'pull_request', defaultValue: '', description: 'Test an OpenModelica pull request rather than a branch: its number, e.g. 16354. omc is built from refs/pull/<N>/merge - the pull request as it would land - the results fill a pr-<N> table, and the report compares them against the newest run of pull_request_baseline. Left empty, nothing of this runs.')
     choice(name: 'pull_request_target', choices: ['wasm-jit', 'C'], description: 'The --simCodeTarget a pull request is simulated with. wasm-jit is the cheaper run and is compared against the wasm-jit job; C against master.')
-    string(name: 'pull_request_baseline', defaultValue: '', description: 'The branch a pull request is compared against. Left empty, the one pull_request_target is tested by: wasm-jit for wasm-jit, master for C. Its newest run has to come from pull_request_node, or the report compares the machines as much as the pull request.')
+    choice(name: 'pull_request_solver', choices: ['default', 'gbode', 'cvode', 'ida'], description: 'The solver a pull request is simulated with: default is the one each model asks for, the others are the configs/solvers.json entries of that name. With the C target, the baseline is then that solver\'s table, which the solvers job fills; nothing fills one for wasm-jit, so set pull_request_baseline yourself or compare against the default solver.')
+    string(name: 'pull_request_simflags', defaultValue: '', description: 'Simulation flags appended to every model\'s, after those of pull_request_solver, e.g. -gbm=esdirk3 to run gbode with another method.')
+    string(name: 'pull_request_baseline', defaultValue: '', description: 'The branch a pull request is compared against. Left empty, the one pull_request_target is tested by: wasm-jit for wasm-jit, master for C, or for C with a pull_request_solver its own table. Its newest run has to come from pull_request_node, or the report compares the machines as much as the pull request.')
     string(name: 'pull_request_config', defaultValue: 'configs/conf.json', description: 'What a pull request run tests. A full run takes days, so a smaller configuration file is often the better question to ask.')
     choice(name: 'pull_request_node', choices: ['ryzen-9950x', 'ryzen-5950x-1', 'ryzen-5950x-2-1', 'r7945-1'], description: 'The machine a pull request runs on. The default is the one that produces the master and wasm-jit runs it is compared against.')
     booleanParam(name: 'pull_request_comment', defaultValue: false, description: 'Post the summary of a pull request run as a comment on the pull request, replacing the one an earlier run posted. Needs an OpenModelica-Hudson credential; without it the report is still written and published, only not commented.')
@@ -160,6 +162,9 @@ pipeline {
             if (!(pullRequest() ==~ /[0-9]+/)) {
               error "pull_request is a pull request number; got '${params.pull_request}'"
             }
+            if (pullRequestSimflags().contains("'")) {
+              error "pull_request_simflags cannot contain a single quote; got '${pullRequestSimflags()}'"
+            }
           }
           // Before the clone, the reset and the build: a number that is not a
           // pull request costs minutes to find out about otherwise. Issues and
@@ -179,10 +184,11 @@ pipeline {
           '''
           script {
             def config = params.pull_request_config ?: 'configs/conf.json'
+            def solverFlags = pullRequestSolver() == 'default' ? '' : "--solverflags=${pullRequestSolver()}"
             if (pullRequestTarget() == 'C') {
-              runRegressiontest("pr/${pullRequest()}", "pr/${pullRequest()}", '', '', false, '', '', false, false, 0, config)
+              runRegressiontest("pr/${pullRequest()}", "pr/${pullRequest()}", '', '', false, pullRequestSimflags(), solverFlags, false, false, 0, config)
             } else {
-              runRegressiontest("pr/${pullRequest()}", "pr/${pullRequest()}", 'setCommandLineOptions("--simCodeTarget=wasm-jit")', '', false, '', '--nobuildmodel', false, false, 0, config,
+              runRegressiontest("pr/${pullRequest()}", "pr/${pullRequest()}", 'setCommandLineOptions("--simCodeTarget=wasm-jit")', '', false, pullRequestSimflags(), "--nobuildmodel ${solverFlags}", false, false, 0, config,
                                 wasmCmakeFlags())
             }
           }
@@ -738,8 +744,23 @@ def pullRequestTarget() {
   return params.pull_request_target ?: 'wasm-jit'
 }
 
+def pullRequestSolver() {
+  return params.pull_request_solver ?: 'default'
+}
+
+def pullRequestSimflags() {
+  return (params.pull_request_simflags ?: '').trim()
+}
+
 def pullRequestBaseline() {
-  return (params.pull_request_baseline ?: '').trim() ?: (pullRequestTarget() == 'C' ? 'master' : 'wasm-jit')
+  def baseline = (params.pull_request_baseline ?: '').trim()
+  if (baseline) {
+    return baseline
+  }
+  if (pullRequestTarget() == 'C') {
+    return pullRequestSolver() == 'default' ? 'master' : pullRequestSolver()
+  }
+  return 'wasm-jit'
 }
 
 /**

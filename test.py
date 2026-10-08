@@ -39,6 +39,7 @@ parser.add_argument('--coldhot', action="store_true", help="Simulate each model 
 parser.add_argument('--fmisimulator', action='append', default=[], help="FMI simulator to run the FMUs with, as 'name=command' or just the command. Repeat it to simulate every FMU with several tools without building it more than once; the first one stores its results in --branch and each further one in <branch>-<name>, so --branch=master-fmi with OMSimulator and fmpy fills master-fmi and master-fmi-fmpy." )
 parser.add_argument('--wasmfmu', '--wasmjitrunner', action='append', dest='wasmfmu', default=[], help="Export every model once as a wasm FMU (buildModelFMU with fmuType=me_cs, platforms={wasm,<this machine>}, written unzipped) and simulate that one FMU each of these ways: 'me' and 'cs' are its FMI 3.0 interfaces, 'sim' runs the translated model the way simulate() does. Comma-separated or repeated; each one fills <branch>-<name>, so --branch=wasm-jit with me,cs fills wasm-jit-me and wasm-jit-cs, beside the wasm-jit a job without this option fills. See configs/wasm-fmu-runners.json. Only for simCodeTarget=wasm-jit.")
 parser.add_argument('--solver', action='append', default=[], help="Build every model once and simulate it once per solver, so that testing another solver costs a simulation rather than a build. 'default' is the model's own solver and each further name is a -s the simulation is given; comma-separated or repeated. Every solver stores its results in the table its entry names, so --branch=master with default,cvode,gbode fills master, cvode and gbode. See configs/solvers.json.")
+parser.add_argument('--solverflags', default='', help="Simulate every model with the simflags of this configs/solvers.json entry, followed by --extrasimflags so that those can override them. Unlike --solver the results stay in --branch, and it works for every simCodeTarget, wasm-jit included.")
 parser.add_argument('--ulimitvmem', help="Virtual memory limit (in kB) (linux only)", type=int, default=8*1024*1024)
 parser.add_argument('--heavyjobs', help="How many of the models listed in --heavymodels may run at the same time. They are the handful that need gigabytes each, and running sixteen of them together is what takes the machine out of memory.", type=int, default=4)
 parser.add_argument('--heavymodels', help="JSON file naming the models that need gigabytes, as {library: {model: GiB}}. Hand-curated; heavy-models.py proposes what to put in it.", default="configs/heavy-models.json")
@@ -71,7 +72,7 @@ n_jobs = int(args.jobs)
 clean = not args.noclean
 runverbose = args.verbose
 extraflags = args.extraflags
-extrasimflags = args.extrasimflags
+extrasimflags = " ".join(f for f in (shared.solver(args.solverflags).get("simflags") if args.solverflags else "", args.extrasimflags) if f)
 ompython_omhome = args.ompython_omhome
 fmisimulators = shared.parseFmiSimulators(args.fmisimulator)
 # The first simulator is the one the single-simulator code paths use.
