@@ -78,7 +78,7 @@
     "procOMC":0,
     "procCCompile":0,
     "optlevel":"-O0 -march=native",
-    "extraCustomCommands":["setCommandLineOptions(\"--newBackend --resizableArrays --simCodeScalarize=false -d=arrayConnect\")"]
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend -d=arrayConnect\")"]
   },
   {
     "library":"ScalableTestGrids",
@@ -90,7 +90,7 @@
     "procOMC":0,
     "procCCompile":0,
     "optlevel":"-O0 -march=native",
-    "extraCustomCommands":["setCommandLineOptions(\"--newBackend --resizableArrays --simCodeScalarize=false -d=mergeComponents --generateDynamicJacobian=symbolic --maxSizeNonlinearTearing=400\")"]
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend -d=mergeComponents --generateDynamicJacobian=symbolic --maxSizeNonlinearTearing=400\")"]
   },
   {
     "library":"BL",
@@ -132,7 +132,7 @@
     "procOMC":0,
     "procCCompile":0,
     "optlevel":"-O0 -march=native",
-    "extraCustomCommands":["setCommandLineOptions(\"--newBackend --resizableArrays --simCodeScalarize=false\")"]
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend --resizableArrays\")"]
   },
   {
     "library":"BenchmarksForResizeableArrays",
@@ -153,7 +153,7 @@
     "procOMC":0,
     "procCCompile":0,
     "optlevel":"-O0 -march=native",
-    "extraCustomCommands":["setCommandLineOptions(\"--newBackend --resizableArrays --simCodeScalarize=false\")"]
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend --resizableArrays \")"]
   },
   {
     "library":"IDADistricts",
@@ -174,7 +174,7 @@
     "procOMC":0,
     "procCCompile":0,
     "optlevel":"-O0 -march=native",
-    "extraCustomCommands":["setCommandLineOptions(\"--newBackend --resizableArrays --simCodeScalarize=false\")"]
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend --resizableArrays\")"]
   },
   {
     "library":"LSGreenH2Production",
@@ -195,7 +195,7 @@
     "procOMC":0,
     "procCCompile":0,
     "optlevel":"-O0 -march=native",
-    "extraCustomCommands":["setCommandLineOptions(\"--newBackend --resizableArrays --simCodeScalarize=false\")"]
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend --resizableArrays\")"]
   },
   {
     "library":"LargeInterfaces",
