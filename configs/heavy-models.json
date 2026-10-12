@@ -4,12 +4,12 @@
   "BuildingSystems.Applications.DistrictSimulation.HCBC_DHN": 7.01,
   "BuildingSystems.HAM.HeatConduction.Examples.HeatConduction1DArray": 6.97
  },
- "Buildings_11": {
-  "Buildings.Controls.DemandResponse.Examples.ClientLBNL90": 6.51,
-  "Buildings.DHC.Examples.Combined.SeriesConstantFlow": 4.7,
-  "Buildings.DHC.Examples.Combined.SeriesVariableFlow": 4.71
- },
  "Buildings_12": {
+  "Buildings.Controls.DemandResponse.Examples.ClientLBNL90": 6.09,
+  "Buildings.DHC.Examples.Combined.SeriesConstantFlow": 4.65,
+  "Buildings.DHC.Examples.Combined.SeriesVariableFlow": 4.66
+ },
+ "Buildings_13": {
   "Buildings.Controls.DemandResponse.Examples.ClientLBNL90": 6.09,
   "Buildings.DHC.Examples.Combined.SeriesConstantFlow": 4.65,
   "Buildings.DHC.Examples.Combined.SeriesVariableFlow": 4.66
