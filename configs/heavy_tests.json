@@ -47,7 +47,7 @@
       "giturl":"https://github.com/casella/ScalableTestSuite-ref",
       "destination":"ReferenceFiles/ScalableTestSuite"
     },
-    "extraCustomCommands":["setCommandLineOptions(\"--newBackend --resizableArrays --simCodeScalarize=false -d=arrayConnect\")"]
+    "extraCustomCommands":["setCommandLineOptions(\"--newBackend -d=arrayConnect\")"]
   },
   {
     "library":"LargeTestSuite",
@@ -61,18 +61,24 @@
       "LargeTestSuite.Elementary.SimpleODE.CascadedFirstOrder_N_204800":690,
       "LargeTestSuite.Elementary.SimpleODE.CascadedFirstOrder_N_409600":990,
       "LargeTestSuite.Elementary.SimpleODE.CascadedFirstOrder_N_51200":330,
-      "LargeTestSuite.Mechanical.HarmonicOscillator.HarmonicOscillator_N_1638400":570,
-      "LargeTestSuite.Mechanical.HarmonicOscillator.HarmonicOscillator_N_819200":510,
-      "LargeTestSuite.Thermal.Advection.SimpleAdvection_N_12800":900,
+      "LargeTestSuite.Mechanical.HarmonicOscillator.HarmonicOscillator_N_1638400":250,
+      "LargeTestSuite.Mechanical.HarmonicOscillator.HarmonicOscillator_N_3276800":500,
+      "LargeTestSuite.Mechanical.HarmonicOscillator.HarmonicOscillator_N_6553600":1000,
+      "LargeTestSuite.Thermal.Advection.AdvectionReaction_N_204800":600,
+      "LargeTestSuite.Thermal.Advection.SimpleAdvection_N_204800":300,
+      "LargeTestSuite.Thermal.Advection.SimpleAdvection_N_409600":300,
       "LargeTestSuite.Thermal.HeatConduction.OneDHeatTransferTI_FD_N_1310720":360,
       "LargeTestSuite.Thermal.HeatConduction.OneDHeatTransferTT_FD_N_1310720":360,
-      "LargeTestSuite.Thermal.HeatExchanger.CocurrentHeatExchangerEquations_N_1280":420,
-      "LargeTestSuite.Thermal.HeatExchanger.CocurrentHeatExchangerEquations_N_2560":420,
-      "LargeTestSuite.Thermal.HeatExchanger.CocurrentHeatExchangerEquations_N_5120":390,
-      "LargeTestSuite.Thermal.HeatExchanger.CocurrentHeatExchangerEquations_N_81920":660,
-      "LargeTestSuite.Thermal.HeatExchanger.CounterCurrentHeatExchangerEquations_N_1280":330,
-      "LargeTestSuite.Thermal.HeatExchanger.CounterCurrentHeatExchangerEquations_N_2560":450,
-      "LargeTestSuite.Thermal.HeatExchanger.CounterCurrentHeatExchangerEquations_N_81920":660
+      "LargeTestSuite.Thermal.HeatConduction.OneDHeatTransferTI_FD_N_2621440":700,
+      "LargeTestSuite.Thermal.HeatConduction.OneDHeatTransferTT_FD_N_2621440":700,
+      "LargeTestSuite.Thermal.HeatConduction.OneDHeatTransferTI_Modelica_N_1310720":500,
+      "LargeTestSuite.Thermal.HeatConduction.OneDHeatTransferTI_Modelica_N_2621440":1000,
+      "LargeTestSuite.Thermal.HeatConduction.OneDHeatTransferTT_Modelica_N_1310720":500,
+      "LargeTestSuite.Thermal.HeatConduction.OneDHeatTransferTT_Modelica_N_2621440":1000,
+      "LargeTestSuite.Thermal.HeatExchanger.CocurrentHeatExchangerEquations_N_40960":300,
+      "LargeTestSuite.Thermal.HeatExchanger.CocurrentHeatExchangerEquations_N_81920":1000,
+      "LargeTestSuite.Thermal.HeatExchanger.CounterCurrentHeatExchangerEquations_N_40960":300,
+      "LargeTestSuite.Thermal.HeatExchanger.CounterCurrentHeatExchangerEquations_N_81920":1000
     },
     "ulimitMemory":62914560,
     "procOMC":0,
