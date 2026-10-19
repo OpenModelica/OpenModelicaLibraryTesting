@@ -370,15 +370,15 @@ entry there (`simflags` is what is appended to the model's simulation flags,
 `--wasmfmu`, `--fmisimulator` and `--solver` each fan one build out into
 several result branches, so a job uses one of them, not several.
 
-### The old C simulation runtime
+### The Rust simulation runtime under the C code generator
 
-`--simCodeTarget=C` links `libSimulationRuntimeRust`; `--simCodeTarget=C.old`
-emits the same sources and links the old `libSimulationRuntimeC`, so a run
-against master differs in the simulation runtime and nothing else.
+`--simCodeTarget=C` links `libSimulationRuntimeC`; `--simCodeTarget=C+Rust`
+emits the same sources and links `libSimulationRuntimeRust`, so a run against
+master differs in the simulation runtime and nothing else.
 
 ```bash
-./test.py --branch=c-old --extraflags='--simCodeTarget=C.old' configs/myConf.json
-./report.py --branches="master c-old"
+./test.py --branch=c-plus-rust --extraflags='--simCodeTarget=C+Rust' configs/myConf.json
+./report.py --branches="master c-plus-rust"
 ```
 
 The Jenkins job lists it as a column of the default overview.html.

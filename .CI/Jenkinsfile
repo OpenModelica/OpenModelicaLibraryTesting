@@ -36,7 +36,7 @@ pipeline {
     booleanParam(name: 'wasm_jit', defaultValue: false, description: 'master branch, with --simCodeTarget=wasm-jit (ryzen-9950x). Every model is translated and simulated the way simulate() does, filling wasm-jit. This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'wasm_web', defaultValue: false, description: 'master branch, with --simCodeTarget=wasm-jit (ryzen-9950x), simulated the way the web omc does: the driver and the linear and nonlinear solvers in wasm, the in-wasm libm, and external "C" only from prebuilt wasm libraries. Fills wasm-web. This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'wasm_fmu', defaultValue: false, description: 'master branch, with --simCodeTarget=wasm-jit (ryzen-9950x). Every model is exported once as an unzipped wasm FMU and simulated through both of its FMI 3.0 interfaces, filling wasm-jit-me (Model Exchange) and wasm-jit-cs (Co-Simulation). This is an experimental job that does not run on a fixed schedule.')
-    booleanParam(name: 'c_old', defaultValue: false, description: 'master branch, with --simCodeTarget=C.old, filling c-old (ryzen-9950x). The C code generator emits what it does for --simCodeTarget=C; the executable links the old libSimulationRuntimeC instead of libSimulationRuntimeRust, so the difference against master is the simulation runtime alone. This is an experimental job that does not run on a fixed schedule.')
+    booleanParam(name: 'c_plus_rust', defaultValue: false, description: 'master branch, with --simCodeTarget=C+Rust, filling c-plus-rust (ryzen-9950x). The C code generator emits what it does for --simCodeTarget=C; the executable links libSimulationRuntimeRust instead of libSimulationRuntimeC, so the difference against master is the simulation runtime alone. This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'heavy_tests', defaultValue: false, description: 'master branch, runs one test at a time. That is, no parallel launching of tests. omc will use multiple threads for each test (-n=1 is not set unlike the other regression tests.), (r7945). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'heavy_tests_wasm', defaultValue: false, description: 'heavy_tests with --simCodeTarget=wasm-jit, filling heavy_tests_wasm (r7945). Its results are in the heavy_tests report. This is an experimental job that does not run on a fixed schedule.')
 
@@ -418,7 +418,7 @@ pipeline {
           }
         }
       }
-      stage('C.old') {
+      stage('C+Rust') {
         agent {
           node {
             label 'ryzen-9950x'
@@ -428,10 +428,10 @@ pipeline {
         options { skipDefaultCheckout() }
         when {
           beforeAgent true
-          expression { params.c_old }
+          expression { params.c_plus_rust }
         }
         steps {
-          runRegressiontest('master', 'c-old', 'setCommandLineOptions("--simCodeTarget=C.old")', '', false, '', '', false, false)
+          runRegressiontest('master', 'c-plus-rust', 'setCommandLineOptions("--simCodeTarget=C+Rust")', '', false, '', '', false, false)
         }
       }
       stage('generateSymbolicJacobian') {
@@ -545,7 +545,7 @@ pipeline {
       }
       when {
         beforeAgent true
-        expression { params.v1_25 || params.v1_26 || params.v1_27 || params.master || params.conversion_script || params.report_ryzen_5950x_1 || params.report_ryzen_5950x_2 || params.newInst_newBackend || params.generateSymbolicJacobian || params.heavy_tests || params.heavy_tests_wasm || params.fmi_v1_25 || params.fmi_v1_26 || params.fmi_v1_27 || params.fmi_master || params.fmpy_fmi_v1_25 || params.fmpy_fmi_v1_26 || params.fmpy_fmi_v1_27 || params.fmpy_fmi_master || params.newInst_daeMode || params.newBackend_daeMode || params.oldInst || params.cpp || params.solvers || params.wasm_jit || params.wasm_fmu || params.wasm_web || params.c_old}
+        expression { params.v1_25 || params.v1_26 || params.v1_27 || params.master || params.conversion_script || params.report_ryzen_5950x_1 || params.report_ryzen_5950x_2 || params.newInst_newBackend || params.generateSymbolicJacobian || params.heavy_tests || params.heavy_tests_wasm || params.fmi_v1_25 || params.fmi_v1_26 || params.fmi_v1_27 || params.fmi_master || params.fmpy_fmi_v1_25 || params.fmpy_fmi_v1_26 || params.fmpy_fmi_v1_27 || params.fmpy_fmi_master || params.newInst_daeMode || params.newBackend_daeMode || params.oldInst || params.cpp || params.solvers || params.wasm_jit || params.wasm_fmu || params.wasm_web || params.c_plus_rust}
       }
       environment {
         GITBRANCHES = 'maintenance/v1.20 maintenance/v1.21 maintenance/v1.22 maintenance/v1.23 maintenance/v1.24 maintenance/v1.25 maintenance/v1.26 maintenance/v1.27 master newInst-newBackend'
@@ -555,7 +555,7 @@ pipeline {
         GITBRANCHES_NEWBACKEND_DAE = 'newBackend-daeMode'
         GITBRANCHES_CPP = 'v1.19-cpp v1.20-cpp v1.21-cpp v1.22-cpp v1.23-cpp v1.24-cpp v1.25-cpp cpp v1.26-cpp v1.27-cpp'
         GITBRANCHES_WASM_JIT = 'wasm-jit-me wasm-jit-cs wasm-jit wasm-web'
-        GITBRANCHES_C_OLD = 'c-old'
+        GITBRANCHES_C_PLUS_RUST = 'c-plus-rust'
         GITBRANCHES_SPECIAL = 'master newInst-newBackend'
         PYTHONIOENCODING = 'utf-8'
         IDA_EMAIL = credentials('IDA email')
@@ -576,8 +576,8 @@ pipeline {
         '''
         sh './clean-empty-omcversion-dates.py'
 
-        sh "./all-reports.py --email --omcgitdir=OpenModelica ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT} ${env.GITBRANCHES_C_OLD} conversion heavy_tests heavy_tests_wasm generateSymbolicJacobian gbode cvode ida"
-        sh "./all-plots.py ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT} ${env.GITBRANCHES_C_OLD} conversion heavy_tests heavy_tests_wasm generateSymbolicJacobian gbode cvode ida"
+        sh "./all-reports.py --email --omcgitdir=OpenModelica ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT} ${env.GITBRANCHES_C_PLUS_RUST} conversion heavy_tests heavy_tests_wasm generateSymbolicJacobian gbode cvode ida"
+        sh "./all-plots.py ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT} ${env.GITBRANCHES_C_PLUS_RUST} conversion heavy_tests heavy_tests_wasm generateSymbolicJacobian gbode cvode ida"
 
         // Recorded and announced only once they are up: a report the database
         // knows about is never generated again, so one that a later failure in
@@ -649,7 +649,7 @@ pipeline {
         sh "./report.py --branches='${env.GITBRANCHES_CPP}' configs/conf.json"
         sh "mv overview.html overview-c++.html"
 
-        sh "./report.py --branches='${env.GITBRANCHES} ${env.GITBRANCHES_C_OLD}' configs/conf.json"
+        sh "./report.py --branches='${env.GITBRANCHES} ${env.GITBRANCHES_C_PLUS_RUST}' configs/conf.json"
 
         sh 'date'
         sh 'find overview*.html history -type f | wc -l'

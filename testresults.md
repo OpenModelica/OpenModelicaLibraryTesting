@@ -10,10 +10,10 @@
   improvements in green.
 
   - [Default settings](https://libraries.openmodelica.org/branches/overview.html):
-    simulation with the C code generator and default settings. Its `c-old`
-    column is master with `--simCodeTarget=C.old`: the same generated C sources
-    linked against the old `libSimulationRuntimeC` instead of the Rust
-    simulation runtime
+    simulation with the C code generator and default settings. Its `c-plus-rust`
+    column is master with `--simCodeTarget=C+Rust`: the same generated C sources
+    linked against the Rust simulation runtime `libSimulationRuntimeRust`
+    instead of `libSimulationRuntimeC`
   - [daeMode](https://libraries.openmodelica.org/branches/overview-dae.html):
     simulation with daeMode (compiler flag
     [--daeMode](https://openmodelica.org/doc/OpenModelicaUsersGuide/latest/omchelptext.html#omcflag-daemode))
