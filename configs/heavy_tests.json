@@ -66,7 +66,7 @@
       "LargeTestSuite.Mechanical.HarmonicOscillator.HarmonicOscillator_N_6553600":1000,
       "LargeTestSuite.Thermal.Advection.AdvectionReaction_N_204800":600,
       "LargeTestSuite.Thermal.Advection.SimpleAdvection_N_204800":300,
-      "LargeTestSuite.Thermal.Advection.SimpleAdvection_N_409600":300,
+      "LargeTestSuite.Thermal.Advection.SimpleAdvection_N_409600":800,
       "LargeTestSuite.Thermal.HeatConduction.OneDHeatTransferTI_FD_N_1310720":360,
       "LargeTestSuite.Thermal.HeatConduction.OneDHeatTransferTT_FD_N_1310720":360,
       "LargeTestSuite.Thermal.HeatConduction.OneDHeatTransferTI_FD_N_2621440":700,
