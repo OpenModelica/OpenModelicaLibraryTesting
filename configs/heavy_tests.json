@@ -83,7 +83,7 @@
     "ulimitMemory":62914560,
     "procOMC":0,
     "procCCompile":0,
-    "optlevel":"-O0 -march=native",
+    "optlevel":"-O3 -march=native",
     "extraCustomCommands":["setCommandLineOptions(\"--newBackend --resizableArrays -d=arrayConnect\")"]
   },
   {
