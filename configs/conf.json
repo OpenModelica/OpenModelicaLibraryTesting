@@ -398,6 +398,11 @@
     "extraCustomCommands":["setCFlags(getCFlags() + \" -Wno-error=int-conversion\")"]
   },
   {
+    "library":"IDADistricts",
+    "libraryVersion":"main",
+    "optlevel":"-O0 -march=native"
+  },
+{
     "library":"IDEAS"
   },
   {
