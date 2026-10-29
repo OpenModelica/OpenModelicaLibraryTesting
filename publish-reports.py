@@ -50,6 +50,7 @@ if emails:
     missing_plain = "Report asks for missing branches which we ignored: %s\n" % ", ".join(pending["missing_branches"])
     missing_html = ("%s %s %s" % ("<p style=\"color:red;\">", missing_plain, "</p"))
 
+  sent = 0
   for email in sorted(emails.keys()):
     msg = EmailMessage()
     msg['Subject'] = 'OpenModelica Library Testing Regressions'
@@ -73,8 +74,13 @@ The following reports contain regressions your account was involved with:
       s.starttls()
       s.ehlo()
       s.login(os.environ["IDA_EMAIL_USR"],os.environ["IDA_EMAIL_PSW"])
-      s.send_message(msg)
-  print("Sent %d emails" % len(emails))
+      try:
+        s.send_message(msg)
+      except smtplib.SMTPRecipientsRefused as e:
+        print("Skipping refused address %s: %s" % (email, e.recipients))
+        continue
+    sent += 1
+  print("Sent %d of %d emails" % (sent, len(emails)))
 
 if not args.keep:
   os.remove(args.pending)

@@ -282,7 +282,7 @@ for branch in branches:
         except:
           pass
         for email in [email.strip() for email in subprocess.check_output(["git", "log", '--pretty=%ae', "%s..%s" % (v1,v2)], cwd=omcgitdir).decode("utf-8").split("\n")]:
-          if "@" not in email:
+          if "@" not in email or "noreply" in email:
             continue
           # adrpo: if email domain doesn't have "." in it, skip it
           if "." not in email[email.find("@"):]:
