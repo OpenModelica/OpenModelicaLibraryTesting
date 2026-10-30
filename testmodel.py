@@ -12,7 +12,7 @@ import zmq
 from monotonic import monotonic
 import OMPython
 from OMPython import FindBestOMCSession, OMCSession, OMCSessionZMQ
-import shared, glob
+import shared, glob, zipfile
 
 parser = argparse.ArgumentParser(description='OpenModelica library testing tool helper (single model)')
 parser.add_argument('config')
@@ -713,6 +713,20 @@ def simulateCmd(resimulate):
 
 # TODO: Detect and handle the case where RT_CLOCK is not available in OMC
 total_before = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_SIMULATE_TOTAL)")
+
+# The FMU is built once and simulated with every tool the job asked for, so
+# that testing FMPy no longer means building the same FMU a second time.  The
+# tools are described in configs/fmi-simulators.json.
+fmisimulator = conf.get("fmisimulator")
+fmisimulators = shared.parseFmiSimulators(conf.get("fmisimulators")) if conf.get("fmi") else []
+if conf.get("fmi") and not fmisimulators and fmisimulator:
+  fmisimulators = shared.parseFmiSimulators([fmisimulator])
+
+if conf.get("fmi") and any(shared.fmiSimulator(name).get("fmiFlags", {}).get("s") == "cvode" for (name, _) in fmisimulators):
+  with open(errFile, 'a+') as fp:
+    fp.write("Running command: setCommandLineOptions(\"--fmiFlags=s:cvode\")\n")
+  sendExpressionOldOrNew('setCommandLineOptions("--fmiFlags=s:cvode")')
+
 start=monotonic()
 timeout = conf["ulimitOmc"]
 # If the command has to be killed there is no way to tell which phase it was in,
@@ -847,13 +861,6 @@ except TimeoutError as e:
 writeResult()
 # Do the simulation
 
-# The FMU is built once and simulated with every tool the job asked for, so
-# that testing FMPy no longer means building the same FMU a second time.  The
-# tools are described in configs/fmi-simulators.json.
-fmisimulator = conf.get("fmisimulator")
-fmisimulators = shared.parseFmiSimulators(conf.get("fmisimulators")) if conf.get("fmi") else []
-if conf.get("fmi") and not fmisimulators and fmisimulator:
-  fmisimulators = shared.parseFmiSimulators([fmisimulator])
 wasmfmurunners = shared.parseWasmFmuRunners(conf.get("wasmfmurunners")) if useWasmFmu else []
 # The model is built once and its executable run once per solver; the solvers are
 # described in configs/solvers.json.
@@ -863,6 +870,25 @@ if daeMode:
 # One build, several runs: an FMU simulated by several tools, a wasm FMU run
 # several ways and a model run by several solvers fan out the same way.
 runners = fmisimulators or wasmfmurunners or solverRunners
+
+def fmuWithFlags(name):
+  """The FMU a simulator runs: the one built, or a copy whose flags file holds
+  the fmiFlags of its entry, from which the C runtime picks its CS solver."""
+  prefix = conf["fileName"].replace(".","_")
+  fmu = "%s.fmu" % prefix
+  flags = shared.fmiSimulator(name).get("fmiFlags")
+  if not flags:
+    return fmu
+  copy = "%s_%s.fmu" % (prefix, name)
+  flagsFile = "resources/%s_flags.json" % prefix
+  with zipfile.ZipFile(fmu) as src, zipfile.ZipFile(copy, "w") as dst:
+    for item in src.infolist():
+      if item.filename != flagsFile:
+        dst.writestr(item, src.read(item))
+    dst.writestr(flagsFile, "{\n%s\n}\n" % ",\n".join('  "%s" : "%s"' % kv for kv in flags.items()), zipfile.ZIP_DEFLATED)
+  return copy
+
+fmus = dict((name, fmuWithFlags(name)) for (name, _) in fmisimulators)
 
 def runnerSuffix(name):
   """What tells the files of one runner from those of another. The first one
@@ -915,7 +941,8 @@ def simulateFmu(name, command, resFile, simFile):
   with open("%s.tmpfiles" % conf["fileName"], "a+") as fp:
     fp.write("%s\n" % (os.path.join(runDir, fmitmpdir) if runDir else fmitmpdir))
   cmd = shared.fmiSimulatorCommand(name, command,
-                                   fmu=fromRunnerDir(runDir, "%s.fmu" % conf["fileName"].replace(".","_")),
+                                   fmu=fromRunnerDir(runDir, fmus[name]),
+                                   interface=shared.fmiSimulator(name).get("interface", "") if conf["fmuType"] == "me_cs" else "",
                                    result=fromRunnerDir(runDir, resFile),
                                    requestedResult=fromRunnerDir(runDir, resFile) if outputFormat != "empty" else "",
                                    tempDir=fmitmpdir, startTime=startTime, stopTime=stopTime,

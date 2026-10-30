@@ -26,7 +26,7 @@ parser = argparse.ArgumentParser(description='OpenModelica library testing tool'
 parser.add_argument('configs', nargs='*')
 parser.add_argument('--branch', default='master')
 parser.add_argument('--fmi', default=False)
-parser.add_argument('--fmuType', default='me', help="FMU type: 'me' for Model Exchange, 'cs' for Co-Simulation.")
+parser.add_argument('--fmuType', default='me', help="FMU type: 'me' for Model Exchange, 'cs' for Co-Simulation, 'me_cs' for both; the interface of configs/fmi-simulators.json then says which one a simulator runs.")
 parser.add_argument('--output', default='')
 parser.add_argument('--docker', default='')
 parser.add_argument('--libraries', help="Directory omc will search in to load system libraries/libraries to test.", default='')
