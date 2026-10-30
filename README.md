@@ -269,12 +269,33 @@ are the ones that simulator produced.
 
 Only the simulator may differ between results that share an FMU. Anything that
 changes the FMU itself - a different compiler, a different library, a different
-`--fmuType` or `--fmiFlags` - is a different job, which is why the Co-Simulation
-jobs with CVODE are not merged with the Model Exchange ones.
+`--fmuType` or `--fmiFlags` - is a different job.
 
-In Jenkins the parameters keep their meaning: `fmi_v1_27` asks for OMSimulator
-and `fmpy_fmi_v1_27` for FMPy. Ticking both runs one job that builds every FMU
-once and simulates it with both; ticking one runs that tool alone.
+The one exception is the Co-Simulation solver of the C runtime. An FMU reads it
+from `resources/<prefix>_flags.json` when it is instantiated, so an entry with
+`fmiFlags` runs a copy of the FMU with that file replaced. Build the FMU with
+`--fmuType=me_cs` and one build covers both interfaces and both solvers:
+
+```bash
+./test.py --branch=v1.27-fmi --fmi=true --fmuType=me_cs \
+          --fmisimulator=OMSimulator=/path/to/OMSimulator \
+          --fmisimulator=OMSimulator-cs-cvode=/path/to/OMSimulator \
+          --fmisimulator=OMSimulator-cs-euler=/path/to/OMSimulator \
+          --fmisimulator='python3 -m fmpy' \
+          configs/myConf.json
+```
+
+| simulator | interface | branch |
+| --- | --- | --- |
+| `OMSimulator` | Model Exchange | `v1.27-fmi` |
+| `OMSimulator-cs-cvode` | Co-Simulation, CVODE | `v1.27-fmi-cs-cvode` |
+| `OMSimulator-cs-euler` | Co-Simulation, Euler | `v1.27-fmi-cs-euler` |
+| `fmpy` | Model Exchange | `v1.27-fmi-fmpy` |
+
+In Jenkins the parameters keep their meaning: `fmi_v1_27` asks for the three
+OMSimulator runs and `fmpy_fmi_v1_27` for FMPy, and either builds `me_cs` FMUs.
+Ticking both runs one job that builds every FMU once and simulates it with all
+four; ticking one runs those tools alone.
 
 ### Adding an FMI simulator
 
@@ -302,8 +323,15 @@ Adding one is an entry there and no change to any script:
 - `resultExtension` is what the tool writes, so that the comparison against the
   reference file knows what to read.
 - `versionArgument` prints the version, which is recorded with the results.
-- `branchSuffix` overrides the `-<name>` a tool adds to the branch. Only
-  OMSimulator needs it, with `""`.
+- `branchSuffix` overrides the `-<name>` a tool adds to the branch. OMSimulator
+  has `""`.
+- `interface`, `me` or `cs`, is the interface the tool runs of an `me_cs` FMU,
+  available to the templates as `{interface}`. It is empty for an FMU with one
+  interface, which the tool then runs.
+- `fmiFlags` makes the tool run a copy of the FMU whose
+  `resources/<prefix>_flags.json` holds these flags. `"s": "cvode"` in any entry
+  of the job builds the FMU with `--fmiFlags=s:cvode`, which links CVODE into it;
+  the Euler solver needs nothing linked.
 - `untested` marks an entry nobody has run yet; the run then says so instead of
   failing every model with a puzzling error. Remove it once it works.
 

@@ -15,20 +15,56 @@
     "resultExtension   what the tool writes, so the verification knows what to compare.",
     "versionArgument   the flag that prints the version, recorded with the results.",
     "branchSuffix      appended to --branch to get the table of this simulator; the default is",
-    "                  -<name>, so OMSimulator is the only one that needs to say anything here.",
+    "                  -<name>.",
+    "interface         me or cs: which interface the tool runs of an FMU built with --fmuType=me_cs,",
+    "                  available to the templates as {interface}. It is empty for an FMU exporting",
+    "                  one interface, which the tool then runs; OMSimulator refuses --mode for it.",
+    "fmiFlags          what the tool runs is a copy of the FMU whose resources/<prefix>_flags.json",
+    "                  holds these flags instead, which is how the Co-Simulation solver of the C",
+    "                  runtime is picked without building the FMU again. s:cvode in any of them",
+    "                  builds the FMU with --fmiFlags=s:cvode, which links CVODE into it.",
     "untested          set it while nobody has run the entry yet; the run then says so."
   ],
   "OMSimulator": {
     "branchSuffix": "",
+    "interface": "me",
     "resultExtension": "mat",
     "versionArgument": "--version",
-    "arguments": "{resultArgument} --stripRoot --tempDir={tempDir} --startTime={startTime:g} --stopTime={stopTime:g}{stepSizeArgument} --timeout={timeout:.0f} --tolerance={tolerance:g} {fmu}",
+    "arguments": "{resultArgument} --stripRoot --tempDir={tempDir} --startTime={startTime:g} --stopTime={stopTime:g}{stepSizeArgument}{modeArgument} --timeout={timeout:.0f} --tolerance={tolerance:g} {fmu}",
     "optionalArguments": {
       "resultArgument": "--resultFile={requestedResult}",
-      "stepSizeArgument": " --stepSize={stepSize:g}"
+      "stepSizeArgument": " --stepSize={stepSize:g}",
+      "modeArgument": " --mode={interface}"
+    }
+  },
+  "OMSimulator-cs-cvode": {
+    "branchSuffix": "-cs-cvode",
+    "interface": "cs",
+    "fmiFlags": {"s": "cvode"},
+    "resultExtension": "mat",
+    "versionArgument": "--version",
+    "arguments": "{resultArgument} --stripRoot --tempDir={tempDir} --startTime={startTime:g} --stopTime={stopTime:g}{stepSizeArgument}{modeArgument} --timeout={timeout:.0f} --tolerance={tolerance:g} {fmu}",
+    "optionalArguments": {
+      "resultArgument": "--resultFile={requestedResult}",
+      "stepSizeArgument": " --stepSize={stepSize:g}",
+      "modeArgument": " --mode={interface}"
+    }
+  },
+  "OMSimulator-cs-euler": {
+    "branchSuffix": "-cs-euler",
+    "interface": "cs",
+    "fmiFlags": {"s": "euler"},
+    "resultExtension": "mat",
+    "versionArgument": "--version",
+    "arguments": "{resultArgument} --stripRoot --tempDir={tempDir} --startTime={startTime:g} --stopTime={stopTime:g}{stepSizeArgument}{modeArgument} --timeout={timeout:.0f} --tolerance={tolerance:g} {fmu}",
+    "optionalArguments": {
+      "resultArgument": "--resultFile={requestedResult}",
+      "stepSizeArgument": " --stepSize={stepSize:g}",
+      "modeArgument": " --mode={interface}"
     }
   },
   "fmpy": {
+    "interface": "me",
     "resultExtension": "csv",
     "versionArgument": "--version",
     "command": "{simulator} simulate",
