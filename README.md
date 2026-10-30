@@ -292,10 +292,8 @@ from `resources/<prefix>_flags.json` when it is instantiated, so an entry with
 | `OMSimulator-cs-euler` | Co-Simulation, Euler | `v1.27-fmi-cs-euler` |
 | `fmpy` | Model Exchange | `v1.27-fmi-fmpy` |
 
-In Jenkins the parameters keep their meaning: `fmi_v1_27` asks for the three
-OMSimulator runs and `fmpy_fmi_v1_27` for FMPy, and either builds `me_cs` FMUs.
-Ticking both runs one job that builds every FMU once and simulates it with all
-four; ticking one runs those tools alone.
+In Jenkins, `fmi_v1_26`, `fmi_v1_27` and `fmi_master` each run this job for
+their branch, with all four simulators.
 
 ### Adding an FMI simulator
 

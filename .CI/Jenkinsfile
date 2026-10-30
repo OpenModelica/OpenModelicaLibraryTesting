@@ -7,17 +7,9 @@ pipeline {
     booleanParam(name: 'v1_27', defaultValue: false, description: 'maintenance/v1.27 branch (ryzen-5950x-1)')
     booleanParam(name: 'master', defaultValue: false, description: 'master branch, simulated with the solver each model asks for, filling master (ryzen-9950x).')
 
-    booleanParam(name: 'fmi_v1_26', defaultValue: false, description: 'maintenance/v1.26 branch with FMI, simulated by OMSimulator: Model Exchange filling v1.26-fmi, Co-Simulation with CVODE filling v1.26-fmi-cs-cvode and with Euler filling v1.26-fmi-cs-euler (ryzen-5950x-2). Ticking it together with fmpy_fmi_v1_26 runs one job that builds every FMU once and simulates it with all of them.')
-    booleanParam(name: 'fmi_v1_27', defaultValue: false, description: 'maintenance/v1.27 branch with FMI, simulated by OMSimulator: Model Exchange filling v1.27-fmi, Co-Simulation with CVODE filling v1.27-fmi-cs-cvode and with Euler filling v1.27-fmi-cs-euler (ryzen-5950x-2). Ticking it together with fmpy_fmi_v1_27 runs one job that builds every FMU once and simulates it with all of them.')
-    booleanParam(name: 'fmi_master', defaultValue: false, description: 'master branch with FMI, simulated by OMSimulator: Model Exchange filling master-fmi, Co-Simulation with CVODE filling master-fmi-cs-cvode and with Euler filling master-fmi-cs-euler (ryzen-5950x-2). Ticking it together with fmpy_fmi_master runs one job that builds every FMU once and simulates it with all of them.')
-
-    booleanParam(name: 'cs_fmu_cvode_v1_26', defaultValue: false, description: 'maintenance/v1.26 branch with CVODE CS FMUs running OMSimulator (ryzen-5950x-2)')
-    booleanParam(name: 'cs_fmu_cvode_v1_27', defaultValue: false, description: 'maintenance/v1.27 branch with CVODE CS FMUs running OMSimulator (ryzen-5950x-2)')
-    booleanParam(name: 'cs_fmu_cvode_master', defaultValue: false, description: 'master branch with CVODE CS FMUs running OMSimulator (ryzen-5950x-2)')
-
-    booleanParam(name: 'fmpy_fmi_v1_26', defaultValue: false, description: 'maintenance/v1.26 branch with FMI, simulated by FMPy, filling v1.26-fmi-fmpy (ryzen-5950x-2). Ticking it together with fmi_v1_26 runs one job that builds every FMU once and simulates it with all of them.')
-    booleanParam(name: 'fmpy_fmi_v1_27', defaultValue: false, description: 'maintenance/v1.27 branch with FMI, simulated by FMPy, filling v1.27-fmi-fmpy (ryzen-5950x-2). Ticking it together with fmi_v1_27 runs one job that builds every FMU once and simulates it with all of them.')
-    booleanParam(name: 'fmpy_fmi_master', defaultValue: false, description: 'master branch with FMI, simulated by FMPy, filling master-fmi-fmpy (ryzen-5950x-2). Ticking it together with fmi_master runs one job that builds every FMU once and simulates it with all of them.')
+    booleanParam(name: 'fmi_v1_26', defaultValue: false, description: 'maintenance/v1.26 branch with FMI (ryzen-5950x-2). Every FMU is built once and simulated four ways: Model Exchange with OMSimulator filling v1.26-fmi and with FMPy filling v1.26-fmi-fmpy, Co-Simulation with OMSimulator and CVODE filling v1.26-fmi-cs-cvode and with Euler filling v1.26-fmi-cs-euler.')
+    booleanParam(name: 'fmi_v1_27', defaultValue: false, description: 'maintenance/v1.27 branch with FMI (ryzen-5950x-2). Every FMU is built once and simulated four ways: Model Exchange with OMSimulator filling v1.27-fmi and with FMPy filling v1.27-fmi-fmpy, Co-Simulation with OMSimulator and CVODE filling v1.27-fmi-cs-cvode and with Euler filling v1.27-fmi-cs-euler.')
+    booleanParam(name: 'fmi_master', defaultValue: false, description: 'master branch with FMI (ryzen-5950x-2). Every FMU is built once and simulated four ways: Model Exchange with OMSimulator filling master-fmi and with FMPy filling master-fmi-fmpy, Co-Simulation with OMSimulator and CVODE filling master-fmi-cs-cvode and with Euler filling master-fmi-cs-euler.')
 
     booleanParam(name: 'newInst_daeMode', defaultValue: false, description: 'master branch, --daeMode with -d=newInst (ryzen-5950x-2)')
     booleanParam(name: 'newInst_newBackend', defaultValue: false, description: 'master branch, -d=newInst --newBackend, (ryzen-5950x-1)')
@@ -222,10 +214,10 @@ pipeline {
         options { skipDefaultCheckout() }
         when {
           beforeAgent true
-          expression { params.fmi_v1_26 || params.fmpy_fmi_v1_26 }
+          expression { params.fmi_v1_26 }
         }
         steps {
-          runRegressiontest('maintenance/v1.26', 'v1.26-fmi', '', omsimulatorHash(), false, '', '', false, false, 0, 'configs/conf.json', '', '', fmiSimulators(params.fmi_v1_26, params.fmpy_fmi_v1_26))
+          runRegressiontest('maintenance/v1.26', 'v1.26-fmi', '', omsimulatorHash(), false, '', '', false, false, 0, 'configs/conf.json', '', '', fmiSimulators())
         }
       }
       stage('v1.27 FMI') {
@@ -238,10 +230,10 @@ pipeline {
         options { skipDefaultCheckout() }
         when {
           beforeAgent true
-          expression { params.fmi_v1_27 || params.fmpy_fmi_v1_27 }
+          expression { params.fmi_v1_27 }
         }
         steps {
-          runRegressiontest('maintenance/v1.27', 'v1.27-fmi', '', omsimulatorHash(), false, '', '', false, false, 0, 'configs/conf.json', '', '', fmiSimulators(params.fmi_v1_27, params.fmpy_fmi_v1_27))
+          runRegressiontest('maintenance/v1.27', 'v1.27-fmi', '', omsimulatorHash(), false, '', '', false, false, 0, 'configs/conf.json', '', '', fmiSimulators())
         }
       }
       stage('master FMI') {
@@ -254,59 +246,10 @@ pipeline {
         options { skipDefaultCheckout() }
         when {
           beforeAgent true
-          expression { params.fmi_master || params.fmpy_fmi_master }
+          expression { params.fmi_master }
         }
         steps {
-          runRegressiontest('master', 'master-fmi', '', 'origin/master', false, '', '', false, false, 0, 'configs/conf.json', '', '', fmiSimulators(params.fmi_master, params.fmpy_fmi_master))
-        }
-      }
-
-      stage('v1.26 CVODE CS-FMUs with OMSimulator') {
-        agent {
-          node {
-            label 'ryzen-5950x-2-1'
-            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
-          }
-        }
-        options { skipDefaultCheckout() }
-        when {
-          beforeAgent true
-          expression { params.cs_fmu_cvode_v1_26 }
-        }
-        steps {
-          runRegressiontest('maintenance/v1.26', 'v1.26-cs-fmu-cvode', 'setCommandLineOptions("--fmiFlags=s:cvode --fmuRuntimeDepends=modelica")', omsimulatorHash(), false, '', '', false, false)
-        }
-      }
-      stage('v1.27 CVODE CS-FMUs with OMSimulator') {
-        agent {
-          node {
-            label 'ryzen-5950x-2-1'
-            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
-          }
-        }
-        options { skipDefaultCheckout() }
-        when {
-          beforeAgent true
-          expression { params.cs_fmu_cvode_v1_27 }
-        }
-        steps {
-          runRegressiontest('maintenance/v1.27', 'v1.27-cs-fmu-cvode', 'setCommandLineOptions("--fmiFlags=s:cvode --fmuRuntimeDepends=modelica")', omsimulatorHash(), false, '', '', false, false)
-        }
-      }
-      stage('master CVODE CS-FMUs with OMSimulator') {
-        agent {
-          node {
-            label 'ryzen-5950x-2-1'
-            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
-          }
-        }
-        options { skipDefaultCheckout() }
-        when {
-          beforeAgent true
-          expression { params.cs_fmu_cvode_master }
-        }
-        steps {
-          runRegressiontest('master', 'master-cs-fmu-cvode', 'setCommandLineOptions("--fmiFlags=s:cvode --fmuRuntimeDepends=modelica")', 'origin/master', false, '', '', false, false)
+          runRegressiontest('master', 'master-fmi', '', 'origin/master', false, '', '', false, false, 0, 'configs/conf.json', '', '', fmiSimulators())
         }
       }
 
@@ -545,7 +488,7 @@ pipeline {
       }
       when {
         beforeAgent true
-        expression { params.v1_25 || params.v1_26 || params.v1_27 || params.master || params.conversion_script || params.report_ryzen_5950x_1 || params.report_ryzen_5950x_2 || params.newInst_newBackend || params.generateSymbolicJacobian || params.heavy_tests || params.heavy_tests_wasm || params.fmi_v1_25 || params.fmi_v1_26 || params.fmi_v1_27 || params.fmi_master || params.fmpy_fmi_v1_25 || params.fmpy_fmi_v1_26 || params.fmpy_fmi_v1_27 || params.fmpy_fmi_master || params.newInst_daeMode || params.newBackend_daeMode || params.oldInst || params.cpp || params.solvers || params.wasm_jit || params.wasm_fmu || params.wasm_web || params.c_plus_rust}
+        expression { params.v1_25 || params.v1_26 || params.v1_27 || params.master || params.conversion_script || params.report_ryzen_5950x_1 || params.report_ryzen_5950x_2 || params.newInst_newBackend || params.generateSymbolicJacobian || params.heavy_tests || params.heavy_tests_wasm || params.fmi_v1_25 || params.fmi_v1_26 || params.fmi_v1_27 || params.fmi_master || params.newInst_daeMode || params.newBackend_daeMode || params.oldInst || params.cpp || params.solvers || params.wasm_jit || params.wasm_fmu || params.wasm_web || params.c_plus_rust}
       }
       environment {
         GITBRANCHES = 'maintenance/v1.20 maintenance/v1.21 maintenance/v1.22 maintenance/v1.23 maintenance/v1.24 maintenance/v1.25 maintenance/v1.26 maintenance/v1.27 master newInst-newBackend'
@@ -916,14 +859,10 @@ def buildsWithCMake(branch) {
   *                             build and test.py happen inside it, and only the steps using the node's own
   *                             omc stay outside. Passing `''` runs the job on the node itself.
   */
-/* The FMI simulators a job runs, from the parameters that used to start one job each.
- * Both ticked is one job that builds every FMU once and simulates it with all of them,
+/* The FMI simulators of an FMI job, which builds every FMU once and simulates it with all of them,
  * filling <branch>-fmi, <branch>-fmi-cs-cvode, <branch>-fmi-cs-euler and <branch>-fmi-fmpy. */
-def fmiSimulators(boolean omsimulator, boolean fmpy) {
-  def simulators = []
-  if (omsimulator) simulators += ['OMSimulator', 'OMSimulator-cs-cvode', 'OMSimulator-cs-euler']
-  if (fmpy) simulators << 'fmpy'
-  return simulators
+def fmiSimulators() {
+  return ['OMSimulator', 'OMSimulator-cs-cvode', 'OMSimulator-cs-euler', 'fmpy']
 }
 
 /* The cmake flags of an omc that can translate to wasm-jit. The wasm-jit and
@@ -1003,11 +942,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
     }
   }
 
-  // A job that does not say which simulators it wants gets the one its name implies.
-  def simulators = fmiSimulators
-  if (simulators == null) {
-    simulators = name.contains('fmpy') ? ['fmpy'] : (omsHash ? ['OMSimulator'] : [])
-  }
+  def simulators = fmiSimulators ?: []
   FMI_TESTING_FLAG = ""
   SOLVER_FLAG = (solvers ?: []).collect { " --solver=${it}" }.join('')
   def omsSimulators = simulators.findAll { it.startsWith('OMSimulator') }
@@ -1060,12 +995,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
   }
 
   if (FMI_TESTING_FLAG) {
-    FMI_TESTING_FLAG = "--fmi=true${FMI_TESTING_FLAG} --default=ulimitExe=50"
-    if (name.contains('cvode')) {
-      FMI_TESTING_FLAG += " --fmuType=cs"
-    } else if (fmiSimulators != null) {
-      FMI_TESTING_FLAG += " --fmuType=me_cs"
-    }
+    FMI_TESTING_FLAG = "--fmi=true${FMI_TESTING_FLAG} --default=ulimitExe=50 --fmuType=me_cs"
   }
 
   // A pull request is fetched from GitHub itself: refs/pull/* is not on the
