@@ -44,21 +44,15 @@ simtime = {}
 
 missing_branches = []
 for branch in branches:
-  try:
+  one = None
+  if db.tableExists(branch):
     cursor.execute("SELECT date FROM %s ORDER BY date DESC LIMIT 1" % db.quote(branch))
     one = cursor.fetchone()
-    if one == None:
-      print("No such table '%s'; specify it using --branch=XXX when running test.py" % branch)
-      # ignore this table and continue
-      missing_branches.append(branch)
-      continue
-    else:
-      v = one[0]
-  except:    
+  if one is None:
     print("No such table '%s'; specify it using --branch=XXX when running test.py" % branch)
-    # ignore this table and continue
     missing_branches.append(branch)
     continue
+  v = one[0]
 
   dates_str[branch] = str(datetime.datetime.fromtimestamp(v).strftime('%Y-%m-%d %H:%M:%S'))
   db.createDateIndex(branch)
