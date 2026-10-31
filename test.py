@@ -8,7 +8,7 @@ import sys
 if (sys.version_info < (3, 0)):
   raise Exception("Python2 is no longer supported")
 
-import html, shutil, os, re, glob, time, argparse, datetime, math, platform, traceback
+import html, shutil, os, re, glob, time, argparse, datetime, math, platform, traceback, bisect
 from joblib import Parallel, delayed
 import simplejson as json
 import psutil, subprocess, threading, hashlib
@@ -1349,11 +1349,18 @@ def stageRootFor(simulator, suffix):
       pass
   return root
 
-def stagePublished(stageRoot, workspacePrefix, publishedPrefix, suffix):
-  """Link one model's results into the directory its branch is published from."""
+def stagePublished(stageRoot, workspaceFiles, workspacePrefix, publishedPrefix, suffix):
+  """Link one model's results into the directory its branch is published from.
+
+  workspaceFiles is the sorted listing of files/: a glob per model would read
+  the whole directory again for every model.
+  """
   if not suffix:
     return
-  for f in glob.glob(glob.escape(workspacePrefix) + "*"):
+  i = bisect.bisect_left(workspaceFiles, workspacePrefix)
+  while i < len(workspaceFiles) and workspaceFiles[i].startswith(workspacePrefix):
+    f = workspaceFiles[i]
+    i += 1
     published = os.path.join(stageRoot, publishedPrefix + f[len(workspacePrefix):])
     try:
       if os.path.exists(published):
@@ -1507,6 +1514,7 @@ for (resultBranch, runner) in resultBranches:
     simulator = simulatorKey(libname, runner)
     suffix = artifactSuffix(simulator)
     stageRoot = stageRootFor(simulator, suffix)
+    publishStartLib = monotonic()
     filesList = open(os.path.join(stageRoot, libname + ".files"), "w")
     filesList.write("/\n")
     filesList.write("/%s.html\n" % libname)
@@ -1518,7 +1526,7 @@ for (resultBranch, runner) in resultBranches:
       # the branch of a simulator holds its results under the plain name.
       workspace_prefix = "files/%s_%s%s" % (s[2],s[1],suffix)
       filename_prefix = "files/%s_%s" % (s[2],s[1])
-      stagePublished(stageRoot, workspace_prefix, filename_prefix, suffix)
+      stagePublished(stageRoot, workspaceFiles, workspace_prefix, filename_prefix, suffix)
       stageShared(stageRoot, "files/%s_%s" % (s[2],s[1]), suffix)
       if is_non_zero_file(workspace_prefix+".sim"):
         filesList.write("/%s.sim\n" % filename_prefix)
@@ -1606,7 +1614,6 @@ for (resultBranch, runner) in resultBranches:
     # move results by sync operations (not available under win)
     if result_location != "" and not isWin and not noSync:
       result_location_libname = "%s/%s" % (result_location, libname)
-      syncStart = monotonic()
       try:
         check_output_log(["rsync", "-aR", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", result_location_libname], cwd=stageRoot)
       except:
@@ -1614,7 +1621,7 @@ for (resultBranch, runner) in resultBranches:
         check_output_log(["rsync", "-aR", "--delete-excluded", "--include-from=%s.files" % libname, "--exclude=*", "./", result_location_libname], cwd=stageRoot)
       if (conf.get("referenceFiles") or "") != "" and dygraphs:
         check_output_log(["rsync", "-a", dygraphs, result_location_libname+"/files"])
-      syncTimes[libname] = monotonic() - syncStart
+      syncTimes[libname] = monotonic() - publishStartLib
     else:
       print("No Sync: result_location [%s] != "" and not isWin [%s] and not noSync [%s] : library: %s" % (result_location, isWin, noSync, libname))
 
@@ -1650,6 +1657,7 @@ for (resultBranch, runner) in resultBranches:
 
   publishable = [l for l in stats_by_libname.keys() if l not in skipped_libs and ranRunner(l, runner)]
   publishStart = monotonic()
+  workspaceFiles = sorted("files/" + f for f in os.listdir("files"))
   if result_location != "" and not isWin and not noSync:
     makeRemoteDirs(publishable)
 
@@ -1666,7 +1674,7 @@ for (resultBranch, runner) in resultBranches:
                       (delayed(publishLibraryReportingFailure)(libname) for libname in publishable) if f]
   print("Publishing %d libraries of %s: %s" % (len(publishable), resultBranch, friendlyStr(monotonic()-publishStart)))
   for (libname, t) in sorted(syncTimes.items(), key=lambda x: -x[1])[:5]:
-    print("  rsync %s: %s" % (libname, friendlyStr(t)))
+    print("  %s: %s" % (libname, friendlyStr(t)))
   sys.stdout.flush()
 
 if clean:
