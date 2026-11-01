@@ -217,7 +217,7 @@ pipeline {
           expression { params.fmi_v1_26 }
         }
         steps {
-          runRegressiontest('maintenance/v1.26', 'v1.26-fmi', '', omsimulatorHash(), false, '', '', false, false, 0, 'configs/conf.json', '', '', fmiSimulators())
+          runRegressiontest('maintenance/v1.26', 'v1.26-fmi', '', omsimulatorHash(), false, '', '', false, false, 0, 'configs/conf.json', '', '.CI/testing', fmiSimulators())
         }
       }
       stage('v1.27 FMI') {
@@ -233,7 +233,7 @@ pipeline {
           expression { params.fmi_v1_27 }
         }
         steps {
-          runRegressiontest('maintenance/v1.27', 'v1.27-fmi', '', omsimulatorHash(), false, '', '', false, false, 0, 'configs/conf.json', '', '', fmiSimulators())
+          runRegressiontest('maintenance/v1.27', 'v1.27-fmi', '', omsimulatorHash(), false, '', '', false, false, 0, 'configs/conf.json', '', '.CI/testing', fmiSimulators())
         }
       }
       stage('master FMI') {
@@ -249,7 +249,7 @@ pipeline {
           expression { params.fmi_master }
         }
         steps {
-          runRegressiontest('master', 'master-fmi', '', 'origin/master', false, '', '', false, false, 0, 'configs/conf.json', '', '', fmiSimulators())
+          runRegressiontest('master', 'master-fmi', '', 'origin/master', false, '', '', false, false, 0, 'configs/conf.json', '', '.CI/testing', fmiSimulators())
         }
       }
 
