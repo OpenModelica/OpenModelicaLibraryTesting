@@ -995,7 +995,7 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
   }
 
   if (FMI_TESTING_FLAG) {
-    FMI_TESTING_FLAG = "--fmi=true${FMI_TESTING_FLAG} --default=ulimitExe=50 --fmuType=me_cs"
+    FMI_TESTING_FLAG = "--fmi=true${FMI_TESTING_FLAG} --fmuType=me_cs"
   }
 
   // A pull request is fetched from GitHub itself: refs/pull/* is not on the
