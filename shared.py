@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import collections, re, os, signal, string, subprocess, threading, traceback
+import base64, collections, gzip, html, re, os, signal, string, subprocess, threading, traceback
 import simplejson as json
 
 # Windows has no SIGKILL, and no process group to signal instead; os.kill there
@@ -448,3 +448,20 @@ def branchForSimulator(branch, name):
   together or on their own.
   """
   return branch + fmiSimulator(name).get("branchSuffix", "-%s" % name)
+
+def writeDiffPage(prefix, title):
+  """Write prefix.html from prefix.mat and prefix.ref.mat, the differing
+  variables of a failed verification. The page holds both files, so that it
+  also works from a local disk and on servers that need a login.
+  """
+  files = {"result": prefix + ".mat", "reference": prefix + ".ref.mat"}
+  if not all(os.path.exists(f) for f in files.values()):
+    return
+  with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "diff.html.tpl")) as fin:
+    page = fin.read()
+  for key, f in files.items():
+    with open(f, "rb") as fin:
+      page = page.replace('"#%s#"' % key, '"%s"' % base64.b64encode(gzip.compress(fin.read())).decode())
+  page = page.replace("#title#", html.escape(title)).replace("#basename#", os.path.basename(prefix))
+  with open(prefix + ".html", "w") as fout:
+    fout.write(page)

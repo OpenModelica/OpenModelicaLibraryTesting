@@ -1175,10 +1175,11 @@ def verifyAgainstReference(resFile, prefix, stat):
       fp.write("\nVariables in the result:" )
       fp.write(",".join(resVars)+"\n")
     stat["diff"]["vars"]=diffVars
-    # Both files reduced to the differing variables: what the report's OMPlot
-    # link compares, instead of a CSV and an HTML page per variable.
+    # Both files reduced to the differing variables: what the page linked from
+    # the report plots, instead of a CSV and an HTML page per variable.
     filterDiffVars(resFile, prefix + ".mat", diffVars)
     filterDiffVars(referenceFile, prefix + ".ref.mat", diffVars)
+    shared.writeDiffPage(prefix, conf["modelName"])
 
 def filterDiffVars(inFile, outFile, diffVars):
   vars = ", ".join('"%s"' % v.replace('\\', '\\\\').replace('"', '\\"') for v in diffVars)
