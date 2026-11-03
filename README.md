@@ -149,6 +149,14 @@ different OpenModelica versions, according to the conditions of the
   "extraSimFlags": "-s=ida -nls=kinsol"
   ```
 
+  A library of data reconciliation models sets `"dataReconciliation": true`
+  (see [configs/dataReconciliation.json](./configs/dataReconciliation.json)):
+  the model's simulation flags, its `-sx` measurements included, are then
+  given to `translateModel` too, and the report the run writes (`<model>.html`
+  and the pages it links) is published in `files/<model>.dr/`, linked as
+  `(dr)` next to `(sim)`, with a *Data reconciliation* column in the library
+  page.
+
   Check [configs/conf.json](./configs/conf.json) for more.
 - If you used [.CI/installLibraries.mos](./.CI/installLibraries.mos) to test all
   libraries you'll need to install reference results and set environment

@@ -1321,6 +1321,31 @@ def checkNumSucceeded(numSucceeded, n):
   else:
     return "#FFCC66"
 
+def drLink(filename_prefix, data):
+  """The (dr) link to the report a data reconciliation run wrote, if it wrote one."""
+  if not (data.get("dr") or {}).get("report"):
+    return ""
+  return ' (<a href="%s.dr/%s.html">dr</a>)' % (filename_prefix, os.path.basename(filename_prefix))
+
+def drCell(conf, data):
+  """The Data reconciliation cell of a model, for the libraries tested with it."""
+  if not conf.get("dataReconciliation"):
+    return ""
+  dr = data.get("dr") or {}
+  if dr.get("reconciled"):
+    return '<td bgcolor="#00FF00">reconciled</td>'
+  if dr.get("report"):
+    return '<td bgcolor="#FFCC66">failed</td>'
+  return '<td bgcolor="#FFCC66">&nbsp;</td>'
+
+def drSummary(conf, stats):
+  """The header cell and the count of reconciled models for the library summary."""
+  if not conf.get("dataReconciliation"):
+    return ("", "", "")
+  n = sum(1 for s in stats if (s[3].get("dr") or {}).get("reconciled"))
+  return ("<th>Data reconciliation</th>", '<td bgcolor="%s">%d</td>' % ("#00FF00" if n == len(stats) else "#FFCC66", n),
+          "<th>Data reconciliation</th>")
+
 def checkPhase(phase, n):
   if phase >= n:
     return "#00FF00"
@@ -1533,15 +1558,19 @@ for (resultBranch, runner) in resultBranches:
       errPrefix = "files/%s_%s" % (s[2],s[1])
       if is_non_zero_file(errPrefix+".err"):
         filesList.write("/%s.err\n" % errPrefix)
+      if (s[3].get("dr") or {}).get("report"):
+        # The report of a data reconciliation run and the pages it links.
+        filesList.write("/%s.dr/***\n" % filename_prefix)
       if (s[3].get("diff") or {}).get("vars"):
         filesList.write("/%s.diff.mat\n" % filename_prefix)
         filesList.write("/%s.diff.ref.mat\n" % filename_prefix)
     filesList.close()
-    testsHTML = "\n".join(['<tr><td>%s%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td>%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td>%s</td></tr>\n' %
+    testsHTML = "\n".join(['<tr><td>%s%s%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td>%s<td bgcolor="%s">%s</td><td>%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td>%s</td></tr>\n' %
       (lambda filename_prefix, errPrefix, diff:
         (
         ('<a href="%s">%s</a>' % (errPrefix + ".err", html.escape(s[1]))) if is_non_zero_file(errPrefix + ".err") else html.escape(s[1]),
         (' (<a href="%s">sim</a>)' % (filename_prefix + ".sim")) if is_non_zero_file(filename_prefix + suffix + ".sim") else "",
+        drLink(filename_prefix, s[3]),
         checkPhase(s[3]["phase"], 7) if s[3]["phase"]>=6 else "#FFFFFF",
         # Nothing was compared, whatever phase the model reports.
         "&nbsp;" if diff is None else
@@ -1549,6 +1578,7 @@ for (resultBranch, runner) in resultBranches:
         ('%s (<a href="%s.diff.mat" data-omplot="%s.diff">%d/%d failed</a>)' % (timeSeconds(diff.get("time")), filename_prefix, filename_prefix, len(diff.get("vars")), diff.get("numCompared")))),
         checkPhase(s[3]["phase"], 6),
         timeSeconds(s[3].get("sim") or 0),
+        drCell(conf, s[3]),
         checkPhase(s[3]["phase"], 5),
         timeSeconds(sum(s[3].get(x) or 0.0 for x in ["frontend","backend","simcode","templates","build"])),
         timeSeconds(s[3].get("parsing") or 0),
@@ -1569,7 +1599,11 @@ for (resultBranch, runner) in resultBranches:
 
     gitReferenceFilesVersion = referenceFilesVersion(conf.get("referenceFiles"))
 
+    (drSummaryHeader, drSummaryCell, drHeader) = drSummary(conf, stats)
     replacements = (
+      (u"#drSummaryHeader#", drSummaryHeader),
+      (u"#drSummary#", drSummaryCell),
+      (u"#drHeader#", drHeader),
       (u"#sysInfo#", html.escape(sysInfo)),
       (u"#omcVersion#", html.escape(omc_version)),
       (u"#fmiToolVersion#", ("<p>"+html.escape("FMI tool: %s" % fmisimulatorversion)+"</p>") if fmisimulatorversion else ""),

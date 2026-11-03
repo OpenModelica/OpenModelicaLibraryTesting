@@ -163,9 +163,62 @@ def noteChildrenRss():
 
 threading.Thread(target=sampleTree, daemon=True).start()
 
+# What a data reconciliation run writes beside the executable, besides the
+# files its report links: the reconciled values and the extracted model.
+dataReconciliationExtraFiles = ("_Outputs.csv", "_BoundaryConditions_Outputs.csv", "_Reconciled_Sx.csv",
+                                "_NonReconcilcedVars.txt", "_BoundaryConditions.html")
+hrefRe = re.compile(r'<a\s+href\s*=\s*"?([^"\s>]+)"?', re.I)
+
+def collectDataReconciliation():
+  """Copy the report of a data reconciliation run to files/<model>.dr/.
+
+  The runtime writes <model>.html and the pages and logs it links, all next to
+  the executable and linked relative to it, so they are copied together into a
+  directory of their own and keep working there. The links are read from the
+  report rather than listed here, so that whatever the runtime adds comes along.
+  """
+  prefix = conf["fileName"]
+  report = "%s.html" % prefix
+  if not os.path.exists(report):
+    execstat["dr"] = {"report": False, "reconciled": False}
+    return
+  files = {report, "Reconciled_%s.mo" % prefix.replace(".", "_")}
+  files.update(prefix + suffix for suffix in dataReconciliationExtraFiles)
+  pending = [report]
+  while pending:
+    page = pending.pop()
+    with open(page, errors="replace") as fp:
+      links = [l for l in hrefRe.findall(fp.read()) if "/" not in l and not l.startswith("#")]
+    for l in links:
+      if l not in files:
+        files.add(l)
+        if l.endswith(".html") and os.path.exists(l):
+          pending.append(l)
+  dest = os.path.normpath("../files/%s.dr" % prefix)
+  shutil.rmtree(dest, ignore_errors=True)
+  os.mkdir(dest)
+  copied = []
+  for f in sorted(files):
+    if os.path.isfile(f):
+      shutil.copy(f, dest)
+      copied.append(f)
+  # The report's "Errors" link is the output of the executable, which simulate()
+  # writes to <model>.log and this script to the .sim file.
+  log = "%s.log" % prefix
+  if log in files and log not in copied and os.path.isfile(simFile):
+    shutil.copy(simFile, os.path.join(dest, log))
+    copied.append(log)
+  execstat["dr"] = {"report": True, "reconciled": os.path.exists(prefix + "_Outputs.csv"), "files": copied}
+
 def writeResult():
   noteChildrenRss()
   execstat["maxrss"] = max(treePeak, processPeak)
+  if conf.get("dataReconciliation"):
+    try:
+      collectDataReconciliation()
+    except Exception as e:
+      with open(errFile, 'a+') as fp:
+        fp.write("Collecting the data reconciliation report failed: %s\n" % e)
   if runningPhase is not None:
     (stat, key, started) = runningPhase
     target = execstat if stat is None else stat
@@ -748,7 +801,10 @@ elif useSimulate:
   timeout = conf["ulimitOmc"] + conf["ulimitExe"]
   timedPhase = "sim"
 else:
-  cmd='translateModel(%s,tolerance=%g,outputFormat="%s",numberOfIntervals=%d,variableFilter="%s",fileNamePrefix="%s")' % (conf["modelName"],tolerance,outputFormat,numberOfIntervals,variableFilter,conf["fileName"])
+  # The data reconciliation back end reads the measurements (-sx) from the
+  # simulation flags while translating, not only when the executable runs.
+  translateSimflags = (',simflags="%s"' % " ".join(f for f in (annotationSimFlags.strip(), conf["simFlags"].strip()) if f)) if conf.get("dataReconciliation") else ""
+  cmd='translateModel(%s,tolerance=%g,outputFormat="%s",numberOfIntervals=%d,variableFilter="%s",fileNamePrefix="%s"%s)' % (conf["modelName"],tolerance,outputFormat,numberOfIntervals,variableFilter,conf["fileName"],translateSimflags)
   timedPhase = "frontend"
 with open(errFile, 'a+') as fp:
   fp.write("Running command: %s\n"%(cmd))
