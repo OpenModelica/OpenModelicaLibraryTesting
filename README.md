@@ -186,6 +186,10 @@ Options:
 - `--branch=master`: Branch of OpenModelica
 - `--fmi=False`: Test FMI
 - `--output=''`: Result location
+- `--omplot=URL`: OMPlot page a failed verification links to, by default the
+  one on the playground. That page must be able to fetch the report's files, so
+  a report behind a login or on a private network needs its own copy
+  (see [below](#plotting-failed-verifications-in-a-private-report)).
 - `--libraries=~/.openmodelica/libraries/`: Location of Modelica libraries
 - `--extraflags=''`: Extra compiler flags.
 - `--extrasimflags=''`: Extra simulation flags.
@@ -210,6 +214,28 @@ Options:
                  use `1` to run serial (for large tests) and see `procOMC` and
                  `procCCompile` above for more insight into individual test
                  parallelization.
+
+### Plotting failed verifications in a private report
+
+The OMPlot page is static files and reads the result files in the browser, so
+it can be hosted with the report. Build it from
+[OpenModelica](https://github.com/OpenModelica/OpenModelica) (needs
+`rustup target add wasm32-unknown-unknown`):
+
+```sh
+R=OMCompiler/SimulationRuntime/rust
+W=OMCompiler/Compiler/OpenModelica.rs/wasm
+cargo run --release --manifest-path $R/openmodelica_result_web_embed/Cargo.toml \
+  --bin install-result-web -- $OUTPUT/../omplot-web/omplot
+cp $W/omplot/index.html $OUTPUT/../omplot-web/omplot/
+cp $W/plot.js $W/units.js $W/ui.js $W/theme.css $OUTPUT/../omplot-web/
+```
+
+`$OUTPUT` is the `--output` directory. Then run `test.py` with
+`--omplot=../../omplot-web/omplot/index.html`, relative to
+`$OUTPUT/<library>/<library>.html`, and serve the results over HTTP, e.g.
+`python3 -m http.server -d $OUTPUT/..`. A page opened from `file://` cannot fetch
+files, so there the link downloads the `.mat` file instead.
 
 ### Simulation timeouts
 

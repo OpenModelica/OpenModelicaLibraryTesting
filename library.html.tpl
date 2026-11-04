@@ -58,11 +58,14 @@ Config: <pre>#config#</pre>
 <script>
 // A failed verification links its two .mat files (the differing variables of
 // the result and of the reference) to the OMPlot page, which plots the tube
-// comparison of each variable. The page needs absolute URLs.
-const omplot = 'https://playground.openmodelica.org/latest/omplot/';
-for (const a of document.querySelectorAll('a[data-omplot]')) {
-  const abs = (f) => encodeURIComponent(new URL(f, location.href).href);
-  a.href = omplot + '?result=' + abs(a.dataset.omplot + '.mat') + '&reference=' + abs(a.dataset.omplot + '.ref.mat');
+// comparison of each variable. The page needs absolute URLs. It cannot fetch
+// files from file://, so there the link stays a download of the .mat file.
+if (location.protocol !== 'file:') {
+  const omplot = new URL(#omplot#, location.href).href;
+  for (const a of document.querySelectorAll('a[data-omplot]')) {
+    const abs = (f) => encodeURIComponent(new URL(f, location.href).href);
+    a.href = omplot + '?result=' + abs(a.dataset.omplot + '.mat') + '&reference=' + abs(a.dataset.omplot + '.ref.mat');
+  }
 }
 </script>
 </body>
