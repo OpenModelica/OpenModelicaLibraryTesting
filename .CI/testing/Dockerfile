@@ -19,6 +19,10 @@ FROM docker.openmodelica.org/build-deps:ubuntu-26.04-rust
 # autoconf/automake/libtool and omniORB build the maintenance branches: master builds with cmake,
 # while v1.26 and v1.27 still go through `autoreconf && ./configure --with-omniORB`. The base image
 # carries what the cmake build needs, which is not quite the same set.
+# Boost is one of the differences: master dropped it (OpenModelica#17057) and so did the base
+# image's `apt-get build-dep openmodelica` (OpenModelicaBuildScripts#80), but the maintenance
+# branches still include it in ParModelica/auto (chrono, graph) and link it in the C++ runtime
+# (filesystem, system, serialization, program_options, log, thread).
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update \
   && apt-get install -qy software-properties-common \
@@ -26,6 +30,9 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get install -qy --no-install-recommends openssh-client psmisc rsync time \
   && apt-get install -qy --no-install-recommends libcomedi-dev libx11-dev libnetcdf-dev mosquitto \
   && apt-get install -qy --no-install-recommends autoconf automake libtool omniidl libomniorb4-dev \
+  && apt-get install -qy --no-install-recommends libboost-dev libboost-chrono-dev libboost-filesystem-dev \
+       libboost-system-dev libboost-serialization-dev libboost-program-options-dev libboost-log-dev \
+       libboost-thread-dev \
   && apt-get install -qy python3.8 python3.12 libpython3.8-dev libpython3.12-dev \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
