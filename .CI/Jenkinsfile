@@ -24,6 +24,7 @@ pipeline {
 
     booleanParam(name: 'conversion_script', defaultValue: false, description: 'master branch with conversion script from MSL 3 to 4 (ryzen-5950x-1). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'solvers', defaultValue: false, description: 'master branch, simulated with -s cvode, -s gbode and -s ida (ryzen-9950x). This is an experimental job that does not run on a fixed schedule.')
+    booleanParam(name: 'dataReconciliation', defaultValue: false, description: 'master branch, the data reconciliation libraries of configs/dataReconciliation.json run with -reconcile (ryzen-5950x-1). Their reports are linked as (dr) and the job fills overview-dataReconciliation.html.')
     booleanParam(name: 'generateSymbolicJacobian', defaultValue: false, description: 'master branch, with --generateSymbolicJacobian (ryzen-5950x-1). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'wasm_jit', defaultValue: false, description: 'master branch, with --simCodeTarget=wasm-jit (ryzen-9950x). Every model is translated and simulated the way simulate() does, filling wasm-jit. This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'wasm_web', defaultValue: false, description: 'master branch, with --simCodeTarget=wasm-jit (ryzen-9950x), simulated the way the web omc does: the driver and the linear and nonlinear solvers in wasm, the in-wasm libm, and external "C" only from prebuilt wasm libraries. Fills wasm-web. This is an experimental job that does not run on a fixed schedule.')
@@ -393,6 +394,22 @@ pipeline {
           runRegressiontest('master', 'generateSymbolicJacobian', 'setCommandLineOptions("--generateSymbolicJacobian")', '', false, '', '', false, false)
         }
       }
+      stage('dataReconciliation') {
+        agent {
+          node {
+            label 'ryzen-5950x-1'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.dataReconciliation }
+        }
+        steps {
+          runRegressiontest('master', 'dataReconciliation', '', '', false, '', '', false, false, 0, 'configs/dataReconciliation.json')
+        }
+      }
       stage('heavy_tests') {
         agent {
           node {
@@ -488,7 +505,7 @@ pipeline {
       }
       when {
         beforeAgent true
-        expression { params.v1_25 || params.v1_26 || params.v1_27 || params.master || params.conversion_script || params.report_ryzen_5950x_1 || params.report_ryzen_5950x_2 || params.newInst_newBackend || params.generateSymbolicJacobian || params.heavy_tests || params.heavy_tests_wasm || params.fmi_v1_25 || params.fmi_v1_26 || params.fmi_v1_27 || params.fmi_master || params.newInst_daeMode || params.newBackend_daeMode || params.oldInst || params.cpp || params.solvers || params.wasm_jit || params.wasm_fmu || params.wasm_web || params.c_plus_rust}
+        expression { params.v1_25 || params.v1_26 || params.v1_27 || params.master || params.conversion_script || params.report_ryzen_5950x_1 || params.report_ryzen_5950x_2 || params.newInst_newBackend || params.generateSymbolicJacobian || params.dataReconciliation || params.heavy_tests || params.heavy_tests_wasm || params.fmi_v1_25 || params.fmi_v1_26 || params.fmi_v1_27 || params.fmi_master || params.newInst_daeMode || params.newBackend_daeMode || params.oldInst || params.cpp || params.solvers || params.wasm_jit || params.wasm_fmu || params.wasm_web || params.c_plus_rust}
       }
       environment {
         GITBRANCHES = 'maintenance/v1.20 maintenance/v1.21 maintenance/v1.22 maintenance/v1.23 maintenance/v1.24 maintenance/v1.25 maintenance/v1.26 maintenance/v1.27 master newInst-newBackend'
@@ -519,8 +536,8 @@ pipeline {
         '''
         sh './clean-empty-omcversion-dates.py'
 
-        sh "./all-reports.py --email --omcgitdir=OpenModelica ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT} ${env.GITBRANCHES_C_PLUS_RUST} conversion heavy_tests heavy_tests_wasm generateSymbolicJacobian gbode cvode ida"
-        sh "./all-plots.py ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT} ${env.GITBRANCHES_C_PLUS_RUST} conversion heavy_tests heavy_tests_wasm generateSymbolicJacobian gbode cvode ida"
+        sh "./all-reports.py --email --omcgitdir=OpenModelica ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT} ${env.GITBRANCHES_C_PLUS_RUST} conversion heavy_tests heavy_tests_wasm generateSymbolicJacobian dataReconciliation gbode cvode ida"
+        sh "./all-plots.py ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT} ${env.GITBRANCHES_C_PLUS_RUST} conversion heavy_tests heavy_tests_wasm generateSymbolicJacobian dataReconciliation gbode cvode ida"
 
         // Recorded and announced only once they are up: a report the database
         // knows about is never generated again, so one that a later failure in
@@ -539,6 +556,9 @@ pipeline {
 
         sh "./report.py --branches='generateSymbolicJacobian' configs/conf.json"
         sh "mv overview.html overview-generateSymbolicJacobian.html"
+
+        sh "./report.py --branches='dataReconciliation' configs/dataReconciliation.json"
+        sh "mv overview.html overview-dataReconciliation.html"
 
         sh "./report.py --branches='heavy_tests heavy_tests_wasm' configs/heavy_tests.json"
         sh "mv overview.html overview-heavy_tests.html"

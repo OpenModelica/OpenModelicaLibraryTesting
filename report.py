@@ -20,7 +20,6 @@ branches = [shared.resultTable(br) for br in args.branches.split(" ")]
 dates = {}
 dates_str = {}
 fields = ["exectime", "parsing", "frontend", "backend", "simcode", "templates", "compile", "simulate", "verify"]
-entryhead = "<tr><th>Branch</th><th>Total</th><th>Parsing</th><th>Frontend</th><th>Backend</th><th>SimCode</th><th>Templates</th><th>Compilation</th><th>Simulation</th><th>Verification</th></tr>\n"
 
 libs = {}
 
@@ -32,6 +31,10 @@ configs = []
 for c in configs_lst:
   configs = configs + c
 libnames = set(shared.libname(library,conf) for (library,conf) in configs)
+# What a data reconciliation run simulates is the model the reconciliation
+# extracted, not the library's model.
+simulationLabel = "Simulation (DR model)" if configs and all(conf.get("dataReconciliation") for (library,conf) in configs) else "Simulation"
+entryhead = "<tr><th>Branch</th><th>Total</th><th>Parsing</th><th>Frontend</th><th>Backend</th><th>SimCode</th><th>Templates</th><th>Compilation</th><th>%s</th><th>Verification</th></tr>\n" % simulationLabel
 
 db = resultsdb.connect(args.db)
 cursor = db.cursor()
@@ -159,6 +162,7 @@ branches_lines = [("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><
 template = open("overview.html.tpl").read()
 replacements = (
   (u"#title#", "OpenModelica Library Testing Overview"),
+  (u"#simulateLabel#", "# " + simulationLabel if simulationLabel != "Simulation" else "# Simulate"),
   (u"#branches#", "\n".join(branches_lines)),
   (u"#numlibs#", str(len(libs))),
   (u"#nummodels#", str(nummodels)),

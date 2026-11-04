@@ -1,0 +1,18 @@
+[
+  {
+    "library": "ModelicaDataReconciliationSimpleTests",
+    "libraryVersion": "master",
+    "libraryVersionNameForTests": "",
+    "dataReconciliation": true,
+    "extraCustomCommands": ["setCommandLineOptions(\"--preOptModules+=dataReconciliation\")"],
+    "extraSimFlags": "-reconcile"
+  },
+  {
+    "library": "TSP_DataReconciliationSimpleTests",
+    "libraryVersion": "master",
+    "libraryVersionNameForTests": "",
+    "dataReconciliation": true,
+    "extraCustomCommands": ["setCommandLineOptions(\"--preOptModules+=dataReconciliation\")"],
+    "extraSimFlags": "-reconcile"
+  }
+]
