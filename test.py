@@ -1604,6 +1604,8 @@ for (resultBranch, runner) in resultBranches:
       (u"#drSummaryHeader#", drSummaryHeader),
       (u"#drSummary#", drSummaryCell),
       (u"#drHeader#", drHeader),
+      (u"#simulationLabel#", "Simulation (DR model)" if conf.get("dataReconciliation") else "Simulation"),
+      (u"#simulateLabel#", "Simulation (DR model)" if conf.get("dataReconciliation") else "Simulate"),
       (u"#sysInfo#", html.escape(sysInfo)),
       (u"#omcVersion#", html.escape(omc_version)),
       (u"#fmiToolVersion#", ("<p>"+html.escape("FMI tool: %s" % fmisimulatorversion)+"</p>") if fmisimulatorversion else ""),
