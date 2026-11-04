@@ -49,6 +49,7 @@ parser.add_argument('-j', '--jobs', default=0, help="Ignored and deprecated, use
 parser.add_argument('-v', '--verbose', action="store_true", help="Verbose mode.", default=False)
 parser.add_argument('--execAllTests', action="store_true", help="Force all tests to be executed", default=False)
 parser.add_argument('--noSync', action="store_true", help="Move files using python instead of rsync", default=False)
+parser.add_argument('--omplot', default='https://playground.openmodelica.org/latest/omplot/', help="OMPlot page a failed verification links to. A relative URL is resolved against the library's report page. The page must be able to fetch the report's files, so use a copy hosted with the report if that is private.")
 parser.add_argument('--timeout', default=0, help="=[value] timeout in seconds for each test, it overrides the timeout calculated by the script")
 parser.add_argument('--msysEnvironment', help = 'MSYS2 environment used by OpenModelica on Windows.',  default = 'ucrt64')
 parser.add_argument('--debug', action="store_true", help="turn on the DEBUG mode", default=False)
@@ -1643,7 +1644,8 @@ for (resultBranch, runner) in resultBranches:
       (u"#Verification#", html.escape(str(numSucceeded[7]))),
       (u"#totalTime#", html.escape(str(datetime.timedelta(seconds=int(sum(s[3].get("exectime") or 0.0 for s in stats)))))),
       (u"#config#", html.escape(json.dumps(conf["configFromFile"], indent=1, sort_keys=True))),
-      (u"#testsHTML#", testsHTML)
+      (u"#testsHTML#", testsHTML),
+      (u"#omplot#", json.dumps(args.omplot))
     )
     open(os.path.join(stageRoot, "%s.html" % libname), "w").write(multiple_replace(htmltpl, *replacements))
 
