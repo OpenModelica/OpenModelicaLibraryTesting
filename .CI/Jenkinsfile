@@ -33,6 +33,7 @@ pipeline {
     booleanParam(name: 'heavy_tests', defaultValue: false, description: 'master branch, runs one test at a time. That is, no parallel launching of tests. omc will use multiple threads for each test (-n=1 is not set unlike the other regression tests.), (r7945). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'heavy_tests_wasm', defaultValue: false, description: 'heavy_tests with --simCodeTarget=wasm-jit, filling heavy_tests_wasm (r7945). Its results are in the heavy_tests report. This is an experimental job that does not run on a fixed schedule.')
 
+    string(name: 'extraEmails', defaultValue: '', description: 'Space separated email addresses that also get the report emails of this run, besides openmodelicabuilds and the authors of the commits.')
     string(name: 'pull_request', defaultValue: '', description: 'Test an OpenModelica pull request rather than a branch: its number, e.g. 16354. omc is built from refs/pull/<N>/merge - the pull request as it would land - the results fill a pr-<N> table, and the report compares them against the newest run of pull_request_baseline. Left empty, nothing of this runs.')
     choice(name: 'pull_request_target', choices: ['wasm-jit', 'C'], description: 'The --simCodeTarget a pull request is simulated with. wasm-jit is the cheaper run and is compared against the wasm-jit job; C against master.')
     choice(name: 'pull_request_solver', choices: ['default', 'gbode', 'cvode', 'ida'], description: 'The solver a pull request is simulated with: default is the one each model asks for, the others are the configs/solvers.json entries of that name. With the C target, the baseline is then that solver\'s table, which the solvers job fills; nothing fills one for wasm-jit, so set pull_request_baseline yourself or compare against the default solver.')
@@ -536,7 +537,9 @@ pipeline {
         '''
         sh './clean-empty-omcversion-dates.py'
 
-        sh "./all-reports.py --email --omcgitdir=OpenModelica ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT} ${env.GITBRANCHES_C_PLUS_RUST} conversion heavy_tests heavy_tests_wasm generateSymbolicJacobian dataReconciliation gbode cvode ida"
+        // The shell takes extraEmails from the environment, so its value is never
+        // part of the command.
+        sh "./all-reports.py --email --extra-emails=\"\$extraEmails\" --omcgitdir=OpenModelica ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT} ${env.GITBRANCHES_C_PLUS_RUST} conversion heavy_tests heavy_tests_wasm generateSymbolicJacobian dataReconciliation gbode cvode ida"
         sh "./all-plots.py ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT} ${env.GITBRANCHES_C_PLUS_RUST} conversion heavy_tests heavy_tests_wasm generateSymbolicJacobian dataReconciliation gbode cvode ida"
 
         // Recorded and announced only once they are up: a report the database

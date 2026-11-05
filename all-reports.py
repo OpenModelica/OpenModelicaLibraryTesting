@@ -17,6 +17,8 @@ parser.add_argument('--githuburl', default="https://github.com/OpenModelica/Open
 parser.add_argument('--githuburltesting', default="https://github.com/OpenModelica/OpenModelicaLibraryTesting/commit")
 parser.add_argument('--omcgitdir', default="../OpenModelica/OpenModelica")
 parser.add_argument('--email', default=False, action='store_true')
+parser.add_argument('--extra-emails', default="",
+                    help="Space separated addresses that also get the email of every report")
 parser.add_argument('--pending', default="pending-reports.json",
                     help="Where to leave this run's reports for publish-reports.py")
 parser.add_argument('--new-branch', default=[], action='append', metavar='BRANCH',
@@ -36,6 +38,7 @@ githuburl = args.githuburl
 githuburltesting = args.githuburltesting
 omcgitdir = args.omcgitdir
 doemail = args.email
+extraemails = set(e for e in args.extra_emails.split() if "@" in e)
 pendingfile = args.pending
 newbranches = set(shared.resultTable(branch) for branch in args.new_branch)
 
@@ -262,7 +265,7 @@ for branch in branches:
     thirdPartyChanged = ""
     with open("history.html.tpl") as fin:
       tpl = fin.read()
-    emails_current = set(["openmodelicabuilds@ida.liu.se"])
+    emails_current = set(["openmodelicabuilds@ida.liu.se"]) | extraemails
     if v1 != v2:
       try:
         gitlog = subprocess.check_output(["git", "log", '--pretty=<tr><td><a href="%s/%%h">%%h</a></td><td>%%ai</td><td>%%an</td><td>%%s</td></tr>' % (githuburl), "%s..%s" % (v1,v2)], cwd=omcgitdir).decode("utf-8")
