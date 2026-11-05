@@ -644,6 +644,11 @@ if regularFileExists(compareVarsFile) then
 for cmd in conf["customCommands"]:
   omc.sendExpression(str(cmd), parsed = False)
 
+# wasm-jit simulates inside omc, so omc needs the simulation environment.
+if isWasmJit:
+  for (name, value) in conf["environmentSimulation"]:
+    omc.sendExpression('setEnvironmentVar("%s", "%s")' % (name, value.replace("\\","/")), parsed = False)
+
 if conf.get("optlevel"):
   cflags = omc.sendExpression("getCFlags()")
   cflags = cflags.replace("${MODELICAUSERCFLAGS}","").replace("-O0","").replace("-O1","").replace("-O2","").replace("-O3","").strip()
