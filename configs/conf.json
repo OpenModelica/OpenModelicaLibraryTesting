@@ -196,6 +196,7 @@
       "Buildings.ThermalZones.EnergyPlus_24_2_0.Examples.SmallOffice.Guideline36Summer":420
     },
     "runOnceBeforeTesting":[["$resourceLocation/src/ThermalZones/install.py", "--binaries-for-os-only"]],
+    "environmentSimulation":[["SPAWNPATH", "$libraryLocation/Resources/bin/Spawn-light-0.6.0-9f1b36b00b/linux64/bin"]],
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"_",
     "referenceFiles":"/mnt/ReferenceFiles/Buildings/csv/maint_12.x",
@@ -214,6 +215,7 @@
       "Buildings.ThermalZones.EnergyPlus_24_2_0.Examples.SmallOffice.Guideline36Summer":420
     },
     "runOnceBeforeTesting":[["$resourceLocation/src/ThermalZones/install.py", "--binaries-for-os-only"]],
+    "environmentSimulation":[["SPAWNPATH", "$libraryLocation/Resources/bin/Spawn-light-0.6.0-9f1b36b00b/linux64/bin"]],
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"_",
     "referenceFiles":"/mnt/ReferenceFiles/Buildings/csv/maint_13.x",
@@ -236,6 +238,7 @@
       "Buildings.ThermalZones.EnergyPlus_24_2_0.Examples.SmallOffice.Guideline36Winter":600
     },
     "runOnceBeforeTesting":[["$resourceLocation/src/ThermalZones/install.py", "--binaries-for-os-only"]],
+    "environmentSimulation":[["SPAWNPATH", "$libraryLocation/Resources/bin/Spawn-light-0.6.0-9f1b36b00b/linux64/bin"]],
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"_",
     "referenceFiles":"/mnt/ReferenceFiles/Buildings/csv/master"
