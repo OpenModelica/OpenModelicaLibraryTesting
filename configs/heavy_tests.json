@@ -80,8 +80,9 @@
       "LargeTestSuite.Thermal.HeatExchanger.CocurrentHeatExchangerEquations_N_81920":1000,
       "LargeTestSuite.Thermal.HeatExchanger.CounterCurrentHeatExchangerEquations_N_40960":300,
       "LargeTestSuite.Thermal.HeatExchanger.CounterCurrentHeatExchangerEquations_N_81920":1000,
-      "LargeTestSuite.OpenSCALING.LSGreenH2Production.Plant_nTrafoEHV_40_nTrafoHV_160":400,
-      "LargeTestSuite.OpenSCALING.LSGreenH2Production.Plant_nTrafoEHV_40_nTrafoHV_320":800
+      "LargeTestSuite.OpenSCALING.LSGreenH2Production.Plant_nTrafoEHV_40_nTrafoHV_320":300,
+      "LargeTestSuite.OpenSCALING.LSGreenH2Production.Plant_nTrafoEHV_80_nTrafoHV_320":500,
+      "LargeTestSuite.OpenSCALING.LSGreenH2Production.Plant_nTrafoEHV_80_nTrafoHV_640":1000
     },
     "ulimitMemory":62914560,
     "procOMC":0,
