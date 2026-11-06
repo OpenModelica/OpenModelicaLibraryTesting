@@ -881,6 +881,8 @@ for (library,conf) in configs:
     cmd = conf["environmentSimulation"]
     # replace the $libraryLocation in the environmentSimulation if present
     cmd = [[el.replace("$libraryLocation", conf["libraryLocation"]) for el in c] for c in cmd]
+    # A value with a wildcard is a search path: every directory it matches.
+    cmd = [[name, os.pathsep.join(sorted(glob.glob(value))) if "*" in value else value] for (name, value) in cmd]
     conf["environmentSimulation"] = cmd
   if "environmentTranslation" in conf:
     cmd = conf["environmentTranslation"]
