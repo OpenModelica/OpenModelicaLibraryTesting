@@ -785,6 +785,12 @@ if conf.get("fmi") and any(shared.fmiSimulator(name).get("fmiFlags", {}).get("s"
     fp.write("Running command: setCommandLineOptions(\"--fmiFlags=s:cvode\")\n")
   sendExpressionOldOrNew('setCommandLineOptions("--fmiFlags=s:cvode")')
 
+# A job with FMI 3.0 simulators builds one FMU serving both versions, laid out
+# for FMI 2.0; fmuWithFlags gives those simulators an FMI 3.0 copy.
+fmiVersion = conf.get("fmi")
+if conf.get("fmi") and any(shared.fmiVersionOfSimulator(name) == "3.0" for (name, _) in fmisimulators):
+  fmiVersion = "2.0+3.0"
+
 start=monotonic()
 timeout = conf["ulimitOmc"]
 # If the command has to be killed there is no way to tell which phase it was in,
@@ -792,7 +798,7 @@ timeout = conf["ulimitOmc"]
 # build, simulating to the simulation, translating to the front end - which is
 # also the phase such a model is reported as having failed in.
 if conf.get("fmi"):
-  cmd='"" <> buildModelFMU(%s,fileNamePrefix="%s",fmuType="%s",version="%s",platforms={"static"})' % (conf["modelName"],conf["fileName"].replace(".","_"),conf["fmuType"],conf["fmi"])
+  cmd='"" <> buildModelFMU(%s,fileNamePrefix="%s",fmuType="%s",version="%s",platforms={"static"})' % (conf["modelName"],conf["fileName"].replace(".","_"),conf["fmuType"],fmiVersion)
   timedPhase = "build"
 elif useWasmFmu:
   # One FMU for every runner, written unzipped: the model kernel alone,
@@ -932,21 +938,40 @@ if daeMode:
 # several ways and a model run by several solvers fan out the same way.
 runners = fmisimulators or wasmfmurunners or solverRunners
 
+def fmi3Name(filename):
+  """Where a file of the FMI 2.0 layout goes in the FMI 3.0 one."""
+  parts = filename.split("/")
+  if len(parts) > 2 and parts[0] == "binaries":
+    parts[1] = shared.FMI3_PLATFORMS.get(parts[1], parts[1])
+  return "/".join(parts)
+
 def fmuWithFlags(name):
   """The FMU a simulator runs: the one built, or a copy whose flags file holds
-  the fmiFlags of its entry, from which the C runtime picks its CS solver."""
+  the fmiFlags of its entry, from which the C runtime picks its CS solver. An
+  FMI 3.0 simulator gets the FMI 3.0 modelDescription.xml and binaries."""
   prefix = conf["fileName"].replace(".","_")
   fmu = "%s.fmu" % prefix
   flags = shared.fmiSimulator(name).get("fmiFlags")
-  if not flags:
+  fmi3 = shared.fmiVersionOfSimulator(name) == "3.0"
+  if not flags and not fmi3:
     return fmu
   copy = "%s_%s.fmu" % (prefix, name)
   flagsFile = "resources/%s_flags.json" % prefix
   with zipfile.ZipFile(fmu) as src, zipfile.ZipFile(copy, "w") as dst:
     for item in src.infolist():
-      if item.filename != flagsFile:
-        dst.writestr(item, src.read(item))
-    dst.writestr(flagsFile, "{\n%s\n}\n" % ",\n".join('  "%s" : "%s"' % kv for kv in flags.items()), zipfile.ZIP_DEFLATED)
+      if flags and item.filename == flagsFile:
+        continue
+      if fmi3 and item.filename == "modelDescription.xml":
+        continue
+      if fmi3 and item.filename == "modelDescription.fmi3.xml":
+        dst.writestr("modelDescription.xml", src.read(item), zipfile.ZIP_DEFLATED)
+        continue
+      data = src.read(item)
+      if fmi3:
+        item.filename = fmi3Name(item.filename)
+      dst.writestr(item, data)
+    if flags:
+      dst.writestr(flagsFile, "{\n%s\n}\n" % ",\n".join('  "%s" : "%s"' % kv for kv in flags.items()), zipfile.ZIP_DEFLATED)
   return copy
 
 fmus = dict((name, fmuWithFlags(name)) for (name, _) in fmisimulators)

@@ -9,7 +9,7 @@ pipeline {
 
     booleanParam(name: 'fmi_v1_26', defaultValue: false, description: 'maintenance/v1.26 branch with FMI (ryzen-5950x-2). Every FMU is built once and simulated four ways: Model Exchange with OMSimulator filling v1.26-fmi and with FMPy filling v1.26-fmi-fmpy, Co-Simulation with OMSimulator and CVODE filling v1.26-fmi-cs-cvode and with Euler filling v1.26-fmi-cs-euler.')
     booleanParam(name: 'fmi_v1_27', defaultValue: false, description: 'maintenance/v1.27 branch with FMI (ryzen-5950x-2). Every FMU is built once and simulated four ways: Model Exchange with OMSimulator filling v1.27-fmi and with FMPy filling v1.27-fmi-fmpy, Co-Simulation with OMSimulator and CVODE filling v1.27-fmi-cs-cvode and with Euler filling v1.27-fmi-cs-euler.')
-    booleanParam(name: 'fmi_master', defaultValue: false, description: 'master branch with FMI (ryzen-5950x-2). Every FMU is built once and simulated four ways: Model Exchange with OMSimulator filling master-fmi and with FMPy filling master-fmi-fmpy, Co-Simulation with OMSimulator and CVODE filling master-fmi-cs-cvode and with Euler filling master-fmi-cs-euler.')
+    booleanParam(name: 'fmi_master', defaultValue: false, description: 'master branch with FMI (ryzen-5950x-2). Every FMU is built once, serving FMI 2.0 and 3.0, and simulated five ways: FMI 2.0 Model Exchange with OMSimulator filling master-fmi and with FMPy filling master-fmi-fmpy, FMI 2.0 Co-Simulation with OMSimulator and CVODE filling master-fmi-cs-cvode and with Euler filling master-fmi-cs-euler, and FMI 3.0 Co-Simulation with FMPy and CVODE filling master-fmi3-cs-cvode.')
 
     booleanParam(name: 'newInst_daeMode', defaultValue: false, description: 'master branch, --daeMode with -d=newInst (ryzen-5950x-2)')
     booleanParam(name: 'newInst_newBackend', defaultValue: false, description: 'master branch, -d=newInst --newBackend, (ryzen-5950x-1)')
@@ -251,7 +251,7 @@ pipeline {
           expression { params.fmi_master }
         }
         steps {
-          runRegressiontest('master', 'master-fmi', '', 'origin/master', false, '', '', false, false, 0, 'configs/conf.json', '', '.CI/testing', fmiSimulators())
+          runRegressiontest('master', 'master-fmi', '', 'origin/master', false, '', '', false, false, 0, 'configs/conf.json', '', '.CI/testing', fmiSimulators(true))
         }
       }
 
@@ -510,7 +510,7 @@ pipeline {
       }
       environment {
         GITBRANCHES = 'maintenance/v1.20 maintenance/v1.21 maintenance/v1.22 maintenance/v1.23 maintenance/v1.24 maintenance/v1.25 maintenance/v1.26 maintenance/v1.27 master newInst-newBackend'
-        GITBRANCHES_FMI = 'maintenance/v1.20-fmi maintenance/v1.21-fmi maintenance/v1.22-fmi maintenance/v1.23-fmi maintenance/v1.24-fmi maintenance/v1.25-fmi maintenance/v1.26-fmi maintenance/v1.27-fmi maintenance/v1.22-fmi-fmpy maintenance/v1.23-fmi-fmpy maintenance/v1.24-fmi-fmpy maintenance/v1.25-fmi-fmpy maintenance/v1.26-fmi-fmpy maintenance/v1.27-fmi-fmpy master-fmi master-fmi-fmpy maintenance/v1.26-fmi-cs-cvode maintenance/v1.27-fmi-cs-cvode master-fmi-cs-cvode maintenance/v1.26-fmi-cs-euler maintenance/v1.27-fmi-cs-euler master-fmi-cs-euler'
+        GITBRANCHES_FMI = 'maintenance/v1.20-fmi maintenance/v1.21-fmi maintenance/v1.22-fmi maintenance/v1.23-fmi maintenance/v1.24-fmi maintenance/v1.25-fmi maintenance/v1.26-fmi maintenance/v1.27-fmi maintenance/v1.22-fmi-fmpy maintenance/v1.23-fmi-fmpy maintenance/v1.24-fmi-fmpy maintenance/v1.25-fmi-fmpy maintenance/v1.26-fmi-fmpy maintenance/v1.27-fmi-fmpy master-fmi master-fmi-fmpy maintenance/v1.26-fmi-cs-cvode maintenance/v1.27-fmi-cs-cvode master-fmi-cs-cvode maintenance/v1.26-fmi-cs-euler maintenance/v1.27-fmi-cs-euler master-fmi-cs-euler master-fmi3-cs-cvode'
         GITBRANCHES_NEWINST = 'oldInst'
         GITBRANCHES_DAE = 'newInst-daeMode'
         GITBRANCHES_NEWBACKEND_DAE = 'newBackend-daeMode'
@@ -883,9 +883,12 @@ def buildsWithCMake(branch) {
   *                             omc stay outside. Passing `''` runs the job on the node itself.
   */
 /* The FMI simulators of an FMI job, which builds every FMU once and simulates it with all of them,
- * filling <branch>-fmi, <branch>-fmi-cs-cvode, <branch>-fmi-cs-euler and <branch>-fmi-fmpy. */
-def fmiSimulators() {
-  return ['OMSimulator', 'OMSimulator-cs-cvode', 'OMSimulator-cs-euler', 'fmpy']
+ * filling <branch>-fmi, <branch>-fmi-cs-cvode, <branch>-fmi-cs-euler and <branch>-fmi-fmpy.
+ * With fmi3, the FMU also serves FMI 3.0 (buildModelFMU version="2.0+3.0", master only), which
+ * FMPy runs as Co-Simulation with CVODE into <branch>3-cs-cvode, e.g. master-fmi3-cs-cvode. */
+def fmiSimulators(fmi3 = false) {
+  return ['OMSimulator', 'OMSimulator-cs-cvode', 'OMSimulator-cs-euler', 'fmpy'] +
+         (fmi3 ? ['fmpy-fmi3-cs-cvode'] : [])
 }
 
 /* The cmake flags of an omc that can translate to wasm-jit. The wasm-jit and
@@ -1010,11 +1013,12 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
     FMI_TESTING_FLAG = omsSimulators.collect { " --fmisimulator=${it}=${env.HOME}/saved_omc/OMSimulator/install/bin/OMSimulator" }.join('')
   }
 
-  if (simulators.contains('fmpy')) {
+  def fmpySimulators = simulators.findAll { it.startsWith('fmpy') }
+  if (fmpySimulators) {
     // The version is the image's; check it in the interpreter test.py will reach rather than
     // installing one over it, which in a container would be thrown away with the container.
     runSh('python3 -m fmpy -h > /dev/null || exit 1')
-    FMI_TESTING_FLAG += " --fmisimulator='python3 -m fmpy'"
+    FMI_TESTING_FLAG += fmpySimulators.collect { " --fmisimulator=${it}='python3 -m fmpy'" }.join('')
   }
 
   if (FMI_TESTING_FLAG) {

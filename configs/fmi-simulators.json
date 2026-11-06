@@ -23,6 +23,9 @@
     "                  holds these flags instead, which is how the Co-Simulation solver of the C",
     "                  runtime is picked without building the FMU again. s:cvode in any of them",
     "                  builds the FMU with --fmiFlags=s:cvode, which links CVODE into it.",
+    "fmiVersion        3.0 runs the FMI 3.0 side of an FMU built with version=\"2.0+3.0\": its copy",
+    "                  gets modelDescription.fmi3.xml as modelDescription.xml and the binaries in",
+    "                  the FMI 3.0 platform directory. 2.0 by default.",
     "untested          set it while nobody has run the entry yet; the run then says so."
   ],
   "OMSimulator": {
@@ -69,6 +72,16 @@
     "versionArgument": "--version",
     "command": "{simulator} simulate",
     "arguments": "--output-file {result} --start-time {startTime:g} --stop-time {stopTime:g} --timeout {timeout:g} --relative-tolerance {tolerance:g} --interface-type ModelExchange --solver CVode --output-interval {stepSize:g} {fmu}"
+  },
+  "fmpy-fmi3-cs-cvode": {
+    "branchSuffix": "3-cs-cvode",
+    "interface": "cs",
+    "fmiVersion": "3.0",
+    "fmiFlags": {"s": "cvode"},
+    "resultExtension": "csv",
+    "versionArgument": "--version",
+    "command": "{simulator} simulate",
+    "arguments": "--output-file {result} --start-time {startTime:g} --stop-time {stopTime:g} --timeout {timeout:g} --relative-tolerance {tolerance:g} --interface-type CoSimulation --output-interval {stepSize:g} {fmu}"
   },
   "fmusim": {
     "untested": true,

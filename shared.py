@@ -342,6 +342,15 @@ def fmiSimulator(name):
                     % (name, ", ".join(sorted(known)), FMI_SIMULATORS_FILE))
   return known[name]
 
+def fmiVersionOfSimulator(name):
+  """Which side of a version="2.0+3.0" FMU a simulator runs."""
+  return fmiSimulator(name).get("fmiVersion", "2.0")
+
+# The FMI 3.0 platform directory of each FMI 2.0 one.
+FMI3_PLATFORMS = {"linux32": "x86-linux", "linux64": "x86_64-linux",
+                  "win32": "x86-windows", "win64": "x86_64-windows",
+                  "darwin64": "x86_64-darwin"}
+
 def fmiSimulatorCommand(name, command, **values):
   """The command line that runs one FMU with one simulator.
 

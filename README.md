@@ -326,8 +326,30 @@ from `resources/<prefix>_flags.json` when it is instantiated, so an entry with
 | `OMSimulator-cs-euler` | Co-Simulation, Euler | `v1.27-fmi-cs-euler` |
 | `fmpy` | Model Exchange | `v1.27-fmi-fmpy` |
 
+FMI 3.0 is tested from the same build. When an entry has `"fmiVersion": "3.0"`,
+the FMU is built with `version="2.0+3.0"`: one binary that serves both versions,
+in an FMU laid out for FMI 2.0, with the FMI 3.0 description in
+`modelDescription.fmi3.xml`. That simulator runs a copy with the FMI 3.0
+`modelDescription.xml` and the binaries in the FMI 3.0 platform directory
+(`binaries/x86_64-linux` in place of `binaries/linux64`). This needs an omc that
+knows `version="2.0+3.0"`, which is only master.
+
+```bash
+./test.py --branch=master-fmi --fmi=true --fmuType=me_cs \
+          --fmisimulator=fmpy-fmi3-cs-cvode='python3 -m fmpy' \
+          configs/myConf.json
+```
+
+| simulator | interface | branch |
+| --- | --- | --- |
+| `fmpy-fmi3-cs-cvode` | FMI 3.0 Co-Simulation, CVODE | `master-fmi3-cs-cvode` |
+
+OMSimulator cannot run these FMUs as FMI 3.0 yet
+([OMSimulator#1694](https://github.com/OpenModelica/OMSimulator/issues/1694)).
+
 In Jenkins, `fmi_v1_26`, `fmi_v1_27` and `fmi_master` each run this job for
-their branch, with all four simulators.
+their branch, with all four FMI 2.0 simulators; `fmi_master` also runs
+`fmpy-fmi3-cs-cvode`.
 
 ### Adding an FMI simulator
 
