@@ -1008,7 +1008,8 @@ def simulateFmu(name, command, resFile, simFile):
                                    requestedResult=fromRunnerDir(runDir, resFile) if outputFormat != "empty" else "",
                                    tempDir=fmitmpdir, startTime=startTime, stopTime=stopTime,
                                    tolerance=tolerance, timeout=conf["ulimitExe"],
-                                   stepSize=stepSize)
+                                   # OMSimulator refuses a step size of 0; with stopTime=startTime there is no step.
+                                   stepSize=stepSize if stopTime > startTime else 1.0)
   cmd = inRunnerDir(runDir, cmd)
   with open(simFile,"w") as fp:
     fp.write("%s\n" % cmd)
