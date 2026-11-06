@@ -466,6 +466,12 @@ def fmiSimulatorVersion(name, command):
 
 fmisimulatorversions = {}
 fmisimulatorversion = None
+if fmisimulator and any(not isFMPy(command) for (_, command) in fmisimulators):
+  # OMSimulator keeps flags such as --tempDir in this file and never rewrites
+  # one it cannot parse, which it then warns about in every simulation.
+  omsSettings = os.path.join(os.path.expanduser("~"), ".omsimulator", "settings.json")
+  if os.path.exists(omsSettings):
+    os.remove(omsSettings)
 if fmisimulator:
   for (name, command) in fmisimulators:
     fmisimulatorversions[name] = fmiSimulatorVersion(name, command)
