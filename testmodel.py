@@ -12,7 +12,7 @@ import zmq
 from monotonic import monotonic
 import OMPython
 from OMPython import FindBestOMCSession, OMCSession, OMCSessionZMQ
-import shared, glob, zipfile
+import shared, glob, shlex, zipfile
 
 parser = argparse.ArgumentParser(description='OpenModelica library testing tool helper (single model)')
 parser.add_argument('config')
@@ -994,6 +994,12 @@ def artifactPrefix(name=None):
 
 resFile = resultFile(runners[0][0]) if runners else resultFile()
 
+# The variables an FMI tool has to record. sh -c takes a command of at most
+# 128 KiB, so a longer list is left out and the tool records its outputs.
+fmiOutputVariables = " ".join(shlex.quote(v) for v in referenceVars if v != "time")
+if len(fmiOutputVariables) > 100000:
+  fmiOutputVariables = ""
+
 def simulateFmu(name, command, resFile, simFile):
   """Run the FMU with one simulator, writing what it says to simFile."""
   suffix = runnerSuffix(name)
@@ -1009,7 +1015,8 @@ def simulateFmu(name, command, resFile, simFile):
                                    tempDir=fmitmpdir, startTime=startTime, stopTime=stopTime,
                                    tolerance=tolerance, timeout=conf["ulimitExe"],
                                    # OMSimulator refuses a step size of 0; with stopTime=startTime there is no step.
-                                   stepSize=stepSize if stopTime > startTime else 1.0)
+                                   stepSize=stepSize if stopTime > startTime else 1.0,
+                                   outputVariables=fmiOutputVariables)
   cmd = inRunnerDir(runDir, cmd)
   with open(simFile,"w") as fp:
     fp.write("%s\n" % cmd)

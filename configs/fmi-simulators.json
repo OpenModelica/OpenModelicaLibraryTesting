@@ -3,7 +3,8 @@
     "The FMI simulators the testing knows how to run. Adding one is an entry here and nothing else.",
     "",
     "arguments         the command line, a template over: simulator, fmu, result, tempDir,",
-    "                  startTime, stopTime, tolerance, timeout, stepSize, and every name",
+    "                  startTime, stopTime, tolerance, timeout, stepSize, outputVariables (the",
+    "                  variables of the reference, quoted for the shell), and every name",
     "                  defined in optionalArguments.",
     "optionalArguments flags that have to disappear when there is nothing to put in them, as a",
     "                  result is always the file the tool should write; requestedResult is empty",
@@ -68,7 +69,10 @@
     "resultExtension": "csv",
     "versionArgument": "--version",
     "command": "{simulator} simulate",
-    "arguments": "--output-file {result} --start-time {startTime:g} --stop-time {stopTime:g} --timeout {timeout:g} --relative-tolerance {tolerance:g} --interface-type ModelExchange --solver CVode --output-interval {stepSize:g} {fmu}"
+    "arguments": "--output-file {result}{outputArgument} --start-time {startTime:g} --stop-time {stopTime:g} --timeout {timeout:g} --relative-tolerance {tolerance:g} --interface-type ModelExchange --solver CVode --output-interval {stepSize:g} {fmu}",
+    "optionalArguments": {
+      "outputArgument": " --output-variables {outputVariables}"
+    }
   },
   "fmusim": {
     "untested": true,
