@@ -107,16 +107,6 @@
   {
     "library":"BL",
     "libraryVersion":"main",
-    "libraryVersionNameForTests":"OB",
-    "ulimitOmc":400,
-    "ulimitMemory":62914560,
-    "procOMC":0,
-    "procCCompile":0,
-    "optlevel":"-O0 -march=native"
-  },
-  {
-    "library":"BL",
-    "libraryVersion":"main",
     "libraryVersionNameForTests":"NB",
     "ulimitOmc":400,
     "ulimitMemory":62914560,
@@ -128,16 +118,6 @@
   {
     "library":"Battery",
     "libraryVersion":"main",
-    "libraryVersionNameForTests":"OB",
-    "ulimitOmc":400,
-    "ulimitMemory":62914560,
-    "procOMC":0,
-    "procCCompile":0,
-    "optlevel":"-O0 -march=native"
-  },
-  {
-    "library":"Battery",
-    "libraryVersion":"main",
     "libraryVersionNameForTests":"NB",
     "ulimitOmc":400,
     "ulimitMemory":62914560,
@@ -145,16 +125,6 @@
     "procCCompile":0,
     "optlevel":"-O0 -march=native",
     "extraCustomCommands":["setCommandLineOptions(\"--newBackend --resizableArrays\")"]
-  },
-  {
-    "library":"BenchmarksForResizeableArrays",
-    "libraryVersion":"main",
-    "libraryVersionNameForTests":"OB",
-    "ulimitOmc":400,
-    "ulimitMemory":62914560,
-    "procOMC":0,
-    "procCCompile":0,
-    "optlevel":"-O0 -march=native"
   },
   {
     "library":"BenchmarksForResizeableArrays",
@@ -170,16 +140,6 @@
   {
     "library":"IDADistricts",
     "libraryVersion":"main",
-    "libraryVersionNameForTests":"OB",
-    "ulimitOmc":400,
-    "ulimitMemory":62914560,
-    "procOMC":0,
-    "procCCompile":0,
-    "optlevel":"-O0 -march=native"
-  },
-  {
-    "library":"IDADistricts",
-    "libraryVersion":"main",
     "libraryVersionNameForTests":"NB",
     "ulimitOmc":400,
     "ulimitMemory":62914560,
@@ -191,16 +151,6 @@
   {
     "library":"LSGreenH2Production",
     "libraryVersion":"main",
-    "libraryVersionNameForTests":"OB",
-    "ulimitOmc":400,
-    "ulimitMemory":62914560,
-    "procOMC":0,
-    "procCCompile":0,
-    "optlevel":"-O0 -march=native"
-  },
-  {
-    "library":"LSGreenH2Production",
-    "libraryVersion":"main",
     "libraryVersionNameForTests":"NB",
     "ulimitOmc":400,
     "ulimitMemory":62914560,
@@ -208,26 +158,5 @@
     "procCCompile":0,
     "optlevel":"-O0 -march=native",
     "extraCustomCommands":["setCommandLineOptions(\"--newBackend --resizableArrays\")"]
-  },
-  {
-    "library":"LargeInterfaces",
-    "libraryVersion":"main",
-    "libraryVersionNameForTests":"OB",
-    "ulimitOmc":400,
-    "ulimitMemory":62914560,
-    "procOMC":0,
-    "procCCompile":0,
-    "optlevel":"-O0 -march=native"
-  },
-  {
-    "library":"LargeInterfaces",
-    "libraryVersion":"main",
-    "libraryVersionNameForTests":"NB",
-    "ulimitOmc":400,
-    "ulimitMemory":62914560,
-    "procOMC":0,
-    "procCCompile":0,
-    "optlevel":"-O0 -march=native",
-    "extraCustomCommands":["setCommandLineOptions(\"--newBackend --resizableArrays --simCodeScalarize=false\")"]
   }
 ]
