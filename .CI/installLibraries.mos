@@ -144,9 +144,21 @@ end for;
 
 print("Did install:" + getErrorString() + "\n");
 
-if not upgradeInstalledPackages() then
-  print("Failed upgrade:\n" + getErrorString() + "\n");
-  exit(1);
-end if;
+// upgradeInstalledPackages(), except that Physiomodel may be installed without
+// the exact versions it uses: master uses Physiolibrary 2.3.3, which does not exist.
+for lib in getAvailableLibraries() loop
+  for v in getAvailableLibraryVersions(stringTypeName(lib)) loop
+    if not installPackage(stringTypeName(lib), v, exactMatch=true) then
+      if lib <> "Physiomodel" or not installPackage(stringTypeName(lib), v) then
+        print("Failed upgrade of " + lib + " " + v + ":\n" + getErrorString() + "\n");
+        exit(1);
+      end if;
+    end if;
+  end for;
+  if not installPackage(stringTypeName(lib), "") then
+    print("Failed upgrade of " + lib + ":\n" + getErrorString() + "\n");
+    exit(1);
+  end if;
+end for;
 
 print("Did upgrade:\n" + getErrorString() + "\n");
