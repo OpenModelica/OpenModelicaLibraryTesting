@@ -8,6 +8,9 @@ For each test entry, there are several fields:
   in case a non-tagged version needs to be tested. If no version is provided, the latest tagged version is tested automatically
 - `libraryVersionNameForTests`: this is appended with an underscore to the name of the library in the test report name
 - `ignoreModelPrefix`: skips testing all models that start with that string
+- `referenceFilePreprocessor`: rewrites each reference file before it is used; the
+  models are compared against the rewritten copy. `quoteCsvHeader` puts the names of a
+  CSV header in quotes, for files that write `time,a[1,2]` instead of `"time","a[1,2]"`
 
 There are many other fields to manage reference results, that can be either stored locally on the server, or fetched from a remote GIT repository,
 and for providing extra flags and settings to OMC when running the tests. Please refer to [conf.json](configs/conf.json) for more examples, and to

@@ -610,14 +610,21 @@ outputFormat="mat"
 referenceVars=[]
 numberOfIntervalsInReference = 0
 referenceFile = conf.get("referenceFile") or ""
+compSignals = os.path.normpath(os.path.join(os.path.dirname(referenceFile),"comparisonSignals.txt"))
+if referenceFile != "" and conf.get("referenceFilePreprocessor"):
+  preprocessedFile = "%s.ref%s" % (conf["fileName"], os.path.splitext(referenceFile)[1])
+  shared.referenceFilePreprocessors[conf["referenceFilePreprocessor"]](referenceFile, preprocessedFile)
+  with open("%s.tmpfiles" % conf["fileName"], "a+") as fp:
+    fp.write("%s\n" % preprocessedFile)
+  referenceFile = os.path.abspath(preprocessedFile).replace("\\","/")
 if referenceFile != "":
   try:
-    compSignals = os.path.normpath(os.path.join(os.path.dirname(referenceFile),"comparisonSignals.txt"))
     if os.path.exists(compSignals):
-      referenceVars=[s.strip() for s in open(compSignals).readlines() if (s.strip() != "")] # s.strip().lower() != "time" and ??? I guess we should check time variable...
+      referenceVars=[shared.openmodelicaStyleName(s.strip()) for s in open(compSignals).readlines() if (s.strip() != "")] # s.strip().lower() != "time" and ??? I guess we should check time variable...
       print(referenceVars)
     else:
       referenceVars=omc_new.sendExpression('readSimulationResultVars("%s", readParameters=true, openmodelicaStyle=true)' % referenceFile)
+    referenceVars=[v for v in referenceVars if not shared.isDymolaOnlyVariable(v)]
     variableFilter=shared.variableFilterOf(referenceVars)
     # get the number of intervals from the file
     numberOfIntervalsInReference = omc_new.sendExpression('readSimulationResultSize("%s")' % referenceFile)
@@ -1021,14 +1028,15 @@ resFile = resultFile(runners[0][0]) if runners else resultFile()
 
 # The variables an FMI tool has to record. sh -c takes a command of at most
 # 128 KiB, so a longer list is left out and the tool records its outputs.
-fmiOutputVariables = " ".join(shlex.quote(v) for v in referenceVars if v != "time")
-if len(fmiOutputVariables) > 100000:
-  fmiOutputVariables = ""
+def fmiOutputVariables(variables):
+  quoted = " ".join(shlex.quote(v) for v in variables if v != "time")
+  return quoted if len(quoted) <= 100000 else ""
 
 def simulateFmu(name, command, resFile, simFile):
   """Run the FMU with one simulator, writing what it says to simFile."""
   suffix = runnerSuffix(name)
   runDir = runnerDir(name)
+  fmi3 = shared.fmiVersionOfSimulator(name) == "3.0"
   fmitmpdir = "temp_%s%s_fmu" % (conf["fileName"].replace(".","_"), suffix)
   with open("%s.tmpfiles" % conf["fileName"], "a+") as fp:
     fp.write("%s\n" % (os.path.join(runDir, fmitmpdir) if runDir else fmitmpdir))
@@ -1041,13 +1049,16 @@ def simulateFmu(name, command, resFile, simFile):
                                    tolerance=tolerance, timeout=conf["ulimitExe"],
                                    # OMSimulator refuses a step size of 0; with stopTime=startTime there is no step.
                                    stepSize=stepSize if stopTime > startTime else 1.0,
-                                   outputVariables=fmiOutputVariables)
+                                   outputVariables=fmiOutputVariables(shared.withArrayNames(referenceVars) if fmi3 else referenceVars))
   cmd = inRunnerDir(runDir, cmd)
   with open(simFile,"w") as fp:
     fp.write("%s\n" % cmd)
   pipe = "%s%s" % (conf["fileName"], suffix)
-  return checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s > %s.pipe 2>&1)"
-                            % (pipe,pipe,pipe,simFile,cmd,pipe), 1.05*conf["ulimitExe"], conf)
+  out = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s > %s.pipe 2>&1)"
+                           % (pipe,pipe,pipe,simFile,cmd,pipe), 1.05*conf["ulimitExe"], conf)
+  if fmi3 and resFile.endswith(".csv") and os.path.exists(resFile):
+    shared.expandArrayColumns(resFile, shared.fmi3ArrayShapes(fmus[name]))
+  return out
 
 def wasmFmuCmd(runnerFlags, resFile, runDir):
   """The simulate() that runs the exported FMU one way.
@@ -1255,8 +1266,11 @@ def verifyAgainstReference(resFile, prefix, stat):
       fp.write("Timeout error for diffSimulationResults")
     return
 
+  # diffSimulationResults fails on a variable it cannot find in the result.
+  dymolaOnlyVars=[v for v in diffVars if shared.isDymolaOnlyVariable(v)]
+  diffVars=[v for v in diffVars if not shared.isDymolaOnlyVariable(v)]
   stat["diff"] = {"time":monotonic()-start, "vars":[], "numCompared":len(referenceVars)}
-  if len(diffVars)==0 and referenceOK:
+  if len(diffVars)==0 and (referenceOK or dymolaOnlyVars):
     stat["phase"]=7
     with open(errFile, 'a+') as fp:
       fp.write("Reference file matches\n")
