@@ -53,6 +53,11 @@
     "library":"LargeTestSuite",
     "libraryVersion":"master",
     "libraryVersionNameForTests":"NB",
+    "extraLibraries":[
+      ["LSGreenH2Production", "main"],
+      ["IDADistricts", "main"],
+      ["Battery", "main"]
+    ],
     "ulimitOmc":400,
     "ulimitExeModels":{
       "LargeTestSuite.Electrical.TransmissionLine.TransmissionLineModelica_N_10240":840,
