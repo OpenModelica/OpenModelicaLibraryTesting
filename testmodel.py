@@ -614,7 +614,7 @@ if referenceFile != "":
   try:
     compSignals = os.path.normpath(os.path.join(os.path.dirname(referenceFile),"comparisonSignals.txt"))
     if os.path.exists(compSignals):
-      referenceVars=[s.strip() for s in open(compSignals).readlines() if (s.strip() != "")] # s.strip().lower() != "time" and ??? I guess we should check time variable...
+      referenceVars=[shared.openmodelicaStyleName(s.strip()) for s in open(compSignals).readlines() if (s.strip() != "")] # s.strip().lower() != "time" and ??? I guess we should check time variable...
       print(referenceVars)
     else:
       referenceVars=omc_new.sendExpression('readSimulationResultVars("%s", readParameters=true, openmodelicaStyle=true)' % referenceFile)

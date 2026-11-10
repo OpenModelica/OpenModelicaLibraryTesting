@@ -218,6 +218,13 @@ dymolaOnlyVariableRe = re.compile(r"CPUtime|EventCounter|Time|_derdummy|_dummy|(
 def isDymolaOnlyVariable(name):
   return dymolaOnlyVariableRe.fullmatch(name) is not None
 
+def openmodelicaStyleName(name):
+  """The name as readSimulationResultVars(openmodelicaStyle=true) gives it: der(a.b) for a.der(b), no spaces."""
+  i = name.find("der(")
+  if i > 0:
+    name = "der(" + name[:i] + name[i+4:]
+  return name.replace(" ", "")
+
 # A subscript of a result variable: the [1] of a[1], the [3,7] of a[3,7].
 arraySubscriptRe = re.compile(r"\[[0-9]+(?:,[0-9]+)*\]")
 # Stands in for a subscript while the rest of the name is escaped. No Modelica
