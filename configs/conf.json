@@ -199,6 +199,7 @@
     "environmentSimulation":[["SPAWNPATH", "$libraryLocation/Resources/bin/Spawn-light-*/linux64/bin"]],
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"_",
+    "referenceFilePreprocessor":"quoteCsvHeader",
     "referenceFiles":"/mnt/ReferenceFiles/Buildings/csv/maint_12.x",
 	"extraCustomCommands":["setCFlags(getCFlags() + \" -Wno-error=implicit-function-declaration\")"]
   },
@@ -218,6 +219,7 @@
     "environmentSimulation":[["SPAWNPATH", "$libraryLocation/Resources/bin/Spawn-light-*/linux64/bin"]],
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"_",
+    "referenceFilePreprocessor":"quoteCsvHeader",
     "referenceFiles":"/mnt/ReferenceFiles/Buildings/csv/maint_13.x",
 	"extraCustomCommands":["setCFlags(getCFlags() + \" -Wno-error=implicit-function-declaration\")"]
   },
@@ -241,6 +243,7 @@
     "environmentSimulation":[["SPAWNPATH", "$libraryLocation/Resources/bin/Spawn-light-*/linux64/bin"]],
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"_",
+    "referenceFilePreprocessor":"quoteCsvHeader",
     "referenceFiles":"/mnt/ReferenceFiles/Buildings/csv/master"
   },
   {

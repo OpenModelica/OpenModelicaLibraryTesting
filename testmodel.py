@@ -610,9 +610,15 @@ outputFormat="mat"
 referenceVars=[]
 numberOfIntervalsInReference = 0
 referenceFile = conf.get("referenceFile") or ""
+compSignals = os.path.normpath(os.path.join(os.path.dirname(referenceFile),"comparisonSignals.txt"))
+if referenceFile != "" and conf.get("referenceFilePreprocessor"):
+  preprocessedFile = "%s.ref%s" % (conf["fileName"], os.path.splitext(referenceFile)[1])
+  shared.referenceFilePreprocessors[conf["referenceFilePreprocessor"]](referenceFile, preprocessedFile)
+  with open("%s.tmpfiles" % conf["fileName"], "a+") as fp:
+    fp.write("%s\n" % preprocessedFile)
+  referenceFile = os.path.abspath(preprocessedFile).replace("\\","/")
 if referenceFile != "":
   try:
-    compSignals = os.path.normpath(os.path.join(os.path.dirname(referenceFile),"comparisonSignals.txt"))
     if os.path.exists(compSignals):
       referenceVars=[shared.openmodelicaStyleName(s.strip()) for s in open(compSignals).readlines() if (s.strip() != "")] # s.strip().lower() != "time" and ??? I guess we should check time variable...
       print(referenceVars)

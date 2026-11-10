@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import collections, csv, itertools, re, os, signal, string, subprocess, threading, traceback, zipfile
+import collections, csv, itertools, re, os, shutil, signal, string, subprocess, threading, traceback, zipfile
 import simplejson as json
 from xml.etree import ElementTree
 
@@ -224,6 +224,30 @@ def openmodelicaStyleName(name):
   if i > 0:
     name = "der(" + name[:i] + name[i+4:]
   return name.replace(" ", "")
+
+def joinSplitNames(fields):
+  """Join the fields that a comma inside [] or () split apart: a[1 and 2] are a[1,2]."""
+  names = []
+  depth = 0
+  for field in fields:
+    if depth > 0:
+      names[-1] += "," + field
+    else:
+      names.append(field)
+    depth += field.count("[") + field.count("(") - field.count("]") - field.count(")")
+  return names
+
+def quoteCsvHeader(inFile, outFile):
+  """A copy of a CSV file whose header has the names in quotes, for a header such as time,a[1,2]."""
+  with open(inFile, newline="") as fin, open(outFile, "w", newline="") as fout:
+    header = fin.readline()
+    newline = "\r\n" if header.endswith("\r\n") else "\n"
+    names = joinSplitNames(next(csv.reader([header])))
+    csv.writer(fout, quoting=csv.QUOTE_ALL, lineterminator=newline).writerow(names)
+    shutil.copyfileobj(fin, fout)
+
+# The values of referenceFilePreprocessor in a configuration.
+referenceFilePreprocessors = {"quoteCsvHeader": quoteCsvHeader}
 
 # A subscript of a result variable: the [1] of a[1], the [3,7] of a[3,7].
 arraySubscriptRe = re.compile(r"\[[0-9]+(?:,[0-9]+)*\]")
