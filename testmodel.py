@@ -1021,14 +1021,15 @@ resFile = resultFile(runners[0][0]) if runners else resultFile()
 
 # The variables an FMI tool has to record. sh -c takes a command of at most
 # 128 KiB, so a longer list is left out and the tool records its outputs.
-fmiOutputVariables = " ".join(shlex.quote(v) for v in referenceVars if v != "time")
-if len(fmiOutputVariables) > 100000:
-  fmiOutputVariables = ""
+def fmiOutputVariables(variables):
+  quoted = " ".join(shlex.quote(v) for v in variables if v != "time")
+  return quoted if len(quoted) <= 100000 else ""
 
 def simulateFmu(name, command, resFile, simFile):
   """Run the FMU with one simulator, writing what it says to simFile."""
   suffix = runnerSuffix(name)
   runDir = runnerDir(name)
+  fmi3 = shared.fmiVersionOfSimulator(name) == "3.0"
   fmitmpdir = "temp_%s%s_fmu" % (conf["fileName"].replace(".","_"), suffix)
   with open("%s.tmpfiles" % conf["fileName"], "a+") as fp:
     fp.write("%s\n" % (os.path.join(runDir, fmitmpdir) if runDir else fmitmpdir))
@@ -1041,13 +1042,16 @@ def simulateFmu(name, command, resFile, simFile):
                                    tolerance=tolerance, timeout=conf["ulimitExe"],
                                    # OMSimulator refuses a step size of 0; with stopTime=startTime there is no step.
                                    stepSize=stepSize if stopTime > startTime else 1.0,
-                                   outputVariables=fmiOutputVariables)
+                                   outputVariables=fmiOutputVariables(shared.withArrayNames(referenceVars) if fmi3 else referenceVars))
   cmd = inRunnerDir(runDir, cmd)
   with open(simFile,"w") as fp:
     fp.write("%s\n" % cmd)
   pipe = "%s%s" % (conf["fileName"], suffix)
-  return checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s > %s.pipe 2>&1)"
-                            % (pipe,pipe,pipe,simFile,cmd,pipe), 1.05*conf["ulimitExe"], conf)
+  out = checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s > %s.pipe 2>&1)"
+                           % (pipe,pipe,pipe,simFile,cmd,pipe), 1.05*conf["ulimitExe"], conf)
+  if fmi3 and resFile.endswith(".csv") and os.path.exists(resFile):
+    shared.expandArrayColumns(resFile, shared.fmi3ArrayShapes(fmus[name]))
+  return out
 
 def wasmFmuCmd(runnerFlags, resFile, runDir):
   """The simulate() that runs the exported FMU one way.

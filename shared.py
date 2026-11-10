@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
-import collections, re, os, signal, string, subprocess, threading, traceback
+import collections, csv, itertools, re, os, signal, string, subprocess, threading, traceback, zipfile
 import simplejson as json
+from xml.etree import ElementTree
 
 # Windows has no SIGKILL, and no process group to signal instead; os.kill there
 # is TerminateProcess whichever signal it is handed.
@@ -345,6 +346,62 @@ def fmiSimulator(name):
 def fmiVersionOfSimulator(name):
   """Which side of a version="2.0+3.0" FMU a simulator runs."""
   return fmiSimulator(name).get("fmiVersion", "2.0")
+
+def withArrayNames(variables):
+  """The variables and the arrays they are elements of: a[1,2] gives a[1,2] and a.
+  An FMI 3.0 FMU can have a as one variable with dimensions."""
+  arrays = [re.sub(r"\[[^\[\]]*\]$", "", v) for v in variables]
+  return list(dict.fromkeys(variables + [a for (a, v) in zip(arrays, variables) if a != v]))
+
+def fmi3ArrayShapes(fmu):
+  """The dimensions of each array variable in the modelDescription.xml of an FMI 3.0 FMU."""
+  with zipfile.ZipFile(fmu) as z:
+    root = ElementTree.fromstring(z.read("modelDescription.xml"))
+  modelVariables = root.find("ModelVariables")
+  variables = list(modelVariables) if modelVariables is not None else []
+  starts = dict((v.get("valueReference"), v.get("start")) for v in variables)
+  shapes = {}
+  for v in variables:
+    dims = [d.get("start") or starts.get(d.get("valueReference")) for d in v.findall("Dimension")]
+    if dims and all(d and d.isdigit() for d in dims):
+      shapes[v.get("name")] = [int(d) for d in dims]
+  return shapes
+
+def expandArrayColumns(csvFile, shapes):
+  """Give each element of an array its own column, a[1,1] a[1,2] ..., in a CSV
+  file that has one column per array variable with the elements separated by
+  spaces in row-major order, as FMPy writes it."""
+  with open(csvFile, newline="") as f:
+    rows = list(csv.reader(f))
+  if not rows:
+    return
+  columns = []
+  for name in rows[0]:
+    shape = shapes.get(name)
+    if shape:
+      columns.append(["%s[%s]" % (name, ",".join(str(i+1) for i in idx)) for idx in itertools.product(*[range(n) for n in shape])])
+    else:
+      columns.append(None)
+  if not any(columns):
+    return
+  header = []
+  for (name, elements) in zip(rows[0], columns):
+    header += elements or [name]
+  out = [header]
+  for row in rows[1:]:
+    expanded = []
+    for (value, elements) in zip(row, columns):
+      if elements:
+        values = value.split()
+        if len(values) != len(elements):
+          return
+        expanded += values
+      else:
+        expanded.append(value)
+    out.append(expanded)
+  with open(csvFile, "w", newline="") as f:
+    writer = csv.writer(f, lineterminator="\n")
+    writer.writerows(out)
 
 # The FMI 3.0 platform directory of each FMI 2.0 one.
 FMI3_PLATFORMS = {"linux32": "x86-linux", "linux64": "x86_64-linux",

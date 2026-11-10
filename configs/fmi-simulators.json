@@ -85,7 +85,10 @@
     "resultExtension": "csv",
     "versionArgument": "--version",
     "command": "{simulator} simulate",
-    "arguments": "--output-file {result} --start-time {startTime:g} --stop-time {stopTime:g} --timeout {timeout:g} --relative-tolerance {tolerance:g} --interface-type CoSimulation --output-interval {stepSize:g} {fmu}"
+    "arguments": "--output-file {result}{outputArgument} --start-time {startTime:g} --stop-time {stopTime:g} --timeout {timeout:g} --relative-tolerance {tolerance:g} --interface-type CoSimulation --output-interval {stepSize:g} {fmu}",
+    "optionalArguments": {
+      "outputArgument": " --output-variables {outputVariables}"
+    }
   },
   "fmusim": {
     "untested": true,
