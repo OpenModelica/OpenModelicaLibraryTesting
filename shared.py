@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import collections, csv, itertools, re, os, shutil, signal, string, subprocess, threading, traceback, zipfile
+import collections, csv, glob, itertools, re, os, shutil, signal, string, subprocess, threading, traceback, zipfile
 import simplejson as json
 from xml.etree import ElementTree
 
@@ -30,6 +30,18 @@ def simCodeTargetFromCommands(target, commands):
     if found:
       target = found[-1]
   return target
+
+def omjuliaCommand(julia, directory, *args):
+  """omjulia/simulate.jl run in the environment omjulia/setup.jl prepared in that directory."""
+  sysimage = [f for f in glob.glob(os.path.join(directory, "sysimage.*")) if not f.endswith(".key")]
+  return [julia, "--project=%s" % os.path.join(directory, "environment"), "--startup-file=no", "--history-file=no",
+          # Never precompile: thousands of parallel processes would queue to write the same depot.
+          "--compiled-modules=existing", "--threads=1"] + ["--sysimage=%s" % f for f in sysimage] + \
+         [os.path.join(os.path.dirname(os.path.abspath(__file__)), "omjulia", "simulate.jl")] + list(args)
+
+def omjuliaEnvironment(directory):
+  # The trailing separator keeps Julia's own depots, which hold the precompiled standard library.
+  return {"JULIA_DEPOT_PATH": os.path.join(directory, "depot") + os.pathsep}
 
 def fixData(data,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCommands,extrasimflags,environmentTranslation,environmentSimulation):
   data["configFromFile"] = dict(data)

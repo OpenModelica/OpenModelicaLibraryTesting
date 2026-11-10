@@ -465,6 +465,45 @@ master differs in the simulation runtime and nothing else.
 
 The Jenkins job lists it as a column of the default overview.html.
 
+### OMBackend.jl
+
+`--omjulia` translates and simulates every model with
+[OMBackend.jl](https://github.com/OpenModelica/OMBackend.jl) instead of omc's
+backend. omc's frontend still instantiates the model: OMBackend.jl reads the
+flat model through OMCompiler.jl, which loads `libOpenModelicaCompiler` into
+Julia. That library is only built by the Rust port of omc, so the omc that
+`test.py` runs (`OPENMODELICAHOME`) must be built with `-DOM_OMC_ENABLE_RUST=ON`.
+
+[omjulia/setup.jl](omjulia/setup.jl) prepares a directory with the OMJL
+packages, a Julia environment and a depot; it needs Julia 1.13 and the
+OMCompiler.jl of the OpenModelica checkout omc was built from. The packages are
+the commits [OM.jl](https://github.com/JKRT/OM.jl) pins as submodules, which
+are known to work together; `--ombackend` takes another OMBackend.jl branch,
+tag or commit. With `--omhome`
+and `--libraries` (a directory holding Modelica 4.1.0) it also compiles a
+sysimage from the MSL examples of [omjulia/workload.jl](omjulia/workload.jl),
+which `test.py` then starts Julia with: without it, every model spends about a
+minute loading OMBackend.jl and compiling its code.
+
+```bash
+JULIA_DEPOT_PATH=$HOME/omjulia/depot: julia omjulia/setup.jl \
+  --omhome=$OPENMODELICAHOME --libraries=$HOME/.openmodelica/libraries \
+  $HOME/omjulia /path/to/OpenModelica/OMCompiler/Compiler/OpenModelica.rs/OMCompiler.jl
+./test.py --branch=omjulia --omjulia=$HOME/omjulia configs/myConf.json
+./report.py --branches="master omjulia"
+```
+
+Every model runs in a Julia process of its own,
+[omjulia/simulate.jl](omjulia/simulate.jl), which loads the files again,
+instantiates, lowers, translates and simulates the model, and writes the
+variables of the reference to a CSV result file. The report columns are the
+phases of that process: frontend is omc's instantiation, backend the lowering
+to OMJLIR and its passes, simcode OMBackend.jl's translation including the
+generated code, and the simulation includes Julia compiling that code. Loading
+Julia and OMBackend.jl is in no column; the `.sim` file has it. The version of
+OMBackend.jl is part of the library version, so a new commit tests the
+libraries again.
+
 ### One build, several solvers
 
 Which solver integrates a model is a simulation flag, so testing another one

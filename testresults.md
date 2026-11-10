@@ -29,6 +29,10 @@
     `wasm-jit-me` and `wasm-jit-cs` come from a second job that exports each
     model once as a wasm FMU and drives that one FMU through its FMI 3.0 Model
     Exchange and Co-Simulation interfaces
+  - [omjulia](https://libraries.openmodelica.org/branches/overview-omjulia.html):
+    translation and simulation with
+    [OMBackend.jl](https://github.com/OpenModelica/OMBackend.jl), from the flat
+    model of omc's frontend, against master
 
 - **Regression reports and history plots**:
   Regression reports are periodically generated, using the latest development

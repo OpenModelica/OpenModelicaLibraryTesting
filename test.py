@@ -39,6 +39,8 @@ parser.add_argument('--coldhot', action="store_true", help="Simulate each model 
 parser.add_argument('--fmisimulator', action='append', default=[], help="FMI simulator to run the FMUs with, as 'name=command' or just the command. Repeat it to simulate every FMU with several tools without building it more than once; the first one stores its results in --branch and each further one in <branch>-<name>, so --branch=master-fmi with OMSimulator and fmpy fills master-fmi and master-fmi-fmpy." )
 parser.add_argument('--wasmfmu', '--wasmjitrunner', action='append', dest='wasmfmu', default=[], help="Export every model once as a wasm FMU (buildModelFMU with fmuType=me_cs, platforms={wasm,<this machine>}, written unzipped) and simulate that one FMU each of these ways: 'me' and 'cs' are its FMI 3.0 interfaces, 'sim' runs the translated model the way simulate() does. Comma-separated or repeated; each one fills <branch>-<name>, so --branch=wasm-jit with me,cs fills wasm-jit-me and wasm-jit-cs, beside the wasm-jit a job without this option fills. See configs/wasm-fmu-runners.json. Only for simCodeTarget=wasm-jit.")
 parser.add_argument('--solver', action='append', default=[], help="Build every model once and simulate it once per solver, so that testing another solver costs a simulation rather than a build. 'default' is the model's own solver and each further name is a -s the simulation is given; comma-separated or repeated. Every solver stores its results in the table its entry names, so --branch=master with default,cvode,gbode fills master, cvode and gbode. See configs/solvers.json.")
+parser.add_argument('--omjulia', default='', help="Translate and simulate every model with OMBackend.jl instead of omc's own backend, reading the flat model of the tested omc's frontend through OMCompiler.jl (an omc built with -DOM_OMC_ENABLE_RUST=ON). The value is the directory omjulia/setup.jl prepared. Each model runs in a Julia process of its own and writes a CSV result file.")
+parser.add_argument('--julia', default='julia', help="The Julia executable --omjulia runs.")
 parser.add_argument('--solverflags', default='', help="Simulate every model with the simflags of this configs/solvers.json entry, followed by --extrasimflags so that those can override them. Unlike --solver the results stay in --branch, and it works for every simCodeTarget, wasm-jit included.")
 parser.add_argument('--ulimitvmem', help="Virtual memory limit (in kB) (linux only)", type=int, default=8*1024*1024)
 parser.add_argument('--heavyjobs', help="How many of the models listed in --heavymodels may run at the same time. They are the handful that need gigabytes each, and running sixteen of them together is what takes the machine out of memory.", type=int, default=4)
@@ -80,6 +82,7 @@ fmisimulators = shared.parseFmiSimulators(args.fmisimulator)
 fmisimulator = fmisimulators[0][1] if fmisimulators else None
 wasmfmurunners = shared.parseWasmFmuRunners(args.wasmfmu)
 solvers = shared.parseSolvers(args.solver)
+omjulia = os.path.abspath(args.omjulia) if args.omjulia else ""
 if len([x for x in (fmisimulators, wasmfmurunners, solvers) if x]) > 1:
   raise Exception("--fmisimulator, --wasmfmu and --solver each fan one build out into several "
                   "result branches; a job runs one of them, not several.")
@@ -484,6 +487,15 @@ else:
     raise Exception("No OMSimulator; trying to simulate using FMI")
   print("No OMSimulator")
 
+omjuliaVersion = ""
+if omjulia:
+  if allTestsFmi or wasmfmurunners or solvers:
+    raise Exception("--omjulia simulates with OMBackend.jl; it cannot be combined with --fmi, --wasmfmu or --solver")
+  # Before any model is tested, so that an environment that does not load fails the job once.
+  omjuliaVersion = check_output_log(shared.omjuliaCommand(args.julia, omjulia, "--version"), stderr=subprocess.STDOUT,
+                                    env=dict(os.environ, **shared.omjuliaEnvironment(omjulia))).decode().strip().splitlines()[-1]
+  print(omjuliaVersion)
+
 sys.stdout.flush()
 
 try:
@@ -757,6 +769,8 @@ failedToLoad = []
 tests=[]
 for (library,conf) in configs:
   loadFailed = False
+  if omjulia:
+    conf["simCodeTarget"] = "omjulia"
   # Only when asked, so a normal run's confighash is unchanged
   if args.nobuildmodel:
     conf["noBuildModel"] = True
@@ -776,6 +790,9 @@ for (library,conf) in configs:
     confighash = strToHashInt(str(c)+hashReferenceFiles(""))
   conf["confighash"] = confighash
   conf["omhome"] = omhome
+  if omjulia:
+    conf["omjulia"] = omjulia
+    conf["julia"] = args.julia
   # if procOMC = 0 use max procs, use procOMC = 1 if not defined, else use the given value
   if "procOMC" in conf:
     if conf.get("procOMC") == 0:
@@ -916,6 +933,9 @@ for (library,conf) in configs:
   if conf.get("fmi") and fmisimulatorversion:
     conf["libraryVersionRevision"] = conf["libraryVersionRevision"] + " " + fmisimulatorversion.decode("ascii")
     conf["libraryLastChange"] = conf["libraryLastChange"] + " " + fmisimulatorversion.decode("ascii")
+  if omjulia:
+    conf["libraryVersionRevision"] = conf["libraryVersionRevision"] + " " + omjuliaVersion
+    conf["libraryLastChange"] = conf["libraryLastChange"] + " " + omjuliaVersion
   res=omc.sendExpression('{c for c guard isExperiment(c) and not regexBool(typeNameString(x), "^Modelica_Synchronous\\.WorkInProgress") in getClassNames(%s, recursive=true)}' % library)
   if conf.get("ignoreModelPrefix"):
     if isinstance(conf["ignoreModelPrefix"], list):
