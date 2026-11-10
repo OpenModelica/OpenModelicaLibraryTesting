@@ -211,6 +211,13 @@ def getReferenceFileName(conf):
         referenceFile=""
   return referenceFile
 
+# What Dymola writes to a result file besides the model: run statistics, the
+# dummy state of a model without states, and package constants.
+dymolaOnlyVariableRe = re.compile(r"CPUtime|EventCounter|Time|_derdummy|_dummy|(?:NonlinearSystems|_GlobalScope)\..*")
+
+def isDymolaOnlyVariable(name):
+  return dymolaOnlyVariableRe.fullmatch(name) is not None
+
 # A subscript of a result variable: the [1] of a[1], the [3,7] of a[3,7].
 arraySubscriptRe = re.compile(r"\[[0-9]+(?:,[0-9]+)*\]")
 # Stands in for a subscript while the rest of the name is escaped. No Modelica

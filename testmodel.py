@@ -618,6 +618,7 @@ if referenceFile != "":
       print(referenceVars)
     else:
       referenceVars=omc_new.sendExpression('readSimulationResultVars("%s", readParameters=true, openmodelicaStyle=true)' % referenceFile)
+    referenceVars=[v for v in referenceVars if not shared.isDymolaOnlyVariable(v)]
     variableFilter=shared.variableFilterOf(referenceVars)
     # get the number of intervals from the file
     numberOfIntervalsInReference = omc_new.sendExpression('readSimulationResultSize("%s")' % referenceFile)
@@ -1259,8 +1260,11 @@ def verifyAgainstReference(resFile, prefix, stat):
       fp.write("Timeout error for diffSimulationResults")
     return
 
+  # diffSimulationResults fails on a variable it cannot find in the result.
+  dymolaOnlyVars=[v for v in diffVars if shared.isDymolaOnlyVariable(v)]
+  diffVars=[v for v in diffVars if not shared.isDymolaOnlyVariable(v)]
   stat["diff"] = {"time":monotonic()-start, "vars":[], "numCompared":len(referenceVars)}
-  if len(diffVars)==0 and referenceOK:
+  if len(diffVars)==0 and (referenceOK or dymolaOnlyVars):
     stat["phase"]=7
     with open(errFile, 'a+') as fp:
       fp.write("Reference file matches\n")
