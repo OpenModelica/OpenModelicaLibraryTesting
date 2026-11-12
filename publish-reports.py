@@ -30,6 +30,7 @@ with open(args.pending) as fin:
   pending = json.load(fin)
 
 entries = pending.get("entries", {})
+unsent = []
 emails = pending.get("emails", {})
 
 db = resultsdb.connect(args.db)
@@ -51,7 +52,8 @@ if emails:
     missing_html = ("%s %s %s" % ("<p style=\"color:red;\">", missing_plain, "</p"))
 
   sent = 0
-  for email in sorted(emails.keys()):
+  recipients = sorted(emails.keys())
+  for i, email in enumerate(recipients):
     msg = EmailMessage()
     msg['Subject'] = 'OpenModelica Library Testing Regressions'
     msg['From'] = Address("OM Hudson", "openmodelicabuilds", "ida.liu.se")
@@ -70,17 +72,35 @@ The following reports contain regressions your account was involved with:
 </body>
 </html>
 """ % (missing_html, "\n".join(reversed(emails[email]["html"]))), subtype='html')
-    with smtplib.SMTP('smtp.office365.com') as s:
-      s.starttls()
-      s.ehlo()
-      s.login(os.environ["IDA_EMAIL_USR"],os.environ["IDA_EMAIL_PSW"])
-      try:
-        s.send_message(msg)
-      except smtplib.SMTPRecipientsRefused as e:
-        print("Skipping refused address %s: %s" % (email, e.recipients))
-        continue
+    try:
+      with smtplib.SMTP('smtp.office365.com', timeout=60) as s:
+        s.starttls()
+        s.ehlo()
+        s.login(os.environ["IDA_EMAIL_USR"],os.environ["IDA_EMAIL_PSW"])
+        try:
+          s.send_message(msg)
+        except smtplib.SMTPRecipientsRefused as e:
+          print("Skipping refused address %s: %s" % (email, e.recipients))
+          continue
+    except (OSError, smtplib.SMTPException) as e:
+      # The rows are in the [history] table already, so a rerun would not mail
+      # these regressions again: the log is the only place they are left in.
+      # The mail server is not reachable for the rest of them either, and the
+      # overviews this stage builds next must not be lost over it.
+      unsent = recipients[i:]
+      print("Could not send the emails, %s: %s" % (type(e).__name__, e))
+      print("Not sent, %d of %d emails:" % (len(unsent), len(emails)))
+      for address in unsent:
+        print("  %s:" % address)
+        for line in reversed(emails[address]["plain"]):
+          print("    %s" % line)
+      break
     sent += 1
   print("Sent %d of %d emails" % (sent, len(emails)))
 
 if not args.keep:
   os.remove(args.pending)
+
+if unsent:
+  # Tells the Jenkinsfile to mark the build unstable and go on.
+  sys.exit(2)

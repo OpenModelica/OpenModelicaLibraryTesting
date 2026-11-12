@@ -498,7 +498,7 @@ pipeline {
     stage('report') {
       agent {
         dockerfile {
-          label 'linux'
+          label 'linux && !asap-remote'
           dir '.CI/build-dep'
           customWorkspace 'ws/OpenModelicaLibraryTestingReport'
           args '-e IDA_EMAIL_USR=$IDA_EMAIL_USR -e IDA_EMAIL_PSW=$IDA_EMAIL_PSW'
@@ -546,7 +546,17 @@ pipeline {
         // knows about is never generated again, so one that a later failure in
         // this stage stops from being uploaded would be lost for good.
         sshPublisher(publishers: [sshPublisherDesc(configName: 'LibraryTestingReports', transfers: [sshTransfer(sourceFiles: 'history/**')])])
-        sh './publish-reports.py'
+        // Exit code 2: the reports are recorded but the mail server could not be
+        // reached. The log lists the emails left unsent; the overviews below are
+        // still built, so the build is only marked unstable.
+        script {
+          def status = sh(script: './publish-reports.py', returnStatus: true)
+          if (status == 2) {
+            unstable('publish-reports.py could not send the regression emails, see the log for the ones left unsent')
+          } else if (status != 0) {
+            error("publish-reports.py failed with exit code ${status}")
+          }
+        }
 
         sh "./report.py --branches='${env.GITBRANCHES} ${env.GITBRANCHES_WASM_JIT}' configs/conf.json configs/conf-old.json configs/conf-nonstandard.json"
         sh 'mv overview.html overview-combined.html'
@@ -628,7 +638,7 @@ pipeline {
     stage('drop stale pull request tables') {
       agent {
         dockerfile {
-          label 'linux'
+          label 'linux && !asap-remote'
           dir '.CI/build-dep'
           customWorkspace 'ws/OpenModelicaLibraryTestingReport'
         }
@@ -652,7 +662,7 @@ pipeline {
     stage('pull request report') {
       agent {
         dockerfile {
-          label 'linux'
+          label 'linux && !asap-remote'
           dir '.CI/build-dep'
           customWorkspace 'ws/OpenModelicaLibraryTestingReport'
         }
