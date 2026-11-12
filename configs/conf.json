@@ -453,10 +453,6 @@
   },
   {
     "library":"OpenIPSL",
-    "libraryVersion":"2.0.0"
-  },
-  {
-    "library":"OpenIPSL",
     "libraryVersion":"",
     "libraryVersionNameForTests":"",
     "libraryVersionLatestInPackageManager":true
