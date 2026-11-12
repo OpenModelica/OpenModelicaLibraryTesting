@@ -628,7 +628,7 @@ if referenceFile != "":
     variableFilter=shared.variableFilterOf(referenceVars)
     # get the number of intervals from the file
     numberOfIntervalsInReference = omc_new.sendExpression('readSimulationResultSize("%s")' % referenceFile)
-    emit_protected="-emit_protected"
+    emit_protected="-emit_protected -ignoreHideResult"
   except:
     referenceFile=""
 if referenceFile=="":
@@ -1269,8 +1269,15 @@ def verifyAgainstReference(resFile, prefix, stat):
   # diffSimulationResults fails on a variable it cannot find in the result.
   dymolaOnlyVars=[v for v in diffVars if shared.isDymolaOnlyVariable(v)]
   diffVars=[v for v in diffVars if not shared.isDymolaOnlyVariable(v)]
+  resVars=omc_new.sendExpression('readSimulationResultVars("%s", readParameters=true, openmodelicaStyle=true)' % resFile) or []
+  # OpenModelica writes no constants; Dymola writes them as parameters.
+  constantVars=constantsInReference([v for v in diffVars if v not in set(resVars)])
+  diffVars=[v for v in diffVars if v not in constantVars]
+  if constantVars:
+    with open(errFile, 'a+') as fp:
+      fp.write("Not compared, constant in the reference and not in the result: %s\n" % ",".join(sorted(constantVars)))
   stat["diff"] = {"time":monotonic()-start, "vars":[], "numCompared":len(referenceVars)}
-  if len(diffVars)==0 and (referenceOK or dymolaOnlyVars):
+  if len(diffVars)==0 and (referenceOK or dymolaOnlyVars or constantVars):
     stat["phase"]=7
     with open(errFile, 'a+') as fp:
       fp.write("Reference file matches\n")
@@ -1279,7 +1286,6 @@ def verifyAgainstReference(resFile, prefix, stat):
       fp.write(omc_new.sendExpression('OpenModelica.Scripting.getErrorString()', parsed = False))
       fp.write("\nVariables in the reference:" )
       fp.write(",".join(referenceVars)+"\n")
-      resVars=omc_new.sendExpression('readSimulationResultVars("%s", readParameters=true, openmodelicaStyle=true)' % resFile)
       fp.write("\nVariables in the result:" )
       fp.write(",".join(resVars)+"\n")
     stat["diff"]["vars"]=diffVars
@@ -1287,6 +1293,21 @@ def verifyAgainstReference(resFile, prefix, stat):
     # link compares, instead of a CSV and an HTML page per variable.
     filterDiffVars(resFile, prefix + ".mat", diffVars)
     filterDiffVars(referenceFile, prefix + ".ref.mat", diffVars)
+
+def constantsInReference(names):
+  """The names whose reference value does not change over time."""
+  if not names:
+    return set()
+  if referenceFile.endswith(".mat"):
+    timeVarying = set(omc_new.sendExpression('readSimulationResultVars("%s", readParameters=false, openmodelicaStyle=true)' % referenceFile) or [])
+    return {v for v in names if v not in timeVarying}
+  constants = set()
+  # One call per name: a name that is not a component reference fails alone.
+  for v in names:
+    values = omc_new.sendExpression('readSimulationResult("%s", {%s}, %d)' % (referenceFile, v, numberOfIntervalsInReference))
+    if values and len(set(values[0])) == 1:
+      constants.add(v)
+  return constants
 
 def filterDiffVars(inFile, outFile, diffVars):
   vars = ", ".join('"%s"' % v.replace('\\', '\\\\').replace('"', '\\"') for v in diffVars)
