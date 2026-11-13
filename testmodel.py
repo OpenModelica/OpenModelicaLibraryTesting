@@ -732,27 +732,8 @@ def wasmJitAcceptsFlag(flagVal):
     haveFlagCheckModel=True
   return bool((sendExpressionOldOrNew('simulate(OMLibTestFlagCheck,simflags="%s")' % flagVal) or {}).get("resultFile"))
 
-annotationSimFlags=""
-cmd = 'getSimulationOptions(%s,defaultTolerance=%s,defaultNumberOfIntervals=%s)' % (conf["modelName"], conf["defaultTolerance"], max(conf["defaultNumberOfIntervals"], numberOfIntervalsInReference))
-try:
-  (startTime,stopTime,tolerance,numberOfIntervals,stepSize)=sendExpressionOldOrNew(cmd)
-except:
-  # omc answers nothing when the call fails, and nothing else reads the buffer.
-  raise Exception("%s failed:\n%s" % (cmd, omc.sendExpression("getErrorString()", parsed = False)))
-if conf["simCodeTarget"] in ("C","C+Rust","wasm-jit") and sendExpressionOldOrNew('classAnnotationExists(%s, __OpenModelica_simulationFlags)' % conf["modelName"]):
-  for flag in sendExpressionOldOrNew('getAnnotationNamedModifiers(%s,"__OpenModelica_simulationFlags")' % conf["modelName"]):
-    if flag=="The searched annotation name not found":
-      # Old, stupid API
-      continue
-    val=sendExpressionOldOrNew('getAnnotationModifierValue(%s,"__OpenModelica_simulationFlags","%s")' % (conf["modelName"],flag))
-    flagVal=" -noemit -%s=%s" % (flag,val)
-    if wasmJitAcceptsFlag("-%s=%s" % (flag,val)) if isWasmJit else shared.simulationAcceptsFlag(flagVal, checkOutput=False, cwd="..", isWin=isWin):
-      annotationSimFlags+=" -%s=%s" % (flag,val)
-    else:
-      with open(errFile, 'a+') as fp:
-        fp.write("Ignoring simflag %s since the simulation runtime does not accept it\n" % flagVal)
-
 commandLineOptionsRe = re.compile(r'__OpenModelica_commandLineOptions\s*=\s*\\?"([^"\\]*)')
+daeModeRe = re.compile(r'(?:^|[\s"])(?:--|\+)daeMode(?:=(\w*))?(?![\w=])', re.IGNORECASE)
 
 def modelCommandLineOptions():
   """The flags the model's __OpenModelica_commandLineOptions annotation sets.
@@ -768,12 +749,44 @@ def modelCommandLineOptions():
     opts += commandLineOptionsRe.findall(text)
   return " ".join(opts)
 
-# A --daeMode model's Model Exchange interface is a DAE one (fmi-ls-dae): the
-# runners that care say how to drive it.
-daeMode = useWasmFmu and "--daeMode" in (modelCommandLineOptions() + " " + " ".join(str(c) for c in conf["customCommands"]))
+def compiledInDaeMode():
+  """Whether omc translates the model with --daeMode. The custom commands set
+  flags before the annotation does, and omc keeps the last value."""
+  values = daeModeRe.findall(" ".join(str(c) for c in conf["customCommands"]) + " " + modelCommandLineOptions())
+  return bool(values) and values[-1].lower() in ("", "true", "yes")
+
+# The runtimes integrate a --daeMode model only with IDA, so -s=ida is the last -s
+# of every run of one, whatever the annotation, the job or the solver asks for.
+daeMode = conf["simCodeTarget"] in ("C","C+Rust","wasm-jit") and compiledInDaeMode()
+daeModeSimFlags = "-s=ida" if daeMode else ""
+
+annotationSimFlags=""
+cmd = 'getSimulationOptions(%s,defaultTolerance=%s,defaultNumberOfIntervals=%s)' % (conf["modelName"], conf["defaultTolerance"], max(conf["defaultNumberOfIntervals"], numberOfIntervalsInReference))
+try:
+  (startTime,stopTime,tolerance,numberOfIntervals,stepSize)=sendExpressionOldOrNew(cmd)
+except:
+  # omc answers nothing when the call fails, and nothing else reads the buffer.
+  raise Exception("%s failed:\n%s" % (cmd, omc.sendExpression("getErrorString()", parsed = False)))
+if conf["simCodeTarget"] in ("C","C+Rust","wasm-jit") and sendExpressionOldOrNew('classAnnotationExists(%s, __OpenModelica_simulationFlags)' % conf["modelName"]):
+  for flag in sendExpressionOldOrNew('getAnnotationNamedModifiers(%s,"__OpenModelica_simulationFlags")' % conf["modelName"]):
+    if flag=="The searched annotation name not found":
+      # Old, stupid API
+      continue
+    val=sendExpressionOldOrNew('getAnnotationModifierValue(%s,"__OpenModelica_simulationFlags","%s")' % (conf["modelName"],flag))
+    flagVal=" -noemit -%s=%s" % (flag,val)
+    if daeMode and flag == "s":
+      if val != "ida":
+        with open(errFile, 'a+') as fp:
+          fp.write("Ignoring simflag -s=%s since the model is compiled with --daeMode, which needs -s=ida\n" % val)
+      continue
+    if wasmJitAcceptsFlag("-%s=%s" % (flag,val)) if isWasmJit else shared.simulationAcceptsFlag(flagVal, checkOutput=False, cwd="..", isWin=isWin):
+      annotationSimFlags+=" -%s=%s" % (flag,val)
+    else:
+      with open(errFile, 'a+') as fp:
+        fp.write("Ignoring simflag %s since the simulation runtime does not accept it\n" % flagVal)
 
 def simulateCmd(resimulate):
-  simflags = ("%s %s %s -lv LOG_STATS" % (annotationSimFlags,conf["simFlags"],emit_protected)).strip()
+  simflags = ("%s %s %s -lv LOG_STATS %s" % (annotationSimFlags,conf["simFlags"],emit_protected,daeModeSimFlags)).strip()
   return 'simulate(%s,startTime=%g,stopTime=%g,tolerance=%g,numberOfIntervals=%d,outputFormat="%s",variableFilter="%s",fileNamePrefix="%s",simflags="%s"%s)' % (conf["modelName"],startTime,stopTime,tolerance,numberOfIntervals,outputFormat,variableFilter,conf["fileName"],simflags,(',resimulateExecutable="%s"' % conf["fileName"]) if resimulate else "")
 
 # TODO: Detect and handle the case where RT_CLOCK is not available in OMC
@@ -939,6 +952,8 @@ wasmfmurunners = shared.parseWasmFmuRunners(conf.get("wasmfmurunners")) if useWa
 # The model is built once and its executable run once per solver; the solvers are
 # described in configs/solvers.json.
 solverRunners = shared.parseSolvers(conf.get("solvers")) if not conf.get("fmi") and not isWasmJit else []
+# A --daeMode model's Model Exchange interface is a DAE one (fmi-ls-dae): the
+# runners that care say how to drive it.
 if daeMode:
   wasmfmurunners = [(name, shared.wasmFmuRunner(name).get("daeModeSimflags") or flags) for (name, flags) in wasmfmurunners]
 # One build, several runs: an FMU simulated by several tools, a wasm FMU run
@@ -1076,7 +1091,7 @@ def wasmFmuCmd(runnerFlags, resFile, runDir):
   simflags = " ".join(x for x in (annotationSimFlags, conf["simFlags"], emit_protected,
                                   "-lv LOG_STATS",
                                   "-startTime=%g -stopTime=%g -tolerance=%g -stepSize=%g" % (startTime,stopTime,tolerance,stepSize),
-                                  filterArgument, resultArgument, runnerFlags) if x.strip())
+                                  filterArgument, resultArgument, runnerFlags, daeModeSimFlags) if x.strip())
   return 'simulate(%s,startTime=%g,stopTime=%g,tolerance=%g,numberOfIntervals=%d,outputFormat="%s",variableFilter="%s",fileNamePrefix="%s",simflags="%s",resimulateExecutable="%s")' % (
       conf["modelName"],startTime,stopTime,tolerance,numberOfIntervals,outputFormat,variableFilter,conf["fileName"],simflags,fromRunnerDir(runDir, "%s.fmu" % conf["fileName"].replace(".","_")))
 
@@ -1123,7 +1138,7 @@ def simulateExecutable(name, solverFlags, resFile, simFile):
   setupArgument = "-inputPath=.." if runDir else ""
   cmd = inRunnerDir(runDir, " ".join(x for x in (exe, annotationSimFlags, conf["simFlags"], emit_protected,
                              "-lv LOG_STATS" if conf["simCodeTarget"] in ("C","C+Rust") else "",
-                             setupArgument, resultArgument, solverFlags) if x.strip()))
+                             setupArgument, resultArgument, solverFlags, daeModeSimFlags) if x.strip()))
   with open(simFile,"w") as fp:
     fp.write("Environment - simulationEnvironment:\n")
     for e in conf["environmentSimulation"]:
