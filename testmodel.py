@@ -537,13 +537,16 @@ sys.excepthook = uncaughtException
 with open(errFile, 'a+') as fp:
   fp.write("Running: %s\n" % " ".join(sys.argv))
 
-if conf["simCodeTarget"] not in ["Cpp","C","C+Rust","wasm-jit"]:
+if conf["simCodeTarget"] not in ["Cpp","C","C+Rust","wasm-jit","omjulia"]:
   with open(errFile, 'a+') as fp:
     fp.write("Unknown simCodeTarget in %s" % conf["simCodeTarget"])
   writeResultAndExit(1)
 # wasm-jit builds no makefile and no executable; the model is JIT-compiled inside
 # the omc that translated it and simulated there via simulate(resimulateExecutable=)
 isWasmJit = conf["simCodeTarget"]=="wasm-jit"
+# omjulia translates and simulates with OMBackend.jl in one Julia process; omc's frontend
+# runs in that process too, so the omc here only loads the model and reads its experiment.
+isOMJulia = conf["simCodeTarget"]=="omjulia"
 # --nobuildmodel: one simulate() instead of translateModel()+resimulate, so omc
 # reports the build/simulation split itself
 # --wasmfmu: export the model once as a wasm FMU and simulate that one FMU
@@ -606,7 +609,7 @@ runningTestsuiteFiles = False
 # Hide errors for old-school running-testsuite flags...
 omc.sendExpression("getErrorString()", parsed = False)
 
-outputFormat="mat"
+outputFormat="csv" if isOMJulia else "mat"
 referenceVars=[]
 numberOfIntervalsInReference = 0
 referenceFile = conf.get("referenceFile") or ""
@@ -789,6 +792,48 @@ def simulateCmd(resimulate):
   simflags = ("%s %s %s -lv LOG_STATS %s" % (annotationSimFlags,conf["simFlags"],emit_protected,daeModeSimFlags)).strip()
   return 'simulate(%s,startTime=%g,stopTime=%g,tolerance=%g,numberOfIntervals=%d,outputFormat="%s",variableFilter="%s",fileNamePrefix="%s",simflags="%s"%s)' % (conf["modelName"],startTime,stopTime,tolerance,numberOfIntervals,outputFormat,variableFilter,conf["fileName"],simflags,(',resimulateExecutable="%s"' % conf["fileName"]) if resimulate else "")
 
+def runOMJulia(timeout):
+  """Run omjulia/simulate.jl on the model; what it says goes to the .sim file.
+
+  Returns its statistics: the seconds each phase it finished took, and the phase it
+  failed in or was still running when it was killed."""
+  global omc
+  # Not needed any more, and a timeout signals every child of this process: the
+  # session would be killed with Julia and fail the next command sent to it.
+  omc = quit_omc(omc)
+  request = os.path.abspath("%s.omjulia.json" % conf["fileName"])
+  statsFile = os.path.abspath("%s.omjulia.stats.json" % conf["fileName"])
+  with open(request, "w") as fp:
+    json.dump({"omhome": omhome, "modelicaPath": libraries+MSLpath, "loadFiles": conf["loadFiles"],
+               "commands": ['setCommandLineOptions("%s")' % conf["omc_thread_cmd"]] * bool(conf["omc_thread_cmd"]) + [str(c) for c in conf["customCommands"]],
+               "model": conf["modelName"], "startTime": startTime, "stopTime": stopTime, "tolerance": tolerance,
+               "numberOfIntervals": numberOfIntervals, "variables": referenceVars,
+               "resultFile": "" if outputFormat == "empty" else os.path.abspath("%s_res.%s" % (conf["fileName"], outputFormat)),
+               "statsFile": statsFile}, fp)
+  os.environ.update(shared.omjuliaEnvironment(conf["omjulia"]))
+  os.environ["OMJL_LOG_DIR"] = os.path.abspath("omjl-logs")
+  cmd = " ".join(shlex.quote(a) for a in shared.omjuliaCommand(conf["julia"], conf["omjulia"], request))
+  with open(simFile, "w") as fp:
+    fp.write("startTime=%g\nstopTime=%g\ntolerance=%g\nnumberOfIntervals=%d\nstepSize=%g\n" % (startTime,stopTime,tolerance,numberOfIntervals,stepSize))
+    fp.write("OMBackend.jl: %s\n" % cmd)
+  pipe = conf["fileName"]
+  started = monotonic()
+  try:
+    checkOutputTimeout("(rm -f %s.pipe ; mkfifo %s.pipe ; head -c 1048576 < %s.pipe >> %s & %s > %s.pipe 2>&1)" % (pipe,pipe,pipe,simFile,cmd,pipe), timeout, conf)
+  except TimeoutError as e:
+    with open(errFile, 'a+') as fp:
+      fp.write("OMBackend.jl failed or timed out\n")
+  try:
+    with open(statsFile) as fp:
+      stats = json.load(fp)
+  except (OSError, ValueError):
+    stats = {"running": "startup"}
+  if stats.get("running") in stats.get("startedAt", {}):
+    stats[stats["running"]] = monotonic() - started - stats["startedAt"][stats["running"]]
+  with open(errFile, 'a+') as fp:
+    fp.write("OMBackend.jl: %s\n" % json.dumps(stats))
+  return stats
+
 # TODO: Detect and handle the case where RT_CLOCK is not available in OMC
 total_before = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_SIMULATE_TOTAL)")
 
@@ -827,6 +872,10 @@ elif useWasmFmu:
   sendExpressionOldOrNew('setCommandLineOptions("--fmuDirectory=true")')
   cmd='"" <> buildModelFMU(%s,fileNamePrefix="%s",fmuType="me_cs",version="3.0",platforms={"wasm"})' % (conf["modelName"],conf["fileName"].replace(".","_"))
   timedPhase = "build"
+elif isOMJulia:
+  cmd="omjulia/simulate.jl"
+  timeout = conf["ulimitOmc"] + conf["ulimitExe"]
+  timedPhase = "frontend"
 elif useSimulate:
   cmd=simulateCmd(resimulate=False)
   timeout = conf["ulimitOmc"] + conf["ulimitExe"]
@@ -841,7 +890,7 @@ with open(errFile, 'a+') as fp:
   fp.write("Running command: %s\n"%(cmd))
 try:
   phaseStarts(timedPhase)
-  res=sendExpressionTimeout(omc, cmd, timeout)
+  res=runOMJulia(timeout) if isOMJulia else sendExpressionTimeout(omc, cmd, timeout)
   phaseEnded()
 except TimeoutError as e:
   execstat[timedPhase]=monotonic()-start
@@ -867,13 +916,19 @@ if useSimulate:
   # translation clocks below say which of the two it was
   buildFailed = (simres.get("messages") or "").startswith("Failed to build model")
   res = True
-err        = omc.sendExpression("OpenModelica.Scripting.getErrorString()")
-total      = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_SIMULATE_TOTAL)")-total_before
-buildmodel = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_BUILD_MODEL)")
-templates  = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_TEMPLATES)")
-simcode    = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_SIMCODE)")
-backend    = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_BACKEND)")
-frontend   = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_FRONTEND)")
+elif isOMJulia:
+  simres = res
+  res = True
+if isOMJulia:
+  (err, frontend, backend) = ("", -1, -1)
+else:
+  err        = omc.sendExpression("OpenModelica.Scripting.getErrorString()")
+  total      = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_SIMULATE_TOTAL)")-total_before
+  buildmodel = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_BUILD_MODEL)")
+  templates  = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_TEMPLATES)")
+  simcode    = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_SIMCODE)")
+  backend    = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_BACKEND)")
+  frontend   = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_FRONTEND)")
 
 writeResult()
 if not isWasmJit or (useSimulate and not useColdHot):
@@ -884,7 +939,14 @@ print(execTimeTranslateModel,frontend,backend)
 # The clocks nest, frontend > backend > simcode > templates > buildmodel, each
 # reading the time since its own phase started, so a phase's own time is the
 # difference to the next one in. -1 is a phase this translation never started.
-if backend == -1:
+if isOMJulia:
+  for key in ("parsing", "frontend", "backend", "simcode"):
+    if key in simres:
+      execstat[key] = simres[key]
+  stoppedIn = simres.get("failed") or simres.get("running")
+  # omjulia has no templates phase: its simcode phase generates the code as well.
+  execstat["phase"] = {"startup": 0, "parsing": 0, "frontend": 0, "backend": 1, "simcode": 2}.get(stoppedIn, 4)
+elif backend == -1:
   execstat["phase"]=0
   if frontend != -1:
     execstat["frontend"]=frontend
@@ -922,6 +984,10 @@ try:
         execstat["phase"]=4
         writeResultAndExit(0)
       execstat["phase"] = 5
+  elif isOMJulia:
+    # Julia compiles the generated code while it simulates.
+    execstat["build"] = 0.0
+    execstat["phase"] = 5
   elif isWasmJit:
     # Nothing to build; simulate() reports the JIT compile as timeCompile, while
     # a resimulate leaves it in the simulation time
@@ -1158,6 +1224,8 @@ def simElapsed():
   # A run omc aborted reports none, and then the wall clock is all there is.
   if useSimulate or useColdHot or useWasmFmu:
     return (simres or {}).get("timeSimulation") or (monotonic()-start)
+  if isOMJulia:
+    return (simres or {}).get("sim") or 0.0
   return monotonic()-start
 
 start=monotonic()
@@ -1183,6 +1251,11 @@ try:
       # The same shape a failing FMI simulator takes: the handler below decides
       # whether the other runners of this FMU still get their turn.
       raise TimeoutError("%s failed to simulate the wasm FMU" % name)
+  elif isOMJulia:
+    # The simulation ran with the translation; a result that was not written failed it too.
+    if simres.get("failed") or simres.get("running"):
+      execstat["sim"] = simElapsed()
+      writeResultAndExit(0)
   elif isWasmJit:
     if not useSimulate:
       cmd = simulateCmd(resimulate=True)
@@ -1219,7 +1292,7 @@ try:
     (name, solverFlags) = solverRunners[0] if solverRunners else (None, "")
     res = simulateExecutable(name, solverFlags, resFile, simFile)
   execstat["sim"] = simElapsed()
-  execstat["simwall"] = monotonic()-start
+  execstat["simwall"] = execstat["sim"] if isOMJulia else monotonic()-start
   execstat["phase"] = 6
   phaseEnded()
 except TimeoutError as e:

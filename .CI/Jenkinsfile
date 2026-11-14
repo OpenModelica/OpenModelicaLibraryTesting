@@ -30,6 +30,8 @@ pipeline {
     booleanParam(name: 'wasm_web', defaultValue: false, description: 'master branch, with --simCodeTarget=wasm-jit (ryzen-9950x), simulated the way the web omc does: the driver and the linear and nonlinear solvers in wasm, the in-wasm libm, and external "C" only from prebuilt wasm libraries. Fills wasm-web. This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'wasm_fmu', defaultValue: false, description: 'master branch, with --simCodeTarget=wasm-jit (ryzen-9950x). Every model is exported once as an unzipped wasm FMU and simulated through both of its FMI 3.0 interfaces, filling wasm-jit-me (Model Exchange) and wasm-jit-cs (Co-Simulation). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'c_plus_rust', defaultValue: false, description: 'master branch, with --simCodeTarget=C+Rust, filling c-plus-rust (ryzen-9950x). The C code generator emits what it does for --simCodeTarget=C; the executable links libSimulationRuntimeRust instead of libSimulationRuntimeC, so the difference against master is the simulation runtime alone. This is an experimental job that does not run on a fixed schedule.')
+    booleanParam(name: 'omjulia', defaultValue: false, description: 'master branch, translated and simulated with OMBackend.jl, filling omjulia (ryzen-9950x). omc is built with -DOM_OMC_ENABLE_RUST=ON; its frontend runs inside Julia and OMBackend.jl reads the flat model through OMCompiler.jl. This is an experimental job that does not run on a fixed schedule.')
+    string(name: 'omjulia_ombackend', defaultValue: '', description: 'The branch, tag or commit of OMBackend.jl the omjulia job simulates with. Left empty, the commit JKRT/OM.jl pins as its submodule; the sibling packages (OMFrontend.jl, ...) are always the commits it pins.')
     booleanParam(name: 'heavy_tests', defaultValue: false, description: 'master branch, runs one test at a time. That is, no parallel launching of tests. omc will use multiple threads for each test (-n=1 is not set unlike the other regression tests.), (r7945). This is an experimental job that does not run on a fixed schedule.')
     booleanParam(name: 'heavy_tests_wasm', defaultValue: false, description: 'heavy_tests with --simCodeTarget=wasm-jit, filling heavy_tests_wasm (r7945). Its results are in the heavy_tests report. This is an experimental job that does not run on a fixed schedule.')
 
@@ -379,6 +381,28 @@ pipeline {
           runRegressiontest('master', 'c-plus-rust', 'setCommandLineOptions("--simCodeTarget=C+Rust")', '', false, '', '', false, false)
         }
       }
+      stage('omjulia') {
+        agent {
+          node {
+            label 'ryzen-9950x'
+            customWorkspace 'ws/OpenModelicaLibraryTestingWork'
+          }
+        }
+        options { skipDefaultCheckout() }
+        when {
+          beforeAgent true
+          expression { params.omjulia }
+        }
+        steps {
+          script {
+            if (omjuliaOMBackend().contains("'")) {
+              error "omjulia_ombackend cannot contain a single quote; got '${omjuliaOMBackend()}'"
+            }
+          }
+          runRegressiontest('master', 'omjulia', '', '', false, '', '', false, false, 0, 'configs/conf.json',
+                            wasmCmakeFlags(), '.CI/testing', null, null, omjuliaOMBackend())
+        }
+      }
       stage('generateSymbolicJacobian') {
         agent {
           node {
@@ -506,7 +530,7 @@ pipeline {
       }
       when {
         beforeAgent true
-        expression { params.v1_25 || params.v1_26 || params.v1_27 || params.master || params.conversion_script || params.report_ryzen_5950x_1 || params.report_ryzen_5950x_2 || params.newInst_newBackend || params.generateSymbolicJacobian || params.dataReconciliation || params.heavy_tests || params.heavy_tests_wasm || params.fmi_v1_25 || params.fmi_v1_26 || params.fmi_v1_27 || params.fmi_master || params.newInst_daeMode || params.newBackend_daeMode || params.oldInst || params.cpp || params.solvers || params.wasm_jit || params.wasm_fmu || params.wasm_web || params.c_plus_rust}
+        expression { params.v1_25 || params.v1_26 || params.v1_27 || params.master || params.conversion_script || params.report_ryzen_5950x_1 || params.report_ryzen_5950x_2 || params.newInst_newBackend || params.generateSymbolicJacobian || params.dataReconciliation || params.heavy_tests || params.heavy_tests_wasm || params.fmi_v1_25 || params.fmi_v1_26 || params.fmi_v1_27 || params.fmi_master || params.newInst_daeMode || params.newBackend_daeMode || params.oldInst || params.cpp || params.solvers || params.wasm_jit || params.wasm_fmu || params.wasm_web || params.c_plus_rust || params.omjulia}
       }
       environment {
         GITBRANCHES = 'maintenance/v1.20 maintenance/v1.21 maintenance/v1.22 maintenance/v1.23 maintenance/v1.24 maintenance/v1.25 maintenance/v1.26 maintenance/v1.27 master newInst-newBackend'
@@ -517,6 +541,7 @@ pipeline {
         GITBRANCHES_CPP = 'v1.19-cpp v1.20-cpp v1.21-cpp v1.22-cpp v1.23-cpp v1.24-cpp v1.25-cpp cpp v1.26-cpp v1.27-cpp'
         GITBRANCHES_WASM_JIT = 'wasm-jit-me wasm-jit-cs wasm-jit wasm-web'
         GITBRANCHES_C_PLUS_RUST = 'c-plus-rust'
+        GITBRANCHES_OMJULIA = 'omjulia'
         GITBRANCHES_SPECIAL = 'master newInst-newBackend'
         PYTHONIOENCODING = 'utf-8'
         IDA_EMAIL = credentials('IDA email')
@@ -539,8 +564,8 @@ pipeline {
 
         // The shell takes extraEmails from the environment, so its value is never
         // part of the command.
-        sh "./all-reports.py --email --extra-emails=\"\$extraEmails\" --omcgitdir=OpenModelica ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT} ${env.GITBRANCHES_C_PLUS_RUST} conversion heavy_tests heavy_tests_wasm generateSymbolicJacobian dataReconciliation gbode cvode ida"
-        sh "./all-plots.py ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT} ${env.GITBRANCHES_C_PLUS_RUST} conversion heavy_tests heavy_tests_wasm generateSymbolicJacobian dataReconciliation gbode cvode ida"
+        sh "./all-reports.py --email --extra-emails=\"\$extraEmails\" --omcgitdir=OpenModelica ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT} ${env.GITBRANCHES_C_PLUS_RUST} ${env.GITBRANCHES_OMJULIA} conversion heavy_tests heavy_tests_wasm generateSymbolicJacobian dataReconciliation gbode cvode ida"
+        sh "./all-plots.py ${env.GITBRANCHES} ${env.GITBRANCHES_FMI} ${env.GITBRANCHES_NEWINST} ${env.GITBRANCHES_DAE} ${env.GITBRANCHES_NEWBACKEND_DAE} ${env.GITBRANCHES_CPP} ${env.GITBRANCHES_WASM_JIT} ${env.GITBRANCHES_C_PLUS_RUST} ${env.GITBRANCHES_OMJULIA} conversion heavy_tests heavy_tests_wasm generateSymbolicJacobian dataReconciliation gbode cvode ida"
 
         // Recorded and announced only once they are up: a report the database
         // knows about is never generated again, so one that a later failure in
@@ -621,6 +646,9 @@ pipeline {
         // and the web omc's in-wasm path.
         sh "./report.py --branches='master ${env.GITBRANCHES_WASM_JIT}' configs/conf.json"
         sh "mv overview.html overview-wasm-jit.html"
+
+        sh "./report.py --branches='master ${env.GITBRANCHES_OMJULIA}' configs/conf.json"
+        sh "mv overview.html overview-omjulia.html"
 
         sh "./report.py --branches='${env.GITBRANCHES_CPP}' configs/conf.json"
         sh "mv overview.html overview-c++.html"
@@ -714,6 +742,10 @@ pipeline {
   */
 def pullRequest() {
   return (params.pull_request ?: '').trim()
+}
+
+def omjuliaOMBackend() {
+  return (params.omjulia_ombackend ?: '').trim()
 }
 
 def pullRequestTarget() {
@@ -891,6 +923,9 @@ def buildsWithCMake(branch) {
   *                             `.CI/testing`, the image every job runs in: the omc build, the OMSimulator
   *                             build and test.py happen inside it, and only the steps using the node's own
   *                             omc stay outside. Passing `''` runs the job on the node itself.
+  * @param omjuliaRef:          Translate and simulate with OMBackend.jl instead of omc's backend: the
+  *                             OMBackend.jl ref, '' for the one OM.jl pins; null for omc's backend. omc
+  *                             has to be the Rust port (cmakeFlags).
   */
 /* The FMI simulators of an FMI job, which builds every FMU once and simulates it with all of them,
  * filling <branch>-fmi, <branch>-fmi-cs-cvode, <branch>-fmi-cs-euler and <branch>-fmi-fmpy.
@@ -916,7 +951,7 @@ def wasmWebEnv() {
           'OMC_WASM_NATIVE_EXTERNALS=0']
 }
 
-def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimflags, testFlags, boolean removePackageOrder, boolean conversionScript, int jobs=0, libs_config_file = 'configs/conf.json', cmakeFlags = '', dockerfile = '.CI/testing', fmiSimulators = null, solvers = null) {
+def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimflags, testFlags, boolean removePackageOrder, boolean conversionScript, int jobs=0, libs_config_file = 'configs/conf.json', cmakeFlags = '', dockerfile = '.CI/testing', fmiSimulators = null, solvers = null, omjuliaRef = null) {
   sh '''
   find /tmp  -name "*openmodelica.hudson*" -exec rm {} ";" || true
 
@@ -968,7 +1003,8 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
   def dockerEnv = ['PATH+VENV=/opt/libtest-venv/bin',
                    'PATH+CARGO=/opt/rust/cargo/bin',
                    'CARGO_HOME=/opt/rust/cargo',
-                   'RUSTUP_HOME=/opt/rust/rustup']
+                   'RUSTUP_HOME=/opt/rust/rustup',
+                   'PATH+JULIA=/opt/julia/bin']
   // Runs a script in the image if the target uses one, on the node otherwise.
   def runSh = { args ->
     if (image) {
@@ -1253,6 +1289,19 @@ def runRegressiontest(branch, name, extraFlags, omsHash, omcompiler, extrasimfla
   def libraryPath = installLibraries(removePackageOrder, conversionScript, name, "${WORKSPACE}/OpenModelica/${OMCPATH}/build", runSh)
 
   sh "test -d '${libraryPath}/.openmodelica/libraries/Modelica trunk'"
+
+  if (omjuliaRef != null) {
+    // Kept between runs like the omc build: precompiling OMBackend.jl and its dependencies, and
+    // the sysimage compiled from MSL examples, take much longer than updating them. OMCompiler.jl
+    // comes from the checkout omc was built from.
+    def omjuliaDir = "${env.HOME}/saved_omc/omjulia-env"
+    runSh("""
+    JULIA_DEPOT_PATH='${omjuliaDir}/depot:' julia OpenModelicaLibraryTesting/omjulia/setup.jl ${omjuliaRef ? "--ombackend='${omjuliaRef}'" : ''} \
+      --omhome="${WORKSPACE}/OpenModelica/${OMCPATH}/build" --libraries='${libraryPath}/.openmodelica/libraries' \
+      '${omjuliaDir}' "${WORKSPACE}/OpenModelica/OMCompiler/Compiler/OpenModelica.rs/OMCompiler.jl"
+    """)
+    testFlags += " --omjulia='${omjuliaDir}'"
+  }
 
   sh 'date'
 

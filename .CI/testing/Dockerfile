@@ -27,7 +27,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update \
   && apt-get install -qy software-properties-common \
   && add-apt-repository -y ppa:deadsnakes/ppa \
-  && apt-get install -qy --no-install-recommends openssh-client psmisc rsync time \
+  && apt-get install -qy --no-install-recommends curl openssh-client psmisc rsync time \
   && apt-get install -qy --no-install-recommends libcomedi-dev libx11-dev libnetcdf-dev mosquitto \
   && apt-get install -qy --no-install-recommends autoconf automake libtool omniidl libomniorb4-dev \
   && apt-get install -qy --no-install-recommends libboost-dev libboost-chrono-dev libboost-filesystem-dev \
@@ -36,6 +36,19 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get install -qy python3.8 python3.12 libpython3.8-dev libpython3.12-dev \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
+
+# Julia for the omjulia job, which simulates with OMBackend.jl. Its packages are not in the image:
+# omjulia/setup.jl puts them in a depot under ~/saved_omc, next to the omc they are built against.
+ARG JULIA_VERSION=1.13.3
+ARG JULIA_SHA256=5c61cb4b40332cb5a3504e7779e2f5dac093caa4a1116ded19f01413f85c63e4
+RUN curl -fsSL -o /tmp/julia.tar.gz \
+       "https://julialang-s3.julialang.org/bin/linux/x64/${JULIA_VERSION%.*}/julia-${JULIA_VERSION}-linux-x86_64.tar.gz" \
+  && echo "${JULIA_SHA256}  /tmp/julia.tar.gz" | sha256sum -c - \
+  && mkdir -p /opt/julia \
+  && tar -xzf /tmp/julia.tar.gz -C /opt/julia --strip-components=1 \
+  && rm /tmp/julia.tar.gz \
+  && /opt/julia/bin/julia --version
+ENV PATH=/opt/julia/bin:$PATH
 
 # On PATH rather than named explicitly: test.py starts testmodel.py through its
 # `#!/usr/bin/env python3` shebang.
