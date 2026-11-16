@@ -40,6 +40,7 @@ parser.add_argument('--fmisimulator', action='append', default=[], help="FMI sim
 parser.add_argument('--wasmfmu', '--wasmjitrunner', action='append', dest='wasmfmu', default=[], help="Export every model once as a wasm FMU (buildModelFMU with fmuType=me_cs, platforms={wasm,<this machine>}, written unzipped) and simulate that one FMU each of these ways: 'me' and 'cs' are its FMI 3.0 interfaces, 'sim' runs the translated model the way simulate() does. Comma-separated or repeated; each one fills <branch>-<name>, so --branch=wasm-jit with me,cs fills wasm-jit-me and wasm-jit-cs, beside the wasm-jit a job without this option fills. See configs/wasm-fmu-runners.json. Only for simCodeTarget=wasm-jit.")
 parser.add_argument('--solver', action='append', default=[], help="Build every model once and simulate it once per solver, so that testing another solver costs a simulation rather than a build. 'default' is the model's own solver and each further name is a -s the simulation is given; comma-separated or repeated. Every solver stores its results in the table its entry names, so --branch=master with default,cvode,gbode fills master, cvode and gbode. See configs/solvers.json.")
 parser.add_argument('--reference_tube', default='', help="Compare every library's results with diffSimulationResults(tube=OpenModelica.Scripting.TubeAlgorithm.<this>) (rectangle, ellipse or ellipse2014) instead of its reference_tube; the omc of --ompython_omhome needs the tube argument.")
+parser.add_argument('--reference_tolerance', type=float, default=None, help="The tolerance (rangeDelta) of the rectangle and ellipse tubes for every library instead of its reference_tolerance. Without either, diffSimulationResults uses its default, which is that of csv-compare.")
 parser.add_argument('--solverflags', default='', help="Simulate every model with the simflags of this configs/solvers.json entry, followed by --extrasimflags so that those can override them. Unlike --solver the results stay in --branch, and it works for every simCodeTarget, wasm-jit included.")
 parser.add_argument('--ulimitvmem', help="Virtual memory limit (in kB) (linux only)", type=int, default=8*1024*1024)
 parser.add_argument('--heavyjobs', help="How many of the models listed in --heavymodels may run at the same time. They are the handful that need gigabytes each, and running sixteen of them together is what takes the machine out of memory.", type=int, default=4)
@@ -765,6 +766,8 @@ for (library,conf) in configs:
     conf["coldHot"] = True
   if args.reference_tube:
     conf["reference_tube"] = args.reference_tube
+  if args.reference_tolerance is not None:
+    conf["reference_tolerance"] = args.reference_tolerance
   c=conf.copy()
   del(c["configFromFile"])
   if "referenceFiles" in c:
@@ -1637,7 +1640,7 @@ for (resultBranch, runner) in resultBranches:
       (u"#defaultNumberOfIntervals#", html.escape(str(conf["defaultNumberOfIntervals"]))),
       (u"#simFlags#", html.escape(conf.get("simFlags") or "")),
       (u"#referenceFiles#", ('<p>Reference Files: %s</p>%s' % ((conf["referenceFilesURL"].replace(os.path.dirname(os.path.realpath(__file__)),"")), gitReferenceFilesVersion)) if ((conf.get("referenceFilesURL") or "") != "") else ""),
-      (u"#referenceTool#", ('<p>Verified using: %s (diffSimulationResults%s)</p>' % (html.escape(ompython_omc_version), html.escape(', tube=%s' % conf["reference_tube"]) if conf.get("reference_tube") else "")) if ((conf.get("referenceFiles") or "") != "") else ""),
+      (u"#referenceTool#", ('<p>Verified using: %s (diffSimulationResults%s)</p>' % (html.escape(ompython_omc_version), html.escape(', tube=%s' % conf["reference_tube"] + (', tolerance=%g' % conf["reference_tolerance"] if conf["reference_tube"] in ("rectangle", "ellipse") and "reference_tolerance" in conf else "")) if conf.get("reference_tube") else "")) if ((conf.get("referenceFiles") or "") != "") else ""),
       (u"#Total#", html.escape(str(numSucceeded[0]))),
       (u"#FrontendColor#", checkNumSucceeded(numSucceeded, 1)),
       (u"#BackendColor#", checkNumSucceeded(numSucceeded, 2)),
