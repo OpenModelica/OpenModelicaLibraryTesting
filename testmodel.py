@@ -734,6 +734,7 @@ def wasmJitAcceptsFlag(flagVal):
 
 commandLineOptionsRe = re.compile(r'__OpenModelica_commandLineOptions\s*=\s*\\?"([^"\\]*)')
 daeModeRe = re.compile(r'(?:^|[\s"])(?:--|\+)daeMode(?:=(\w*))?(?![\w=])', re.IGNORECASE)
+allowNonStandardRe = re.compile(r'^(?:--|-|\+)allowNonStandardModelica(?:=|$)')
 
 def modelCommandLineOptions():
   """The flags the model's __OpenModelica_commandLineOptions annotation sets.
@@ -815,6 +816,18 @@ if conf.get("fmi") and any(shared.fmiVersionOfSimulator(name) == "3.0" for (name
 # --fmiFilter=protected leaves out what -emit_protected writes for simulate().
 if emit_protected and (conf.get("fmi") or useWasmFmu):
   sendExpressionOldOrNew('setCommandLineOptions("--fmiFilter=internal")')
+
+# --warnNonStandardModelica reports non-standard Modelica unless the model
+# allows it itself, so the annotation is applied here without that flag.
+if any("--warnNonStandardModelica" in str(c) for c in conf["customCommands"]):
+  annotationFlags = modelCommandLineOptions().split(" ")
+  keptFlags = [f for f in annotationFlags if f and not allowNonStandardRe.match(f)]
+  if len(keptFlags) < len([f for f in annotationFlags if f]):
+    with open(errFile, 'a+') as fp:
+      fp.write("Ignoring --allowNonStandardModelica in the __OpenModelica_commandLineOptions annotation; using: %s\n" % (" ".join(keptFlags) or "no flags"))
+    sendExpressionOldOrNew('setCommandLineOptions("--ignoreCommandLineOptionsAnnotation=true")')
+    if keptFlags:
+      sendExpressionOldOrNew('setCommandLineOptions("%s")' % " ".join(keptFlags))
 
 start=monotonic()
 timeout = conf["ulimitOmc"]
