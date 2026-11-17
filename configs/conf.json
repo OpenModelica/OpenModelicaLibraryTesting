@@ -458,10 +458,7 @@
     "libraryVersion":"main"
   },
   {
-    "library":"OpenIPSL",
-    "libraryVersion":"",
-    "libraryVersionNameForTests":"",
-    "libraryVersionLatestInPackageManager":true
+    "library":"OpenIPSL"
   },
   {
     "library":"OpenIPSL",
