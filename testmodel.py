@@ -811,6 +811,11 @@ fmiVersion = conf.get("fmi")
 if conf.get("fmi") and any(shared.fmiVersionOfSimulator(name) == "3.0" for (name, _) in fmisimulators):
   fmiVersion = "2.0+3.0"
 
+# An FMU result holds only the modelDescription variables, and the default
+# --fmiFilter=protected leaves out what -emit_protected writes for simulate().
+if emit_protected and (conf.get("fmi") or useWasmFmu):
+  sendExpressionOldOrNew('setCommandLineOptions("--fmiFilter=internal")')
+
 start=monotonic()
 timeout = conf["ulimitOmc"]
 # If the command has to be killed there is no way to tell which phase it was in,
