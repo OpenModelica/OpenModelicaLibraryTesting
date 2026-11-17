@@ -22,6 +22,9 @@ def resultTable(branch):
 # derives it, and the exceptions, from the master results.
 DEFAULT_ULIMIT_EXE = 240
 
+# The tag omc --warnNonStandardModelica adds to the warning for non-standard Modelica.
+nonStandardRe = re.compile(r"\[Non-standard Modelica: --allowNonStandardModelica=(\w+)\]")
+
 simCodeTargetRe = re.compile('--simCodeTarget=([^"\'\\s,;)]+)')
 
 def simCodeTargetFromCommands(target, commands):

@@ -8,6 +8,11 @@ import shared, resultsdb
 parser = argparse.ArgumentParser(description='OpenModelica library testing report generation tool')
 parser.add_argument('configs', nargs='*')
 parser.add_argument('--branches', default='master')
+parser.add_argument('--invalid-branch', default='master',
+                    help="The branch whose newest run of each library says which models are invalid: "
+                         "omc translated them only because --warnNonStandardModelica turned the errors of "
+                         "non-standard Modelica into warnings. They are left out of the counts, whatever "
+                         "the other branches say about them.")
 resultsdb.addArgument(parser)
 args = parser.parse_args()
 configs = args.configs
@@ -16,6 +21,7 @@ if configs == []:
   raise Exception("Error: Expected at least one configuration file to start the library test")
 
 branches = [shared.resultTable(br) for br in args.branches.split(" ")]
+invalidBranch = shared.resultTable(args.invalid_branch)
 
 dates = {}
 dates_str = {}
@@ -39,12 +45,22 @@ entryhead = "<tr><th>Branch</th><th>Total</th><th>Parsing</th><th>Frontend</th><
 db = resultsdb.connect(args.db)
 cursor = db.cursor()
 
-nmodels = {}
-nsimulate = {}
-nverify = {}
-exectime = {}
-simtime = {}
+# (view, label): which models a library's tables count.
+VIEWS = [("valid", "Exclude invalid"), ("all", "Include invalid"), ("invalid", "Only invalid")]
 
+def inView(view, model, invalid):
+  return view == "all" or (model in invalid) == (view == "invalid")
+
+invalidModels = {}
+if db.tableExists(invalidBranch) and "invalid" in db.columns(invalidBranch):
+  for libname in libnames:
+    v = cursor.execute("SELECT MAX(date) FROM %s WHERE libname=?" % db.quote(invalidBranch), (libname,)).fetchone()
+    if v and v[0]:
+      invalidModels[libname] = set(m for (m,) in cursor.execute(
+        "SELECT model FROM %s WHERE libname=? AND date=? AND finalphase>=0 AND invalid=1" % db.quote(invalidBranch),
+        (libname, v[0])))
+
+rows = {}
 missing_branches = []
 for branch in branches:
   one = None
@@ -61,7 +77,7 @@ for branch in branches:
   db.createDateIndex(branch)
 
   dates[branch] = {}
-  branch_nmodels = 0
+  rows[branch] = {}
   for libname in libnames:
     cursor.execute("SELECT date FROM %s WHERE libname=? ORDER BY date DESC LIMIT 1" % db.quote(branch), (libname,))
     v = cursor.fetchone()
@@ -69,32 +85,73 @@ for branch in branches:
       dates[branch][libname] = 0
       continue
     dates[branch][libname] = v[0]
-    for x in cursor.execute("SELECT model FROM %s WHERE libname=? AND date=? AND finalphase>=0" % db.quote(branch), (libname,v[0])):
-      if libname not in libs:
-        libs[libname] = set()
-      libs[libname].add(x[0])
-      branch_nmodels += 1
-  nmodels[branch] = branch_nmodels
-  nsimulate[branch] = 0
-  nverify[branch] = 0
-  exectime[branch] = 0.0
-  simtime[branch] = 0.0
+    rows[branch][libname] = cursor.execute("SELECT model,finalphase,%s FROM %s WHERE libname=? AND date=? AND finalphase>=0"
+                                           % (",".join(fields), db.quote(branch)), (libname,v[0])).fetchall()
+    for r in rows[branch][libname]:
+      libs.setdefault(libname, set()).add(r[0])
 
-entries = ""
 # removing missing branches
 for branch in missing_branches:
   branches.remove(branch)
 
+def counts(branch, lib, view):
+  """The number of models reaching each phase, and the time spent in each."""
+  invalid = invalidModels.get(lib, set())
+  selected = [r for r in rows[branch].get(lib, []) if inView(view, r[0], invalid)]
+  vs = [sum(1 for r in selected if r[1] >= i) for i in range(0,8)]
+  sums = [sum(r[2+i] or 0 for r in selected) for i in range(0,len(fields))]
+  return (vs, sums)
+
+totals = {}
+for (view, _) in VIEWS:
+  totals[view] = {}
+  for branch in branches:
+    t = {"simulate": 0, "verify": 0, "total": 0, "exectime": 0.0, "simtime": 0.0}
+    for lib in libs:
+      (vs, sums) = counts(branch, lib, view)
+      t["simulate"] += vs[6]
+      t["verify"] += vs[7]
+      t["total"] += vs[0]
+      t["exectime"] += sums[0]
+      t["simtime"] += sums[7]
+    totals[view][branch] = t
+
+def countsTable(caption, rows):
+  return '<table class="counts"><caption>%s</caption>\n%s%s</table>\n' % (caption, entryhead, "".join(rows))
+
+def libraryTables(lib, view):
+  phases = []
+  times = []
+  old_vs = None
+  for branch in branches:
+    (vs, sums) = counts(branch, lib, view)
+    link = '<td><a href="%s/%s/%s.html">%s</a></td>' % (branch,lib,lib,branch)
+    phases.append("<tr>%s%s</tr>\n" % (link, "".join('<td%s>%s</td>' % (' class="warning"' if old_vs and old_vs[i]>vs[i] else (' class="better"' if old_vs and old_vs[i]<vs[i] else ""), vs[i])
+                                                    for i in [0]+list(range(0,len(vs))))))
+    times.append("<tr>%s%s</tr>\n" % (link, "".join("<td>%s</td>" % friendlyStr(s) for s in sums)))
+    if old_vs:
+      old_vs = [max(vs[i], old_vs[i]) for i in range(0, len(vs))]
+    else:
+      old_vs = vs
+  return countsTable("Models that completed each phase", phases) + countsTable("Time spent in each phase", times)
+
+def viewSwitch():
+  return '<div class="switch" role="group" aria-label="Invalid models">%s</div>' % "".join(
+    '<button type="button" data-show="%s" aria-pressed="%s">%s</button>' % (view, "true" if view == "valid" else "false", label)
+    for (view, label) in VIEWS)
+
 def checkEqual(iterator):
    return len(set(iterator)) <= 1
 
+entries = ""
 for lib in sorted(libs.keys()):
-  models = libs[lib]
-  entries += "<hr><h3>%s</h3>\n" % lib
+  invalid = invalidModels.get(lib, set()) & libs[lib]
+  entries += '<section class="library" data-view="valid">\n' if invalid else '<section class="library">\n'
+  entries += "<h3>%s</h3>\n" % lib
   branches_versions = [(cursor.execute("SELECT libversion FROM libversion WHERE libname=? AND branch=? ORDER BY date DESC LIMIT 1", (lib,branch)).fetchone() or ["unknown"])[0] for branch in branches]
   all_equal = checkEqual(branches_versions)
   if not all_equal:
-    entries += "<table>\n"
+    entries += '<table class="versions">\n'
     entries += "<tr><th>&nbsp;</th>%s</tr>\n" % "".join(["<th>%s</th>" % branch for branch in branches])
     entries += "<tr><td>Version</td>"
     for ver in branches_versions:
@@ -102,70 +159,45 @@ for lib in sorted(libs.keys()):
     entries += "</tr>\n"
     entries += "</table>\n"
   else:
-    entries += "<p><strong>Library version:</strong> %s</p>" % branches_versions[0]
-  entries += "<table>\n"
-  entries += entryhead
-  old_vs = None
-  models = {}
-  for branch in branches:
-    master_models = []
-    for i in range(0,8):
-      i_models = set()
-      for v in cursor.execute("SELECT model FROM %s WHERE date=? AND finalphase>=? AND libname=?" % (db.quote(branch)), (dates[branch][lib],i,lib)):
-        i_models.add(v[0])
-      master_models.append(i_models)
-    models[branch] = master_models
-  for branch in branches:
-    vs = [cursor.execute("SELECT COUNT(*) FROM %s WHERE date=? AND finalphase>=? AND libname=?" % (db.quote(branch)), (dates[branch][lib],i,lib)).fetchone()[0] for i in range(0,8)]
-    warnings = []
-    entries += '<tr><td><a href="%s/%s/%s.html">%s</a></td>' % (branch,lib,lib,branch)
-    for i in [0]+list(range(0,len(vs))):
-      diff1 = models[branch][i] - models[branches[-1]][i]
-      diff2 = models[branches[-1]][i] - models[branch][i]
-      diff_text = ""
-      if len(diff2)>0:
-        diff_text += "<p>Now working in %s, failed in %s:<br>\n" % (branches[-1],branch) + "<br>\n".join(sorted(diff2)) + "</p>"
-      if len(diff1)>0:
-        diff_text += "<p>Now failing in %s, worked in %s:<br>\n" % (branches[-1],branch) + "<br>\n".join(sorted(diff1)) + "</p>"
-      if False and diff_text:
-        diff_text += "<p>Debug:<br>\n" + "<br>\n".join(models[branch][i]) + "</p>"
-      entries += '<td%s><a%s>%s%s</a></td>' % (' class="warning"' if old_vs and old_vs[i]>vs[i] else (' class="better"' if old_vs and old_vs[i]<vs[i] else ""),' class="dot"' if diff_text else "",vs[i],('<span class="tooltip">%s</span>' % diff_text) if diff_text else "")
-    entries += "</tr>"
-    nsimulate[branch] += vs[6]
-    nverify[branch] += vs[7]
-    if old_vs:
-      old_vs = [max(vs[i], old_vs[i]) for i in range(0, len(vs))]
-    else:
-      old_vs = vs
-  entries += "</table>\n"
-  entries += "<table>\n"
-  entries += entryhead
-  for branch in branches:
-    vs = [cursor.execute("SELECT COUNT(*) FROM %s WHERE date=? AND finalphase>=? AND libname=?" % (db.quote(branch)), (dates[branch][lib],i,lib)).fetchone()[0] for i in range(0,8)]
-    sums = [cursor.execute("SELECT SUM(%s) FROM %s WHERE date=? AND libname=?" % (fields[i],db.quote(branch)), (dates[branch][lib],lib)).fetchone()[0] or 0 for i in range(0,9)]
-    entries += '<tr><td><a href="%s/%s/%s.html">%s</a></td>' % (branch,lib,lib,branch)
-    entries += ("<td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n" % (friendlyStr(sums[0]),friendlyStr(sums[1]),friendlyStr(sums[2]),friendlyStr(sums[3]),friendlyStr(sums[4]),friendlyStr(sums[5]),friendlyStr(sums[6]),friendlyStr(sums[7]),friendlyStr(sums[8])))
-    exectime[branch] += sums[0]
-    simtime[branch] += sums[7]
-  entries += "</table>\n"
-  # print(sorted(list(libs[lib])))
+    entries += '<p class="version">Library version: %s</p>\n' % branches_versions[0]
+  if invalid:
+    entries += '<p class="badge"><span class="cross">&#x2718;</span> %d invalid model%s</p>\n' % (len(invalid), "" if len(invalid) == 1 else "s")
+    entries += "<details><summary>Invalid models</summary><p>%s</p></details>\n" % "<br>\n".join(html.escape(m) for m in sorted(invalid))
+    for (view, _) in VIEWS:
+      entries += '<div class="view view-%s">\n%s</div>\n' % (view, libraryTables(lib, view))
+  else:
+    entries += libraryTables(lib, "all")
+  entries += "</section>\n"
 
-nummodels = sum(len(l) for l in libs.values())
-branches_lines = [("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td%s>%d</td><td>%d</td><td>%d</td></tr>\n" % (html.escape(branch), html.escape(
-  (cursor.execute("SELECT omcversion FROM omcversion WHERE date=? AND branch=?", (max(dates[branch][lib] for lib in libnames),branch)).fetchone() or ["unknown"])[0]
-  ), html.escape(dates_str[branch]), friendlyStr(exectime[branch]), friendlyStr(simtime[branch]),
-  " class=\"warning\"" if nummodels!=nmodels[branch] else "",
-  nsimulate[branch],
-  nverify[branch],
-  nmodels[branch]
-)) for branch in branches]
+nummodels = sum(len(models - invalidModels.get(lib, set())) for (lib, models) in libs.items())
+numinvalid = sum(len(models & invalidModels.get(lib, set())) for (lib, models) in libs.items())
+expected = {"valid": nummodels, "all": nummodels + numinvalid, "invalid": numinvalid}
+omcversions = dict((branch, (cursor.execute("SELECT omcversion FROM omcversion WHERE date=? AND branch=?", (max(dates[branch][lib] for lib in libnames),branch)).fetchone() or ["unknown"])[0])
+                   for branch in branches)
+simulateLabel = "# " + simulationLabel if simulationLabel != "Simulation" else "# Simulate"
+
+BRANCH_CAPTIONS = {"valid": "Invalid models left out", "all": "Invalid models included", "invalid": "Only the invalid models"}
+
+def branchesTable(view):
+  t = totals[view]
+  lines = ["<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%d</td><td>%d</td><td%s>%d</td></tr>\n" % (
+    html.escape(branch), html.escape(omcversions[branch]), html.escape(dates_str[branch]),
+    friendlyStr(t[branch]["exectime"]), friendlyStr(t[branch]["simtime"]),
+    t[branch]["simulate"], t[branch]["verify"],
+    ' class="warning"' if expected[view] != t[branch]["total"] else "", t[branch]["total"]) for branch in branches]
+  return ('<div class="view view-%s"><table class="branches"><caption>%s</caption>\n<tr><th>Branch</th><th>Version</th><th>Build time</th>'
+          '<th>Execution time</th><th>Simulation time</th><th>%s</th><th># Verify</th><th># Total</th></tr>\n%s</table></div>\n'
+          % (view, BRANCH_CAPTIONS[view], simulateLabel, "".join(lines)))
+
 template = open("overview.html.tpl").read()
 replacements = (
   (u"#title#", "OpenModelica Library Testing Overview"),
-  (u"#simulateLabel#", "# " + simulationLabel if simulationLabel != "Simulation" else "# Simulate"),
-  (u"#branches#", "\n".join(branches_lines)),
+  (u"#branches#", "".join(branchesTable(view) for (view, _) in VIEWS)),
+  (u"#viewSwitch#", viewSwitch()),
   (u"#numlibs#", str(len(libs))),
   (u"#nummodels#", str(nummodels)),
+  (u"#numinvalid#", str(numinvalid)),
+  (u"#invalidBranch#", html.escape(invalidBranch)),
   (u"#entries#", entries)
 )
 open("overview.html", "w").write(multiple_replace(template, *replacements))

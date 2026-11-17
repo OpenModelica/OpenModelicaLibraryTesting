@@ -73,6 +73,15 @@ The database also records _maxrss_: the most resident memory, in bytes, that
 the processes testing the model held at any one time - omc, the compilers
 running beside it and the simulation executable added together.
 
+A model is _invalid_ when it is not standard Modelica: omc translates it only
+because the testing sets `--warnNonStandardModelica`, which turns the errors
+that `--allowNonStandardModelica` would remove into warnings. The library
+reports mark such a model with a red cross; hover over it to see the options it
+needs. The overviews take the newest run of `master` on each library as the
+judge of which models are invalid (`report.py --invalid-branch` picks another
+branch) and leave them out of the counts and times. The buttons at the top of
+an overview show them included, or only them.
+
 Clicking on the model name shows the log of phases from parsing to compilation.
 Clicking on the (sim) link shows the log of the runtime simulation.
 
