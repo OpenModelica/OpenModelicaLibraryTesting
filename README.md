@@ -158,6 +158,10 @@ different OpenModelica versions, according to the conditions of the
   and the pages it links) is published in `files/<model>.dr/`, linked as
   `(dr)` next to `(sim)`, with a *Data reconciliation* column in the library
   page.
+  [configs/dataReconciliation-newBackend.json](./configs/dataReconciliation-newBackend.json)
+  is the same configuration with `--newBackend`; it fills the branch
+  `dataReconciliation-newBackend`, and `overview-dataReconciliation.html` has
+  a row for each of the two.
 
   Check [configs/conf.json](./configs/conf.json) for more.
 - If you used [.CI/installLibraries.mos](./.CI/installLibraries.mos) to test all
