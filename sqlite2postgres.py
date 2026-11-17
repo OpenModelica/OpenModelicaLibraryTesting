@@ -65,6 +65,7 @@ BRANCH_COLUMNS = [
     ("finalphase", "integer"),
     ("parsing", "double precision"),
     ("maxrss", "bigint"),
+    ("invalid", "integer"),
 ]
 
 LOOKUP_COLUMNS = {

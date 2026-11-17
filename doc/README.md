@@ -44,7 +44,10 @@ migrates on startup (`test.py`, around the `CREATE TABLE` block):
 | 0 | empty/new database; `omcversion` and `libversion` are created |
 | 1 | `libversion.confighash` added |
 | 2 | `parsing` added to every per-branch table |
-| 3 | current layout |
+| 3 | the layout of 2026-08 |
+| 4 | `libversion.host` and `libversion.sysinfo` added |
+| 5 | `maxrss` added to every per-branch table |
+| 6 | `invalid` added to every per-branch table; current layout |
 
 A database with a higher `user_version` makes `test.py` exit rather than guess.
 
@@ -72,7 +75,9 @@ CREATE TABLE if not exists [<branch>] (
   verifyfail  integer NOT NULL,  -- number of variables that differ from the reference
   verifytotal integer NOT NULL,  -- number of variables compared against the reference
   finalphase  integer NOT NULL,  -- how far the model got, see below
-  parsing     real    NOT NULL   -- time loading/parsing the library [s]
+  parsing     real    NOT NULL,  -- time loading/parsing the library [s]
+  maxrss      integer NOT NULL,  -- most resident memory of the test at once [bytes]
+  invalid     integer NOT NULL   -- 1 if the model needs non-standard Modelica, see below
 )
 ```
 

@@ -152,8 +152,7 @@
   {
     "library":"AES",
     "libraryVersion":"main",
-    "libraryVersionNameForTests":"",
-    "extraCustomCommands":["setCommandLineOptions(\"--allowNonStandardModelica=illegalConditionalContext\");"]
+    "libraryVersionNameForTests":""
   },
   {
     "library":"AixLib"
@@ -326,14 +325,12 @@
     "library":"Dynawo",
     "ulimitExeModels":{
       "Dynawo.Examples.RVS.TestCases.TestB.TestBNoSvcNoLoadReset":330
-    },
-    "extraCustomCommands":["setCommandLineOptions(\"--allowNonStandardModelica=implicitParameterStartAttribute,illegalConditionalContext\");"]
+    }
   },
   {
     "library":"Dynawo",
     "libraryVersion":"master",
     "libraryVersionNameForTests":"dev",
-    "extraCustomCommands":["setCommandLineOptions(\"--allowNonStandardModelica=implicitParameterStartAttribute,illegalConditionalContext\");"],
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":".",
     "referenceFinalDot":"_res.",
@@ -673,7 +670,6 @@
     "libraryVersionNameForTests":"",
     "extraCustomCommands":
       [
-        "setCommandLineOptions(\"--allowNonStandardModelica=nonStdEnumerationAsIntegers,nonStdTopLevelOuter\")",
         "setEnvironmentVar(\"publicData\", \"$libraryLocation/Tables/\")",
         "setEnvironmentVar(\"privateData\", \"$libraryLocation/Tables/\")",
         "setEnvironmentVar(\"superstructureTables\", \"$libraryLocation/Tables/superstructure/Tables/\")",

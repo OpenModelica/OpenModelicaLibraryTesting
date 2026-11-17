@@ -592,10 +592,11 @@ pipeline {
         sh "./report.py --branches='generateSymbolicJacobian' configs/conf.json"
         sh "mv overview.html overview-generateSymbolicJacobian.html"
 
-        sh "./report.py --branches='dataReconciliation dataReconciliation-newBackend' configs/dataReconciliation.json"
+        // master does not test these libraries.
+        sh "./report.py --branches='dataReconciliation dataReconciliation-newBackend' --invalid-branch=dataReconciliation configs/dataReconciliation.json"
         sh "mv overview.html overview-dataReconciliation.html"
 
-        sh "./report.py --branches='heavy_tests heavy_tests_wasm' configs/heavy_tests.json"
+        sh "./report.py --branches='heavy_tests heavy_tests_wasm' --invalid-branch=heavy_tests configs/heavy_tests.json"
         sh "mv overview.html overview-heavy_tests.html"
 
         sh "./report.py --branches='${env.GITBRANCHES_NEWINST}' configs/conf.json"

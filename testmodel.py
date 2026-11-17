@@ -375,6 +375,10 @@ def killChildren(sig, name):
       with open(errFile, 'a+') as fp:
         fp.write("Could not %s process: %s.\n" % (name, process.pid))
 
+def noteNonStandard(messages):
+  found = set(execstat["nonstandard"]) | set(shared.nonStandardRe.findall(messages or ""))
+  execstat["nonstandard"] = sorted(found)
+
 def sendExpressionTimeout(omc, cmd, timeout):
   with open(errFile, 'a+') as fp:
     fp.write("%s [Timeout %s]\n" % (cmd, timeout))
@@ -382,8 +386,10 @@ def sendExpressionTimeout(omc, cmd, timeout):
     try:
       ignore = omc.sendExpression("alarm(%s)" % timeout)
       res[0] = omc.sendExpression(cmd)
+      messages = omc.sendExpression('OpenModelica.Scripting.getErrorString()', parsed = False)
+      noteNonStandard(messages)
       with open(errFile, 'a+') as fp:
-        fp.write(omc.sendExpression('OpenModelica.Scripting.getErrorString()', parsed = False))
+        fp.write(messages)
       elapsed = omc.sendExpression("alarm(0)")
       with open(errFile, 'a+') as fp:
         fp.write("[Timeout remaining time %s]\n" % elapsed)
@@ -484,6 +490,7 @@ execstat = {
   "diff":None,
   "phase":0,
   "maxrss":0, # bytes resident at once across omc, compilers and executable
+  "nonstandard":[], # the --allowNonStandardModelica options the translation needed
   # One entry per runner beyond the first, which reports itself in the keys
   # above; see configs/fmi-simulators.json, wasm-fmu-runners.json, solvers.json.
   "simulators":{}
@@ -886,6 +893,7 @@ if useSimulate:
   buildFailed = (simres.get("messages") or "").startswith("Failed to build model")
   res = True
 err        = omc.sendExpression("OpenModelica.Scripting.getErrorString()")
+noteNonStandard(err)
 total      = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_SIMULATE_TOTAL)")-total_before
 buildmodel = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_BUILD_MODEL)")
 templates  = omc.sendExpression("OpenModelica.Scripting.Internal.Time.timerTock(OpenModelica.Scripting.Internal.Time.RT_CLOCK_TEMPLATES)")

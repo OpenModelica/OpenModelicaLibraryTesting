@@ -550,7 +550,10 @@ for cmd in [
   'setCommandLineOptions("-d=stateselection");',
   'setCommandLineOptions("-d=execstat");',
   'setMatchingAlgorithm("PFPlusExt");',
-  'setIndexReductionMethod("dynamicStateSelection");'
+  'setIndexReductionMethod("dynamicStateSelection");',
+  # Non-standard Modelica is translated anyway and the model marked invalid,
+  # see shared.nonStandardRe.
+  'setCommandLineOptions("--warnNonStandardModelica");'
 ]:
   if testHelloWorld(cmd):
     defaultCustomCommands.append(cmd)
@@ -1241,7 +1244,8 @@ def resultValues(model, libname, data, simulator=None):
     diff.get("numCompared") or 0,
     simulated.get("phase") or 0,
     data.get("parsing") or 0.0,
-    data.get("maxrss") or 0
+    data.get("maxrss") or 0,
+    1 if data.get("nonstandard") else 0
   )
 
 def removedModels(resultBranch, libname, tested):
@@ -1259,7 +1263,7 @@ def removedModels(resultBranch, libname, tested):
 def removedValues(model, libname):
   """One row of a branch table saying the library no longer has that model."""
   return (testRunStartTimeAsEpoch, libname, model,
-          0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, shared.DELETED_PHASE, 0.0, 0)
+          0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, shared.DELETED_PHASE, 0.0, 0, 0)
 
 resultPlaceholders = ",".join("?" * len(resultsdb.BRANCH_COLUMNS))
 
@@ -1360,6 +1364,13 @@ def drSummary(conf, stats):
   n = sum(1 for s in stats if (s[3].get("dr") or {}).get("reconciled"))
   return ("<th>Data reconciliation</th>", '<td bgcolor="%s">%d</td>' % ("#00FF00" if n == len(stats) else "#FFCC66", n),
           "<th>Data reconciliation</th>")
+
+def invalidCross(data):
+  """A red cross for a model that needs non-standard Modelica, naming what it needs."""
+  options = data.get("nonstandard") or []
+  if not options:
+    return ""
+  return '<span class="cross" title="%s">&#x2718;</span> ' % html.escape(" ".join("--allowNonStandardModelica=%s" % o for o in options))
 
 def checkPhase(phase, n):
   if phase >= n:
@@ -1580,9 +1591,11 @@ for (resultBranch, runner) in resultBranches:
         filesList.write("/%s.diff.mat\n" % filename_prefix)
         filesList.write("/%s.diff.ref.mat\n" % filename_prefix)
     filesList.close()
-    testsHTML = "\n".join(['<tr><td>%s%s%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td>%s<td bgcolor="%s">%s</td><td>%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td>%s</td></tr>\n' %
+    testsHTML = "\n".join(['<tr%s><td>%s%s%s%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td>%s<td bgcolor="%s">%s</td><td>%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td bgcolor="%s">%s</td><td>%s</td></tr>\n' %
       (lambda filename_prefix, errPrefix, diff:
         (
+        ' class="invalid"' if s[3].get("nonstandard") else "",
+        invalidCross(s[3]),
         ('<a href="%s">%s</a>' % (errPrefix + ".err", html.escape(s[1]))) if is_non_zero_file(errPrefix + ".err") else html.escape(s[1]),
         (' (<a href="%s">sim</a>)' % (filename_prefix + ".sim")) if is_non_zero_file(filename_prefix + suffix + ".sim") else "",
         drLink(filename_prefix, s[3]),
@@ -1611,6 +1624,7 @@ for (resultBranch, runner) in resultBranches:
       ))(filename_prefix="files/%s_%s" % (s[2], s[1]), errPrefix="files/%s_%s" % (s[2], s[1]), diff=s[3].get("diff"))
       for s in natsorted(stats, key=lambda s: s[1])])
     numSucceeded = [len(stats)] + [sum(1 if s[3]["phase"]>=i else 0 for s in stats) for i in range(1,8)]
+    numInvalid = sum(1 for s in stats if s[3].get("nonstandard"))
 
     gitReferenceFilesVersion = referenceFilesVersion(conf.get("referenceFiles"))
 
@@ -1642,6 +1656,9 @@ for (resultBranch, runner) in resultBranches:
       (u"#referenceFiles#", ('<p>Reference Files: %s</p>%s' % ((conf["referenceFilesURL"].replace(os.path.dirname(os.path.realpath(__file__)),"")), gitReferenceFilesVersion)) if ((conf.get("referenceFilesURL") or "") != "") else ""),
       (u"#referenceTool#", ('<p>Verified using: %s (diffSimulationResults%s)</p>' % (html.escape(ompython_omc_version), html.escape(', tube=%s' % conf["reference_tube"] + (', tolerance=%g' % conf["reference_tolerance"] if conf["reference_tube"] in ("rectangle", "ellipse") and "reference_tolerance" in conf else "")) if conf.get("reference_tube") else "")) if ((conf.get("referenceFiles") or "") != "") else ""),
       (u"#Total#", html.escape(str(numSucceeded[0]))),
+      (u"#InvalidClass#", ' class="invalid"' if numInvalid else ""),
+      (u"#Invalid#", str(numInvalid)),
+      (u"#invalidNote#", '<p>A model marked <span class="cross">&#x2718;</span> is invalid: omc translates it only because --warnNonStandardModelica turns the errors of non-standard Modelica into warnings. Hover over the cross to see which --allowNonStandardModelica options it needs.</p>' if numInvalid else ""),
       (u"#FrontendColor#", checkNumSucceeded(numSucceeded, 1)),
       (u"#BackendColor#", checkNumSucceeded(numSucceeded, 2)),
       (u"#SimCodeColor#", checkNumSucceeded(numSucceeded, 3)),

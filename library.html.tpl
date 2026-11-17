@@ -2,6 +2,10 @@
 <html lang="en">
 <head>
   <title>#fileName# test using OpenModelica</title>
+  <style>
+  tr.invalid > td:first-child, td.invalid {background-color:#F4A6A6;}
+  span.cross {color:#D00000; font-weight:bold;}
+  </style>
 </head>
 <body>
 <h1>#fileName# test using OpenModelica</h1>
@@ -9,6 +13,7 @@
 <table>
 <tr>
 <th>Total</th>
+<th title="Models that need non-standard Modelica (--allowNonStandardModelica)">Invalid</th>
 <th>Frontend</th>
 <th>Backend</th>
 <th>SimCode</th>
@@ -19,6 +24,7 @@
 </tr>
 <tr>
 <td>#Total#</td>
+<td#InvalidClass#>#Invalid#</td>
 <td bgcolor="#FrontendColor#">#Frontend#</td>
 <td bgcolor="#BackendColor#">#Backend#</td>
 <td bgcolor="#SimCodeColor#">#SimCode#</td>
@@ -51,6 +57,7 @@ Optimization level: #optlevel#</p>
 Flags: <pre>#customCommands#</pre>
 Config: <pre>#config#</pre>
 <p>Links are provided if getErrorString() or the simulation generates output. The links are coded with <font style="#FF0000">red</font> if there were errors, <font style="#FFCC66">yellow</font> if there were warnings, and normal links if there are only notifications.</p>
+#invalidNote#
 <table>
 <tr><th>Model</th><th>Verified</th><th>#simulateLabel#</th>#drHeader#<th>Total buildModel</th><th>Parsing</th><th>Frontend</th><th>Backend</th><th>SimCode</th><th>Templates</th><th>Compile</th><th>Total Execution</th></tr>
 #testsHTML#
