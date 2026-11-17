@@ -397,6 +397,11 @@
     "library":"IndustrialControlSystems"
   },
   {
+    "library":"IndustrialControlSystems",
+    "libraryVersion":"master",
+    "libraryVersionNameForTests":"dev"
+  },
+  {
     "library":"KeyWordIO",
     "extraCustomCommands":["setCFlags(getCFlags() + \" -Wno-error=int-conversion\")"]
   },
