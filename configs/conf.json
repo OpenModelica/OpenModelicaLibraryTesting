@@ -70,6 +70,7 @@
   {
     "library":"ModelicaTest",
     "libraryVersion":"4.0.0",
+    "libraryVersionExactMatch":true,
     "referenceFileExtension":"csv",
     "referenceFileNameDelimiter":"/",
     "referenceFileNameExtraName":"$ClassName",
