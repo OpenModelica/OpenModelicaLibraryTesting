@@ -1676,7 +1676,8 @@ for (resultBranch, runner) in resultBranches:
       (u"#totalTime#", html.escape(str(datetime.timedelta(seconds=int(sum(s[3].get("exectime") or 0.0 for s in stats)))))),
       (u"#config#", html.escape(json.dumps(conf["configFromFile"], indent=1, sort_keys=True))),
       (u"#testsHTML#", testsHTML),
-      (u"#omplot#", json.dumps(args.omplot))
+      (u"#omplot#", json.dumps(args.omplot)),
+      (u"#omplotOptions#", json.dumps("".join("&%s=%s" % ("algorithm" if k == "tube" else k, v if k == "tube" else "%g" % v) for (k, v) in shared.diffSimulationResultsOptions(conf))))
     )
     open(os.path.join(stageRoot, "%s.html" % libname), "w").write(multiple_replace(htmltpl, *replacements))
 

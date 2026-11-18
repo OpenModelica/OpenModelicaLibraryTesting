@@ -34,6 +34,20 @@ def simCodeTargetFromCommands(target, commands):
       target = found[-1]
   return target
 
+def diffSimulationResultsOptions(conf):
+  """The named arguments of the diffSimulationResults call that verifies a result."""
+  opts = [("relTol", conf["reference_reltol"]), ("relTolDiffMinMax", conf["reference_reltolDiffMinMax"])]
+  tube = conf.get("reference_tube")
+  # Without reference_tolerance, the csv-compare tubes get the default of diffSimulationResults, which is csv-compare's.
+  if tube not in ("rectangle", "ellipse"):
+    opts.append(("rangeDelta", conf["reference_rangeDelta"]))
+  elif "reference_tolerance" in conf:
+    opts.append(("rangeDelta", conf["reference_tolerance"]))
+  # Only passed when set: an omc without the tube argument fails the call.
+  if tube:
+    opts.append(("tube", tube))
+  return opts
+
 def fixData(data,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCommands,extrasimflags,environmentTranslation,environmentSimulation):
   data["configFromFile"] = dict(data)
   for (key,default) in overrideDefaults:
