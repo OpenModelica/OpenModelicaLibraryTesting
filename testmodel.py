@@ -1300,15 +1300,8 @@ def verifyAgainstReference(resFile, prefix, stat):
   start=monotonic()
   try:
     # An empty diffPrefix: no per-variable CSV, the two filtered files below are the report.
-    # Only passed when set: an omc without the tube argument fails the call.
-    tube = conf.get("reference_tube")
-    # Without reference_tolerance, the csv-compare tubes get the default of diffSimulationResults, which is csv-compare's.
-    if tube in ("rectangle", "ellipse"):
-      rangeDelta = ',rangeDelta=%g' % conf["reference_tolerance"] if "reference_tolerance" in conf else ""
-    else:
-      rangeDelta = ',rangeDelta=%g' % conf["reference_rangeDelta"]
-    (referenceOK,diffVars) = sendExpressionTimeout(omc_new, 'diffSimulationResults("%s","%s","",relTol=%g,relTolDiffMinMax=%g%s%s)' %
-                               (resFile, referenceFile, conf["reference_reltol"],conf["reference_reltolDiffMinMax"], rangeDelta, ',tube=OpenModelica.Scripting.TubeAlgorithm.%s' % tube if tube else ""), conf["ulimitOmc"])
+    diffArgs = "".join(",%s=%s" % (k, "OpenModelica.Scripting.TubeAlgorithm." + v if k == "tube" else "%g" % v) for (k, v) in shared.diffSimulationResultsOptions(conf))
+    (referenceOK,diffVars) = sendExpressionTimeout(omc_new, 'diffSimulationResults("%s","%s",""%s)' % (resFile, referenceFile, diffArgs), conf["ulimitOmc"])
   except TimeoutError as e:
     with open(errFile, 'a+') as fp:
       fp.write("Timeout error for diffSimulationResults")
