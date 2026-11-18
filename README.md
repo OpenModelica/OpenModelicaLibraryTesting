@@ -122,7 +122,7 @@ different OpenModelica versions, according to the conditions of the
         "git-ref": "main",
         "git-directory": "ReferenceFiles"
       },
-      "reference_tube": "rectangle", // diffSimulationResults(tube=OpenModelica.Scripting.TubeAlgorithm.<this>): rectangle, ellipse or ellipse2014 (when left out); needs an omc that has the tube argument
+      "reference_tube": "rectangle", // diffSimulationResults(tube=OpenModelica.Scripting.TubeAlgorithm.<this>): rectangle (when left out), ellipse or ellipse2014
       "reference_tolerance": 0.002, // rangeDelta of the rectangle and ellipse tubes (csv-compare's --tolerance); when left out, the default of diffSimulationResults, which is csv-compare's; ellipse2014 uses reference_rangeDelta
       "defaultTolerance": 1e-6, // tolerance for tests if not specified by the model, defaults to 1e-6
       "defaultNumberOfIntervals": 2500, // number of intervals for tests if not specified by the model, defaults to 2500

@@ -54,7 +54,7 @@ ENV PATH=/opt/libtest-venv/bin:$PATH
 
 # The omc for --ompython_omhome (the tested one is built in the workspace).
 ARG OMC_VERSION=
-ARG OMC_NIGHTLY=2026-11-11
+ARG OMC_NIGHTLY=2026-11-18
 RUN export DEBIAN_FRONTEND=noninteractive \
   && echo "omc nightly ${OMC_NIGHTLY}" \
   && . /etc/os-release \

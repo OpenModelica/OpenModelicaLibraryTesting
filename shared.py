@@ -37,15 +37,13 @@ def simCodeTargetFromCommands(target, commands):
 def diffSimulationResultsOptions(conf):
   """The named arguments of the diffSimulationResults call that verifies a result."""
   opts = [("relTol", conf["reference_reltol"]), ("relTolDiffMinMax", conf["reference_reltolDiffMinMax"])]
-  tube = conf.get("reference_tube")
+  tube = conf["reference_tube"]
   # Without reference_tolerance, the csv-compare tubes get the default of diffSimulationResults, which is csv-compare's.
   if tube not in ("rectangle", "ellipse"):
     opts.append(("rangeDelta", conf["reference_rangeDelta"]))
   elif "reference_tolerance" in conf:
     opts.append(("rangeDelta", conf["reference_tolerance"]))
-  # Only passed when set: an omc without the tube argument fails the call.
-  if tube:
-    opts.append(("tube", tube))
+  opts.append(("tube", tube))
   return opts
 
 def fixData(data,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCommands,extrasimflags,environmentTranslation,environmentSimulation):
@@ -63,6 +61,7 @@ def fixData(data,abortSimulationFlag,alarmFlag,overrideDefaults,defaultCustomCom
     data["reference_reltol"] = float(data.get("reference_reltol") or 3e-3)
     data["reference_reltolDiffMinMax"] = float(data.get("reference_reltolDiffMinMax") or 3e-3)
     data["reference_rangeDelta"] = float(data.get("reference_rangeDelta") or 1e-3)
+    data["reference_tube"] = data.get("reference_tube") or "rectangle"
     if data["simCodeTarget"]=="Cpp":
       defaultCustomCommands2 = defaultCustomCommands[:]
       defaultCustomCommands2.append('setCommandLineOptions("--simCodeTarget=Cpp")')
